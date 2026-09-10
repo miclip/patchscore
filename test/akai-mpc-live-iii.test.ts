@@ -789,6 +789,12 @@ describe('every plugin control is boxed by the editor group the manual names (#3
     'Insert 1',
     'TC Swing',
     'Sample Play',
+    // §3/#518. The other three quarters of the pad loop, added beside `Sample Play` and loose for
+    // the same reason it is: they are the sampler's own fields on the drum-pad pages, not a
+    // plugin editor's group.
+    'Slice',
+    'Pad Loop',
+    'Repeats',
     'Layer Play',
     'Pad Polyphony',
     'Mute Group',

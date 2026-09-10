@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
 import type { AuthoredParam, Cite, ParamScope } from '../../core/params'
 import { TR_8S_PANEL } from './panel'
 
@@ -80,6 +80,11 @@ import { TR_8S_PANEL } from './panel'
 // ---------------------------------------------------------------------------
 
 function cite(page: number): Cite {
+  return { kind: 'manual', source: `TR-8S Reference Manual eng01, p.${page}` }
+}
+
+/** §3/#518. The same citation, narrowed to the two kinds a `playback` claim takes. */
+function citePlayback(page: number): PlaybackEvidence {
   return { kind: 'manual', source: `TR-8S Reference Manual eng01, p.${page}` }
 }
 
@@ -1131,6 +1136,24 @@ const recipes: Recipe[] = [
       need:
         'A sustained tonal bed, two seconds or longer, loaded as a Loop tone — HOLD MODE Whole ' +
         'plays the whole file, so the file is the part',
+      /*
+       * §3/#518. The tone kind is the claim, and p.30's icon legend is where it is printed: the
+       * INST screen's four icons are **P** Preset *"Tones originally in the TR-8S"*, **S** Sample
+       * *"Tones that use samples"*, **L** Loop *"Tones that play repeatedly"*, **U** User *"Tones
+       * that use imported samples"*.
+       *
+       * `TONE` is the only control named. It is a text param whose *point* is uncited — this
+       * manifest names no tone, because the device note above says why — and the claim here is
+       * about the **kind** the point names, which is what p.30 legends. No minimum: a tone that
+       * plays repeatedly is not short.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['TONE'] },
+          evidence: citePlayback(30),
+        },
+      },
     },
     params: [
       tone(
@@ -1180,10 +1203,32 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A rendered chord sample about one bar long per shape the hook plays, loaded as a User ' +
-        'tone; HOLD MODE Whole plays it to its end without decaying, so the sample\'s own ' +
+        'A rendered chord sample nine seconds or longer per shape the hook plays, loaded as a ' +
+        'User tone; HOLD MODE Whole plays it to its end without decaying, so the sample\'s own ' +
         'length is the pad\'s length. See Hook for which shapes and for the semitone offset on ' +
         'each step',
+      /*
+       * §3/#518. **The second prose defect this issue was filed about.** It read *"about one bar
+       * long"*, which is not a length until somebody supplies a tempo, and the sentence beside it
+       * says the sample's own length is the pad's length. `pad` is held for 64 steps under
+       * `ambient-dub` at 108 bpm — four bars, 8.89 s — so a one-bar recording is a quarter of
+       * what this recipe asks a reader to build. Nine seconds is that figure rounded up, and it
+       * is a number rather than a bar count for the reason #518 gives: a bar is not a duration.
+       *
+       * p.31's `Hold Mode`, under *Sample tone only*: *"Whole: The sound is heard to the end
+       * without decaying."* So the file is the hold, on a Sample tone, which is what `TONE` says
+       * this is. Both parameters are named because either one alone leaves the claim open —
+       * `Whole` on a Loop tone would not stop at the end, and a Sample tone under `Time` or
+       * `Step` would decay before it.
+       */
+      minimumSeconds: 9,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['TONE', 'HOLD MODE'] },
+          evidence: citePlayback(31),
+        },
+      },
     },
     params: [
       tone('Sample', 'A User tone — p.30 lists User as "Tones that use imported samples"'),

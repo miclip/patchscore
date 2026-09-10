@@ -9,6 +9,7 @@ import { PLAYBACK_AXES, RecipeSchema, SourcePlaybackSchema } from '../lib/core/i
 import { ZERO_COUNTS, auditDevice, totalCounts } from '../scripts/audit-verified'
 import { libraryCounts } from '../lib/studio/provenance'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { TEMPLATES } from '../lib/templates/index'
 import { device, enumParam, numericParam, recipe } from './fixtures'
 
 /**
@@ -484,6 +485,39 @@ function minimaOn(deviceIds: readonly string[]): number {
   )
 }
 
+/**
+ * Every capability fact the library's recipes contribute, de-duplicated exactly as `libraryCounts`
+ * does it: a recipe two manifests share by reference is one recipe (#193).
+ */
+function claimsInLibrary(): number {
+  const seen = new Set<string>()
+  let claims = 0
+  for (const d of [...DEVICES].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))) {
+    for (const r of d.recipes) {
+      const key = JSON.stringify(r)
+      if (seen.has(key)) continue
+      seen.add(key)
+      const playback = r.sourceAudio?.playback
+      if (playback === undefined) continue
+      claims += PLAYBACK_AXES.filter((axis) => playback[axis] !== undefined).length
+    }
+  }
+  return claims
+}
+
+/** The roles some shipped hook holds for a bar or more, which is what #518 measured. */
+const HELD_ROLES = (() => {
+  const longest = new Map<string, number>()
+  for (const template of TEMPLATES) {
+    for (const hook of template.hooks) {
+      for (const note of hook.notes) {
+        if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+      }
+    }
+  }
+  return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+})()
+
 const TE_AND_POLYEND = [
   'polyend-play-plus',
   'polyend-tracker',
@@ -653,13 +687,15 @@ describe('the TE and Polyend batch (#518)', () => {
  * recipe that sets `HLD 110`. The file does not run out; the part may still stop. #506's question
  * stays open, and no field here claims to answer it.
  */
+const ELEKTRON_DEVICES = [
+  'elektron-analog-rytm-mkii',
+  'elektron-digitakt',
+  'elektron-digitakt-ii',
+  'elektron-octatrack-mkii',
+]
+
 describe('the Elektron batch (#518)', () => {
-  const ELEKTRON = [
-    'elektron-analog-rytm-mkii',
-    'elektron-digitakt',
-    'elektron-digitakt-ii',
-    'elektron-octatrack-mkii',
-  ]
+  const ELEKTRON = ELEKTRON_DEVICES
 
   const recipeById = (id: string) => {
     for (const d of DEVICES) {
@@ -774,10 +810,221 @@ describe('the Elektron batch (#518)', () => {
    * against the day's figure, so the next commit that cites a jack moves neither side of this.
    */
   it('accounts for both batches in the library total', () => {
-    const declared = DEVICES.reduce(
-      (total, d) => total + Object.keys(d.capabilityEvidence ?? {}).length,
-      0,
+    expect(claimsInLibrary()).toBe(15 + 19 + 16)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The Roland and MPC batch (#518)
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#518. **The last ten held-role recipes, and the two prose defects the issue was filed over.**
+ *
+ * The SP-404 is where all three axes appear on one recipe for the only time in the library, and
+ * where two of them sit on a single control: `GATE MODE ONE-SHOT` is p.31's *"the sample plays
+ * back once to the end … The pad's operations are disabled (ignored) until playback is
+ * finished"*, which is a boundary and a release in two sentences.
+ *
+ * The MPC is the repair. #518 named `mpc-texture-soft` as the recipe that says *two seconds or
+ * longer* against a `texture` held for 32 seconds with nothing to rescue it, and asked for a
+ * human read. The read is that the box loops, but only as a conjunction of four settings across
+ * three pages, and the recipe authored one of them. It now authors all four.
+ */
+describe('the Roland and MPC batch (#518)', () => {
+  const ROLAND_AND_MPC = [
+    'akai-mpc-live-iii',
+    'akai-mpc-one-g2',
+    'akai-mpc-xl',
+    'roland-sp-404mk2',
+    'roland-tr-6s',
+    'roland-tr-8s',
+  ]
+
+  const recipeOn = (deviceId: string, id: string) => {
+    const device = DEVICES.find((d) => d.id === deviceId)
+    const found = device?.recipes.find((r) => r.id === id)
+    if (found === undefined) throw new Error(`no ${id} on ${deviceId}`)
+    return found
+  }
+  const recipeById = (id: string) => {
+    for (const d of DEVICES) {
+      const found = d.recipes.find((r) => r.id === id)
+      if (found !== undefined) return found
+    }
+    throw new Error(`no recipe ${id}`)
+  }
+  const audio = (id: string) => recipeById(id).sourceAudio as NonNullable<SourceAudio>
+  const kinds = (id: string) =>
+    PLAYBACK_AXES.map((axis) => `${axis}=${audio(id).playback?.[axis]?.kind ?? '-'}`).join(' ')
+
+  /**
+   * Four recipes, four different combinations, off three consecutive pages: p.30 the gate, p.31
+   * one-shot, p.32 the loop. The texture is the only recipe in the library declaring all three
+   * axes, and the acid is the only one where one control answers two of them.
+   */
+  it('records the SP-404’s four combinations', () => {
+    expect(kinds('sp-texture-soft')).toBe('boundary=loops timing=stretches release=plays-through')
+    expect(kinds('sp-pad-soft')).toBe('boundary=loops timing=- release=gated')
+    expect(kinds('sp-sub-dark')).toBe('boundary=stops-at-end timing=- release=gated')
+    expect(kinds('sp-acid-hard')).toBe('boundary=stops-at-end timing=- release=plays-through')
+
+    // The acid's two claims are one setting, `GATE MODE ONE-SHOT`, and one page.
+    const acid = audio('sp-acid-hard').playback
+    expect(acid?.boundary?.control).toEqual({ kind: 'parameters', params: ['GATE MODE'] })
+    expect(acid?.release?.control).toEqual({ kind: 'parameters', params: ['GATE MODE'] })
+    expect(acid?.boundary?.evidence.source).toContain('p.31')
+    expect(acid?.release?.evidence.source).toBe(acid?.boundary?.evidence.source)
+
+    // Only the file-fed recipes carry a minimum; the two that loop do not.
+    expect(audio('sp-sub-dark').minimumSeconds).toBe(10)
+    expect(audio('sp-acid-hard').minimumSeconds).toBe(3)
+    expect(audio('sp-texture-soft').minimumSeconds).toBeUndefined()
+    expect(audio('sp-pad-soft').minimumSeconds).toBeUndefined()
+  })
+
+  /**
+   * BPM SYNC is a timing claim and the page states it plainly: p.29, *"The tempo of the sample
+   * then synchronizes with the bank tempo or the project tempo. The playback speed is adjusted so
+   * that the sample plays back at the right tempo."* The mechanism is speed rather than granular
+   * stretching, which is the Digitakt II's Repitch shape; the axis is about what the file is
+   * fitted to and not about how.
+   */
+  it('reads the SP-404’s BPM SYNC as a timing claim, cited to its own page', () => {
+    const timing = audio('sp-texture-soft').playback?.timing
+    expect(timing?.kind).toBe('stretches')
+    expect(timing?.control).toEqual({ kind: 'parameters', params: ['BPM SYNC'] })
+    expect(timing?.evidence.source).toContain('p.29')
+  })
+
+  /**
+   * Both Roland drum machines legend the same four tone icons, and the Loop one is the claim:
+   * *"Loop: Tones that play repeatedly"* — TR-8S Reference p.30, TR-6S Owner's p.26. The control
+   * is `TONE`, a text param whose point is uncited because neither manifest names a tone; what
+   * the page establishes is the kind the point names.
+   */
+  it('records both TR textures as looping, each off its own document', () => {
+    for (const [id, page] of [['tr8s-texture-soft', 'p.30'], ['tr6s-texture-soft', 'p.26']] as const) {
+      const boundary = audio(id).playback?.boundary
+      expect(boundary?.kind, id).toBe('loops')
+      expect(boundary?.control, id).toEqual({ kind: 'parameters', params: ['TONE'] })
+      expect(boundary?.evidence.source, id).toContain(page)
+      expect(audio(id).minimumSeconds, id).toBeUndefined()
+    }
+    expect(audio('tr8s-texture-soft').playback?.boundary?.evidence.source).toContain('TR-8S')
+    expect(audio('tr6s-texture-soft').playback?.boundary?.evidence.source).toContain('TR-6S')
+  })
+
+  /**
+   * #518's second prose defect. *"about one bar long"* is not a duration until somebody supplies
+   * a tempo, and the same sentence says the sample's own length is the pad's length. `pad` is
+   * held for 64 steps under `ambient-dub` at 108 bpm — 8.89 s — so a one-bar recording is a
+   * quarter of what the recipe asks for.
+   */
+  it('replaces the TR-8S pad’s bar count with seconds', () => {
+    const pad = audio('tr8s-pad-soft')
+    expect(pad.need).not.toContain('about one bar')
+    expect(pad.need).toContain('nine seconds or longer')
+    expect(pad.minimumSeconds).toBe(9)
+    expect(pad.playback?.boundary?.kind).toBe('stops-at-end')
+    // Both parameters: `Whole` on a Loop tone would not stop at the end, and a Sample tone under
+    // `Time` or `Step` would decay before it.
+    expect(pad.playback?.boundary?.control).toEqual({
+      kind: 'parameters',
+      params: ['TONE', 'HOLD MODE'],
+    })
+  })
+
+  /**
+   * #518's first prose defect, and the one it asked for a human read on. Two seconds against a
+   * 32-second hold passed #517's presence check and left a reader sixteen times short. The MPC
+   * does loop, and p.216 makes it a conjunction: *"For Pad Loop to work, you must (1) set the
+   * Sample Play field … to Note On instead of One Shot and (2) set the Slice field … to Pad"*.
+   * p.215 adds the count: *"a Repeat value of 0 will create infinite repeats"*.
+   *
+   * The recipe authored one of the four. It now authors all four, and the source stays short —
+   * which is the outcome #518 predicted for a rescued recipe.
+   */
+  it('makes the MPC loop real, as four authored parameters', () => {
+    const recipe = recipeOn('akai-mpc-live-iii', 'mpc-texture-soft')
+    const names = recipe.params.map((p) => p.name)
+    for (const name of ['Sample Play', 'Slice', 'Pad Loop', 'Repeats']) {
+      expect(names, name).toContain(name)
+    }
+    const values = new Map(recipe.params.map((p) => [p.name, (p as { value: unknown }).value]))
+    expect(values.get('Sample Play')).toBe('Note On')
+    expect(values.get('Slice')).toBe('Pad')
+    expect(values.get('Pad Loop')).toBe('Forward')
+    expect(values.get('Repeats')).toBe('0')
+
+    const playback = recipe.sourceAudio?.playback
+    expect(playback?.boundary?.kind).toBe('loops')
+    expect(playback?.boundary?.control).toEqual({
+      kind: 'parameters',
+      params: ['Sample Play', 'Slice', 'Pad Loop', 'Repeats'],
+    })
+    // `Sample Play` carries two claims at once, which is the pairing p.216 makes a precondition
+    // and a single `kind` could not have held.
+    expect(playback?.release?.kind).toBe('gated')
+    expect(playback?.release?.control).toEqual({ kind: 'parameters', params: ['Sample Play'] })
+    // Still two seconds, and now that is a supported claim rather than an unexamined one.
+    expect(recipe.sourceAudio?.need).toContain('two seconds or longer')
+    expect(recipe.sourceAudio?.minimumSeconds).toBeUndefined()
+  })
+
+  /**
+   * Invariant 2/#196. The XL takes the Live III's recipes by reference and keeps its citations;
+   * the One G2 rebuilds every one onto v3.9. `Sample Play` is the trap here: `PAGES` maps v3.7
+   * p.212 to v3.9 p.193, but `MOVED` records that this control landed on p.194, so a span
+   * retargeted page by page would have named the wrong one. `PLAYBACK_SPANS` is written out for
+   * that reason.
+   */
+  it('retargets the MPC claim onto the One G2’s guide and leaves the XL on the shared one', () => {
+    const shared = 'MPC Live III / MPC XL User Guide v3.7'
+    for (const id of ['akai-mpc-live-iii', 'akai-mpc-xl']) {
+      const playback = recipeOn(id, 'mpc-texture-soft').sourceAudio?.playback
+      expect(playback?.boundary?.evidence.source, id).toBe(`${shared}, pp.212, 215-216`)
+      expect(playback?.release?.evidence.source, id).toBe(`${shared}, p.212`)
+    }
+    const one = recipeOn('akai-mpc-one-g2', 'mpc-texture-soft')
+    const playback = one.sourceAudio?.playback
+    expect(playback?.boundary?.evidence.source).toBe(
+      'MPC Standalone OS User Guide v3.9, pp.194, 197-198',
     )
-    expect(libraryCounts(DEVICES).capabilityFacts - declared).toBe(15 + 19)
+    expect(playback?.release?.evidence.source).toBe('MPC Standalone OS User Guide v3.9, p.194')
+    // And the whole recipe, notes included: no v3.7 page number survives the borrow.
+    expect(JSON.stringify(one)).not.toContain(shared)
+    expect(JSON.stringify(one)).toContain('p.198')
+    expect(JSON.stringify(one)).toContain('p.197')
+  })
+
+  it('adds sixteen capability facts and three minima', () => {
+    // Sixteen rather than eighteen: `mpc-texture-soft` is one recipe on the Live III and the XL,
+    // shared by reference, so its two claims are counted once in the library total (#193). The
+    // One G2's are its own work and are counted beside them.
+    expect(claimsOn(ROLAND_AND_MPC)).toBe(18)
+    expect(claimsInLibrary() - claimsOn(TE_AND_POLYEND) - claimsOn(ELEKTRON_DEVICES)).toBe(16)
+    expect(minimaOn(ROLAND_AND_MPC)).toBe(3)
+  })
+
+  /**
+   * §9. Every held-role recipe in the library is now migrated: each either records what makes its
+   * source last, or states how long the source has to be, or both. That is #518's *done when*,
+   * for the recipes the issue measured.
+   */
+  it('leaves no held-role recipe unanswered', () => {
+    const silent: string[] = []
+    for (const d of DEVICES) {
+      for (const r of d.recipes) {
+        if (r.sourceAudio === undefined || !HELD_ROLES.has(r.role)) continue
+        const answered =
+          r.sourceAudio.minimumSeconds !== undefined || r.sourceAudio.playback !== undefined
+        if (!answered) silent.push(`${d.id} ${r.id}`)
+      }
+    }
+    // The three EP legato parts are answered by their minimum alone: the mirrored guide does not
+    // establish what happens at the end of the file, and a boundary invented to fill the hole is
+    // the thing #518 exists to stop.
+    expect(silent).toEqual([])
   })
 })

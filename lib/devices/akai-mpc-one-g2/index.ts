@@ -1,4 +1,12 @@
-import type { CapabilityEvidence, Device, JackSignalKind, JackSpec, Recipe } from '../../core/device'
+import type {
+  CapabilityEvidence,
+  Device,
+  JackSignalKind,
+  JackSpec,
+  PlaybackEvidence,
+  Recipe,
+  SourcePlayback,
+} from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredParam, Cite, Verified } from '../../core/params'
 import { device as liveIII } from '../akai-mpc-live-iii/index'
@@ -158,6 +166,11 @@ function cites(pages: string): Cite {
   return { kind: 'manual', source: `${MANUAL}, ${pages}` }
 }
 
+/** §3/#518. A span citation, narrowed to the two kinds a `playback` claim takes. */
+function citesPlayback(pages: string): PlaybackEvidence {
+  return { kind: 'manual', source: `${MANUAL}, ${pages}` }
+}
+
 // ---------------------------------------------------------------------------
 // Retargeting the sibling's recipes at this box's document (see the head note).
 // ---------------------------------------------------------------------------
@@ -176,6 +189,8 @@ export const PAGES: Record<number, number> = {
   205: 186, // List Edit: Length in ticks, Prob, Velocity
   211: 193, // Drum pad Global tab: Global Semi, Global Fine, Global Poly
   212: 193, // Layer Play (Sample Play, Pad Polyphony and Mute Group moved on — see MOVED)
+  215: 197, // Repeats, and the 0-versus-1 note that ties it to Sample Play
+  216: 198, // Slice, Pad Loop, and the conjunction the two of them make with Sample Play
   217: 199, // Layer Semi, and the Warp note that explains what it costs
   219: 203, // Vel Start / Vel End
   227: 211, // Articulations (Speed, Dynamics, Stereo) and the fourteen Drum FX
@@ -229,6 +244,13 @@ export const CONFIRMED: Record<number, readonly string[]> = {
   75: ['TC Swing'],
   211: ['Global Fine', 'Global Semi'],
   212: ['Layer Play', 'Mute Group', 'Pad Polyphony', 'Sample Play'],
+  // §3/#518. Only `Pad Loop` is here, and only because it is the one of the three that is an
+  // enum: `Slice` and `Repeats` are text settings whose scale neither guide prints, so nothing
+  // reads a legality citation off a page for them and `pageForParam` is never asked. v3.9 p.198
+  // prints the same four modes and the same conjunction, with one wording change worth knowing —
+  // it puts `Sample Play` in the *LFO Modulation* tab where v3.7 says the *Global* tab. The field
+  // and its values are identical; only the tab the guide sends a reader to differs.
+  216: ['Pad Loop'],
   217: ['Semi'],
   219: ['Vel End', 'Vel Start'],
   227: [
@@ -302,6 +324,68 @@ const DROPPED_OPTIONS: Record<number, readonly string[]> = {
 /** Sibling citations that name a span rather than a page. */
 const SPANS: Record<string, { ref: string; values?: readonly string[] }> = {
   'pp.428-521': { ref: 'pp.422-454', values: PLUGINS },
+}
+
+/**
+ * §3/#518. **The v3.9 pages a borrowed `playback` claim rests on**, keyed by the span the sibling
+ * names, and a throw for anything else.
+ *
+ * `pageInV39` cannot do this one, and the reason is worth having in front of whoever adds the
+ * next entry: `PAGES[212]` is 193, but the fact these claims rest on is `Sample Play`, which
+ * `MOVED` records as landing on v3.9 p.194 rather than with the rest of v3.7 p.212. A span
+ * retargeted page by page through `PAGES` would name p.193 and be wrong about the one control
+ * that carries the claim. So the mapping is written out and read against both documents:
+ *
+ *     v3.7 p.212  Sample Play           ->  v3.9 p.194   (via MOVED, not PAGES)
+ *     v3.7 p.215  Repeats               ->  v3.9 p.197
+ *     v3.7 p.216  Slice, Pad Loop       ->  v3.9 p.198
+ *
+ * All three pairs were opened and diffed. pp.215/197 differ in a Q-Link sentence and one typo,
+ * with the `Repeats` paragraph identical; pp.216/198 differ in one clause — v3.9 places `Sample
+ * Play` in the *LFO Modulation* tab where v3.7 says the *Global* tab — with the option lists and
+ * the *"For Pad Loop to work"* conjunction identical.
+ */
+const PLAYBACK_SPANS: Record<string, string> = {
+  'pp.212, 215-216': 'pp.194, 197-198',
+  'p.212': 'p.194',
+}
+
+function playbackRefInV39(ref: string): string {
+  const to = PLAYBACK_SPANS[ref]
+  if (to === undefined) {
+    throw new Error(
+      `the MPC Live III manifest cites ${SIBLING_MANUAL} ${ref} for a playback claim, and nobody ` +
+        `has checked what ${MANUAL} prints there — open those pages, then add '${ref}' to PLAYBACK_SPANS`,
+    )
+  }
+  return to
+}
+
+/**
+ * §3/#518. One borrowed `playback`, moved onto this document.
+ *
+ * `retargetRecipe` spreads the sibling's `sourceAudio`, so without this a claim would arrive
+ * carrying a page of a manual that does not describe this box — the failure this whole file
+ * exists to prevent, in a field that did not exist when the file was written. Every axis goes
+ * through `playbackRefInV39`, which throws on a span nobody has compared.
+ */
+function retargetPlayback(playback: SourcePlayback): SourcePlayback {
+  const moved = (claim: { evidence: PlaybackEvidence }) => {
+    const ref = refOf(claim.evidence)
+    if (ref === undefined) throw new Error('a playback claim carries no citation to retarget')
+    return citesPlayback(playbackRefInV39(ref))
+  }
+  return {
+    ...(playback.boundary === undefined
+      ? {}
+      : { boundary: { ...playback.boundary, evidence: moved(playback.boundary) } }),
+    ...(playback.timing === undefined
+      ? {}
+      : { timing: { ...playback.timing, evidence: moved(playback.timing) } }),
+    ...(playback.release === undefined
+      ? {}
+      : { release: { ...playback.release, evidence: moved(playback.release) } }),
+  }
 }
 
 function pageInV39(page: number): number {
@@ -462,6 +546,9 @@ function retargetRecipe(recipe: Recipe): Recipe {
           sourceAudio: {
             ...recipe.sourceAudio,
             need: retargetNote(recipe.sourceAudio.need),
+            ...(recipe.sourceAudio.playback === undefined
+              ? {}
+              : { playback: retargetPlayback(recipe.sourceAudio.playback) }),
             ...(prep === undefined
               ? {}
               : {

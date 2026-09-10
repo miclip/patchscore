@@ -1,4 +1,11 @@
-import type { CapabilityEvidence, Device, JackSpec, JackSignalKind, Recipe } from '../../core/device'
+import type {
+  CapabilityEvidence,
+  Device,
+  JackSpec,
+  JackSignalKind,
+  PlaybackEvidence,
+  Recipe,
+} from '../../core/device'
 import { articulablePerStep, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset } from '../../core/params'
 import { MPC_LIVE_III_PANEL } from './panel'
@@ -247,6 +254,24 @@ function cite(page: number): Cite {
 
 function cites(pages: string): Cite {
   return { kind: 'manual', source: `${MANUAL}, ${pages}` }
+}
+
+/** §3/#518. A span citation, narrowed to the two kinds a `playback` claim takes. */
+function citesPlayback(pages: string): PlaybackEvidence {
+  return { kind: 'manual', source: `${MANUAL}, ${pages}` }
+}
+
+/**
+ * §3/#518. A setting the reader makes whose scale this guide never prints.
+ *
+ * `Slice` and `Repeats` are the two, and both are on p.216 and p.215 with their behaviour spelled
+ * out and no range or closed list beside them: `Slice` reads *"All … Pad … Slice 1, 2, 3, etc."*,
+ * an open tail no option set can hold, and `Repeats` prints an example of 4 and no bounds
+ * anywhere in either guide. A `pick` would be a legality claim the page does not support and a
+ * `num` would need bounds nobody printed, so both are text and the note carries the sentence.
+ */
+function setting(name: string, value: string, note: string): AuthoredParam {
+  return { kind: 'text', name, value, verified: false, note }
 }
 
 // ---------------------------------------------------------------------------
@@ -655,6 +680,36 @@ const tsLfoDepth = (v: number, mood?: MoodOffset[]) =>
 // ---------------------------------------------------------------------------
 
 const samplePlay = (v: (typeof SAMPLE_PLAY)[number]) => pick('Sample Play', v, SAMPLE_PLAY, 212)
+
+/**
+ * §3/#518. **The other three quarters of a loop on this box.** p.216: *"For Pad Loop to work, you
+ * must (1) set the Sample Play field (in the Global tab) to Note On instead of One Shot and (2)
+ * set the Slice field (in the first Samples tab) to Pad instead of All or a slice number."*
+ *
+ * `Pad Loop` is the switch, and its four modes are a closed printed list, so it is an enum.
+ * `Slice` and `Repeats` are `setting`s for the reason that helper gives.
+ */
+const PAD_LOOP_MODES = ['Off', 'Forward', 'Reverse', 'Alternating'] as const
+const padLoop = (v: (typeof PAD_LOOP_MODES)[number]) =>
+  pick(
+    'Pad Loop',
+    v,
+    PAD_LOOP_MODES,
+    216,
+    'p.216: Forward — "hold down the pad to cause that sample to repeat from the Loop Position to the end of the sample. Release the pad to stop the repeating playback"',
+  )
+const slicePad = () =>
+  setting(
+    'Slice',
+    'Pad',
+    'p.216: Pad — "The sample will play from the Pad Start position to the Pad End position … This also lets you activate Pad Loop". Required for Pad Loop, with Sample Play at Note On',
+  )
+const repeats = (v: string) =>
+  setting(
+    'Repeats',
+    v,
+    'p.215: with Pad Loop on and Sample Play at Note On, "a Repeat value of 0 will create infinite repeats, and a value of 1 will play a sample one time through"',
+  )
 const layerPlay = (v: (typeof LAYER_PLAY)[number]) => pick('Layer Play', v, LAYER_PLAY, 212)
 const padPoly = (v: (typeof PAD_POLY)[number]) =>
   pick('Pad Polyphony', v, PAD_POLY, 212, 'A specific number 2-32 is also selectable')
@@ -1469,10 +1524,49 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A sustained tonal or atmospheric recording, two seconds or longer, with no transient ' +
         'at the front',
+      /*
+       * §3/#518. **Two seconds is enough here, and until now the recipe did not make it so.**
+       *
+       * #518 named this recipe as the case: it states *two seconds or longer* against a `texture`
+       * held for 128 steps under `drone-study` at 60 bpm — 32 seconds — and nothing in it looped.
+       * `Sample Play: Note On` gates the file to the held pad (p.212) and stops there; the sound
+       * would have run out after two seconds under a thirty-two-second pad.
+       *
+       * The repair is the loop, and on this box a loop is a conjunction of four settings across
+       * three pages. p.216: *"For Pad Loop to work, you must (1) set the Sample Play field (in
+       * the Global tab) to Note On instead of One Shot and (2) set the Slice field (in the first
+       * Samples tab) to Pad instead of All or a slice number."* p.216 again for the mode itself:
+       * *"Forward: You can hold down the pad to cause that sample to repeat from the Loop
+       * Position to the end of the sample."* p.215 for the count: *"a Repeat value of 0 will
+       * create infinite repeats"*, a difference *"only evident when a Pad's Sample Play parameter
+       * is set to Note On"*.
+       *
+       * So `Repeats 0` is what makes the loop last as long as the pad is held rather than run a
+       * fixed number of times, and `Sample Play: Note On` is load-carrying twice over — it is the
+       * release behaviour **and** a precondition of the loop. That pairing is why a single `kind`
+       * could not describe this box: the manual makes *loops* and *gated* one setup, not
+       * alternatives.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: {
+            kind: 'parameters',
+            params: ['Sample Play', 'Slice', 'Pad Loop', 'Repeats'],
+          },
+          evidence: citesPlayback('pp.212, 215-216'),
+        },
+        release: {
+          kind: 'gated',
+          control: { kind: 'parameters', params: ['Sample Play'] },
+          evidence: citesPlayback('p.212'),
+        },
+      },
       hint: 'sample-assign',
     },
     params: [
-      trackType('Drum'), samplePlay('Note On'), layerPlay('Crossfade'), padPoly('Mono'), globalSemi(-12),
+      trackType('Drum'), samplePlay('Note On'), slicePad(), padLoop('Forward'), repeats('0'),
+      layerPlay('Crossfade'), padPoly('Mono'), globalSemi(-12),
       globalFine(-8), delayReverbFx('AIR Reverb'), reverbType('Large Studio'), reverbPreDelay(60),
       reverbMix(40, [{ axis: 'space', amount: 28 }]),
     ],

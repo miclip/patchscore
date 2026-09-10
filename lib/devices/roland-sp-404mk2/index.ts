@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
 import { articulablePerStep, clockSourceSetupFact, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { SP_404MK2_PANEL } from './panel'
@@ -184,6 +184,19 @@ function cite(page: number): Cite {
 
 /** For a claim whose pages are not one, in the Digitakt II's `p.43, p.53` form. */
 function citePages(...pages: number[]): Cite {
+  return { kind: 'manual', source: `${MANUAL}, ${pages.map((n) => `p.${n}`).join(', ')}` }
+}
+
+/**
+ * §3/#518. The pages a `playback` claim rests on, narrowed to the two kinds such a claim takes.
+ *
+ * The three playback pages are consecutive and answer three different questions. p.30 is the gate
+ * — *"When the [GATE] button is on, samples play back only while the pads are pressed"*. p.31 is
+ * one-shot — *"the sample plays back once to the end … The pad's operations are disabled
+ * (ignored) until playback is finished"*. p.32 is the loop — *"Use the loop function to make a
+ * sample play back repeatedly"*. A claim about either axis names the pages it actually rests on.
+ */
+function citePlayback(...pages: number[]): PlaybackEvidence {
   return { kind: 'manual', source: `${MANUAL}, ${pages.map((n) => `p.${n}`).join(', ')}` }
 }
 
@@ -692,6 +705,31 @@ const recipes: Recipe[] = [
         'A pure low sine with a stable, known pitch — nothing above the fundamental to filter. ' +
         'Exactly ten seconds, which is both what the held bars need and the longest the ' +
         'generator will export — `SOUND GEN · Pad Length` below sets it',
+      /*
+       * §3/#518. Two axes, two buttons, two pages.
+       *
+       * `GATE MODE ON` is the release: p.30, *"When the [GATE] button is on, samples play back
+       * only while the pads are pressed (gate playback)."* `LOOP OFF` is the boundary: p.32 makes
+       * the loop the thing that repeats a sample — *"Use the loop function to make a sample play
+       * back repeatedly"* — and it is off here, so nothing brings the file round again.
+       *
+       * The ten seconds is the `need`'s own figure and it is doubly determined: `sub` is held for
+       * 80 steps under `weave` at 126 bpm, which is 9.52 s, and p.132's generator will not export
+       * a longer pad anyway. The two agree, which is why this recipe reads *exactly ten*.
+       */
+      minimumSeconds: 10,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['LOOP'] },
+          evidence: citePlayback(32),
+        },
+        release: {
+          kind: 'gated',
+          control: { kind: 'parameters', params: ['GATE MODE'] },
+          evidence: citePlayback(30),
+        },
+      },
       prep: generated,
       hint: 'sound-gen',
     },
@@ -993,6 +1031,40 @@ const recipes: Recipe[] = [
     verified: false,
     sourceAudio: {
       need: 'A sustained tonal loop of a whole number of bars, two seconds or longer — BPM SYNC needs the sample’s own tempo to be right first',
+      /*
+       * §3/#518. **Three axes, which no other recipe in the library fills.**
+       *
+       * `LOOP ON` is the boundary (p.32, *"Use the loop function to make a sample play back
+       * repeatedly"*), so two seconds is enough here and the loop point is what matters.
+       *
+       * `GATE MODE OFF` is the release, and it is the opposite of the pad's: p.30, *"When the
+       * [GATE] button is off, samples begin playing back each time a pad is pressed."* Nothing
+       * stops the sound when the step ends, which is what a bed under a pattern wants.
+       *
+       * `BPM SYNC ON` is the timing. p.29: *"The tempo of the sample then synchronizes with the
+       * bank tempo or the project tempo. The playback speed is adjusted so that the sample plays
+       * back at the right tempo."* The mechanism is speed rather than granular stretching — the
+       * Digitakt II's Repitch is the same shape — and the axis is about what the file is fitted
+       * to, not about how. The `need` above already carries the condition the same page states:
+       * *"To use BPM SYNC, you must first set the accurate tempo data for each sample."*
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['LOOP'] },
+          evidence: citePlayback(32),
+        },
+        timing: {
+          kind: 'stretches',
+          control: { kind: 'parameters', params: ['BPM SYNC'] },
+          evidence: citePlayback(29),
+        },
+        release: {
+          kind: 'plays-through',
+          control: { kind: 'parameters', params: ['GATE MODE'] },
+          evidence: citePlayback(30),
+        },
+      },
       prep: {
         text: 'Set the sample’s tempo before you sync it: [PITCH/SPEED], then BPM SET to AUTO to detect it or MANU to type it in',
         verified: cite(131),
@@ -1080,6 +1152,24 @@ const recipes: Recipe[] = [
         'Sustained chord sample(s) — one per chord shape the hook plays; see Hook. Half a bar or ' +
         'longer, so the held step is covered before the loop comes round. Past that the length ' +
         'is not critical, because the loop fills the held step, but the loop point has to be clean',
+      /*
+       * §3/#518. The two independent buttons the note above is about, as two claims. p.32 for the
+       * loop — *"Use the loop function to make a sample play back repeatedly"* — and p.30 for the
+       * gate — *"samples play back only while the pads are pressed"*. Together they are what makes
+       * a held step a length on this box, and a single `kind` could have said only one of them.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['LOOP'] },
+          evidence: citePlayback(32),
+        },
+        release: {
+          kind: 'gated',
+          control: { kind: 'parameters', params: ['GATE MODE'] },
+          evidence: citePlayback(30),
+        },
+      },
     },
     params: [
       gateMode('ON'),
@@ -1377,6 +1467,32 @@ const recipes: Recipe[] = [
       need:
         'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
         'movement recorded into it — the filter is the part this recipe is for',
+      /*
+       * §3/#518. **One parameter, both axes, and one page states both.** p.31: *"When the sample
+       * playback mode is set to one-shot playback, the sample plays back once to the end when you
+       * press a pad. The pad's operations are disabled (ignored) until playback is finished."*
+       *
+       * The first sentence is the boundary and the second is the release: releasing the pad does
+       * nothing, so the file plays through. The same page adds *"The loop function turns off (and
+       * the [LOOP] button goes dark) when one-shot playback is on"*, which is why `LOOP OFF`
+       * below is a consequence here rather than a second decision.
+       *
+       * `acid` is held for 22 steps under `acid-lineage` at 122 bpm — 2.70 s, rounded to the
+       * three the `need` already asks for.
+       */
+      minimumSeconds: 3,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['GATE MODE'] },
+          evidence: citePlayback(31),
+        },
+        release: {
+          kind: 'plays-through',
+          control: { kind: 'parameters', params: ['GATE MODE'] },
+          evidence: citePlayback(31),
+        },
+      },
     },
     routing:
       '**The line:** `PITCH MODE` `CHROMATIC` in TR-REC and a `PITCH` value per step (p.98). ' +

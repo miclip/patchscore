@@ -1376,8 +1376,39 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
 
   Nineteen more claims: `caps` went 1225 to 1244, and four more minima.
 
-  `test/source-length.test.ts` still reads prose, and becomes a comparison once enough of the
-  library is migrated for it to.
+  **The third batch finishes the held roles**: the SP-404's four, the two TR textures and the
+  TR-8S pad, and `mpc-texture-soft`. The SP-404 is the only box in the library filling all three
+  axes on one recipe — `sp-texture-soft` loops (p.32), stretches to the project tempo (p.29,
+  *"The playback speed is adjusted so that the sample plays back at the right tempo"*) and plays
+  through the step (p.30) — and `sp-acid-hard` is the only recipe where one control answers two
+  axes, because p.31's one-shot sentence is a boundary and a release at once: *"the sample plays
+  back once to the end … The pad's operations are disabled (ignored) until playback is finished."*
+  Both Roland drum machines record their Loop tone off the same legend, *"Loop: Tones that play
+  repeatedly"* (TR-8S Reference p.30, TR-6S Owner's p.26).
+
+  **Two prose defects came out with it, and they are the two #518 was filed over.** The TR-8S pad
+  read *"about one bar long"*, which is not a duration until somebody supplies a tempo, beside a
+  sentence saying the sample's own length is the pad's length; a `pad` is held four bars, so it now
+  reads nine seconds and carries the number. And `mpc-texture-soft` stated two seconds against a
+  32-second hold with nothing rescuing it — the case #518 asked for a human read on. The read is
+  that the MPC loops, but only as a conjunction of four settings across three pages, and the recipe
+  authored one of them. It now authors `Slice: Pad`, `Pad Loop: Forward` and `Repeats: 0` beside
+  `Sample Play: Note On`, records `boundary: loops` controlled by all four and `release: gated`
+  controlled by the one that carries both claims, and keeps its two seconds — which is the outcome
+  #518 predicted for a recipe that is genuinely rescued.
+
+  `Slice` and `Repeats` are text settings rather than an enum or a numeric, because neither guide
+  prints a scale for them: `Slice` reads *"All … Pad … Slice 1, 2, 3, etc."*, an open tail no
+  option set can hold, and `Repeats` prints an example and no bounds. The `akai-mpc-one-g2` borrow
+  rebuilds all of it onto v3.9 — pp.194, 197-198 — through a written-out span map rather than
+  page-by-page, because `Sample Play` is the one control on v3.7 p.212 that `MOVED` puts on p.194
+  instead of p.193, and a span retargeted a page at a time would have named the wrong one. The XL
+  keeps the shared v3.7 citations, since it takes the recipe by reference.
+
+  Sixteen more claims in the library total: `caps` went 1244 to 1260, and three more minima. Every
+  file-fed recipe on a held role now either records what makes its source last or states how long
+  the source has to be. `test/source-length.test.ts` still reads prose, and can become a comparison
+  against `minimumSeconds` whenever somebody wants it to.
 
 - **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
   (#516).

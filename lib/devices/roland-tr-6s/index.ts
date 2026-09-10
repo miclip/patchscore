@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
 import type { AuthoredParam, Cite, ParamScope } from '../../core/params'
 import { TR_6S_PANEL } from './panel'
 
@@ -135,6 +135,11 @@ function cite(page: number): Cite {
 
 /** The Owner's Manual, for the few facts the Parameter Guide does not carry. */
 function citeOwner(page: number): Cite {
+  return { kind: 'manual', source: `TR-6S Owner's Manual eng02, p.${page}` }
+}
+
+/** §3/#518. The owner's-manual citation, narrowed to the two kinds a `playback` claim takes. */
+function citeOwnerPlayback(page: number): PlaybackEvidence {
   return { kind: 'manual', source: `TR-6S Owner's Manual eng02, p.${page}` }
 }
 
@@ -897,6 +902,22 @@ const recipes: Recipe[] = [
       need:
         'A sustained tonal bed, two seconds or longer, loaded as a Loop tone — HOLD MODE Whole ' +
         'plays the whole file, so the file is the part',
+      /*
+       * §3/#518. The sibling's claim on this box's own document. Owner's p.26 legends the INST
+       * screen's icons, and the Loop one is the whole of it: *"Loop: Tones that play
+       * repeatedly."*
+       *
+       * `TONE` alone, as on the TR-8S: the point is uncited because this manifest names no tone,
+       * and what p.26 establishes is the kind. No minimum — a tone that plays repeatedly is not
+       * short.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['TONE'] },
+          evidence: citeOwnerPlayback(26),
+        },
+      },
     },
     params: [
       tone(
