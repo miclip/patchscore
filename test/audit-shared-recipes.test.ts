@@ -12,17 +12,29 @@ import { auditDevice, libraryCounts, totalCounts } from '../lib/studio/provenanc
  * undermines the check it exists for.
  *
  * The numbers below move whenever the Live III gains a recipe, because the whole point is that
- * the XL gains it too — #345's four took them from 283/169 to 363/227. A diff here is the
+ * the XL gains it too — #345's four took them from 283/169 to 363/227, and
+ * #518's loop conjunction on `mpc-texture-soft` took the first to 366. A diff here is the
  * reference working, not a regression.
  */
 describe('the library total counts a shared recipe once (#193)', () => {
   it('drops exactly the entries the MPC XL derives, and nothing else', () => {
     const summed = totalCounts(DEVICES.map((d) => auditDevice(d)))
     const deduped = libraryCounts(DEVICES)
-    expect(summed.params - deduped.params).toBe(363)
+    expect(summed.params - deduped.params).toBe(366)
     expect(summed.numerics - deduped.numerics).toBe(227)
-    // Nothing that is not a recipe moves.
-    expect(deduped.capabilityFacts).toBe(summed.capabilityFacts)
+    /*
+     * §3/#518. **Capability facts move now, and only the recipe-level ones.**
+     *
+     * This line used to read `toBe(summed.capabilityFacts)` under the comment *"nothing that is
+     * not a recipe moves"*, which was true while every capability fact came from a manifest's
+     * `capabilityEvidence`. A `sourceAudio.playback` claim is a capability fact **on a recipe**,
+     * so the XL's two are the Live III's two and de-duplication takes them — which is the same
+     * rule as the params above, arriving in the `caps` column.
+     *
+     * Two, and named rather than counted loosely: `mpc-texture-soft` declares `boundary` and
+     * `release`, and it is the only recipe in that shared set carrying a playback claim.
+     */
+    expect(summed.capabilityFacts - deduped.capabilityFacts).toBe(2)
     expect(deduped.unverifiedRanges).toBe(summed.unverifiedRanges)
   })
 

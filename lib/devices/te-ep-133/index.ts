@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe, SourceAudio } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type { AuthoredEnumParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
@@ -243,6 +243,14 @@ function cite(where: string): Cite {
   return { kind: 'manual', source: `${GUIDE}, ${where}, ${MIRRORED}` }
 }
 
+/**
+ * §3/#518. The same citation, narrowed for a `playback` claim, which takes a page or a unit and
+ * not the `maker` kind. The string is identical; only the type is smaller.
+ */
+function playbackCite(where: string): PlaybackEvidence {
+  return { kind: 'manual', source: `${GUIDE}, ${where}, ${MIRRORED}` }
+}
+
 const HARDWARE = '/ep-133/hardware-overview 1.1'
 const SYNC_CONN = '/ep-133/hardware-overview 1.2'
 const WORKFLOW = '/ep-133/workflow 6'
@@ -358,9 +366,10 @@ const PAD_ROLES: Role[] = [
  * sample's name can still be told which hundred to scroll into. The band is the caller's, because
  * only the recipe knows which part it is.
  */
-function fromLibrary(need: string, band: string) {
+function fromLibrary(need: string, band: string, extra: Partial<SourceAudio> = {}): SourceAudio {
   return {
     need,
+    ...extra,
     prep: {
       text: `Hold [SOUND] and type the sound number on the pads, then [ENTER]; the factory ${band}.`,
       verified: cite(SOUND),
@@ -378,9 +387,10 @@ function fromLibrary(need: string, band: string) {
  * which is why they are quoted with the mono condition attached — *"now you can record mono
  * samples up to 40 seconds long. just switch the sample type to mono"*.
  */
-function sampled(need: string) {
+function sampled(need: string, extra: Partial<SourceAudio> = {}): SourceAudio {
   return {
     need,
+    ...extra,
     prep: {
       text: 'Press [SAMPLE], hold a pad to record — [X] sets input level, [Y] the threshold. 20 seconds in stereo, 40 in mono.',
       verified: cite(SAMPLE_FN),
@@ -563,10 +573,25 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Factory sub, legato under the kick',
     sourceAudio: fromLibrary(
-      'A sine or near-sine bass note with no harmonics above the fundamental, ten seconds or ' +
-      'longer — the note is held for whole bars and the sound is what fills them, so audition ' +
-      'the band for one that holds rather than one that decays',
+      'A sine or near-sine bass note with no harmonics above the fundamental — the note is held ' +
+      'for whole bars and the sound is what fills them, so audition the band for one that holds ' +
+      'rather than one that decays',
       'bass is sounds 400-499',
+      /*
+       * §3/#518. **A number, and deliberately no `playback`.** `sub` is held for 80 steps under
+       * `weave` at 126 bpm, which is 9.52 s, and ten is that rounded to something a reader can
+       * audition against. It is the figure the `need` already asks for, in a form a rule can
+       * compare.
+       *
+       * The classification stays open because the guide does not answer it. 8.2.1 on `legato`:
+       * *"legato is monophonic, and plays a sample one at a time. when changing the note while
+       * being held, it will continue playing from the same point as it was left off."* That is
+       * about what a second note does, and says nothing about what happens when the file runs
+       * out. Recording a `boundary` here would be reading the page for something it does not say,
+       * which is the failure #518 exists to stop — so the axis is absent, which is how this model
+       * spells *nobody has established it*.
+       */
+      { minimumSeconds: 10 },
     ),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
@@ -598,9 +623,12 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Squelch line, legato so notes run into each other',
     sourceAudio: fromLibrary(
-      'A resonant sawtooth bass note, one sustained note rather than a phrase, three seconds ' +
-      'or longer — audition the band for one that still sounds that far in',
+      'A resonant sawtooth bass note, one sustained note rather than a phrase — audition the ' +
+      'band for one that still sounds that far in',
       'bass is sounds 400-499',
+      // §3/#518. `acid` is held for 22 steps under `acid-lineage` at 122 bpm — 2.70 s, rounded
+      // to three. `legato` leaves the boundary unestablished here for the reason the sub gives.
+      { minimumSeconds: 3 },
     ),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
@@ -624,6 +652,25 @@ const recipes: Recipe[] = [
       'count you set, so that count is the length you hear and the recording only decides how ' +
       'far it had to travel to get there',
       'melodic sounds are 500-599',
+      /*
+       * §3/#518. The sentence in the `need` is the guide's own. 8.2.4: *"BAR will stretch the
+       * sample, automatically fitting it to the chosen time division of the project's bpm … if
+       * you choose 1 bar it stretches your sample to be 1 bar long."* So the bar count is the
+       * length a reader hears and the recording's own length is not, which is why no
+       * `minimumSeconds` is owed here.
+       *
+       * `timing` only. What the file does when it runs out is a separate question and this guide
+       * does not answer it for `key` mode — see the note on the legato parts below.
+       */
+      {
+        playback: {
+          timing: {
+            kind: 'stretches',
+            control: { kind: 'parameters', params: ['TIME STRETCH MODE'] },
+            evidence: playbackCite(TIME_PAGE),
+          },
+        },
+      },
     ),
     params: [
       pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),
@@ -645,6 +692,17 @@ const recipes: Recipe[] = [
       'A field recording or room tone — anything with movement and no beat. Two to four seconds ' +
       'of recording is plenty: BAR stretches whatever is loaded to the bar count you set, so ' +
       'that count is the length you hear',
+      // §3/#518. As the pad above, on the same section: 8.2.4 fits the sample to the chosen bar
+      // count, so the count is the length and the recording's own length is not.
+      {
+        playback: {
+          timing: {
+            kind: 'stretches',
+            control: { kind: 'parameters', params: ['TIME STRETCH MODE'] },
+            evidence: playbackCite(TIME_PAGE),
+          },
+        },
+      },
     ),
     params: [
       pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' }),

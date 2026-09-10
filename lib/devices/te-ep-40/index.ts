@@ -1,4 +1,11 @@
-import type { Device, Recipe, SoundSetup } from '../../core/device'
+import type {
+  Device,
+  PlaybackEvidence,
+  Recipe,
+  SoundSetup,
+  SourceAudio,
+  SourcePlayback,
+} from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type { AuthoredEnumParam, Cite, Verified } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
@@ -297,6 +304,14 @@ function cite(where: string): Cite {
 }
 
 /**
+ * §3/#518. The same citation, narrowed for a `playback` claim, which takes a page or a unit and
+ * not the `maker` kind. The string is identical; only the type is smaller.
+ */
+function playbackCite(where: string): PlaybackEvidence {
+  return { kind: 'manual', source: `${GUIDE}, ${where}, ${MIRRORED}` }
+}
+
+/**
  * A live teenage engineering page that is not the guide. **The fetch date is not optional** — a
  * live URL cited without one means nothing, because the page can change under the citation.
  *
@@ -442,9 +457,15 @@ const PAD_ROLES: Role[] = [
  * product page prints a **sixth band, `600-699 FX`**, which the guide never mentions. That is a
  * `maker` citation and it is passed in rather than assumed.
  */
-function fromLibrary(need: string, band: string, source: Verified = cite(SOUND)) {
+function fromLibrary(
+  need: string,
+  band: string,
+  source: Verified = cite(SOUND),
+  extra: Partial<SourceAudio> = {},
+): SourceAudio {
   return {
     need,
+    ...extra,
     prep: {
       text: `Hold [SOUND] and type the sound number on the pads, then [ENTER]; the factory ${band}.`,
       verified: source,
@@ -602,6 +623,35 @@ function ownProse(where: string, text: string): string {
   return text
 }
 
+/**
+ * §3/#518. **A borrowed playback claim is re-cited, never inherited.**
+ *
+ * `borrowed()` spreads the sibling's `sourceAudio`, so without this the claim would arrive
+ * carrying a citation into the *EP–133* guide — a page reference to a document that is not this
+ * box's, which is the one thing this file's whole retargeting machinery exists to prevent. Each
+ * axis goes through `sectionHere`, which throws on a section nobody has checked against this
+ * guide, exactly as a borrowed `prep` and a borrowed option set do.
+ *
+ * `minimumSeconds` is not touched and does not need to be: it carries no citation, because it is
+ * the hold some direction asks of the role rather than anything a guide states, and the two boxes
+ * serve the same roles from the same pool.
+ */
+function retargetPlayback(playback: SourcePlayback): SourcePlayback {
+  const here = (claim: { evidence: PlaybackEvidence }) =>
+    playbackCite(sectionHere(claim.evidence.source))
+  return {
+    ...(playback.boundary === undefined
+      ? {}
+      : { boundary: { ...playback.boundary, evidence: here(playback.boundary) } }),
+    ...(playback.timing === undefined
+      ? {}
+      : { timing: { ...playback.timing, evidence: here(playback.timing) } }),
+    ...(playback.release === undefined
+      ? {}
+      : { release: { ...playback.release, evidence: here(playback.release) } }),
+  }
+}
+
 /** One borrowed parameter, its option set and its citation rebuilt against this guide. */
 function retargetParam(param: AuthoredEnumParam): AuthoredEnumParam {
   if (param.verified !== false) {
@@ -664,6 +714,7 @@ function borrowed(suffix: string): Recipe {
         text: ownProse(`${suffix} prep`, audio.prep.text),
         verified: cite(sectionHere(prepCite.source)),
       },
+      ...(audio.playback === undefined ? {} : { playback: retargetPlayback(audio.playback) }),
     },
     params: (source.params as AuthoredEnumParam[]).map(retargetParam),
     ...(source.routing === undefined
@@ -772,6 +823,35 @@ const recipes: Recipe[] = [
     sourceAudio: fromLibrary(
       'A bar or two of sustained material that can repeat without a seam',
       'melodic sounds are 500-599',
+      cite(SOUND),
+      /*
+       * §3/#518. **The one recipe on either box that answers two axes**, and both are set here
+       * rather than borrowed: this part is authored on this box.
+       *
+       * 8.2.1 on `loop`: *"use loop to loop your samples, they will run in the background staying
+       * in time."* That is the boundary — the file does not run out, which is what *"repeat
+       * without a seam"* in the `need` is asking the reader to make possible.
+       *
+       * 8.2.5 on `BAR`: *"BAR will stretch the sample, automatically fitting it to the chosen
+       * time division of the project's bpm."* That is the timing, and it is a separate setting on
+       * a separate page. The guide pairs them itself at the end of 8.2.1 — *"ensure that your
+       * loops have time stretch enabled to keep them in time when changing tempo"* — which is
+       * exactly why one `kind` could not hold this recipe.
+       */
+      {
+        playback: {
+          boundary: {
+            kind: 'loops',
+            control: { kind: 'parameters', params: ['PLAY MODE'] },
+            evidence: playbackCite(PLAY_MODE_PAGE),
+          },
+          timing: {
+            kind: 'stretches',
+            control: { kind: 'parameters', params: ['TIME STRETCH MODE'] },
+            evidence: playbackCite(TIME_PAGE),
+          },
+        },
+      },
     ),
     params: [
       pick('PLAY MODE', 'loop', PLAY_MODES, cite(PLAY_MODE_PAGE), {

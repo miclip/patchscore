@@ -1,4 +1,4 @@
-import type { Device, JackSignalKind, Recipe } from '../../core/device'
+import type { Device, JackSignalKind, PlaybackEvidence, Recipe } from '../../core/device'
 import { articulablePerStep } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { DIGITAKT_PANEL } from './panel'
@@ -255,6 +255,15 @@ function cite(page: number): Cite {
 }
 
 function cites(pages: string): Cite {
+  return { kind: 'manual', source: `${MANUAL}, ${pages}` }
+}
+
+/**
+ * §3/#518. The pages a `playback` claim rests on, narrowed to the two kinds such a claim takes.
+ * Appendix A prints one `PLAY` block per machine, so which page carries the sentence depends on
+ * which machine the recipe loads.
+ */
+function citePlayback(pages: string): PlaybackEvidence {
   return { kind: 'manual', source: `${MANUAL}, ${pages}` }
 }
 
@@ -872,9 +881,25 @@ const recipes: Recipe[] = [
     verified: false,
     sourceAudio: {
       need:
-        'A clean low sustained tone with a stable, known pitch, ten seconds or longer — the note ' +
-        'is held for whole bars and the file is what fills them. TUNE transposes it, so the ' +
-        'tuning has to be true before it moves',
+        'A clean low sustained tone with a stable, known pitch — the note is held for whole bars ' +
+        'and the file is what fills them. TUNE transposes it, so the tuning has to be true ' +
+        'before it moves',
+      /*
+       * §3/#518. p.82, the Oneshot machine's `PLAY`: *"FORWARD — The sample will be played back
+       * once every time it is triggered."* Nothing repeats it, so the file is the hold, and the
+       * `need` above has been saying so in prose since it was written.
+       *
+       * `sub` is held for 80 steps under `weave` at 126 bpm — 9.52 s, rounded to the ten the
+       * sentence already asks for, now as a number a rule can compare.
+       */
+      minimumSeconds: 10,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['PLAY'] },
+          evidence: citePlayback('p.82'),
+        },
+      },
     },
     /**
      * `ONESHOT` rather than `REPITCH`, and the module JSDoc says why: p.85 gives Repitch no `TUNE`
@@ -1332,6 +1357,36 @@ const recipes: Recipe[] = [
       need:
         'A sustained two- or four-bar loop whose own tempo you know. WERP cuts it into segments and ' +
         'realigns them, so BARS has to match what the loop actually is',
+      /*
+       * §3/#518. **Two axes, and this recipe is why one `kind` could not hold them.** The file
+       * both repeats and is fitted to the bar, on two different parameters off two pages.
+       *
+       * p.84, the Werp machine's `PLAY`: *"FORWARD LOOP — The sample starts at the STRT position
+       * and will loop continuously between Loop Position and Length."* p.83 on the machine
+       * itself: *"The Werp machine allows samples and loops to automatically stretch to the tempo
+       * of your project or pattern … The sample is cut into small time segments and played
+       * consecutively aligned to the tempo."* `BARS` is named beside `MACHINE` because it is what
+       * fixes the target — p.84: *"Bars sets the total duration of the sample measured in bars
+       * and is relative to the set BPM"* — and the `need` above already tells the reader it has
+       * to match the loop.
+       *
+       * **The loop claim is about the file and not about the part.** The same `PLAY` entry ends
+       * *"This time is also constrained by the AMP page envelope parameters HLD and DEC"*, so a
+       * looping file can still be cut short by the envelope over it. That is #506's question and
+       * this field does not answer it.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY'] },
+          evidence: citePlayback('p.84'),
+        },
+        timing: {
+          kind: 'stretches',
+          control: { kind: 'parameters', params: ['MACHINE', 'BARS'] },
+          evidence: citePlayback('pp.83-84'),
+        },
+      },
     },
     /**
      * `SPD 16` against `MULT BPM 8` reads 1 in p.49's table — one full cycle in the sixteen steps the
@@ -1482,8 +1537,18 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
-        'movement recorded into it; the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, with no filter movement recorded into it; ' +
+        'the filter is the part this recipe is for',
+      // §3/#518. As the sub: `PLAY FORWARD` on the Oneshot machine plays the file once (p.82).
+      // `acid` is held for 22 steps under `acid-lineage` at 122 bpm — 2.70 s, rounded to three.
+      minimumSeconds: 3,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['PLAY'] },
+          evidence: citePlayback('p.82'),
+        },
+      },
     },
     routing:
       '**Slide:** there is none on this box. The TRIG page is `NOTE`, `VEL`, `LEN`, `PROB`, `LEV`, ' +
@@ -1719,6 +1784,22 @@ const recipes: Recipe[] = [
       need:
         'Sustained chord sample(s), two seconds or longer — one per chord shape the hook plays; ' +
         'see Hook',
+      /*
+       * §3/#518. p.82, the Oneshot machine's `PLAY`: *"FORWARD LOOP — The sample starts at the
+       * STRT position and will loop continuously between Loop Position and Length."* `LOOP` is
+       * named beside it because p.83 makes it the return point of that cycle — *"Loop Pos sets
+       * the position in the sample to where playback will return to after reaching the Length
+       * Position … if PLAY MODE is set to FORWARD LOOP"* — and this recipe sets it.
+       *
+       * No minimum: the file repeats, so what it owes is a clean loop point rather than seconds.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY', 'LOOP'] },
+          evidence: citePlayback('pp.82-83'),
+        },
+      },
     },
     params: [
       machine('ONESHOT'),

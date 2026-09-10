@@ -7,6 +7,7 @@ import type {
   Verified,
 } from '../core/index'
 import {
+  PLAYBACK_AXES,
   citedDocument,
   compareCodeUnits,
   effectiveVerified,
@@ -114,6 +115,11 @@ export type AuditCounts = {
   /**
    * §2.6/#22/#120. **The capability facts a manifest has said something about**, and how.
    *
+   * Since #518 that includes claims made on a *recipe*: `sourceAudio.playback` says what the
+   * voice does with the file it is handed, on up to three axes, each cited to a page or a
+   * unit, and `auditPlayback` counts one per declared axis. Those two states are already
+   * members below, so the identity needs no new term.
+   *
    * `capabilityFacts` = manualCapabilities + observedCapabilities + citedAgainstCapabilities +
    * uncheckedCapabilities + undocumentedCapabilities + unreadCapabilities + partlyCapabilities.
    * A fourth identity that has to add up, on the same terms as the other two — seven ways since
@@ -176,7 +182,45 @@ export const ZERO_COUNTS: AuditCounts = {
 
 export type DeviceAudit = { deviceId: string; counts: AuditCounts; findings: AuditFinding[] }
 
+/**
+ * §3/#518, §9. **A playback claim is a capability fact made on a recipe**, so it lands in `caps`.
+ *
+ * What one asserts is that the voice loops, stretches or gates the file it is handed, cited to a
+ * page or to a unit. That is the same kind of claim `capabilityEvidence` holds about a box's clock
+ * or its jacks, and it is nothing like a point value: no reader dials it, and it has no range to be
+ * legal within. Counting it among the points would have moved the one number invariant 4 relies
+ * on, for a claim that is not about a parameter's value.
+ *
+ * **One fact per declared axis, not one per recipe.** `boundary`, `timing` and `release` are
+ * separate claims, established separately and often on different pages — the MPC's release is
+ * p.212 and its boundary is p.216 — and each carries its own citation. Counting the recipe once
+ * would report a recipe that answered all three identically to one that answered a single axis,
+ * which is the understatement §2.6/#236 added `partly` to stop.
+ *
+ * **It is per recipe because the fact is.** The same box loops under one recipe and does not under
+ * another, which is why a device-level path could not hold it and why the reading over parameter
+ * names kept missing boxes (#518). Being counted from here also means a recipe two manifests share
+ * by reference is counted once in the library totals and once on each device's own page, which is
+ * what `auditDevice` already does with every other claim on that recipe (#193).
+ *
+ * Only `manual` and `observed` reach here: `PlaybackEvidenceSchema` admits nothing else, so the
+ * `capabilityFacts` identity in `AuditCounts` still holds and no gap state is possible.
+ */
+function auditPlayback(recipe: Recipe, into: DeviceAudit): void {
+  const playback = recipe.sourceAudio?.playback
+  if (playback === undefined) return
+  for (const axis of PLAYBACK_AXES) {
+    const claim = playback[axis]
+    if (claim === undefined) continue
+    into.counts.capabilityFacts++
+    if (claim.evidence.kind === 'manual') into.counts.manualCapabilities++
+    else into.counts.observedCapabilities++
+  }
+}
+
 function auditRecipe(deviceId: string, recipe: Recipe, into: DeviceAudit): void {
+  auditPlayback(recipe, into)
+
   for (const param of recipe.params as AuthoredParam[]) {
     into.counts.params++
 

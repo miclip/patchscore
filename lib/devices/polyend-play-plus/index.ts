@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type {
   AuthoredEnumParam,
@@ -219,6 +219,20 @@ const UNITLESS_100 = { min: 0, max: 100 } //         0-100, no unit printed
 /** A citation. The page is the one carrying that parameter's own printed bound or option list. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Polyend Play+ Manual Rev 2, p.${page}` }
+}
+
+/**
+ * §3/#518. The two pages an audio track's playback rests on, as one citation.
+ *
+ * p.68 gives `Sample End` as a position *"in ms with respect to the full sample duration"* whose
+ * default *"matches the sample duration"*; p.69 gives `Sample Decay` as *"a fade out of the audio
+ * when the sample ends"*. Between them the sample ends, and the parameter summary for an audio
+ * track has no loop stage to say otherwise — p.32's audio-structure diagram runs Start, End,
+ * Attack, Decay, and the `loop` printed on the same page is a Perform punch-in effect over the
+ * pattern.
+ */
+function citeSampleEnd(): PlaybackEvidence {
+  return { kind: 'manual', source: 'Polyend Play+ Manual Rev 2, pp.68-69' }
 }
 
 function num(
@@ -957,8 +971,22 @@ const SAMPLE_RECIPES: Recipe[] = [
     title: 'Sub tone under everything, filter well down, full bit depth',
     sourceAudio: {
       need:
-        'A clean sine or near-sine sub one-shot with no harmonics above the fundamental, ten ' +
-        'seconds or longer — the note is held for whole bars and the one-shot is what fills them',
+        'A clean sine or near-sine sub one-shot with no harmonics above the fundamental — the ' +
+        'note is held for whole bars and the one-shot is what fills them',
+      /*
+       * §3/#518. `sub` is held for 80 steps at worst, under `weave` at 126 bpm, which is 9.52 s.
+       * Ten is that rounded to the figure the `need` already asks for, now in a form a rule can
+       * compare rather than one a parser has to read.
+       */
+      minimumSeconds: 10,
+      /*
+       * `inherent`, and it is the whole point of this box's audio track: there is no play mode to
+       * set. `TRACK MODE` decides whether the track is audio at all, not what it does with the
+       * file, so naming it here would be a citation on the wrong claim.
+       */
+      playback: {
+        boundary: { kind: 'stops-at-end', control: { kind: 'inherent' }, evidence: citeSampleEnd() },
+      },
       prep: {
         text: 'Tune the sample to C4 before loading; the Note parameter reckons from C4.',
         verified: cite(86),
@@ -1135,7 +1163,19 @@ const SAMPLE_RECIPES: Recipe[] = [
     voice: 'track-sample',
     title: 'Slow fade in, wet, sat off to one side',
     sourceAudio: {
-      need: 'A sustained atmospheric recording several seconds long — field noise, tape hiss, a held chord',
+      /*
+       * §3/#518. *"Several seconds"* was the sentence that made #518's point for it: against a
+       * `texture` held for 128 steps under `drone-study` at 60 bpm — 32 seconds — it passes a
+       * presence check and leaves a reader sixteen times short. The number is the requirement and
+       * the prose says what to look for.
+       */
+      need:
+        'A sustained atmospheric recording — field noise, tape hiss, a held chord. Nothing here ' +
+        'loops it, so the recording is the whole of the part',
+      minimumSeconds: 32,
+      playback: {
+        boundary: { kind: 'stops-at-end', control: { kind: 'inherent' }, evidence: citeSampleEnd() },
+      },
       hint: 'pick-sample',
     },
     params: [

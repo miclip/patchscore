@@ -825,6 +825,21 @@ export function resolvePatch(recipe: Recipe): ResolvedPatchEntry[] {
  */
 export type ResolvedSourceAudio = {
   need: string
+  /**
+   * §3/#518. The shortest source that can carry this part, in seconds — see
+   * `SourceAudio.minimumSeconds`.
+   *
+   * **Carried through and rendered, where `playback` is not.** The two answer different readers.
+   * A reader at the machine is choosing a file and a number is the actionable half of that: it
+   * used to be inside the prose, in four incompatible spellings, and #518 is the record of four
+   * readings of that prose giving four wrong counts. The classification behind it — whether the
+   * voice loops or stretches or stops — is why the number is what it is, and belongs to the
+   * author and the test rather than to §8, which prints no provenance anywhere (invariant 4).
+   *
+   * It carries no `Provenance` for `need`'s reason exactly: no page states it, because it is the
+   * longest hold some direction asks of the role rather than a fact about the box.
+   */
+  minimumSeconds?: number
   prep?: { text: string; provenance: Provenance }
   hint?: string
 }
@@ -834,11 +849,27 @@ export function resolveSourceAudio(recipe: Recipe): ResolvedSourceAudio | undefi
   if (source === undefined) return undefined
   return {
     need: source.need,
+    ...(source.minimumSeconds === undefined ? {} : { minimumSeconds: source.minimumSeconds }),
     ...(source.prep === undefined
       ? {}
       : { prep: { text: source.prep.text, provenance: citedProvenance(source.prep.verified) } }),
     ...(source.hint === undefined ? {} : { hint: source.hint }),
   }
+}
+
+/**
+ * §3/#518. **The one wording for a source length, used by every surface that prints one.**
+ *
+ * The whole point of the field is that the four prose spellings — *"ten seconds or longer"*, *"a
+ * second or two"*, *"Several seconds"*, *"about one bar"* — could not be read or compared. One
+ * function means the reader sees the same sentence on the guide, the riff page and the web, and a
+ * change to it changes all three together.
+ *
+ * `String` rather than any locale-aware formatter: invariant 6 asks for byte-identical output on
+ * any platform, and `toLocaleString` would put a comma in a different place on CI (`CLAUDE.md`).
+ */
+export function sourceLengthLine(seconds: number): string {
+  return `At least ${String(seconds)} s long`
 }
 
 /**

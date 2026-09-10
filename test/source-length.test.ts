@@ -1,192 +1,287 @@
 import { describe, expect, it } from 'vitest'
-import type { Device, Recipe, Role } from '../lib/core'
-import { RecipeSchema } from '../lib/core'
+import type { Device, Recipe, Role, SourcePlayback } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
- * §3/#506. **A recipe told to hold a note is fed from a file, so the file has to last that long.**
+ * §3/#506/#518. **A recipe told to hold a note is fed from a file, so the file has to last that
+ * long — and this file now checks the number rather than the sentence.**
  *
  * Reported from the machine, on a Deluge running `lydian-house`: a pad printed *held for 64 steps
- * (4 bars)* on a voice that cannot hold at all. #506 has two halves and they cost very different
- * amounts. The half that needs a model change — **whether a voice can sustain** — is out of scope
- * here and stays out: there is no capability field for it, a sample in `LOOP` sustains where the
- * same box in `ONCE` does not, and a flag added to make this test pass would be the wrong shape
- * settled in a hurry.
+ * (4 bars)* on a voice that cannot hold at all. #506 asked for a source that covers the hold;
+ * #517 wrote a sentence into the seventeen recipes that said nothing; #518 found that a stated
+ * duration is not a sufficient one and that no reading of the prose could tell the two apart.
  *
- * The half this file holds is computable from what already ships. `HookNote.len` is sustain in
- * sixteenth steps (§4.1/#142), every hook names the role it is for, and every recipe names its
- * role — so the longest hold asked of a role is a fact about `TEMPLATES` alone. Where that hold
- * is a bar or more and the recipe serving it plays a file, `sourceAudio.need` is the only place a
- * reader is told what to load, and a `need` that never mentions a length sends them looking for a
- * sound with no idea how much of one they need. That is #451 and #469's finding — *a riser is a
- * gesture with a length, and half the recipes that need a sample never say how long* — arriving
- * on held notes rather than on risers.
+ * ## What this file used to be, and why it was not enough
  *
- * ## The rule is about the fact, and since #516 the field says it
+ * A regex over `sourceAudio.need`, asserting only that a duration was *stated*. It passed
+ * `mpc-texture-soft`'s *two seconds or longer* against a `texture` held for 32 seconds, and it
+ * passed `tr8s-pad-soft`'s *about one bar long* against a `pad` held for four bars — because both
+ * say something. Four separate readings of that prose produced four wrong counts (#516, #517 and
+ * #518 twice): the durations were spelled *"ten seconds or longer"*, *"a second or two"*,
+ * *"Several seconds"* and *"a sustained two- or four-bar loop"*, and a parser that handled one
+ * shape missed the others.
  *
- * A duration is owed because **the sound comes from a file** and the figure outlasts it. This
- * test used to carry an exclusion list of one, because `sourceAudio` was a *proxy* for that fact
- * rather than the fact: `ep40-acid-dirty` declared one and loaded nothing, since a supertone is
- * the EP–40's built-in synth engine, and demanding a duration there would have enforced a
- * sentence that could only be untrue. Nothing in the recipe's *parameters* distinguished it —
- * its whole param list is `PLAY MODE legato`, exactly what the file-fed recipes beside it set —
- * so there was no structural signal to key on and the list was the honest answer.
+ * **The prose route is gone.** `sourceAudio.minimumSeconds` is a number and
+ * `sourceAudio.playback` says what makes the file last, so the rule below is arithmetic against
+ * `TEMPLATES` with nothing to read.
  *
- * **#516 built the signal.** `sourceAudio` now means a file asset the voice does not generate and
- * nothing else; selecting a sound the box already makes is `soundSetup`, a separate field. The
- * three EP–40 supertone recipes moved, `ep40-acid-dirty` among them, so the predicate below is
- * structural again and the list is gone. `ep40-lead-bright` and `ep40-sweep-bright` were in the
- * same position and outside this sweep only because no shipped hook holds `lead` or `sweep` for a
- * bar; if one ever does, they arrive already correct rather than as the false positives that
- * stalled this rule the first time.
+ * ## The rule
  *
- * The count below is unchanged at 40, which is the point: the recipes that came off were never in
- * the sweep. What changed is that nobody has to remember to keep a list.
+ * For every recipe that plays a file on a role some shipped hook holds for a bar or more:
  *
- * **The threshold is one bar, and it is derived rather than listed.** Sixteen sixteenth steps is
- * the point at which a source has to be found rather than merely played, and deriving the roles
- * from the shipped hooks means a direction that later holds a `lead` for a bar pulls its recipes
- * in without anybody remembering to edit a list here. Today it yields four roles — `texture` at
- * 128 steps, `sub` at 80, `pad` at 64, `acid` at 22 — which is what #506 measured by hand.
+ *  - `boundary: 'loops'` **passes**. The voice brings the file round again, so its length is a
+ *    question of a clean loop point rather than of covering the hold.
+ *  - `boundary: 'stops-at-end'` **requires** `minimumSeconds >= required`. The file is the hold.
+ *  - an evidenced `timing: 'stretches'` with **no** `stops-at-end` beside it passes: the file is
+ *    fitted to a musical length, so its own length is a starting point. Where a recipe declares
+ *    both — `dt2-sub-dark` is the library's only one — the stop wins and the minimum is required,
+ *    because Repitch fits the file to a `BARS` that recipe does not set.
+ *  - anything else requires a sufficient `minimumSeconds`. That covers the three EP legato parts,
+ *    whose mirrored guide does not establish what happens at the end of the file: an unestablished
+ *    boundary is not a rescue, and the conservative answer is the number.
+ *
+ * **What this does not check is #506's other half.** A looping file is not a sustaining part —
+ * every Elektron loop entry is *"constrained by the AMP page envelope parameters HLD and DEC"*,
+ * and `rytm-texture-soft` fixes `HLD 110`. Whether the voice holds for the whole note is a
+ * separate fact that nothing in the model states yet, and #506 stays open for it.
  */
 
 /** §4.1/#142. One bar of sixteenths: the hold at which the source becomes something to go and find. */
 const HELD = 16
 
-/**
- * A duration in this prose is a quantity paired with a unit of time or musical length. Both
- * halves are needed and neither is enough on its own: *no beat* is not a length, and *a short
- * saw tone* is a shape rather than a duration — the word a reader can act on is the one that
- * says how much. Spelled-out numbers count, because that is how the shipped `need` prose reads
- * (*two seconds or longer*, *about one bar long*, *Several seconds of a sustained sound*), and
- * the hyphen in *two- or four-bar* is a separator like a space.
- */
-const QUANTITY =
-  '(?:\\d+|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|a|an|half|several|few)'
-const UNIT = '(?:ms|milliseconds?|seconds?|minutes?|bars?|beats?|steps?)'
-const DURATION = new RegExp(`\\b${QUANTITY}[\\s-]+${UNIT}\\b`, 'i')
+/** Sixteenth steps per minute at a given tempo: four per beat. */
+function secondsFor(steps: number, bpm: number): number {
+  return (steps * 60) / (bpm * 4)
+}
 
-/** The longest sustain any shipped hook asks of each role, in sixteenth steps. */
-function longestHoldByRole(): Map<Role, number> {
+/**
+ * The worst case each held role faces: the longest sustain any shipped hook asks of it, at the
+ * slowest tempo any direction carrying such a hook allows.
+ *
+ * Both halves come from `TEMPLATES` and neither is listed here, so a direction added with a slower
+ * floor or a longer hold moves the requirement and the assertions below say so.
+ */
+function requiredSeconds(): Map<Role, number> {
   const longest = new Map<Role, number>()
   for (const template of TEMPLATES) {
     for (const hook of template.hooks) {
       for (const note of hook.notes) {
-        if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        if (note.len < HELD) continue
+        const seconds = secondsFor(note.len, template.bpm.min)
+        if (seconds > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, seconds)
       }
     }
   }
   return longest
 }
 
-/** Roles some direction holds for a bar or more, so a recipe serving one needs a long enough source. */
-function heldRoles(): Set<Role> {
-  const held = new Set<Role>()
-  for (const [role, len] of longestHoldByRole()) if (len >= HELD) held.add(role)
-  return held
-}
+type FileFed = { device: Device; recipe: Recipe; role: Role; required: number }
 
-type FileFed = { device: Device; recipeId: string; role: Role; need: string }
-
-/** Every recipe that plays a file on a role something holds. */
+/** Every recipe that plays a file on a role something holds for a bar or more. */
 function fileFedOnHeldRoles(): FileFed[] {
-  const roles = heldRoles()
+  const required = requiredSeconds()
   const out: FileFed[] = []
   for (const device of DEVICES) {
     for (const recipe of device.recipes) {
       if (recipe.sourceAudio === undefined) continue
-      if (!roles.has(recipe.role)) continue
-      out.push({
-        device,
-        recipeId: recipe.id,
-        role: recipe.role,
-        need: recipe.sourceAudio.need,
-      })
+      const seconds = required.get(recipe.role)
+      if (seconds === undefined) continue
+      out.push({ device, recipe, role: recipe.role, required: seconds })
     }
   }
   return out
 }
 
-describe('a source fed to a held note says how long it has to be (#506)', () => {
+/**
+ * §3/#518. Why this recipe's source may be shorter than the hold, or `undefined` if nothing
+ * rescues it and the number has to.
+ */
+function rescue(playback: SourcePlayback | undefined): 'loops' | 'stretches' | undefined {
+  if (playback === undefined) return undefined
+  if (playback.boundary?.kind === 'loops') return 'loops'
+  // A stop-at-end claim beats a stretch: `dt2-sub-dark` records both, and what a reader is left
+  // holding is a file that plays once through at whatever length Repitch gave it.
+  if (playback.boundary?.kind === 'stops-at-end') return undefined
+  if (playback.timing?.kind === 'stretches') return 'stretches'
+  return undefined
+}
+
+describe('a source fed to a held note is long enough for it (#506/#518)', () => {
   /**
-   * What the targets in those recipes are worth, at the slowest tempo each direction allows —
-   * seconds are what a reader can act on and steps are not, so the conversion is where the round
-   * numbers come from and where they can be falsified.
+   * The four requirements, computed rather than listed, and pinned so that a hook or a tempo floor
+   * moving shows up here as a diff instead of silently relaxing every recipe below.
    *
-   *     sub      80 steps  weave, bpm.min 126        9.52 s   → ten seconds
-   *     acid     22 steps  acid-lineage, bpm.min 122  2.70 s  → three seconds
-   *
-   * Both are worst cases over every direction holding that role, so a slower direction added
-   * later moves the requirement and this arithmetic is how anybody would notice.
+   *     texture  128 steps  drone-study   60 bpm   32.00 s
+   *     sub       80 steps  weave        126 bpm    9.52 s
+   *     pad       64 steps  ambient-dub  108 bpm    8.89 s
+   *     acid      22 steps  acid-lineage 122 bpm    2.70 s
    */
-  it('derives the held roles from the shipped hooks rather than from a list', () => {
-    const longest = longestHoldByRole()
-    const held = [...heldRoles()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-    expect(held).toEqual(['acid', 'pad', 'sub', 'texture'])
-    // The measurements #506 reports, so a hook edit that changes them shows up here as a diff
-    // rather than silently widening or narrowing what the sweep below covers.
-    expect(longest.get('texture')).toBe(128)
-    expect(longest.get('sub')).toBe(80)
-    expect(longest.get('pad')).toBe(64)
-    expect(longest.get('acid')).toBe(22)
+  it('derives the held roles and their worst case from the shipped directions', () => {
+    const required = requiredSeconds()
+    const roles = [...required.keys()].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    expect(roles).toEqual(['acid', 'pad', 'sub', 'texture'])
+    expect(required.get('texture')).toBeCloseTo(32.0, 2)
+    expect(required.get('sub')).toBeCloseTo(9.52, 2)
+    expect(required.get('pad')).toBeCloseTo(8.89, 2)
+    expect(required.get('acid')).toBeCloseTo(2.7, 2)
   })
 
-  it('reads a length out of prose, and refuses a shape wearing one', () => {
-    // The two failures that would make the sweep lie. A false positive lets a silent recipe pass;
-    // a false negative demands a sentence from a recipe that already has one.
-    expect(DURATION.test('A sustained tonal source, two seconds or longer')).toBe(true)
-    expect(DURATION.test('A sustained two- or four-bar loop whose own tempo you know')).toBe(true)
-    expect(DURATION.test('Half a bar or longer, so the held step is covered')).toBe(true)
-    expect(DURATION.test('Several seconds of a sustained, unchanging sound')).toBe(true)
-    expect(DURATION.test('A field recording or room tone — anything with movement and no beat')).toBe(
-      false,
-    )
-    expect(DURATION.test('A short saw or square bass tone of one known pitch')).toBe(false)
-  })
-
-  it('covers the recipes #506 measured, less the two that are not files', () => {
-    // 40 rather than the issue's 42. #507 moved `deluge-pad-soft` off a file onto a built-in
-    // oscillator, which is that recipe's fix and not this one's; `ep40-acid-dirty` was never a
-    // file at all. Seventeen of the forty stated no duration before #517.
+  it('covers the forty recipes #506 measured', () => {
     expect(fileFedOnHeldRoles()).toHaveLength(40)
   })
 
   /**
    * §3/#516. **The exclusion list this file used to carry, as a property of the model instead.**
    *
-   * The predicate above is `sourceAudio` alone with no list beside it, and that is only sound
-   * while the field means one thing. It does, and not because nothing in today's library breaks
-   * it: `RecipeSchema` **refuses** a recipe declaring both `sourceAudio` and `soundSetup`, since
-   * the two make opposite claims about the voice. Every manifest goes through that schema at
-   * import, so a recipe reaching for a built-in sound through the file field cannot be written.
-   *
-   * A library-wide sweep would have been the weaker claim — true of what is authored today and
-   * silent about tomorrow, which is exactly the shape of the exclusion list this replaced. So the
-   * schema is what is asserted, and the three that moved are named to pin what came off.
+   * The predicate above is `sourceAudio` alone, and that is only sound while the field means one
+   * thing. It does: `RecipeSchema` refuses a recipe declaring both `sourceAudio` and `soundSetup`,
+   * so a recipe reaching for a built-in sound through the file field cannot be written.
    */
   it('cannot have a recipe reaching for a built-in sound through the file field', () => {
     const supertones = DEVICES.flatMap((d) =>
       d.recipes.filter((r) => r.soundSetup !== undefined).map((r) => r.id),
     ).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
     expect(supertones).toEqual(['ep40-acid-dirty', 'ep40-lead-bright', 'ep40-sweep-bright'])
-
-    // The guarantee itself, on the schema every manifest is parsed by.
-    const ep40 = DEVICES.find((d) => d.id === 'te-ep-40') as Device
-    const supertone = ep40.recipes.find((r) => r.id === 'ep40-acid-dirty') as Recipe
-    expect(RecipeSchema.safeParse(supertone).success).toBe(true)
-    const both = RecipeSchema.safeParse({
-      ...supertone,
-      sourceAudio: { need: 'A short, dark kick sample with no tail' },
-    })
-    expect(both.success).toBe(false)
-    expect(JSON.stringify(both.success ? [] : both.error.issues)).toContain('never both')
   })
 
-  it('states a duration in every one of them', () => {
-    const silent = fileFedOnHeldRoles()
-      .filter((r) => !DURATION.test(r.need))
-      .map((r) => `${r.device.id} ${r.recipeId} (${r.role}): ${r.need}`)
-    expect(silent).toEqual([])
+  /**
+   * **The rule, and the whole point of #518.** Nothing here reads a word of prose.
+   */
+  it('states a sufficient length wherever nothing makes the file last', () => {
+    const short: string[] = []
+    for (const { device, recipe, role, required } of fileFedOnHeldRoles()) {
+      if (rescue(recipe.sourceAudio?.playback) !== undefined) continue
+      const stated = recipe.sourceAudio?.minimumSeconds
+      if (stated === undefined) {
+        short.push(`${device.id} ${recipe.id} (${role}): states no length, needs ${required.toFixed(2)} s`)
+      } else if (stated < required) {
+        short.push(`${device.id} ${recipe.id} (${role}): states ${String(stated)} s, needs ${required.toFixed(2)} s`)
+      }
+    }
+    expect(short).toEqual([])
+  })
+
+  /**
+   * The other direction: a claim that a recipe is rescued has to be evidenced, because the whole
+   * repair is that a rescue is a cited fact rather than a word somebody found in the prose.
+   */
+  it('backs every rescue with a citation to a page or a unit', () => {
+    for (const { device, recipe } of fileFedOnHeldRoles()) {
+      const playback = recipe.sourceAudio?.playback
+      const why = rescue(playback)
+      if (why === undefined) continue
+      const claim = why === 'loops' ? playback?.boundary : playback?.timing
+      expect(claim?.evidence.kind, `${device.id} ${recipe.id}`).toMatch(/^(manual|observed)$/)
+      expect(claim?.evidence.source.length, `${device.id} ${recipe.id}`).toBeGreaterThan(0)
+    }
+  })
+
+  /**
+   * §3/#518. **Every one of the forty is answered**, one way or the other. This is the issue's
+   * *done when*: a recipe either states a length that covers the worst-case hold, or is shown to
+   * need less because something loops or stretches it, and the test tells those two apart without
+   * reading prose.
+   */
+  it('answers every one of the forty', () => {
+    const unanswered = fileFedOnHeldRoles()
+      .filter(
+        ({ recipe }) =>
+          rescue(recipe.sourceAudio?.playback) === undefined &&
+          recipe.sourceAudio?.minimumSeconds === undefined,
+      )
+      .map(({ device, recipe }) => `${device.id} ${recipe.id}`)
+    expect(unanswered).toEqual([])
+  })
+
+  /**
+   * §9/#518. **The thirteen minima, pinned by device and recipe.**
+   *
+   * Two things this catches that the rule above cannot. Lowering 32, 10, 9 or 3 to a number that
+   * still passes for some *other* role would go unnoticed — the rule only compares each recipe
+   * against its own role — and dropping a recipe out of the set entirely would leave the sweep
+   * passing on a smaller library. #518's two named defects are in here by value: the Play+
+   * texture's 32 and the TR-8S pad's 9, both of which were prose before.
+   */
+  it('pins every minimum the library states', () => {
+    const stated = DEVICES.flatMap((d) =>
+      d.recipes
+        .filter((r) => r.sourceAudio?.minimumSeconds !== undefined)
+        .map((r) => `${d.id} ${r.id} ${String(r.sourceAudio?.minimumSeconds)}`),
+    ).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    expect(stated).toEqual([
+      'elektron-digitakt dt-acid-hard 3',
+      'elektron-digitakt dt-sub-dark 10',
+      'elektron-digitakt-ii dt2-acid-hard 3',
+      'elektron-digitakt-ii dt2-sub-dark 10',
+      'polyend-play-plus pp-sub-dark 10',
+      'polyend-play-plus pp-texture-soft 32',
+      'polyend-tracker tr-acid-hard 3',
+      'roland-sp-404mk2 sp-acid-hard 3',
+      'roland-sp-404mk2 sp-sub-dark 10',
+      'roland-tr-8s tr8s-pad-soft 9',
+      'te-ep-133 ep133-acid-dirty 3',
+      'te-ep-133 ep133-sub-dark 10',
+      'te-ep-40 ep40-sub-dark 10',
+    ])
+  })
+
+  /**
+   * §9/#518. **All forty occurrences, by device and recipe and how each is answered.**
+   *
+   * The list is the report. A recipe silently dropped, re-roled or re-classified moves a line
+   * here, and lowering any of the four figures moves one too, which is what #518 asks for: the
+   * numbers cannot be relaxed without somebody looking at this list.
+   */
+  it('pins how every one of the forty is answered', () => {
+    const answered = fileFedOnHeldRoles()
+      .map(({ device, recipe }) => {
+        const why = rescue(recipe.sourceAudio?.playback)
+        const stated = recipe.sourceAudio?.minimumSeconds
+        return `${device.id} ${recipe.id} ${why ?? `${String(stated)}s`}`
+      })
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    expect(answered).toEqual([
+      'akai-mpc-live-iii mpc-texture-soft loops',
+      'akai-mpc-one-g2 mpc-texture-soft loops',
+      'akai-mpc-xl mpc-texture-soft loops',
+      'elektron-analog-rytm-mkii rytm-texture-soft loops',
+      'elektron-digitakt dt-acid-hard 3s',
+      'elektron-digitakt dt-pad-soft loops',
+      'elektron-digitakt dt-sub-dark 10s',
+      'elektron-digitakt dt-texture-soft loops',
+      'elektron-digitakt-ii dt2-acid-hard 3s',
+      'elektron-digitakt-ii dt2-pad-soft loops',
+      'elektron-digitakt-ii dt2-sub-dark 10s',
+      'elektron-digitakt-ii dt2-texture-soft loops',
+      'elektron-octatrack-mkii ot-acid-hard loops',
+      'elektron-octatrack-mkii ot-pad-soft loops',
+      'elektron-octatrack-mkii ot-sub-dark loops',
+      'elektron-octatrack-mkii ot-texture-soft loops',
+      'polyend-play-plus pp-sub-dark 10s',
+      'polyend-play-plus pp-texture-soft 32s',
+      'polyend-tracker tr-acid-hard 3s',
+      'polyend-tracker tr-pad-soft loops',
+      'polyend-tracker tr-sub-dark loops',
+      'polyend-tracker tr-texture-soft loops',
+      'polyend-tracker-mini tm-pad-soft-chord loops',
+      'polyend-tracker-mini tm-sub-dark loops',
+      'polyend-tracker-mini tm-texture-soft loops',
+      'roland-sp-404mk2 sp-acid-hard 3s',
+      'roland-sp-404mk2 sp-pad-soft loops',
+      'roland-sp-404mk2 sp-sub-dark 10s',
+      'roland-sp-404mk2 sp-texture-soft loops',
+      'roland-tr-6s tr6s-texture-soft loops',
+      'roland-tr-8s tr8s-pad-soft 9s',
+      'roland-tr-8s tr8s-texture-soft loops',
+      'te-ep-133 ep133-acid-dirty 3s',
+      'te-ep-133 ep133-pad-soft stretches',
+      'te-ep-133 ep133-sub-dark 10s',
+      'te-ep-133 ep133-texture-soft stretches',
+      'te-ep-40 ep40-pad-clean loops',
+      'te-ep-40 ep40-pad-soft stretches',
+      'te-ep-40 ep40-sub-dark 10s',
+      'te-ep-40 ep40-texture-soft stretches',
+    ])
   })
 })

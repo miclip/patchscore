@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type {
   AuthoredEnumParam,
@@ -129,6 +129,15 @@ const MICRO_CENTS = { min: -99, max: 99 } //        -99 to +99 Cents
 /** A range citation. The page is the one carrying that parameter's own printed bound. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Polyend Tracker Manual 1.9.2a, p.${page}` }
+}
+
+/**
+ * §3/#518. A citation over the pages a `playback` claim spans. The play-mode table names the
+ * mode and a later page says what the mode does with the file, so a claim about either rests on
+ * both and the source says which two.
+ */
+function citePages(...pages: number[]): PlaybackEvidence {
+  return { kind: 'manual', source: `Polyend Tracker Manual 1.9.2a, pp.${pages.join(', ')}` }
 }
 
 function num(
@@ -542,6 +551,20 @@ const RECIPES: Recipe[] = [
         'A clean sine or triangle bass note, one sustained pitch, no transient. A second or two ' +
         'is enough — LOOP START and LOOP END below cycle one wave inside the steady part, so it ' +
         'is the loop that fills the held bars rather than the file',
+      /*
+       * §3/#518. What the `need` has been saying in prose since it was written, as a fact a rule
+       * can read. p.121: *"Forward Loop — Sample playback. Plays start to end and cycles on
+       * loop."* p.125 is what the two `LOOP` parameters below are: *"Loop Start … This is the
+       * start position used on the 2nd and subsequent playback cycles, playing from loop start to
+       * loop end."* All three are named, because one of them alone does not put the track here.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY MODE', 'LOOP START', 'LOOP END'] },
+          evidence: citePages(121, 125),
+        },
+      },
       hint: 'load-sample',
     },
     params: [
@@ -804,6 +827,20 @@ const RECIPES: Recipe[] = [
     title: 'Long Gaussian grains drifting through a held note',
     sourceAudio: {
       need: 'Several seconds of a sustained, unchanging sound — a bowed note, a held pad, room tone',
+      /*
+       * §3/#518. Granular reads a window rather than the file, so the file's end is not what ends
+       * the sound. p.135: *"Sound is generated in a granular synthesizer by looping playback
+       * around a grain."* p.136's table is the four parameters that shape the grain, and its
+       * `Loop` is a *direction* (*"Selects the grain playback direction"*, Forward / Reverse /
+       * Pingpong) rather than a switch — which is why `PLAY MODE` alone is named here.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY MODE'] },
+          evidence: citePages(135, 136),
+        },
+      },
       hint: 'scan-grain',
     },
     params: [
@@ -908,6 +945,15 @@ const RECIPES: Recipe[] = [
       prep: {
         text: 'Play the triad across three tracks, then Render: it "bounces or exports an audio file based on the selected pattern / tracks which can then be made immediately available as a sample"',
         verified: { kind: 'manual', source: 'Polyend Tracker Manual 1.9.2a, p.187' },
+      },
+      // §3/#518. As `tr-sub-dark`, and for the same two pages: p.121's play-mode table and
+      // p.125's loop points, which is where the *"2nd and subsequent playback cycles"* are.
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY MODE', 'LOOP START', 'LOOP END'] },
+          evidence: citePages(121, 125),
+        },
       },
       hint: 'load-sample',
     },
@@ -1238,8 +1284,24 @@ const RECIPES: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
-        'movement recorded into it — the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, with no filter movement recorded into it ' +
+        '— the filter is the part this recipe is for',
+      /*
+       * §3/#518. Nothing here makes the file last, so the file is the hold. p.121: *"1-Shot —
+       * Basic sample playback. Plays start to end once."* p.123's 1-Shot parameter table is
+       * `Start` and `End` and nothing else: no loop points exist in this mode to reach for.
+       *
+       * `acid` is held for 22 steps at worst, under `acid-lineage` at 122 bpm, which is 2.70 s.
+       * Three is that rounded to a number somebody can audition against.
+       */
+      minimumSeconds: 3,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['PLAY MODE'] },
+          evidence: citePages(121, 123),
+        },
+      },
       hint: 'load-sample',
     },
     params: [

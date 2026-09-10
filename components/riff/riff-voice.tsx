@@ -3,7 +3,7 @@ import { Articulation } from '@/components/pattern/articulation'
 import { PatchList } from '@/components/recipe/patch-list'
 import { ResolvedSettings } from '@/components/recipe/resolved-body'
 import type { Riff, RiffVoicing } from '@/lib/core'
-import { num, recipeRouting } from '@/lib/core'
+import { num, recipeRouting, sourceLengthLine } from '@/lib/core'
 import { riffCitation, riffStack, riffSubstitution, voiceHeading } from '@/lib/studio/riff-text'
 
 /**
@@ -61,7 +61,17 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
         </p>
       ))}
       {voice.sourceAudio === undefined ? null : (
-        <p className="quiet">Source — {voice.sourceAudio.need}</p>
+        <>
+          <p className="quiet">Source — {voice.sourceAudio.need}</p>
+          {/*
+            §3/#518. The length beneath the need, in the wording `sourceLengthLine` gives every
+            surface — the sibling of the bullet `lib/studio/riff-markdown.ts` prints, hand-written
+            to match it. This page shows no `prep`, so it is the only line under the need here.
+          */}
+          {voice.sourceAudio.minimumSeconds === undefined ? null : (
+            <p>{sourceLengthLine(voice.sourceAudio.minimumSeconds)}</p>
+          )}
+        </>
       )}
       {/*
         §3/#516. Which of the box's own sounds, and the gesture that reaches it — the sibling of

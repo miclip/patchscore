@@ -14,6 +14,7 @@ import {
   num,
   paramLabel,
   recipeRouting,
+  sourceLengthLine,
 } from '@/lib/core'
 import {
   RIFF_GRID_LEAD,
@@ -278,6 +279,12 @@ function voiceLines(riff: Riff, voice: RiffVoicing): string[] {
   if (voice.sourceAudio !== undefined) {
     out.push('')
     out.push(`Source — ${voice.sourceAudio.need}`)
+    // §3/#518. The length in the one wording every surface uses, as a bullet beneath the need.
+    // This page shows no `prep`, so the bullet is the only thing under the line here.
+    if (voice.sourceAudio.minimumSeconds !== undefined) {
+      out.push('')
+      out.push(`- ${sourceLengthLine(voice.sourceAudio.minimumSeconds)}`)
+    }
   }
   /*
    * §3/#516. The other half of §3's split, in §8's own shape: which of the box's sounds, then the

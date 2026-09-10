@@ -1202,6 +1202,229 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   loaded and nothing is stretched here"* written into a `need` whose documented job is saying what
   to load. Selecting a built-in sound is `soundSetup`, below.
 
+  **`minimumSeconds` is the shortest source that can carry the part**, as a number (#518).
+
+  ```ts
+  sourceAudio: {
+    need: 'A sustained atmospheric recording, thirty-two seconds or longer — field noise, tape hiss',
+    minimumSeconds: 32,   // no citation: no page states it
+  }
+  ```
+
+  It sits beside the prose because four readings of the prose gave four wrong counts (#516, #517,
+  #518). Stated durations are written as *"ten seconds or longer"*, *"a second or two"*, *"Several
+  seconds"* and *"a sustained two- or four-bar loop"*, and #518's session read nine recipes as
+  silent that all state something. `need` keeps saying what to look for; this says how much of it,
+  once, in a unit a rule can compare.
+
+  **It is not a capability fact and carries no citation.** No manual states it, because it is not
+  about the box: it is the longest hold some direction asks of this recipe's role, at the slowest
+  tempo that direction allows — 32.00 s for a `texture` under `drone-study` at 60 bpm, 9.52 for a
+  `sub` under `weave`, 8.89 for a `pad` under `ambient-dub`, 2.70 for an `acid` under
+  `acid-lineage`. A page beside it would be a page made to say something it does not, which is why
+  `comfortableVoices` stays out of `capabilityEvidence` (§2.6). `npm run audit` leaves it alone,
+  and the figures are rounded up to something a reader can audition against rather than carried to
+  two decimals.
+
+  **It is owed where nothing rescues the file.** A recipe declaring `boundary: 'loops'` or
+  `timing: 'stretches'` has a voice that makes the file last, so its length is a question of a
+  clean loop point. Where the file stops at its end, the file is the hold.
+
+  **`playback` says what the voice does with the file, on three axes that do not decide each
+  other** (#518).
+
+  ```ts
+  sourceAudio: {
+    need: 'A sustained tonal source, two seconds or longer',
+    playback: {
+      // What happens when the file runs out.
+      boundary: {
+        kind: 'loops',                                  // loops | stops-at-end
+        control: { kind: 'parameters', params: ['PLAY'] },   // or { kind: 'inherent' }
+        evidence: cite(94),           // a manual page or a unit reading. Required, per axis.
+      },
+      // Whether the file is fitted to a musical length.
+      timing: {
+        kind: 'stretches',                              // stretches | unaltered
+        control: { kind: 'parameters', params: ['SRC MACHINE'] },
+        evidence: cite(93),
+      },
+      // What a note release does. Omitted here: nobody has established it.
+    },
+  }
+  ```
+
+  #506 asked a file-fed recipe on a held role to say how long its source has to be, and #517 wrote
+  that sentence into the seventeen that said nothing. A stated duration is still not a sufficient
+  one: `mpc-texture-soft` says *two seconds or longer* against a `texture` some direction holds for
+  32 seconds, and `rytm-texture-soft` says the same two seconds beside `LOP`, which holds the
+  sample for the length of the note. One of those is short by a factor of sixteen. A test over the
+  prose passes both, which is `CLAUDE.md`'s standing rule about a cited range arriving on a stated
+  length.
+
+  **The classification was read out of prose four times and gave a wrong count four times** —
+  #517's detector flagged itself, #516's count of built-in sources was wrong in both directions,
+  and #518's session first read nine recipes as silent that all state something, then missed the
+  Octatrack's `LOOP MODE ON` and the Rytm's `LOP`. A loop is spelled differently on every box, so a
+  pattern over names cannot find it. The recipe says what its own voice does instead.
+
+  **Three axes, because the manuals refuse one choice.** The first two drafts of this shape were a
+  discriminated union, three states and then four, and two boxes broke it in opposite directions.
+  `dt2-texture-soft` sets `SRC MACHINE` to `STRETCH` **and** `PLAY` to `FORWARD LOOP`; its title is
+  *"Looped texture stretched under the track"*, and a union makes an author drop one of two true
+  facts. The MPC pushes the other way: p.216 of the v3.7 guide says *"For Pad Loop to work, you
+  must (1) set the Sample Play field (in the Global tab) to Note On instead of One Shot and (2) set
+  the Slice field (in the first Samples tab) to Pad instead of All or a slice number"*, and `Sample
+  Play: Note On` is the release behaviour (p.212, *"The sample will play only as long as the pad is
+  held"*). On that box a looping pad is necessarily a gated one, so a union would have made
+  alternatives of two things the manual makes a precondition and its consequence.
+
+  ```
+  boundary   loops | stops-at-end     what happens when the file runs out
+  timing     stretches | unaltered    whether the file is fitted to a musical length
+  release    gated | plays-through    what a note release does
+  ```
+
+  **Every axis is optional, and silence is not a guess.** A recipe declares what somebody
+  established and leaves the rest out; `dt2-texture-soft` has a page for its boundary and its
+  timing and nothing anywhere about what its `AMP MODE` envelope does on release. Requiring all
+  three is what turns a model into a guessing game, which is the failure #518 records. A `playback`
+  declaring no axis at all is refused: it says what an absent `playback` says, in a shape that
+  looks like work was done.
+
+  **What this settles, and what it does not.** It settles #518's question, which is about the
+  *source's boundary*: is a two-second file enough? `boundary` and `timing` answer it, because a
+  file that loops or is stretched is not short and a file that stops at its end has to be as long
+  as the hold. It does not settle #506's, which is about the *voice's sustain*: a looping source
+  can still be cut short by a trigger length shorter than the note, by an amp envelope whose decay
+  runs out under a held pad, by a mute group. `boundary: 'loops'` says the file does not run out.
+  It is not a promise the part sounds for the whole hold. An earlier draft carried a
+  `needsSourceCoveringHold` boolean that answered both questions with one bit, and it is gone; the
+  sustain fact is its own and is not this field's to state.
+
+  **`control` says how the state is reached, in two forms.** `parameters` names one or more
+  settings in this recipe's `params`, and `RecipeSchema` refuses **every** name matching nothing
+  there, each at its own index, as it refuses a patch entry naming an undeclared jack (§3.3).
+  `inherent` is the box doing it with nothing to set; there is nothing to check beyond the citation
+  the claim already carries. Requiring a parameter everywhere would leave a box that loops
+  unconditionally silent — reading as unexamined — and would push an author toward naming an
+  adjacent parameter to satisfy the shape.
+
+  **The list is a list because the MPC's loop is a conjunction of four parameters**: `Sample Play`
+  (p.212), `Slice` and `Pad Loop` (p.216), and `Repeats` (p.215), which the same page ties to the
+  behaviour — *"a Repeat value of 0 will create infinite repeats, and a value of 1 will play a
+  sample one time through"*, a difference *"only evident when a Pad's Sample Play parameter is set
+  to Note On"*. One name there would be a quarter of the setup presented as all of it. Where a
+  conjunction spans pages, the `evidence` source names the span. There is no `value` beside a name:
+  the parameter holds one already.
+
+  `evidence` is a manual page or a reading off the unit, required on **each** axis, because the
+  axes are established separately and often on different pages — the MPC's release is p.212 and its
+  boundary is p.216. One citation over three claims is the recipe-level `verified` mistake (§3.1)
+  in a smaller box. It is not a `Verified`: `false` there would say the classification was made and
+  nothing was checked, which is the state this replaces; and `maker` (#191) is a published figure,
+  which does not describe what a track does with a note it is holding.
+
+  **The audit counts each declared axis as one capability fact** (§9): a claim about what the voice
+  does, sitting where `capabilityEvidence` sits, made per recipe because the same box loops under
+  one recipe and does not under another.
+
+  **The first batch is the seventeen TE and Polyend recipes** #518 measured — every one declaring
+  `sourceAudio` on a role some shipped hook holds for a bar or more. Nine are rescued: the
+  Tracker's and Mini's forward-loop and granular parts by `boundary: 'loops'` (Tracker pp.121,
+  125, 135-136; Mini pp.127, 130, 141-142), the EPs' BAR parts by `timing: 'stretches'` (guide
+  8.2.4 / 8.2.5). Three carry a number instead, because nothing on those boxes makes the file
+  last: the Play+ pair, whose audio track has no play mode to set and whose claim is therefore
+  `inherent` off pp.68-69, and the Tracker's 1-Shot acid. Three EP legato parts stay
+  **unclassified** and carry only their minimum: 8.2.1 describes `legato` as continuing *"from the
+  same point as it was left off"* when the note changes, which is about a second note and says
+  nothing about the end of the file, so recording a boundary there would be reading a page for
+  something it does not say. `ep40-pad-clean` is the one recipe answering two axes, and it is the
+  one that made a single `kind` impossible.
+
+  Fifteen claims, fifteen capability facts: `caps` went 1210 to 1225. The three Polyend documents
+  are PDFs in `manuals/` and every cited page was rendered and read. The two teenage engineering
+  guides are web pages, and the sections cited were read in the verbatim mirrors under
+  `manuals/te-ep-133` and `manuals/te-ep-40` taken on 2026-08-28; **the live pages were not
+  fetched for this batch**, which is the evidence every other citation on those two boxes already
+  rests on.
+
+  **The second batch is the thirteen Elektron recipes**, off four rendered manuals. Six answer two
+  axes, which is where the composable shape earns itself: the Digitakt's `dt-texture-soft` warps a
+  loop to the project tempo (`MACHINE WERP`, pp.83-84) while `PLAY FORWARD LOOP` repeats it
+  (p.84), and the Digitakt II's texture and pad do the same through `SRC MACHINE STRETCH` and
+  `PLAY FORWARD LOOP` (p.96). `dt2-sub-dark` is the one recipe in the library answering
+  `stretches` beside `stops-at-end`: Repitch fits the file to `BARS` (pp.96-97) and its `PLAY
+  FORWARD` plays it once, and its minimum stands because the recipe sets no bar count. The four
+  Octatrack parts loop on `LOOP MODE` and two of them stretch on `TIMESTRETCH`, each citing p.85
+  for the attribute **and** p.118 with p.109 for the track switch that has to be `AUTO` before an
+  attribute applies at all. The Rytm's texture records its `LOP` loop off pp.78-79.
+
+  **A control names only what the recipe authors, and the Octatrack is why that is a rule.** Its
+  `LOOP` and `TSTR` master switches are not authored anywhere in that manifest — `AUTO` and `OFF`
+  are the only values any page prints for them, and an option set of two would be a legality claim
+  the manual does not support — so the claims name `LOOP MODE` and `TIMESTRETCH`, the attributes a
+  reader actually sets, and the citation carries the dependency. Naming a parameter the recipe
+  does not hand the reader would be evidence that carries none.
+
+  **The batch is also the clearest statement of what a boundary is not.** Every Elektron loop
+  entry ends *"This time is also constrained by the AMP page envelope parameters HLD and DEC"*
+  (Digitakt p.82, Digitakt II pp.94, 96), and the Rytm's `LOP` is *"confined by the AMP page
+  envelope parameter settings HLD and DEC"* (p.78) on a recipe that fixes `HLD 110` rather than
+  leaving it `AUTO`. The file does not run out; the part may still stop. That is #506's sustain
+  question and nothing in `playback` answers it.
+
+  Nineteen more claims: `caps` went 1225 to 1244, and four more minima.
+
+  **The third batch finishes the held roles**: the SP-404's four, the two TR textures and the
+  TR-8S pad, and `mpc-texture-soft`. The SP-404 is the only box in the library filling all three
+  axes on one recipe — `sp-texture-soft` loops (p.32), stretches to the project tempo (p.29,
+  *"The playback speed is adjusted so that the sample plays back at the right tempo"*) and plays
+  through the step (p.30) — and `sp-acid-hard` is the only recipe where one control answers two
+  axes, because p.31's one-shot sentence is a boundary and a release at once: *"the sample plays
+  back once to the end … The pad's operations are disabled (ignored) until playback is finished."*
+  Both Roland drum machines record their Loop tone off the same legend, *"Loop: Tones that play
+  repeatedly"* (TR-8S Reference p.30, TR-6S Owner's p.26).
+
+  **Two prose defects came out with it, and they are the two #518 was filed over.** The TR-8S pad
+  read *"about one bar long"*, which is not a duration until somebody supplies a tempo, beside a
+  sentence saying the sample's own length is the pad's length; a `pad` is held four bars, so it now
+  reads nine seconds and carries the number. And `mpc-texture-soft` stated two seconds against a
+  32-second hold with nothing rescuing it — the case #518 asked for a human read on. The read is
+  that the MPC loops, but only as a conjunction of four settings across three pages, and the recipe
+  authored one of them. It now authors `Slice: Pad`, `Pad Loop: Forward` and `Repeats: 0` beside
+  `Sample Play: Note On`, records `boundary: loops` controlled by all four and `release: gated`
+  controlled by the one that carries both claims, and keeps its two seconds — which is the outcome
+  #518 predicted for a recipe that is genuinely rescued.
+
+  `Slice` and `Repeats` are text settings rather than an enum or a numeric, because neither guide
+  prints a scale for them: `Slice` reads *"All … Pad … Slice 1, 2, 3, etc."*, an open tail no
+  option set can hold, and `Repeats` prints an example and no bounds. The `akai-mpc-one-g2` borrow
+  rebuilds all of it onto v3.9 — pp.194, 197-198 — through a written-out span map rather than
+  page-by-page, because `Sample Play` is the one control on v3.7 p.212 that `MOVED` puts on p.194
+  instead of p.193, and a span retargeted a page at a time would have named the wrong one. The XL
+  keeps the shared v3.7 citations, since it takes the recipe by reference.
+
+  Sixteen more claims in the library total: `caps` went 1244 to 1260, and three more minima.
+
+  **`test/source-length.test.ts` is a comparison now, and reads no prose at all.** It derives each
+  held role's worst case from `TEMPLATES` — the longest `HookNote.len` any shipped hook asks of the
+  role, at the slowest tempo any direction carrying such a hook allows — and then: `boundary:
+  'loops'` passes, `boundary: 'stops-at-end'` requires `minimumSeconds >= required`, an evidenced
+  `timing: 'stretches'` with no stop beside it passes, and anything else requires a sufficient
+  minimum. Where a recipe declares both a stretch and a stop, the stop wins and the number is
+  required; `dt2-sub-dark` is the library's only one. All four requirements and all forty
+  occurrences are pinned by name, so lowering 32, 10, 9 or 3 fails rather than passing against some
+  other role's figure.
+
+  **What reaches the reader is the number, not the classification.** `minimumSeconds` travels
+  through `ResolvedSourceAudio` and prints as a bullet under the `Source —` line, above the
+  procedure, in one wording every surface shares (`sourceLengthLine`): *At least 32 s long*. The
+  guide, the riff page and both web components use it, so the four prose spellings the field
+  replaced are gone from the ink as well as from the model. The classification behind it prints
+  nowhere: §8 carries no per-value provenance (invariant 4), and *loops, per p.32* beside a knob is
+  the mark #394 removed.
+
 - **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
   (#516).
 
@@ -6057,7 +6280,11 @@ Three guards:
   capability facts a manifest has spoken about (§2.6), split six ways over two lines — `caps` for
   the states with a document behind them and `gaps` for the states without, because `undocumented`
   is finished work, `unchecked` is work nobody has started, and `unread` is work nobody here can
-  start at all
+  start at all. Since #518 `caps` also holds the playback claims recipes make (§3): a claim about
+  what a voice does with a file belongs with the claims about clocks and jacks. One fact per
+  declared *axis*, since `boundary`, `timing` and `release` are established separately and each
+  carries its own citation, and counted per recipe, so a recipe two manifests share by reference
+  contributes once (#193)
 - an `EDITIONS` block (§2.3/#480) splitting the manifests three ways: those carrying a date
   somebody confirmed their cited edition current on, then those where nobody has asked, then
   those naming a manual with no edition, so there is no cited edition to confirm. Both of those

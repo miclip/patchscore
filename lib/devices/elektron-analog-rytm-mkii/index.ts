@@ -1,4 +1,10 @@
-import type { CapabilityEvidence, Device, JackSignalKind, Recipe } from '../../core/device'
+import type {
+  CapabilityEvidence,
+  Device,
+  JackSignalKind,
+  PlaybackEvidence,
+  Recipe,
+} from '../../core/device'
 import { articulablePerStep, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { ANALOG_RYTM_MKII_PANEL } from './panel'
@@ -136,6 +142,13 @@ const MANUAL = 'Analog Rytm MKII User Manual OS 1.71'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#518. The pages a `playback` claim rests on, narrowed to the two kinds such a claim takes.
+ */
+function citePlayback(pages: string): PlaybackEvidence {
+  return { kind: 'manual', source: `${MANUAL}, ${pages}` }
 }
 
 /**
@@ -873,6 +886,32 @@ const recipes: Recipe[] = [
       need:
         'A sustained tonal source two seconds or longer, with a loop point that does not click — ' +
         'LOP holds it for the length of the trig and the click comes back every bar',
+      /*
+       * §3/#518. **The recipe #518 named as the rescued one, with its rescue now recorded.**
+       *
+       * p.78: *"LOP (Loop) when OFF, the sample will be played back once every time it is
+       * trigged. When ON, the sample will loop continuously for the length of the trig (set with
+       * LEN on the TRIG page), confined by the AMP page envelope parameter settings HLD and
+       * DEC."* So the file does not run out, which is why two seconds is enough here and is not
+       * enough on `mpc-texture-soft`, whose prose says the same number.
+       *
+       * **And that is the whole of the claim.** The same sentence says the loop is confined by
+       * `HLD` and `DEC` on the AMP page (p.79, where `HLD` is *"the length of the hold phase of
+       * the amp envelope before the decay phase kicks in"* with `AUTO` and 1-127), and this
+       * recipe sets `HLD 110` — a fixed hold, not `AUTO`. So the sound may still stop before the
+       * trig does. Whether the part sustains for the whole hold is #506's question, it is not
+       * answered here, and `boundary` is deliberately the only axis this recipe declares.
+       *
+       * `LOP` alone in the control: `STA` and `END` window the file and `LEN` on the TRIG page is
+       * not a parameter this recipe authors.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['LOP'] },
+          evidence: citePlayback('pp.78-79'),
+        },
+      },
       prep: { text: 'Load it to a sample slot first — a project holds 127', verified: cite(14) },
       hint: 'sample',
     },
