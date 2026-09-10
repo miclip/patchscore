@@ -12,7 +12,7 @@ import {
   renderGuide,
   resolve,
 } from '../lib/core/index'
-import type { CapabilityEvidence, Device, ResolveResult } from '../lib/core/index'
+import type { CapabilityEvidence, Device, Recipe, ResolveResult } from '../lib/core/index'
 import { auditDevice } from '../lib/studio/provenance'
 import { Guide } from '../components/guide/guide'
 import { box, makeRecipe, request, withRoles } from './rigs'
@@ -314,6 +314,64 @@ describe('a content declaration is a positive claim and carries a page (§2.6/#1
     // It was never asked the question, so it owes nothing. Requiring an entry from every device
     // would be a debt this project never took on, and it would make honest manifests delinquent.
     expect(DeviceSchema.safeParse(generator()).success).toBe(true)
+  })
+
+  /**
+   * §2.6/#516. **A recipe that selects a built-in sound is not a recipe that loads one**, and
+   * neither the schema nor the notice may treat it as one.
+   *
+   * `sourceAudio` used to mean *load a file* and *select a sound the box already has* at once,
+   * and #516 split the second out as `soundSetup`. Two consequences meet here. The manifest owes
+   * nothing at `content` for it — the box's shipped sample library has no bearing on reaching a
+   * synth engine inside the same box — and the notice stays quiet, because the sentence it would
+   * print ends *"so the Source line below says what the part needs"* and names a line the part
+   * does not have.
+   *
+   * #516 argued the other way in passing: the notice *"exists to point a reader at content they
+   * may not know they have — arguably more useful there, not less."* It is not, and the sentence
+   * is why. What a supertone reader needs is the gesture that reaches the engine, which is on the
+   * part, in `soundSetup`, cited.
+   */
+  it('owes nothing and prints nothing for a recipe that selects a built-in sound (#516)', () => {
+    const builtIn = box('A-built-in', {
+      voices: [{ kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 }],
+      recipes: [
+        makeRecipe('a-kick', 'kick', 'hard', 'bd', {
+          soundSetup: {
+            sound: 'One of the ten built-in tones',
+            prep: { text: 'Hold SOUND and press dot, then a pad', verified: CITE },
+          },
+        }),
+      ],
+    })
+    // No `content` entry, and the schema is satisfied: nothing here loads a file.
+    expect(DeviceSchema.safeParse(builtIn).success).toBe(true)
+    expect(contentNotice(builtIn, builtIn.recipes)).toBeUndefined()
+
+    // And the gate is `sourceAudio` rather than "some setup": the same box with a file-fed recipe
+    // beside it owes an entry and gets the notice, over both recipes.
+    const mixed = loader({
+      id: 'A-mixed',
+      voices: [
+        { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
+        { kind: 'fixed', id: 'sd', label: 'SD', roles: ['snare'], polyphony: 1 },
+      ],
+      recipes: [
+        makeRecipe('a-kick', 'kick', 'hard', 'bd', {
+          sourceAudio: { need: 'A short, dark kick sample with no tail' },
+        }),
+        makeRecipe('a-snare', 'snare', 'hard', 'sd', {
+          soundSetup: {
+            sound: 'One of the ten built-in tones',
+            prep: { text: 'Hold SOUND and press dot, then a pad', verified: CITE },
+          },
+        }),
+      ],
+    })
+    expect(DeviceSchema.safeParse(mixed).success).toBe(true)
+    expect(contentNotice(mixed, mixed.recipes)?.state).toBe('unknown')
+    // Asked of the parts a reader was given: the built-in one alone still says nothing.
+    expect(contentNotice(mixed, [mixed.recipes[1] as Recipe])).toBeUndefined()
   })
 
   it('asks of the authored recipes, because a schema cannot see a guide', () => {

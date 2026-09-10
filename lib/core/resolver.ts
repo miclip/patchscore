@@ -841,6 +841,41 @@ export function resolveSourceAudio(recipe: Recipe): ResolvedSourceAudio | undefi
   }
 }
 
+/**
+ * §3/#516. The built-in sound and the gesture that reaches it, with the procedure's provenance
+ * already decided — `resolveSourceAudio` above in the other half of §3's split.
+ *
+ * **`sound` carries no provenance, for `need`'s reason exactly.** Invariant 4 governs rendered
+ * *values*, and *"one of the ten supertone sounds — the engine's own bass tones"* is not one: no
+ * page narrows the ten, which is why the box declares no `enumerable` content and why the
+ * sentence is the author's ear rather than a claim to check. Marking it provisional would badge
+ * honest guidance as an unchecked guess (§3.2).
+ *
+ * The `prep` procedure is a different claim and does carry one. `verified` is required inside it
+ * on the authored shape, so no inheritance from the recipe is involved and mood never touches it.
+ *
+ * Resolved rather than left on the recipe because the surfaces above core read the resolved form;
+ * a renderer reaching back for `recipe.soundSetup.prep.verified` would be reaching past the
+ * resolver for a fact the resolver owns. No surface prints the mark today — §8 prints none
+ * anywhere (invariant 4), and the device page's `Parameter sources` panel covers authored
+ * *parameters*, which is where `SourceAudio.prep`'s citation also does not appear.
+ */
+export type ResolvedSoundSetup = {
+  sound: string
+  prep: { text: string; provenance: Provenance }
+  hint?: string
+}
+
+export function resolveSoundSetup(recipe: Recipe): ResolvedSoundSetup | undefined {
+  const setup = recipe.soundSetup
+  if (setup === undefined) return undefined
+  return {
+    sound: setup.sound,
+    prep: { text: setup.prep.text, provenance: citedProvenance(setup.prep.verified) },
+    ...(setup.hint === undefined ? {} : { hint: setup.hint }),
+  }
+}
+
 // ---------------------------------------------------------------------------
 // §6.1 / §3.2 — mood application and provenance
 // ---------------------------------------------------------------------------

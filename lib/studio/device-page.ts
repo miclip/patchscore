@@ -770,9 +770,10 @@ export const KIT_MINIMUM = 4
  * **A selection, not new machinery.** Every recipe returned is already rendered elsewhere on this
  * page and in guides; the whole of this function is *which* recipes and *in what order*.
  *
- * **`sourceAudio` is the line between making a sound and finding one** (§3/#101). A recipe that
- * declares it is telling the reader to go and load audio the box does not generate, which is the
- * opposite of the question this section answers — and it is what separates the twenty-four boxes
+ * **`sourceAudio` is the line between making a sound and finding one** (§3/#101, narrowed to
+ * files alone at #516 — a recipe declaring `soundSetup` makes its sound and belongs on this side).
+ * A recipe that declares `sourceAudio` is telling the reader to go and load audio the box does not
+ * generate, which is the opposite of the question this section answers — and it is what separates the twenty-four boxes
  * here from the samplers, which author plenty of drum-role recipes and not one kit sound. The
  * three MPCs are the case that shows why the test is per recipe rather than per device: they
  * author both, and eight of their thirteen drum-role recipes are patches for their own synth

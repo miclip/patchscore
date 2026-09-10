@@ -1,3 +1,4 @@
+import { hintText } from '@/components/guide/format'
 import { PatchList } from '@/components/recipe/patch-list'
 import { ResolvedSettings } from '@/components/recipe/resolved-body'
 import type { Device, SampleResolution, SampleTarget, SampleVoicing } from '@/lib/core'
@@ -51,6 +52,20 @@ export function SampleVoice({
           <span className="mono">{voice.triggerNote.note}</span>
           <span className="sample-note-fact mono">MIDI {num(voice.triggerNote.midi)}</span>
         </p>
+      )}
+      {/*
+        §3/#516. How to reach the sound, where the box makes it itself, in the slot §8 gives it —
+        ahead of routing and ahead of every setting. The sibling of `voiceLines` in
+        `lib/studio/sample-markdown.ts`, hand-written to match it like every other line here.
+      */}
+      {voice.recipe.soundSetup === undefined ? null : (
+        <>
+          <p className="quiet">Sound — {voice.recipe.soundSetup.sound}</p>
+          <p className="quiet">{voice.recipe.soundSetup.prep.text}</p>
+          {voice.recipe.soundSetup.hint === undefined ? null : (
+            <p className="sample-hint">{hintText(voice.device, voice.recipe.soundSetup.hint)}</p>
+          )}
+        </>
       )}
       {routing === undefined ? null : <p className="quiet">Routing — {routing}</p>}
       {patch === undefined || patch.length === 0 ? null : (

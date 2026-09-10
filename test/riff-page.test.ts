@@ -674,3 +674,62 @@ describe('the voice block', () => {
     expect(rule("[data-hints='on'] .hint")).toContain('visibility: visible')
   })
 })
+
+// ---------------------------------------------------------------------------
+// §3/#516 — a riff on a sound the box makes itself
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#516. **A riff can land on the EP–40's supertone engine**, and the page has to say how to
+ * reach it.
+ *
+ * Before the split those recipes declared `sourceAudio`, so this page printed *Source — one of the
+ * ten supertone sounds …* — a `Source` line, whose whole job is sending a reader to find audio, on
+ * a part that loads nothing. `acid-tracks-line` on an EP–40 alone is that case, and it is asserted
+ * in both renderers because the two share no ink by design.
+ */
+describe('a riff on a built-in sound says how to reach it (§3/#516)', () => {
+  const ep40 = DEVICES.filter((d) => d.id === 'te-ep-40')
+  const acid = resolveRiff(
+    RIFFS.find((r) => r.id === 'acid-tracks-line') as (typeof RIFFS)[number],
+    ep40,
+  )
+
+  it('names the supertone recipe, which the split is what let it reach', () => {
+    expect(acid.outcome).toBe('played')
+    const voice = acid.outcome === 'played' ? acid.voice : undefined
+    expect(voice?.recipe.id).toBe('ep40-acid-dirty')
+    expect(voice?.soundSetup?.sound).toContain('bass tones')
+    expect(voice?.soundSetup?.prep.text).toContain('supertone')
+    expect(voice?.sourceAudio).toBeUndefined()
+  })
+
+  /**
+   * Both halves, and the jog with them. The procedure prints here where a `sourceAudio.prep` does
+   * not — this page has always shown a source's `need` alone — because *one of the ten supertone
+   * sounds* is not something a reader can act on without being told that [SOUND] and [.] open the
+   * ten. The jog is a visible paragraph rather than the guide's reserved column, which is this
+   * page's rule for every jog on it (`resolved-body.tsx`).
+   */
+  it('prints both halves and no Source line, in both renderers', async () => {
+    const voice = acid.outcome === 'played' ? acid.voice : undefined
+    const md = renderRiff(acid)
+    const { RiffVoice } = await import('../components/riff/riff-voice')
+    const markup = renderToStaticMarkup(
+      createElement(RiffVoice, {
+        riff: RIFFS.find((r) => r.id === 'acid-tracks-line') as (typeof RIFFS)[number],
+        voice: voice as RiffVoicing,
+      }),
+    )
+    for (const doc of [md, text(markup)]) {
+      expect(doc).toContain(`Sound — ${voice?.soundSetup?.sound as string}`)
+      expect(doc).toContain(voice?.soundSetup?.prep.text as string)
+      expect(doc).toContain(hintText(voice?.device, 'supertone'))
+      expect(doc).not.toContain('Source —')
+      expect(doc).not.toContain('Nothing is loaded')
+    }
+    // The citation is in the model and on neither page (invariant 4).
+    expect(voice?.soundSetup?.prep.provenance.state).toBe('authored')
+    for (const doc of [md, text(markup)]) expect(doc).not.toContain('8.1.1')
+  })
+})

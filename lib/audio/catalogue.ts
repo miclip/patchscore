@@ -17,12 +17,19 @@ import type { Role } from '../core/vocabulary'
  * ---------------------------------------------------------------------------
  *
  * §3.8's `/samples` answers *how do I make this sound on the box I own*, and for most rigs it is
- * the better answer. It has nothing to say to one rig. **Seven of the library's devices can make
- * no sound from scratch** — the two Digitakts, the Octatrack, the Polyend Tracker, the SP-404 mk2,
- * the EP-133 and the EP-40, all samplers, carrying 179 recipes between them and every one of those
- * recipes asking for a file. These fourteen files cover 114 of them, 64%.
+ * the better answer. It has nothing to say to one rig. **Six of the library's devices can make no
+ * sound from scratch** — the two Digitakts, the Octatrack, the Polyend Tracker, the SP-404 mk2 and
+ * the EP-133, all samplers, carrying 155 recipes between them and every one of those recipes
+ * asking for a file. These fourteen files cover 100 of them, 65%.
  * `test/reference-samples.test.ts` derives all three numbers off the registry rather than trusting
  * this paragraph.
+ *
+ * Six rather than seven since #516, and the EP-40 is the one that left. Three of its recipes reach
+ * the built-in supertone engine, which is a synth: they had been carrying `sourceAudio` because it
+ * was the only field that held the navigation, and they carry `soundSetup` now (§3). So the box
+ * makes three sounds of its own and is no longer one that makes none. It makes no *drum* sound of
+ * its own — all three are tonal — so a reader holding one is still exactly who these files are
+ * for, and that is the sentence the count was standing in for.
  *
  * ---------------------------------------------------------------------------
  * A reference sample is the target, not the answer

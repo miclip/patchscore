@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, Recipe, SoundSetup } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type { AuthoredEnumParam, Cite, Verified } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
@@ -474,13 +474,32 @@ function sampled(need: string) {
 }
 
 /**
- * A part played from the built-in synth engine. Guide 8.1.1 is the whole navigation, and the two
- * preset knobs it mentions are named in each caller's `routing` rather than set here — no page
- * says which two parameters a given supertone carries, let alone what they read.
+ * §3/#516. **A part played from the built-in synth engine**, which is `soundSetup` and not
+ * `sourceAudio`: nothing is loaded, nothing can be missing, and a reader holding an EP–40 already
+ * has all ten of them.
+ *
+ * These three recipes are why the field exists. They carried `sourceAudio` because it was the
+ * only slot that held the navigation, and `ep40-sweep-bright` had ended up with *"Nothing is
+ * loaded and nothing is stretched here"* written into a `need` whose documented job is saying
+ * what to load — a disclaimer against the field's own meaning, which is what #516 was filed
+ * about. #517 then had to exclude `ep40-acid-dirty` from the source-length sweep **by id**,
+ * because its whole parameter list is `PLAY MODE legato`, exactly what the file-fed recipes
+ * beside it set, and nothing structural told them apart. This does.
+ *
+ * **The procedure is shared and the choice is not**, which is why `sound` is the caller's. Guide
+ * 8.1.1 is the whole navigation and it is one gesture for all ten; which of the ten to press is
+ * something no page narrows — the guide gives the count and a category (*"including synthesizers
+ * and dub sirens"*) and names not one of them. So the three recipes below want three different
+ * sounds off one undocumented list, and saying which is the author's ear: uncited, exactly as a
+ * `sourceAudio.need` is, and for the identical reason.
+ *
+ * The two preset knobs guide 8.1.1 mentions are named in each caller's `routing` rather than set
+ * here, since no page says which two parameters a given supertone carries, let alone what they
+ * read.
  */
-function supertone(need: string) {
+function supertone(sound: string): SoundSetup {
   return {
-    need,
+    sound,
     prep: {
       text: 'Hold [SOUND] and press [.], then choose one of the ten supertone sounds on pads 0-9.',
       verified: cite(SUPERTONE),
@@ -715,7 +734,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'pad',
     title: 'Supertone bass, legato so notes run into each other',
-    sourceAudio: supertone('One of the ten supertone sounds — the engine’s own bass tones'),
+    soundSetup: supertone('One of the ten supertone sounds — the engine’s own bass tones'),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
       'Group B. Hold the pad in MAIN and turn [X] and [Y] for this supertone’s two preset parameters — the guide’s list of what those can be includes filter cutoff and filter resonance, and does not say which supertone carries which. **Accent:** the per-step velocity is real on this box and has no printed scale anywhere in the guide, so no value is set here rather than one invented. Mark the accented steps by ear on the box itself. **Slide:** `PLAY MODE legato` above is the guide’s own sense of the word — monophonic, and a held note "will continue playing from the same point as it was left off" — which joins the notes without bending the pitch between them. There is no portamento on this box, so an acid line here steps between its notes',
@@ -726,7 +745,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'pad',
     title: 'Supertone lead, legato so it slides between notes',
-    sourceAudio: supertone('One of the ten supertone sounds — the engine’s own lead tones'),
+    soundSetup: supertone('One of the ten supertone sounds — the engine’s own lead tones'),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
       'Group C. Press [KEYS] to play it across the twelve pads. The two preset parameters are on [X] and [Y] while the pad is held in MAIN',
@@ -737,14 +756,12 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'pad',
     title: 'Supertone siren, leant on for the turnaround',
-    sourceAudio: supertone(
-      'One of the ten supertone sounds — a dub siren rather than a bass or lead tone. Nothing is ' +
-      'loaded and nothing is stretched here, so the length is the length of the press: hold it ' +
-      'one to two bars into the turnaround and let go on the change',
+    soundSetup: supertone(
+      'One of the ten supertone sounds — a dub siren rather than a bass or lead tone',
     ),
     params: [pick('PLAY MODE', 'key', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
-      'Group D. System setting 301 turns pad velocity on, which is what makes the pressure do anything. The two preset knobs are on [X] and [Y] with the pad held',
+      'Group D. System setting 301 turns pad velocity on, which is what makes the pressure do anything. The two preset knobs are on [X] and [Y] with the pad held. Nothing is stretched to a length here, so the gesture is the press: hold it one to two bars into the turnaround and let go on the change',
   },
   {
     id: 'ep40-pad-clean',

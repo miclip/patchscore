@@ -6,6 +6,7 @@ import type {
   ResolvedAssignment,
   ResolvedParam,
   ResolvedPatchEntry,
+  ResolvedSoundSetup,
   ResolvedSourceAudio,
 } from '@/lib/core'
 import {
@@ -97,6 +98,27 @@ function Source({ source, owner }: { source: ResolvedSourceAudio; owner: Device 
           </Instruction>
         </>
       )}
+    </>
+  )
+}
+
+/**
+ * §3/#516. **Which sound, and how to get at it, on a box that makes its own** — the sibling of
+ * `soundSetupLines` in `lib/core/render.ts`, hand-written to match it the way `Source` above is.
+ *
+ * `Source`'s two-claim shape exactly, because §3 gives this field the same one: the choice is
+ * prose with **no provenance mark** — no page narrows the ten supertones, so there is nothing for
+ * a mark to be about — and the procedure beneath it takes the reserved hint column (#21). A part
+ * never carries both prefixes; `RecipeSchema` refuses the pair.
+ */
+function SoundSetup({ setup, owner }: { setup: ResolvedSoundSetup; owner: Device | undefined }) {
+  const hint = setup.hint === undefined ? undefined : hintText(owner, setup.hint)
+  return (
+    <>
+      <p className="quiet">Sound — {setup.sound}</p>
+      <Instruction {...(hint === undefined ? {} : { hint })}>
+        <span>{setup.prep.text}</span>
+      </Instruction>
     </>
   )
 }
@@ -467,6 +489,10 @@ export function SoundForPart({
 
       {a.recipe.sourceAudio === undefined ? null : (
         <Source source={a.recipe.sourceAudio} owner={owner} />
+      )}
+
+      {a.recipe.soundSetup === undefined ? null : (
+        <SoundSetup setup={a.recipe.soundSetup} owner={owner} />
       )}
 
       {a.recipe.routing === undefined ? null : (

@@ -1157,7 +1157,7 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   however many are heard). Mark `sampled-chord` only when the chord really is baked in; it is
   what lets a one-voice sampler carry a triad, and claiming it falsely produces a guide that says
   three notes and sounds one.
-- **`sourceAudio` says what audio the recipe plays, when the voice does not make its own.** A
+- **`sourceAudio` says what *file* the recipe plays, when the voice does not make its own.** A
   generator-based recipe answers that in a parameter — the TR-1000 has an internal generator
   selector, so `GEN 9X Bass Drum` is an enum with an options list and a manual page behind it. A
   sampler's equivalent is a file on an SD card: no controlled vocabulary, no field in the manifest
@@ -1190,6 +1190,83 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   libraries — and it would be the wrong shape anyway: what a reader needs is a phrase they can
   search their own folders with, not a category we invented. It names no device and no genre, and
   travels device → renderer exactly as `routing` and `note` do.
+
+  **It means a file and only a file, since #516.** It used to mean *load a file you supply* and
+  *select a sound the box already has* at once, which are different actions with different failure
+  modes: only a file has a length, only a file can be missing, and only a file makes the box's
+  shipped content relevant. Every rule written over the field broke on the second meaning. #506's
+  source-length rule — *a hook that holds a note for a bar needs a source that lasts that long* —
+  matched three EP-40 recipes that reach the built-in supertone engine, where a duration is a
+  sentence that could only be untrue, and #517 shipped with an exclusion list of one to get past
+  it. The evidence from inside is better than any of that: `ep40-sweep-bright` had *"Nothing is
+  loaded and nothing is stretched here"* written into a `need` whose documented job is saying what
+  to load. Selecting a built-in sound is `soundSetup`, below.
+
+- **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
+  (#516).
+
+  ```ts
+  soundSetup: {
+    // Which one, in the words a reader picks by. Taste, never cited — no page narrows the ten,
+    // which is the same reason the box is not `enumerable` (§2.6).
+    sound: 'One of the ten supertone sounds — the engine’s own bass tones',
+    // How to get at it. Required, and `verified` inside it is required and never inherited:
+    // a procedure has a page or nobody checked it, exactly as `sourceAudio.prep` does.
+    prep: {
+      text: 'Hold [SOUND] and press [.], then choose one of the ten supertone sounds on pads 0-9.',
+      verified: cite('guide 8.1.1'),
+    },
+    hint: 'supertone',     // a key into this device's `hints` table, checked like an articulation's
+  }
+  ```
+
+  **The same two-claim split `sourceAudio` makes, and it is not decorative.** The first draft of
+  this field collapsed the two, on the reasoning that there is nothing to *choose* once the sound
+  is in the box. #516 answers that before anybody had to find out: the guide *"gives the count and
+  a category — 'including synthesizers and dub sirens' — while naming none of the ten"*. A
+  procedure ending *choose one of the ten* leaves the reader holding all ten, and the three EP-40
+  recipes want three different ones — a bass tone, a lead tone, a dub siren. That sentence is the
+  author's ear against a list no page prints, which is the definition of the uncited half.
+
+  `prep` is required where `sourceAudio`'s is optional, and the asymmetry is the point of the
+  field: it exists to record a gesture. A built-in sound with no way in is a recipe, not a setup,
+  and a `sound` line alone would be an uncited sentence with nothing behind it.
+
+  **A parameter was the obvious place and does not fit.** Where a device has a generator selector,
+  that is still the right answer — `GEN 9X Bass Drum`, or the Deluge's `OSC 1 TYPE Analog Saw`
+  after #507. The supertone has none to build: the guide gives the count and a category (*"ten
+  supertone sounds including synthesizers and dub sirens"*) and names not one of the ten, so an
+  enum here would need an options list nobody printed. `Device.content` (§2.6) has no room either
+  — it describes the box's factory *sample* pool, which on the EP-40 is a second and separate
+  library of 300+ sounds.
+
+  **It does not trigger the content notice, and #516 argued the other way in passing.** The notice
+  exists to tell a reader what the box ships *for the parts being sent to find audio*; the
+  sentence it prints ends *"so the Source line below says what the part needs"*, and a supertone
+  part has no Source line. So `contentNotice` stays gated on `sourceAudio`. What a reader of such
+  a part needs is the gesture, which is on the part, cited.
+
+  **§8 renders it as `Sound —`, in the slot `Source —` occupies and in the same shape** — the
+  choice on its own line, the procedure as a bullet beneath it, the jog in §8.1's reserved column —
+  ahead of routing and ahead of every parameter, because a play mode set on a track whose sound has
+  not been chosen is a setting with no subject. The two prefixes differ because the actions do: a
+  source is something you go and find, a sound is already in the box. The riff and sample pages
+  print both halves too, with the jog as a visible paragraph rather than in a reserved column,
+  which is those pages' rule for every jog on them.
+
+  **The two fields are mutually exclusive, and `RecipeSchema` refuses the pair.** A voice generates
+  the sound or it does not; a recipe claiming both has not decided which of two voices it is
+  describing. This is a schema rule rather than an authoring convention because the rules written
+  over `sourceAudio` read it as a fact about the voice — #506's source-length sweep demands a
+  duration of every file-fed recipe on a held role, matched the EP-40's supertone recipes while
+  they loaded nothing, and #517 shipped an exclusion list of one to get past it. The list is gone
+  and this refusal is what replaced it: `test/source-length.test.ts` asks one question of one
+  field, and the schema guarantees the answer means what it says.
+
+  **No surface prints the citation.** §8 prints no per-value mark anywhere (invariant 4), and the
+  device page's `Parameter sources` panel covers authored *parameters* — `sourceAudio.prep`'s
+  citation does not appear there either. The claim is in the model, and `resolveSoundSetup` is
+  what carries it.
 
   **Whether a recipe needs one is an authoring rule, not a schema rule.** Nothing in the manifest
   says whether a voice plays a file or generates its own sound, and a pool id is not the answer —
@@ -2305,6 +2382,11 @@ Four rules decide the content:
   box does not generate, which is the opposite of the question the panel answers. It is what
   separates these boxes from the samplers, which author plenty of drum-role recipes and not one
   kit sound. Per recipe rather than per device, because the MPCs do both.
+
+  The line got sharper at #516 and did not move: a recipe declaring `soundSetup` **makes** its
+  sound — the box generates it and the reader selects it — so it is on the same side as an
+  oscillator patch. No such recipe serves a kit role today, so nothing here changed; what changed
+  is that a supertone recipe is no longer excluded for a reason that was never true of it.
 - **Four or the panel does not appear.** The claim is *this box can make you a drum kit*, and
   over one sound it would be false. The three boxes below the line author two `noise` recipes,
   two `kick` recipes and one `metallic` — one voice at a couple of characters. Below four the
@@ -2645,7 +2727,11 @@ scored against.
 #### `sourceAudio` decides candidacy, and it is asked before character
 
 §3/#101's field is the line between making a sound and finding one, and §3.6 already draws it for
-the kit panel. Here it decides which recipes may win: a sampler playing back a file somebody else
+the kit panel. **#516 is what makes the reading honest**: the field used to catch three EP-40
+recipes that reach a built-in synth engine, so a box that plainly *makes* three sounds counted as
+one that makes none. Those recipes carry `soundSetup` now, the EP-40 stops answering `loads-audio`
+for `acid`, `lead` and `sweep`, and the reader is offered the supertone rather than told their box
+cannot do it — which is the answer the model always should have given. Here it decides which recipes may win: a sampler playing back a file somebody else
 made is not a box making a sound, and a surface that let one through would answer *load this* to a
 reader who asked *how do I make this*. The filter is applied to `scoreRecipes`' **result** rather
 than inside it — `stackRecipes`' own argument, that removing entries from a total order cannot
@@ -2775,15 +2861,34 @@ restyle costs nothing and a lost cable fails.
 §3.8 answers *how do I make this sound on the box I own*, and for most rigs it is the better
 answer. It has nothing to say to one rig.
 
-**Seven of the library's devices can make no sound from scratch** — `elektron-digitakt`,
-`elektron-digitakt-ii`, `elektron-octatrack-mkii`, `polyend-tracker`, `roland-sp-404mk2`,
-`te-ep-133` and `te-ep-40`, all samplers, carrying **179 recipes between them and every one of
-those recipes asking for a file**. Somebody holding only those boxes opens `/samples` and is told
-how to synthesise a kick on a machine with no oscillator. That reader is who this is for, and it is
-the case #519 was filed for: *"someone buys a synth even with one osc and a sampler like the roland
+**Six of the library's devices can make no sound from scratch** — `elektron-digitakt`,
+`elektron-digitakt-ii`, `elektron-octatrack-mkii`, `polyend-tracker`, `roland-sp-404mk2` and
+`te-ep-133`, all samplers, carrying **155 recipes between them and every one of those recipes
+asking for a file**. Somebody holding only those boxes opens `/samples` and is told how to
+synthesise a kick on a machine with no oscillator. That reader is who this is for, and it is the
+case #519 was filed for: *"someone buys a synth even with one osc and a sampler like the roland
 sp-404 and no drum machine."*
 
-**Fourteen one-shots cover 114 of those 179 recipes, 64%.**
+**Fourteen one-shots cover 100 of those 155 recipes, 65%.**
+
+**Six rather than seven since #516, and the EP-40 is the one that left.** The predicate is *every
+recipe this box authors declares `sourceAudio`*, and three of that box's recipes reach its built-in
+supertone engine — a ten-preset synth, not a file. They carried `sourceAudio` because it was the
+only field that held the navigation, they carry `soundSetup` now (§3), and the box therefore makes
+three sounds of its own and is no longer one that makes none. #519's library-wide count of recipes
+asking a reader to supply audio moves the same way, from 287 to 284.
+
+The argument for shipping the fourteen is untouched by it, and saying why is the point of recording
+the change here. The EP-40 makes no *drum* sound on its own — all three from-scratch recipes are
+tonal (`acid`, `lead`, `sweep`) — so a reader holding one still has nowhere to get a kick, which is
+exactly what these files are for. What moved is a predicate about *every* recipe, and stretching it
+to keep the box would be choosing the number over the reading.
+
+**All three figures are derived, never trusted to this paragraph.** `test/reference-samples.test.ts`
+computes them off `DEVICES` and pins them, so a device that gains its first from-scratch recipe
+drops out of the list and the build fails — which is how the EP-40's departure was noticed rather
+than shipped. `lib/audio/catalogue.ts` carries the same three numbers in prose beside the files, and
+the same test is what keeps the two copies honest.
 
 #### A reference sample is the target, not the answer
 
@@ -5082,7 +5187,9 @@ Do not reorder.
 
    **And, where the rig holds both halves of it, one callout saying the rig can already make a
    part the guide is sending its reader to find** (#487). A recipe that declares `sourceAudio`
-   (§3) tells the reader to go and load audio the voice does not generate. That is right on its
+   (§3) tells the reader to go and load audio the voice does not generate — and since #516 that is
+   all it tells them, so a recipe selecting a built-in sound is neither a reader sent shopping nor
+   a false answer to one who was. That is right on its
    own terms and can be wrong about the room it is read in: across every two-box rig in the
    library, 47% of them have the *other* box authoring a recipe for the same role that needs
    nothing loaded — a reader with a sampler and a mono synth told to find a kick sample, while
@@ -5364,6 +5471,15 @@ Do not reorder.
    page: the asymmetry that used to be visible — a bare need above a `· manual` procedure — was
    ink, and the ink is gone (§3.2). What survives is the pair of instructions, which is the part a
    reader standing at the box acts on
+
+   **`Sound — one of the ten supertone sounds …` is the same slot, in the same shape, for a sound
+   the box makes itself** (§3/#516). It sits where the `Source` line does and precedes routing, on
+   the same reasoning: a play mode set on a track whose sound has not been chosen is a setting with
+   no subject. Two claims and two lines again — which of the box's sounds, then the gesture that
+   opens them as a bullet beneath — because a procedure ending *choose one of the ten* leaves a
+   reader holding all ten. Neither line is marked, like every other line in the phase. The two
+   prefixes never meet on one part: `RecipeSchema` refuses a recipe declaring both, so there is no
+   order to settle rather than an order settled quietly
 
    Then where the multi-note realisation becomes an *instruction* rather than a
    fact. "Load the chord sample(s) onto this one voice" is a step a reader will otherwise not

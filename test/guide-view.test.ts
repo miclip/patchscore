@@ -21,6 +21,7 @@ import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import {
   TEMPLATES,
+  acidLineage,
   ambientDub,
   droneStudy,
   industrialTechno,
@@ -1234,6 +1235,84 @@ describe('source audio reaches both renderers, and says the same thing (§3/#101
     for (const doc of [text(html(synths)), renderGuide(synths)]) {
       expect(doc).not.toContain('Source —')
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// §3/#516 — selecting a built-in sound, in both renderers
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#516. **The other action `sourceAudio` used to stand for**, on the one box in the library
+ * that takes it: the EP–40's supertone engine, a ten-preset synth reached by holding [SOUND].
+ *
+ * `acid-lineage` on the EP–40 alone puts `ep40-acid-dirty` on the page, which was the recipe
+ * #517 had to exclude from its source-length sweep by id. The prefix and the line are written
+ * twice by design — once in `lib/core/render.ts`, once in `components/guide/phase-sound.tsx` —
+ * so both are asserted, since nothing else in the build compares them.
+ */
+describe('built-in sound selection reaches both renderers (§3/#516)', () => {
+  const ep40 = resolve({
+    devices: DEVICES.filter((d) => d.id === 'te-ep-40'),
+    template: acidLineage,
+    mood: NEUTRAL_MOOD,
+    seed: 3,
+  })
+
+  const supertone = () => ep40.assignments.find((a) => a.recipe.soundSetup !== undefined)
+
+  it('says which sound and how to reach it in both, in the same words', () => {
+    const setup = supertone()?.recipe.soundSetup
+    expect(setup?.sound).toBeDefined()
+    for (const doc of [text(html(ep40)), renderGuide(ep40)]) {
+      // Both halves. The first draft of this field had only the procedure, and a page carrying it
+      // alone tells three parts that want three different supertones to press the same pads.
+      expect(doc).toContain(`Sound — ${setup?.sound as string}`)
+      expect(doc).toContain(setup?.prep.text as string)
+    }
+  })
+
+  it('says it before the parameters in both, because choosing the sound comes first', () => {
+    for (const doc of [text(html(ep40)), renderGuide(ep40)]) {
+      const at = doc.indexOf('Sound — ')
+      expect(at).toBeGreaterThan(-1)
+      expect(at).toBeLessThan(doc.indexOf('PLAY MODE', at))
+    }
+  })
+
+  it('prints the procedure and not the page it was read off, in both', () => {
+    // Invariant 4: the model carries the claim, §8 renders no mark and no citation. The choice
+    // above it has no provenance to render in the first place, which is §3's decision (§3.2).
+    expect(supertone()?.recipe.soundSetup?.prep.provenance.state).toBe('authored')
+    for (const doc of [text(html(ep40)), renderGuide(ep40)]) {
+      expect(doc).not.toContain('8.1.1')
+    }
+  })
+
+  /**
+   * §2.6/#516. **No `Source` line above a supertone part, in either renderer.**
+   *
+   * The recipe used to declare `sourceAudio`, so the guide told a reader to go and find audio for
+   * a part that loads none — and `ep40-sweep-bright` had a disclaimer written into that very line
+   * to say so. Both are gone, and the part still says everything it needs to.
+   */
+  it('sends nobody looking for a file, in either renderer', () => {
+    const part = supertone()
+    expect(part?.recipe.sourceAudio).toBeUndefined()
+    // The part's own block, in the words both renderers share: its title, down to the first
+    // value it sets. The `####` a Markdown heading carries is not on the page, so the boundary
+    // has to be ink rather than syntax.
+    const title = part?.recipe.title as string
+    for (const doc of [text(html(ep40)), renderGuide(ep40)]) {
+      const at = doc.indexOf(title)
+      expect(at).toBeGreaterThan(-1)
+      const block = doc.slice(at, doc.indexOf('PLAY MODE', at))
+      expect(block).toContain('Sound — ')
+      expect(block).not.toContain('Source —')
+      expect(block).not.toContain('Nothing is loaded')
+    }
+    // And the disclaimer is gone from the whole library, not merely from this page.
+    expect(renderGuide(ep40)).not.toContain('Nothing is loaded')
   })
 })
 

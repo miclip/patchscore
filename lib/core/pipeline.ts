@@ -31,6 +31,7 @@ import {
   devicePoolCapacity,
   resolveParams,
   resolvePatch,
+  resolveSoundSetup,
   resolveSourceAudio,
   noteAddressingFor,
   selectPatterns,
@@ -39,6 +40,7 @@ import {
   type KeyFollow,
   type PatternSelection,
   type ResolvedPatchEntry,
+  type ResolvedSoundSetup,
   type ResolvedSourceAudio,
 } from './resolver'
 import {
@@ -1125,6 +1127,11 @@ export type ResolvedRecipeRef = {
    * recipe nobody has authored it on yet.
    */
   sourceAudio?: ResolvedSourceAudio
+  /**
+   * §3/#516. How to select the sound, where the box generates it itself. Absent for every recipe
+   * playing a file and for every recipe whose voice needs no selecting to be the sound it is.
+   */
+  soundSetup?: ResolvedSoundSetup
   routing?: string
 }
 
@@ -1917,6 +1924,7 @@ export function resolve(input: ResolveInput): ResolveResult {
     const request = requestById.get(a.requestId) as RoleRequest
     const bySection = patterns.get(a.requestId)
     const sourceAudio = resolveSourceAudio(a.recipe)
+    const soundSetup = resolveSoundSetup(a.recipe)
     // §3.7/#496. Composed here, so the split a device folder authors for the kit page is invisible
     // to §8: the guide receives the one string it always received.
     const routing = recipeRouting(a.recipe)
@@ -1943,6 +1951,7 @@ export function resolve(input: ResolveInput): ResolveResult {
         outcome: a.outcome,
         realisation: realisationOf(a.recipe),
         ...(sourceAudio === undefined ? {} : { sourceAudio }),
+        ...(soundSetup === undefined ? {} : { soundSetup }),
         ...(routing === undefined ? {} : { routing }),
       },
       // §7 step 9/#433, #424. Both allocation sources reach the parameters here. The stack width

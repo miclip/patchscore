@@ -191,6 +191,26 @@ function voiceLines(resolution: SampleResolution, voice: SampleVoicing): string[
       `**Trigger note** — \`${voice.triggerNote.note}\` · MIDI ${num(voice.triggerNote.midi)}`,
     )
   }
+  /*
+   * §3/#516. How to reach the sound, where the box makes it itself — the `Sound —` line §8 prints,
+   * in the slot it prints it: ahead of routing and ahead of every setting.
+   *
+   * This page could not reach such a recipe before the split. `resolveSample` excludes anything
+   * declaring `sourceAudio` (§3.8), and the EP–40's supertone parts declared one, so a reader
+   * asking *how do I make an acid line on my EP–40* was told `loads-audio` — nothing here makes
+   * it — about a box with a synth engine in it. They now land here, and this is the line that
+   * makes the answer usable: without it the page prints `PLAY MODE legato` and never says how to
+   * reach the engine that mode applies to.
+   */
+  if (recipe.soundSetup !== undefined) {
+    out.push('')
+    out.push(`Sound — ${recipe.soundSetup.sound}`)
+    out.push('')
+    out.push(`- ${recipe.soundSetup.prep.text}`)
+    if (recipe.soundSetup.hint !== undefined) {
+      subordinate(out, '  ', 'hint', hintText(device, recipe.soundSetup.hint))
+    }
+  }
   const routing = recipeRouting(recipe)
   if (routing !== undefined) {
     out.push('')

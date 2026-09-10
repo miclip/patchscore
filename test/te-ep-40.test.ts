@@ -4,6 +4,7 @@ import {
   DeviceSchema,
   ROLES,
   bearsPattern,
+  contentNotice,
   expand,
   isSustainedPart,
   moodState,
@@ -348,6 +349,8 @@ describe('EP–40 riddim manifest', () => {
         r.routing ?? '',
         r.sourceAudio?.need ?? '',
         r.sourceAudio?.prep?.text ?? '',
+        r.soundSetup?.sound ?? '',
+        r.soundSetup?.prep?.text ?? '',
         ...r.params.map((p) => `${p.name} ${p.note ?? ''}`),
       ])
       for (const text of rendered) expect(text).not.toMatch(/ep-133|K\.\s?O\.\s?II/i)
@@ -359,15 +362,102 @@ describe('EP–40 riddim manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('the supertone recipes set navigation and no value', () => {
-    const supertones = () => device.recipes.filter((r) => r.sourceAudio?.hint === 'supertone')
+    const supertones = () => device.recipes.filter((r) => r.soundSetup !== undefined)
 
     it('exist, and reach the engine through the page that names the gesture', () => {
-      expect(supertones().length).toBeGreaterThanOrEqual(2)
+      expect(supertones().map((r) => r.id)).toEqual([
+        'ep40-acid-dirty',
+        'ep40-lead-bright',
+        'ep40-sweep-bright',
+      ])
       for (const recipe of supertones()) {
-        expect(recipe.sourceAudio?.prep?.verified, recipe.id).toMatchObject({
+        expect(recipe.soundSetup?.prep.verified, recipe.id).toMatchObject({
           source: expect.stringContaining('8.1.1'),
         })
+        expect(recipe.soundSetup?.hint, recipe.id).toBe('supertone')
       }
+    })
+
+    /**
+     * §3/#516. **One gesture, three choices**, which is why the field splits the way `sourceAudio`
+     * does.
+     *
+     * Guide 8.1.1 is the whole navigation and it is the same for all ten sounds, so `prep` is
+     * shared — and the guide *names none of the ten*, giving only a count and a category, so which
+     * one to press is the author's ear and belongs in the uncited half. Collapsing the two would
+     * make three parts that want a bass tone, a lead tone and a dub siren read identically.
+     */
+    it('shares one cited gesture and states its own choice, uncited', () => {
+      const setups = supertones().map((r) => r.soundSetup)
+      expect(new Set(setups.map((s) => s?.prep.text)).size).toBe(1)
+      expect(setups.map((s) => s?.sound)).toEqual([
+        'One of the ten supertone sounds — the engine’s own bass tones',
+        'One of the ten supertone sounds — the engine’s own lead tones',
+        'One of the ten supertone sounds — a dub siren rather than a bass or lead tone',
+      ])
+      // Uncited by construction: there is no slot on the choice for a page to go in.
+      for (const setup of setups) {
+        expect(Object.keys(setup ?? {}).sort()).toEqual(['hint', 'prep', 'sound'])
+      }
+    })
+
+    /**
+     * §3/#516. **The sweep's disclaimer is gone and its instruction is not.**
+     *
+     * The `need` read *"Nothing is loaded and nothing is stretched here, so the length is the
+     * length of the press: hold it one to two bars into the turnaround and let go on the change"* —
+     * a disclaimer against the field's own meaning with a real performance instruction inside it.
+     * The disclaimer went with the field; the instruction moved to `routing`, which is where a
+     * fact about playing this sound on this box belongs.
+     */
+    it('keeps the sweep’s hold instruction, in the routing rather than the source line', () => {
+      const sweep = device.recipes.find((r) => r.id === 'ep40-sweep-bright')
+      expect(sweep?.routing).toContain('one to two bars into the turnaround')
+      expect(sweep?.routing).toContain('let go on the change')
+      expect(sweep?.soundSetup?.sound).not.toContain('Nothing is loaded')
+      for (const recipe of device.recipes) {
+        expect(recipe.soundSetup?.sound ?? '', recipe.id).not.toContain('Nothing is loaded')
+        expect(recipe.sourceAudio?.need ?? '', recipe.id).not.toContain('Nothing is loaded')
+      }
+    })
+
+    /**
+     * §3/#516. **They select a sound; they do not load one, and the model now says which.**
+     *
+     * All three carried `sourceAudio` until #516, and `ep40-sweep-bright` had reached the point
+     * of writing *"Nothing is loaded and nothing is stretched here"* into a `need` whose job is
+     * saying what to load. That disclaimer is the evidence the field meant two things, and it is
+     * gone because the field it was arguing with is.
+     *
+     * Asserted from both ends. A recipe here declaring `sourceAudio` would put back the false
+     * positive that made #517 keep an exclusion list; a file-fed recipe on this box declaring
+     * `soundSetup` would say the factory library needs navigating to, which it does not — guide
+     * 8.1's sound-number entry is `sourceAudio.prep`'s and stays there.
+     */
+    it('declares no file, because the engine is the sound', () => {
+      for (const recipe of supertones()) {
+        expect(recipe.sourceAudio, recipe.id).toBeUndefined()
+      }
+      const loaders = device.recipes.filter((r) => r.sourceAudio !== undefined)
+      expect(loaders.length).toBeGreaterThan(0)
+      for (const recipe of loaders) expect(recipe.soundSetup, recipe.id).toBeUndefined()
+    })
+
+    /**
+     * §2.6/#516. **The factory-sample notice stays off them**, which is the half of #516 that is
+     * about the reader rather than about the schema.
+     *
+     * The box ships 300+ factory samples and `contentNotice` exists to point a reader at them
+     * where a part is sending them looking for audio. A supertone part is not: the sentence would
+     * open *"Ships … — look in …"* and end *"so the Source line below says what the part needs"*,
+     * naming a line the part does not have. So the gate is `sourceAudio` and the guide says
+     * nothing about the sample library above a supertone.
+     */
+    it('triggers no factory-content notice on its own', () => {
+      expect(contentNotice(device, supertones())).toBeUndefined()
+      // And the box has not lost the notice — a file-fed part on the same box still gets it.
+      const loaders = device.recipes.filter((r) => r.sourceAudio !== undefined)
+      expect(contentNotice(device, loaders)).toMatchObject({ state: 'shipped-library' })
     })
 
     it('carry no parameter but the play mode, because no supertone value is printed', () => {
@@ -518,8 +608,13 @@ describe('EP–40 riddim manifest', () => {
       kind: 'maker',
       source: expect.stringContaining('600-699 FX'),
     })
+    // Every recipe on this box either loads a file or reaches the supertone engine — the pool is
+    // a sampler and there is no third thing a pad can be. #516 split what used to be one field.
     for (const recipe of device.recipes) {
-      expect(recipe.sourceAudio?.need, recipe.id).toBeTruthy()
+      expect(
+        recipe.sourceAudio?.need ?? recipe.soundSetup?.sound,
+        recipe.id,
+      ).toBeTruthy()
     }
   })
 

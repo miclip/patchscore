@@ -1063,6 +1063,116 @@ describe('Device manifest (§2.3)', () => {
     ).toBe(false)
   })
 
+  /**
+   * §3/#516. **`soundSetup` is checked the way `sourceAudio` is**, because the two fields are
+   * peers: both are a recipe reaching into a device-level table, and a jog that names no entry
+   * prints nothing at the machine while every test in the folder still passes.
+   */
+  it('rejects a built-in-sound hint the device never authored', () => {
+    const base = {
+      sound: 'One of the ten supertones',
+      prep: { text: 'Hold SOUND and press dot', verified: { kind: 'manual', source: 'p.8' } },
+    }
+    expect(
+      DeviceSchema.safeParse(
+        device({ recipes: [recipe({ soundSetup: { ...base, hint: 'apply-cycle' } as never })] }),
+      ).success,
+    ).toBe(true)
+    const bad = DeviceSchema.safeParse(
+      device({ recipes: [recipe({ soundSetup: { ...base, hint: 'press-it' } as never })] }),
+    )
+    expect(bad.success).toBe(false)
+    expect(JSON.stringify(bad.success ? [] : bad.error.issues)).toContain(
+      "soundSetup references hint 'press-it'",
+    )
+  })
+
+  /**
+   * §3/#516. **Two claims, and the schema holds both apart.** `sound` is the choice and carries no
+   * citation slot at all — no page narrows the ten supertones, which is exactly why the box is not
+   * `enumerable` (§2.6). `prep` is the manual's procedure, is **required**, and `verified` inside
+   * it is required rather than inherited from the recipe, the shape `SourceAudio.prep` and a
+   * `JackSpec` carry.
+   *
+   * `prep` is required where `SourceAudio`'s is optional, and the asymmetry is the point of the
+   * field: it exists to record a gesture. A built-in sound with no way in is a recipe, not a
+   * setup, and a `sound` line alone would be an uncited sentence with nothing behind it.
+   */
+  it('keeps the choice uncited and the procedure cited, and requires the procedure', () => {
+    const cite: Verified = { kind: 'manual', source: 'Guide 8.1.1' }
+    const ok = { sound: 'One of the ten supertones', prep: { text: 'Hold SOUND', verified: cite } }
+    expect(RecipeSchema.safeParse(recipe({ soundSetup: ok })).success).toBe(true)
+    // `false` is a real state — somebody worked the gesture out and no page prints it.
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ soundSetup: { ...ok, prep: { text: 'Hold SOUND', verified: false } } }),
+      ).success,
+    ).toBe(true)
+
+    // A choice with no way in is not a setup.
+    expect(
+      RecipeSchema.safeParse(recipe({ soundSetup: { sound: 'A siren' } as never })).success,
+    ).toBe(false)
+    // A procedure with no citation, and one with no choice above it.
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ soundSetup: { ...ok, prep: { text: 'Hold SOUND' } } as never }),
+      ).success,
+    ).toBe(false)
+    expect(
+      RecipeSchema.safeParse(
+        recipe({ soundSetup: { prep: { text: 'Hold SOUND', verified: cite } } as never }),
+      ).success,
+    ).toBe(false)
+    expect(RecipeSchema.safeParse(recipe({ soundSetup: { ...ok, sound: '' } })).success).toBe(false)
+    // And no citation may be smuggled onto the choice, which is the whole of what uncited means.
+    expect(
+      RecipeSchema.safeParse(recipe({ soundSetup: { ...ok, verified: cite } as never })).success,
+    ).toBe(false)
+  })
+
+  /**
+   * §3/#516. **A voice generates the sound or it does not**, so the two fields are mutually
+   * exclusive and the schema is where that is settled.
+   *
+   * It is a schema rule rather than a library convention because the rules written over
+   * `sourceAudio` read it as a fact about the voice. #506's source-length sweep demands a duration
+   * of every file-fed recipe on a held role; the EP-40's supertone recipes matched while loading
+   * nothing, and #517 shipped an exclusion list of one to get past it. That list is gone, and this
+   * refusal is what replaced it — `test/source-length.test.ts` asks one question of one field and
+   * this guarantees the answer means what it says.
+   */
+  it('refuses a recipe that claims both a file and a built-in sound', () => {
+    const both = RecipeSchema.safeParse(
+      recipe({
+        sourceAudio: { need: 'A sustained tonal source, two seconds or longer' },
+        soundSetup: {
+          sound: 'One of the ten supertones',
+          prep: { text: 'Hold SOUND', verified: { kind: 'manual', source: 'p.8' } },
+        },
+      }),
+    )
+    expect(both.success).toBe(false)
+    expect(JSON.stringify(both.success ? [] : both.error.issues)).toContain(
+      'never both',
+    )
+    // Either alone is fine, so the refusal is about the pair rather than about the field.
+    expect(
+      RecipeSchema.safeParse(recipe({ sourceAudio: { need: 'A short, dark kick with no tail' } }))
+        .success,
+    ).toBe(true)
+    expect(
+      RecipeSchema.safeParse(
+        recipe({
+          soundSetup: {
+            sound: 'One of the ten supertones',
+            prep: { text: 'Hold SOUND', verified: { kind: 'manual', source: 'p.8' } },
+          },
+        }),
+      ).success,
+    ).toBe(true)
+  })
+
   it('takes clock transports as open strings and the main output as a closed pair', () => {
     // DESIGN.md gives an example transport list but never freezes it, so a box with an
     // unanticipated transport still parses; only an empty name is refused.
