@@ -1801,33 +1801,53 @@ export const ArticulationEntrySchema = z.strictObject({
  * directions; #518's session read nine recipes as silent that all state something, then missed
  * the Octatrack's `LOOP MODE ON` and the Rytm's `LOP` because a loop is spelled differently on
  * every box. That is `CLAUDE.md`'s standing rule arriving here: a matching identifier is not
- * evidence. So the recipe says which of its own parameters does it, and no pattern has to guess.
+ * evidence. So the recipe says what its own voice does, and no pattern has to guess.
  *
- * ## The three states
+ * ## The four states
  *
  *  - `loops` — the voice repeats the file for as long as the note lasts, so any usable length
  *    covers any hold.
- *  - `stretches` — the voice fits the file to a musical length, so the file's own duration is
- *    a starting point rather than the hold.
- *  - `plays-once` — the file plays at its own length and stops. This is the state that owes a
- *    duration covering the worst-case hold, and the only one of the three that does.
+ *  - `stretches` — the voice fits the file to a musical length, so the file's own duration is a
+ *    starting point rather than the hold.
+ *  - `gated` — the note gates playback: the file starts on the note and stops on release, and it
+ *    also stops when it runs out. **The hold is the shorter of the two**, so a file shorter than
+ *    the hold still leaves a reader short, exactly as `plays-once` does.
+ *  - `plays-once` — the file plays at its own length and stops, whatever the note does.
  *
- * ## `param` names a parameter of this recipe, and the schema checks it
+ * `gated` and `plays-once` both owe a duration covering the worst-case hold. They are separate
+ * states because they fail differently at the machine: a `gated` part that stops early is a
+ * sample running out under a held pad, and a `plays-once` part that overruns is a sample playing
+ * on after the note ended. A rule folding them together would print one of those two sentences
+ * over both.
  *
- * `RecipeSchema` refuses a `param` no parameter in `params` carries. The claim is that *this
- * setting, in this recipe*, puts the voice in this state, and a name pointing at nothing reads
- * as evidence while carrying none — the failure `capabilityEvidence`'s closed path set exists to
- * stop (§2.6), and the one `patch` already refuses for a jack.
+ * **The MPC is why `gated` exists.** Its `Sample Play` selector has three values on p.212 of the
+ * v3.7 guide, and the state above is the middle one: *"Note On: The sample will play only as long
+ * as the pad is held. This is better for longer samples so you can control a sound's duration by
+ * pressing and holding its corresponding pad."* `mpc-texture-soft` is in it. The first draft of
+ * this type had three states and would have recorded that recipe as `plays-once`, which is what
+ * the same page calls `One Shot` — *"The entire sample will play from start to end"* — and is the
+ * option this recipe deliberately avoids. `Note Off` is the third value and is `plays-once` here:
+ * the whole sample plays, and only the moment it starts differs.
  *
- * It also keeps the pairing from coming apart, which is `CLAUDE.md`'s rule for a value read off
- * a scale a switch selects: the TR-8S carries the tone in the recipe so the printed range cannot
- * be the wrong one, and a loop claim carries its switch here for the same reason. There is no
- * `value` beside the name, because the parameter already holds one and a second copy is one
- * edit away from disagreeing with it.
+ * ## `control` says how the state is selected, and only one of its two forms is checkable
  *
- * A box that loops with no setting to name therefore cannot make the claim, and the recipe stays
- * silent instead. Silence is the fourth state and it is the absence of this field, as it is for
- * `content` (§2.6): a claim of not-knowing is a field somebody has to remember to write.
+ *  - `parameter` — a setting in this recipe puts the voice in this state, named. `RecipeSchema`
+ *    refuses a name no entry in `params` carries, as it refuses a patch entry naming an
+ *    undeclared jack (§3.3). A name pointing at nothing reads as evidence while carrying none.
+ *  - `inherent` — the box does this and there is nothing to set. The claim still carries a page.
+ *
+ * The first draft required a parameter everywhere, which is wrong twice over. It cannot describe
+ * a box that loops unconditionally, so those recipes would have stayed silent and read as
+ * unexamined. And it would push an author toward naming an adjacent parameter to satisfy the
+ * shape, which is the failure mode this field exists to remove.
+ *
+ * There is no `value` beside the name, because the parameter already holds one and a second copy
+ * is one edit away from disagreeing with it. Naming the parameter is also what keeps the pairing
+ * from coming apart, which is `CLAUDE.md`'s rule for a value read off a scale a switch selects:
+ * the TR-8S carries the tone in the recipe so the printed range cannot be the wrong one.
+ *
+ * Silence is the fifth state and it is the absence of this field, as it is for `content` (§2.6):
+ * a claim of not-knowing is a field somebody has to remember to write.
  *
  * ## `evidence` is a page or a unit, and it is required
  *
@@ -1840,16 +1860,53 @@ export const ArticulationEntrySchema = z.strictObject({
  *
  * The audit counts each declared playback as one capability fact (§9), since it is a claim about
  * what the voice does rather than about the value of a parameter — the same kind of claim
- * `capabilityEvidence` holds, made per recipe because the same box loops under one recipe and
+ * `capabilityEvidence` holds, made per recipe because the same box gates under one recipe and
  * plays once under another. That is why it is counted in `caps` and not among the points.
  */
 export type SourcePlayback =
   /** The voice repeats the file for as long as the note lasts. */
-  | { kind: 'loops'; param: string; evidence: PlaybackEvidence }
+  | { kind: 'loops'; control: PlaybackControl; evidence: PlaybackEvidence }
   /** The voice fits the file to a musical length. */
-  | { kind: 'stretches'; param: string; evidence: PlaybackEvidence }
-  /** The file plays at its own length and stops, so that length is the hold. */
-  | { kind: 'plays-once'; param: string; evidence: PlaybackEvidence }
+  | { kind: 'stretches'; control: PlaybackControl; evidence: PlaybackEvidence }
+  /** The note gates the file: it stops on release, and it stops when the file runs out. */
+  | { kind: 'gated'; control: PlaybackControl; evidence: PlaybackEvidence }
+  /** The file plays at its own length and stops, whatever the note does. */
+  | { kind: 'plays-once'; control: PlaybackControl; evidence: PlaybackEvidence }
+
+/**
+ * §3/#518. **Does the file's own length have to cover the hold?**
+ *
+ * The question #506 asks, answered from the classification rather than from prose. `loops` and
+ * `stretches` say no: the voice makes the file last. `gated` and `plays-once` say yes, because
+ * the file ends when it ends under both, whatever the note is doing at the time.
+ *
+ * One function rather than a comparison written wherever it is needed, so the two bounded states
+ * cannot drift apart in one caller — which is the same reason `evidenceKind` is one function with
+ * four readers. It has no caller in `lib` until the recipes are migrated and the duration rule is
+ * written against it.
+ */
+export function needsSourceCoveringHold(playback: SourcePlayback): boolean {
+  return playback.kind === 'gated' || playback.kind === 'plays-once'
+}
+
+/**
+ * How the voice comes to be in that state. `parameter` is a setting the reader makes here and is
+ * checked against this recipe's `params`; `inherent` is the box doing it with nothing to set, and
+ * there is nothing to check beyond the citation the claim already carries.
+ */
+export type PlaybackControl =
+  | { kind: 'parameter'; param: string }
+  | { kind: 'inherent' }
+
+export const PlaybackControlSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('parameter'),
+    param: z
+      .string()
+      .min(1, 'name the parameter of this recipe that puts the voice in this state'),
+  }),
+  z.strictObject({ kind: z.literal('inherent') }),
+])
 
 /**
  * A page somebody can re-read or a reading somebody took off the unit. The two halves of `Cite`
@@ -1871,18 +1928,17 @@ export const PlaybackEvidenceSchema = z.discriminatedUnion('kind', [
   }),
 ])
 
-const playbackVariant = (kind: 'loops' | 'stretches' | 'plays-once') =>
+const playbackVariant = (kind: SourcePlayback['kind']) =>
   z.strictObject({
     kind: z.literal(kind),
-    param: z
-      .string()
-      .min(1, 'name the parameter of this recipe that puts the voice in this state'),
+    control: PlaybackControlSchema,
     evidence: PlaybackEvidenceSchema,
   })
 
 export const SourcePlaybackSchema = z.discriminatedUnion('kind', [
   playbackVariant('loops'),
   playbackVariant('stretches'),
+  playbackVariant('gated'),
   playbackVariant('plays-once'),
 ])
 
@@ -2320,23 +2376,28 @@ export const RecipeSchema = z
     path: ['soundSetup'],
   })
   /*
-   * §3/#518. **A playback claim names a parameter this recipe authors**, and the schema checks it.
+   * §3/#518. **A playback claim controlled by a parameter names one this recipe authors**, and
+   * the schema checks it.
    *
-   * The claim is that this setting, in this recipe, is what loops or stretches or plays the file
-   * once. A name matching nothing in `params` reads as evidence and carries none, which is the
-   * failure `capabilityEvidence`'s closed path set is for (§2.6) and the one a patch entry naming
-   * an undeclared jack has been refused for since §3.3.
+   * The claim is that this setting, in this recipe, is what loops or stretches or gates the file.
+   * A name matching nothing in `params` reads as evidence and carries none, which is the failure
+   * `capabilityEvidence`'s closed path set is for (§2.6) and the one a patch entry naming an
+   * undeclared jack has been refused for since §3.3.
+   *
+   * An `inherent` control is left alone because there is nothing to check: it says the box does
+   * this with no setting to make, and the citation the claim already carries is the whole of the
+   * evidence. Demanding a parameter there is what pushes an author into naming an adjacent one.
    *
    * It is here rather than inside `SourceAudioSchema` because that shape cannot see `params`.
    */
   .superRefine((r, ctx) => {
-    const playback = r.sourceAudio?.playback
-    if (playback === undefined) return
-    if (r.params.some((param) => param.name === playback.param)) return
+    const control = r.sourceAudio?.playback?.control
+    if (control?.kind !== 'parameter') return
+    if (r.params.some((param) => param.name === control.param)) return
     ctx.addIssue({
       code: 'custom',
-      message: `sourceAudio.playback names parameter '${playback.param}', which this recipe does not set — the claim is about a setting the reader makes here (§3/#518)`,
-      path: ['sourceAudio', 'playback', 'param'],
+      message: `sourceAudio.playback names parameter '${control.param}', which this recipe does not set — the claim is about a setting the reader makes here (§3/#518)`,
+      path: ['sourceAudio', 'playback', 'control', 'param'],
     })
   })
   // §3.7/#496. A preamble is one half of a routing line, so the other half has to exist. Without

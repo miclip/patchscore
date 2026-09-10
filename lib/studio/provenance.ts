@@ -184,8 +184,8 @@ export type DeviceAudit = { deviceId: string; counts: AuditCounts; findings: Aud
 /**
  * §3/#518, §9. **A playback claim is a capability fact made on a recipe**, so it lands in `caps`.
  *
- * What it asserts is that the voice loops, stretches or plays the file once, cited to a page or
- * to a unit. That is the same kind of claim `capabilityEvidence` holds about a box's clock or its
+ * What it asserts is that the voice loops, stretches, gates or plays the file once, cited to a
+ * page or to a unit. That is the same kind of claim `capabilityEvidence` holds about a box's clock or its
  * jacks, and it is nothing like a point value: no reader dials it, and it has no range to be
  * legal within. Counting it among the points would have moved the one number invariant 4 relies
  * on, for a claim that is not about a parameter's value.

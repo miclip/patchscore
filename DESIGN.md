@@ -1209,9 +1209,10 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   sourceAudio: {
     need: 'A sustained tonal or atmospheric recording, two seconds or longer',
     playback: {
-      kind: 'loops',              // or 'stretches', or 'plays-once'
-      param: 'LOP',               // a parameter this recipe sets; `RecipeSchema` checks it
-      evidence: cite(72),         // a manual page or a reading off the unit. Required.
+      // loops | stretches | gated | plays-once
+      kind: 'gated',
+      control: { kind: 'parameter', param: 'Sample Play' },   // or { kind: 'inherent' }
+      evidence: cite(212),                     // a manual page or a unit reading. Required.
     },
   }
   ```
@@ -1228,26 +1229,49 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   detector flagged itself, #516's count of built-in sources was wrong in both directions, and
   #518's session first read nine recipes as silent that all state something, then missed the
   Octatrack's `LOOP MODE ON` and the Rytm's `LOP`. A loop is spelled differently on every box, so a
-  pattern over names cannot find it. The recipe names its own parameter instead.
+  pattern over names cannot find it. The recipe says what its own voice does instead.
 
-  `param` names a parameter in this recipe's `params`, and `RecipeSchema` refuses one that matches
-  nothing there, as it refuses a patch entry naming an undeclared jack (§3.3). The claim is that
-  *this setting, in this recipe*, puts the voice in that state, and it keeps the pairing from
-  coming apart the way `CLAUDE.md` requires of a value read off a switched scale. There is no
-  `value` beside the name: the parameter holds one already.
+  **Four states, and `gated` is the one the MPC forced.** `loops` repeats the file for as long as
+  the note lasts and `stretches` fits it to a musical length, so under either, any usable length
+  covers any hold. `gated` is the note gating playback: the file starts on the note, stops on
+  release, **and stops when it runs out**. `plays-once` is the file playing at its own length
+  whatever the note does. The last two both owe a duration covering the worst-case hold, which
+  `needsSourceCoveringHold` is the one place that says so.
+
+  `gated` was missing from the first draft of this shape, and `mpc-texture-soft` is the case: it
+  sets `Sample Play` to `Note On`, which p.212 of the v3.7 guide describes as *"The sample will
+  play only as long as the pad is held. This is better for longer samples so you can control a
+  sound's duration by pressing and holding its corresponding pad."* With three states that recipe
+  would have been recorded as `plays-once`, which is the same page's `One Shot` — *"The entire
+  sample will play from start to end"* — and the option the recipe deliberately avoids. (`Note
+  Off` is the third value and is `plays-once` here: the whole sample plays, and only the moment it
+  starts differs.) Both states owe a duration, so folding them together would have looked harmless
+  in a duration rule and been wrong at the machine: a `gated` part that stops early is a sample
+  running out under a held pad, a `plays-once` part that overruns is a sample playing on after the
+  note ended.
+
+  **`control` says how the state is selected, in two forms.** `parameter` names a setting in this
+  recipe's `params`, and `RecipeSchema` refuses a name matching nothing there, as it refuses a
+  patch entry naming an undeclared jack (§3.3). The claim is that *this setting, in this recipe*,
+  puts the voice in that state, which keeps the pairing from coming apart the way `CLAUDE.md`
+  requires of a value read off a switched scale. `inherent` is the box doing it with nothing to
+  set; there is nothing to check beyond the citation the claim already carries. Requiring a
+  parameter everywhere would leave a box that loops unconditionally silent — reading as
+  unexamined — and would push an author toward naming an adjacent parameter to satisfy the shape,
+  which is the failure this field exists to remove. There is no `value` beside the name: the
+  parameter holds one already.
 
   `evidence` is a manual page or a reading off the unit, and it is required. It is not a
   `Verified`, because `false` there would say the classification was made and nothing was checked,
   which is the state this replaces; and `maker` (#191) is a published figure, which does not
   describe what a track does with a note it is holding. **The audit counts each declared playback
   as one capability fact** (§9): it is a claim about what the voice does, sitting where
-  `capabilityEvidence` sits, made per recipe because the same box loops under one recipe and plays
+  `capabilityEvidence` sits, made per recipe because the same box gates under one recipe and plays
   once under another.
 
-  The field is optional, and its absence says nothing has been established — the fourth state, as
-  it is for `content` (§2.6). A box that loops with no setting to name cannot make the claim and
-  stays silent. Nothing in the shipped library declares one yet; the migration is the next step,
-  and until it lands `test/source-length.test.ts` still reads prose.
+  The field is optional, and its absence says nothing has been established — the fifth state, as it
+  is for `content` (§2.6). Nothing in the shipped library declares one yet; the migration is the
+  next step, and until it lands `test/source-length.test.ts` still reads prose.
 
 - **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
   (#516).
