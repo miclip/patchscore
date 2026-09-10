@@ -4349,6 +4349,41 @@ button:active {
 }
 
 /*
+ * §8/#530. **The beat mark has to survive the struck state**, and it did not.
+ *
+ * `.step.beat` and `.step.on` have equal specificity and `.on` comes second, so its
+ * `border-color` won and a struck step on a beat drew identically to a struck step off one. The
+ * mark that lets a reader count bars only ever appeared on steps that are *silent* — worst on the
+ * patterns that need it most. `blue-monday-bass` strikes all sixteen sixteenths and rendered as a
+ * solid block two rows tall with no way to find beat 3.
+ *
+ * An inset rule on the leading edge rather than a border, for three reasons. It **costs no width**,
+ * so a sixteen-cell row still fits where it fitted before — the grid sits in `.table-scroll` and
+ * widening it would push patterns into a horizontal scroll they did not need (#21). It is a
+ * **line, not a hue**, so it reads in monochrome print and to a reader who cannot separate the
+ * accent from the panel — the rule §10 already sets for the rack cable. And it draws *inside* the
+ * cell, so it cannot be overridden by whatever paints the fill.
+ *
+ * Two colours because the ground differs: `--edge-strong` reads against the unlit panel and
+ * vanishes on `--accent`, where a dark rule is what shows.
+ */
+.step.beat {
+  box-shadow: inset 2px 0 0 var(--edge-strong);
+}
+
+.step.on.beat {
+  box-shadow: inset 2px 0 0 rgb(0 0 0 / 45%);
+}
+
+/*
+ * No print override here: the main print block already names `.step`, `.step.on` and `.step.beat`
+ * under `print-color-adjust: exact`, because a grid's meaning *is* the fill, so the inset rule
+ * prints with it. Worth knowing if one is ever wanted — a second print block placed above the main
+ * one becomes the first in the file, and `test/export.test.ts` finds the print stylesheet by index
+ * rather than by content, so it would silently assert against the fragment instead.
+ */
+
+/*
  * §8/#528. **The grid as text: invisible, and copied with the figure.**
  *
  * A reader who selected the grid on a phone and pasted it got the step numbers and nothing else,
