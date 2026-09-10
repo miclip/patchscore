@@ -2770,6 +2770,199 @@ restyle costs nothing and a lost cable fails.
 
 ---
 
+### 3.9 Reference samples: fourteen files, generated here, for a rig that makes no sound
+
+§3.8 answers *how do I make this sound on the box I own*, and for most rigs it is the better
+answer. It has nothing to say to one rig.
+
+**Seven of the library's devices can make no sound from scratch** — `elektron-digitakt`,
+`elektron-digitakt-ii`, `elektron-octatrack-mkii`, `polyend-tracker`, `roland-sp-404mk2`,
+`te-ep-133` and `te-ep-40`, all samplers, carrying **179 recipes between them and every one of
+those recipes asking for a file**. Somebody holding only those boxes opens `/samples` and is told
+how to synthesise a kick on a machine with no oscillator. That reader is who this is for, and it is
+the case #519 was filed for: *"someone buys a synth even with one osc and a sampler like the roland
+sp-404 and no drum machine."*
+
+**Fourteen one-shots cover 114 of those 179 recipes, 64%.**
+
+#### A reference sample is the target, not the answer
+
+Invariant 5, and it decides the copy on every surface that ever offers one. The recipe still says
+what to bring and §3.8 still says how to make one; this is a sound to compare against, so somebody
+who has never heard the difference between a rim and a closed hat has something to aim at. If a
+page's wording lets a reader take the download to *be* the sound the guide wants, every recipe
+pointing at it collapses to one timbre, and the library stops describing sounds and starts shipping
+one.
+
+#### What is in, and what is deliberately out
+
+The line is what can be made from noise, sines and envelopes without claiming something untrue.
+
+**In**: `kick`, `snare`, `clap`, `rim`, `tom`, `closed-hat`, `open-hat`, `ride`, `metallic`,
+`ghost-perc`, `noise`, `impact`, `riser`, `sweep`.
+
+**Out**:
+
+- **`vox-chop`.** A generator cannot make a voice, and a synthesised approximation offered as a
+  reference vocal would be a lie told to the reader least able to catch it. It is also the
+  most-asked-for role in the library at 21 recipes. #521 is the answer: a phone records one.
+- **The tonal roles** — `pad`, `sub`, `lead`, `stab`, `arp`, `acid`, `bass-mid`, `texture`. Anybody
+  with any synth is better served by §3.8, and a generated reference saw teaches nothing about what
+  a lead should be. `test/reference-samples.test.ts` asserts all nine are absent, so a later pass
+  that adds one has to come through that list deliberately.
+
+#### Generated, and that is the licence
+
+Every byte comes out of `lib/audio/reference.ts`. There is no sample pack behind it, nothing
+scraped, and no vendor audio near it — `manuals/` is gitignored precisely so nothing of that kind is
+redistributed, and these files have no such problem to manage. *Generated here* is checkable rather
+than asserted: `test/reference-samples.test.ts` hashes all fourteen on every commit.
+
+**Nothing is committed.** This repo has no binary story and #519's body says so. A generator removes
+the need for one, because the bytes are a pure function of one file. `npm run samples:wav` writes
+them to a gitignored directory for anybody who wants to listen.
+
+#### No dependency, and no platform maths library either
+
+#519 settled that this must not add an audio dependency, and it does not: a 44-byte RIFF header and
+16-bit PCM is `lib/audio/wav.ts`, written with `DataView` and an explicit `littleEndian` on every
+field. `Buffer` is deliberately not used: the byte order is then stated in the code rather than
+inherited from the CPU, which is the discipline §7.2 applies to locale, and nothing in the module
+needs Node.
+
+`lib/audio/dsp.ts` goes one step further and implements `sin` and `2^x` as polynomials in `+`, `-`,
+`*` and `/`. **Invariant 6 is byte-identical output on any platform**, and ECMAScript pins the four
+arithmetic operators to IEEE-754 with no extended precision and no contraction while leaving
+`Math.sin`, `Math.exp` and `Math.pow` implementation-approximated. Measured against `Math`, the
+series agree to `6.6e-10` and `2.4e-10`, against a 16-bit LSB of `3.05e-5`.
+
+**How much of that is doing work is worth stating plainly, because the first draft overstated it.**
+It was written expecting the browser to generate the download. It does not — the route below runs in
+Node, so every shipped byte is rendered by V8, which carries its own fdlibm port and is consistent
+across operating systems. A version of `dsp.ts` built on `Math.sin` would in all likelihood produce
+the same hashes on a laptop and on CI. The polynomial is insurance rather than a fix for an observed
+break, and it is kept because it costs sixty lines and no measurable time while covering the two
+cases the specification leaves open: a V8 that changes its approximation between versions, and a
+second host rendering these bytes later.
+
+Noise comes from a seeded xorshift32 — three shifts and three xors, all exact 32-bit integer
+operations — with a distinct fixed seed per role, for the reason invariant 7 bans `Math.random` in
+the resolver.
+
+#### Nobody working on this can hear them, so the descriptions are measured
+
+A hash proves a file has not changed and says nothing about whether a kick sounds like a kick. So
+every sentence in `reference.ts` that describes a sound is an assertion in
+`test/reference-samples.test.ts`: the kick, tom and impact put over 90% of their energy under
+300 Hz; both hats put over 95% above 3 kHz and are cut from one seeded burst of noise, so *differ
+only in decay* is proved by dividing one by the other rather than inferred from two spectra; the
+ghost note's centroid stays
+under 3 kHz; the metallic sounds are checked for partials off the harmonic grid; the riser's second
+half is more than twice as bright as its first and the sweep's is less than half. The container is
+parsed in the test by hand rather than through `wav.ts`'s own reader, because a writer verified by
+its inverse agrees with itself about a format it has got wrong. `ffprobe` was run over all fourteen
+independently, and `ffmpeg -af volumedetect` reads every one back at `max_volume: -1.0 dB`.
+
+Every file is peak-normalised to the same -1 dBFS and faded to exactly zero, so a reader
+auditioning the set is comparing timbre rather than gain staging and nothing clicks when a pad
+retriggers it. `ghost-perc` is normalised too: quietness is placement, and it is the reader's fader
+rather than the file's.
+
+#### Lengths, and the two device constraints they were checked against
+
+The shortest is the rim at 120 ms and the longest the riser at two seconds. #507 records that the
+Deluge's wavetable engine wants a wavetable over 20 ms; #517 records that the SP-404 caps a pad at
+ten seconds. Neither binds here, and the test asserts both rather than assuming it. **Neither is a
+floor on how short a file may be**: the ten seconds is the only length #517 settles, and five of
+these one-shots are under half a second by design. `ffmpeg`
+and `afconvert` exist if some box turns out to need AIFF or another rate, and **neither becomes a
+build dependency**.
+
+#### Where they are offered: a route, not a button that builds one
+
+**`/samples/<target-id>/reference.wav`**, a Node route handler. One segment past the page a reader
+is already on.
+
+Three shapes were available and the other two are worse. A committed binary is ruled out by #519's
+body: the repo has no binary story and fourteen files at broadcast quality is not the thing to start
+one for. A client-side generator behind a download button looks cheaper and is not — the synthesis
+is a filter bank, six oscillators, a noise source and a polynomial `sin`, and every reader who never
+clicked would have downloaded all of it instead of the file. A generated `Blob` also cannot be
+linked to, cached, `curl`'d, or opened on the tablet propped against the rack, and §8/#21 has that
+tablet as a primary context rather than a fallback.
+
+**The bytes are made at build, not at request**, and saying otherwise is the easy mistake this
+paragraph exists to stop. `generateStaticParams` with `dynamicParams = false` and a handler reading
+no dynamic API means Next runs the route fourteen times during `next build` and stores fourteen
+static response bodies under `.next/server/app/samples/<id>/reference.wav.body`, headers beside
+them; a request is served from those and the handler does not run again. What holds either way is
+the part #519 cares about — **the synthesis runs in Node and never in a browser, and no audio is
+committed**. `.next/` is ignored, so a checkout has no WAV in it.
+
+**The cache policy is `public, max-age=0, must-revalidate`, and it started out wrong.** It was
+`max-age=31536000, immutable`, which cannot work here: `immutable` tells a browser not to
+revalidate, so the `ETag` beside it is never consulted and never invalidates anything. The URL is
+stable and **not** content-addressed — `/samples/kick/reference.wav` is where the kick lives,
+whatever the kick sounds like this build — so an edit to `reference.ts` serves different bytes at
+the same address, and every reader who had already fetched it would have held the old file for a
+year. Revalidating makes that work as intended: a browser asks every time rather than serving a frozen
+copy, so **a changed build serves changed bytes at the same URL**.
+
+What the `ETag` *saves* is a separate question, and the answer measured against `next start` is
+nothing: a conditional request carrying a matching `If-None-Match` is answered `200` with the whole
+body, because Next does not implement conditional GET for a prerendered route handler. The tag is a
+correct content tag that a caching layer in front can use; on this server every revalidation costs
+the full 176 KB. That is worth stating rather than assuming, because the 304 is the thing everybody
+expects an `ETag` to buy.
+
+**`lib/audio/catalogue.ts` exists because of the bundle.** `sample-text.ts` has to answer *does this
+sound have a reference file*, and it is pulled into the browser by the sound page's client island;
+importing the generator to answer a yes-or-no question would have carried the whole synthesis into
+a page that never synthesises anything. Nothing about that would have failed — the page renders, the
+tests pass, the bundle is bigger. So the catalogue is fourteen objects, one lookup and one type
+import, and `test/reference-download.test.ts` walks the island's import graph to hold the line.
+
+#### What the two surfaces say, and it is one sentence
+
+> Need a sound to start from? Download this generated example. Compare it with the recipe's
+> description; it is a reference, not the answer.
+
+`REFERENCE_OFFER` in `sample-text.ts`, one string for both renderers (#495/#33) — this is the
+sentence where half an edit does the damage. It names what the file is twice and tells the reader
+what to do with it, which is compare.
+
+**Then a `Download WAV` link, the file name, and a stop.** A first cut also printed the length and a
+description of the synthesis — *sine falling 145 Hz to 48 Hz, with a noise tick* — and both had to
+come out. A reader here is deciding whether to click, and a generated example annotated with its own
+build reads as an authored answer carrying its own settings, directly above the box that actually
+has settings. Both facts are still in `catalogue.ts` and still printed by `npm run samples:wav`,
+which is where somebody deciding what to change wants them; the absence on the two surfaces is
+asserted rather than left to a golden, because it is the kind of detail that gets helpfully added
+back.
+
+It sits **above the rig section** in both. A reader who has just been told what the take must contain
+is the one an example helps; a reader who has scrolled past the settings for their own box already
+has the better answer. The order is the argument, and both renderers are asserted on it.
+
+It is printed **under a gap as well as under a made page**, and the gap is where it earns its place:
+a rig of nothing but samplers reaches `loads-audio` — *bring a recording, or record one* — and for
+eleven of these roles that sentence is the whole document. `test/golden/kick-on-a-sampler.sample.golden.md`
+pins exactly that page, and its whole diff against `vocal-chop-on-a-sampler` is the reference block.
+
+The Markdown link is absolute and the page's is relative: a `.md` is read after it has left the
+site (#487). **The ten targets with no reference print nothing** — no heading, no sentence, no link,
+and the route answers 404 rather than an empty file, because a zero-byte `vocal-chop.wav` is a worse
+answer than none.
+
+#### What this step is not
+
+No change to any device, recipe, template or role request, so `npm run audit` and
+`npm run measure:search` are untouched by it — confirmed rather than assumed. No new capability, no
+recording arm on any device, and no second address space: the file lives under the sound it
+illustrates.
+
+---
+
 ## 4. Layer 3 — Templates
 
 Genre definitions. Device-agnostic — they emit role requests, structure and harmony,

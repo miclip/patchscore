@@ -10,7 +10,7 @@ import { renderSample } from '@/lib/studio/sample-markdown'
 /**
  * §3.8/#520. The committed bytes for a sound page.
  *
- * **Three fixtures, and each is a rendering branch the other two do not reach.** The brief asked
+ * **Four fixtures, and each is a rendering branch the others do not reach.** The brief asked
  * for one; #511's lesson, recorded in `riffs.ts` beside this file, is that a shape with no
  * committed bytes is one a renderer change can quietly lose, and `sample-markdown.ts` holds its
  * own copy of the parameter writer rather than sharing the riff's.
@@ -24,6 +24,9 @@ import { renderSample } from '@/lib/studio/sample-markdown'
  *  - `vocal-chop-on-a-sampler` — the gap, in bytes: the `loads-audio` sentence, the `Content` line
  *    saying what that box actually ships (§2.6/#111), and **nothing after it**. A gap ends the
  *    document, so the shortest fixture here is the one that pins the absence of a recording block.
+ *  - `kick-on-a-sampler` — the same box and the same gap, on a role that **is** offered a reference
+ *    file (§3.9/#519). Its whole diff against the fixture above is the download block, and it is
+ *    the gap branch rather than a made one because a sampler-only rig is who #519 was filed for.
  *
  * The other three gap arms are pinned as *outcomes* by `test/sample-session.test.ts` and as
  * *sentences* by `test/sample-golden.test.ts`: a gap is one line, and a golden per line would be
@@ -49,6 +52,7 @@ export const SAMPLE_NAMES = [
   'texture-on-a-neutron',
   'wobble-on-a-mother-32',
   'vocal-chop-on-a-sampler',
+  'kick-on-a-sampler',
 ] as const
 export type SampleName = (typeof SAMPLE_NAMES)[number]
 
@@ -71,6 +75,24 @@ const FIXTURES: Record<SampleName, () => { target: SampleTarget; devices: readon
   // sentence under it saying what the box actually ships, and the document ending there.
   'vocal-chop-on-a-sampler': () => ({
     target: target('vocal-chop'),
+    devices: rig('elektron-digitakt'),
+  }),
+  /*
+   * §3.9/#519. **The reader this whole step is for, and the shortest useful document in the
+   * library.**
+   *
+   * The same box as the fixture above and a role that *is* offered a reference file. Everything
+   * else about the two documents is the same shape — `loads-audio`, a content sentence, and a stop
+   * — so the diff between them is exactly the reference block and nothing else, which is the
+   * comparison a reviewer wants when this block changes.
+   *
+   * It is the gap branch on purpose. A rig of nothing but samplers is told *bring a recording, or
+   * record one*, and for eleven of these roles that sentence is the whole page. The download is the
+   * one thing on it that reader can act on, so the branch where the page is shortest is the branch
+   * where dropping the offer would cost the most.
+   */
+  'kick-on-a-sampler': () => ({
+    target: target('kick'),
     devices: rig('elektron-digitakt'),
   }),
 }

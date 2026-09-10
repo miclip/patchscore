@@ -6,6 +6,9 @@ import type {
   SampleVoicing,
 } from '@/lib/core'
 import { citationSentence, count, resolvedClaims } from '@/lib/core'
+import { SITE_ORIGIN } from '@/lib/core/guide'
+import type { ReferenceSample } from '@/lib/audio/catalogue'
+import { referenceSampleFor } from '@/lib/audio/catalogue'
 import type { RecordingDestination } from './destination'
 
 /**
@@ -122,6 +125,69 @@ export function sampleDestination(destination: RecordingDestination): string {
 
 /** The action that ends the page, up to the file name — which each renderer sets in its own mono. */
 export const SAMPLE_RECORD = 'Record it and name it '
+
+// ---------------------------------------------------------------------------
+// The reference download (§3.9/#519)
+// ---------------------------------------------------------------------------
+
+/**
+ * §3.9/#519/invariant 5. **The one sentence that decides whether these files help or ruin the
+ * library**, and the reason it is a constant rather than three sentences in three renderers.
+ *
+ * A reference sample is *the target, not the answer*. The recipe above still says what to bring and
+ * the rig section below still says how to make one; this is a sound to compare against, so somebody
+ * who has never heard the difference between a rim and a closed hat has something to aim at. If the
+ * wording lets a reader take the download to **be** the sound the guide wants, every recipe
+ * pointing at it collapses to one timbre and the library stops describing sounds and starts
+ * shipping one.
+ *
+ * So the sentence names what it is twice — *generated example*, and *a reference, not the answer* —
+ * and it tells the reader what to do with it, which is compare. It is one string because #495's
+ * rule is that a sentence written twice is a sentence two people can edit half of, and this is the
+ * sentence where half an edit does the damage.
+ */
+export const REFERENCE_OFFER =
+  'Need a sound to start from? Download this generated example. ' +
+  'Compare it with the recipe’s description; it is a reference, not the answer.'
+
+/** The link's own words. Says the format, because a reader is deciding whether their box takes it. */
+export const REFERENCE_LINK = 'Download WAV'
+
+/**
+ * The reference file offered for a target, or `undefined` for the nine roles that offer none.
+ *
+ * From `@/lib/audio/catalogue` rather than `@/lib/audio`: the barrel reaches the synthesis, and
+ * this module is pulled into the browser by the sound page's client island. The catalogue is
+ * fourteen objects and a lookup. `test/reference-download.test.ts` walks the import graph to hold
+ * that line, because it is one an ordinary-looking import would cross without any symptom.
+ */
+export function sampleReference(target: SampleTarget): ReferenceSample | undefined {
+  return referenceSampleFor(target.role)
+}
+
+/**
+ * `/samples/kick/reference.wav`. Where the bytes are, keyed by **target** and not by role.
+ *
+ * The address a reader is already at, plus one segment. Keying it by role would have given
+ * `/samples/metallic-hit` a link to `/reference/metallic.wav`, which is a second address space for
+ * a page that already has one. The file it downloads is still named for the role — see
+ * `ReferenceSample.file`.
+ */
+export function referenceHref(target: SampleTarget): string {
+  return `/samples/${target.id}/reference.wav`
+}
+
+/**
+ * The same address, absolute.
+ *
+ * The Markdown document is the one that needs it. A `.md` file is read after it has left the site —
+ * printed, dropped in a folder, opened on the machine next to the rack — and a root-relative link
+ * in one resolves against nothing. Every other link this renderer writes is absolute for the same
+ * reason (#487). The React page uses the relative form, because it is still on the site.
+ */
+export function referenceUrl(target: SampleTarget): string {
+  return `${SITE_ORIGIN}${referenceHref(target)}`
+}
 
 // ---------------------------------------------------------------------------
 // The voice

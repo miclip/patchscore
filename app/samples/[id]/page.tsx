@@ -5,7 +5,13 @@ import { SampleRig } from '@/components/sample/sample-rig'
 import type { SampleTarget } from '@/lib/core'
 import { SAMPLE_TARGETS, sampleTargetById } from '@/lib/samples'
 import { samplePage } from '@/lib/studio/sample-page'
-import { sampleLead } from '@/lib/studio/sample-text'
+import {
+  REFERENCE_LINK,
+  REFERENCE_OFFER,
+  referenceHref,
+  sampleLead,
+  sampleReference,
+} from '@/lib/studio/sample-text'
 
 /**
  * §3.8/#520. **One sound, at its own address.**
@@ -28,6 +34,13 @@ import { sampleLead } from '@/lib/studio/sample-text'
  *
  * **No song and no figure.** No direction, no mood, no seed, no arrangement, no clock, no
  * sections, no density, no notes, no step grid and no harmony. A one-shot has none of them.
+ *
+ * **The reference download is server-rendered, above the rig** (§3.9/#519). It depends on the
+ * target and on nothing the reader owns, so it belongs in the prerendered half with the technique
+ * rather than inside `SampleRig` — which also keeps the synthesis out of the client bundle
+ * entirely. `sampleReference` reads `lib/audio/catalogue`, fourteen objects and a lookup; the bytes
+ * are made in Node by the `reference.wav` route beside this file. Ten of the twenty-four targets
+ * print no section at all.
  */
 
 export const dynamicParams = false
@@ -60,6 +73,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
   const { id } = await params
   const target = find(id)
   if (target === undefined) notFound()
+  const reference = sampleReference(target)
 
   return (
     <main className="shell catalogue-page sample-page">
@@ -76,6 +90,22 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           <p key={paragraph.slice(0, 32)}>{paragraph}</p>
         ))}
       </section>
+
+      {reference !== undefined && (
+        <section className="panel riff-panel sample-reference">
+          <header>
+            <h2>A reference file</h2>
+          </header>
+          <p>{REFERENCE_OFFER}</p>
+          <p className="sample-reference-file">
+            <a href={referenceHref(target)} download={reference.file}>
+              {REFERENCE_LINK}
+            </a>
+            {' — '}
+            <span className="mono">{reference.file}</span>
+          </p>
+        </section>
+      )}
 
       <SampleRig targetId={target.id} />
 

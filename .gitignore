@@ -25,3 +25,8 @@ next-env.d.ts
 
 # local env
 .env*.local
+
+# `npm run samples:wav` output. §3.9/#519: the reference samples are generated rather than
+# committed, and this is where a run of the generator lands so somebody can listen to them.
+# Anchored and narrow: this ignores one generated directory, not every `tmp` in the tree.
+/tmp/reference-samples/

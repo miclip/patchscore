@@ -1455,6 +1455,26 @@ body {
   margin-bottom: 0;
 }
 
+/*
+ * §3.9/#519. The reference download sits between the technique and the rig, and is prose plus one
+ * line. It takes the reading measure for the same reason the technique above it does, and the file
+ * line stays monospace and wraps rather than shrinking — #21, read at arm's length at the machine.
+ */
+.sample-reference p {
+  margin: 0 0 10px;
+  max-width: 66ch;
+  min-width: 0;
+}
+
+.sample-reference p:last-child {
+  margin-bottom: 0;
+}
+
+.sample-reference-file {
+  color: var(--ink-dim);
+  overflow-wrap: break-word;
+}
+
 .riff-note-summary,
 .riff-grid-lead {
   margin: 0 0 10px;

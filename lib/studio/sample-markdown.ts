@@ -4,6 +4,7 @@ import type {
   ResolvedModulationEnd,
   ResolvedParam,
   SampleResolution,
+  SampleTarget,
   SampleVoicing,
 } from '@/lib/core'
 import {
@@ -18,13 +19,17 @@ import {
 } from '@/lib/core'
 import { READER_SUPPLIED } from './destination'
 import {
+  REFERENCE_LINK,
+  REFERENCE_OFFER,
   SAMPLE_RECORD,
+  referenceUrl,
   sampleCitation,
   sampleContent,
   sampleDestination,
   sampleFileName,
   sampleGap,
   sampleLead,
+  sampleReference,
   sampleSubstitution,
   sampleTitle,
   sampleVoiceHeading,
@@ -240,6 +245,44 @@ function contentLines(resolution: SampleResolution): string[] {
   return out
 }
 
+/**
+ * §3.9/#519. **The reference download, above the rig and under both outcomes.**
+ *
+ * Placed before *Where to make it* on purpose. A reader who has just been told what the take has to
+ * contain is the one who benefits from hearing an example of it; a reader who has scrolled past the
+ * settings for their own box has already got the better answer. The order is the argument.
+ *
+ * **It is printed under a gap as well as under a made page**, and the gap is where it matters most.
+ * A rig of nothing but samplers reaches `loads-audio` — *bring a recording, or record one* — and
+ * for eleven of these roles that gap is the whole document. The download is the only thing on the
+ * page that reader can act on today, so dropping it on the branch where the page is shortest would
+ * withhold it from exactly the person #519 was filed for.
+ *
+ * **Nine roles print nothing at all** — no heading, no sentence, no link. See `catalogue.ts`.
+ *
+ * The link is absolute (`referenceUrl`), because a `.md` is read after it has left the site.
+ *
+ * **The file name and nothing after it.** A first cut printed the length and a sentence describing
+ * the synthesis — *sine falling 145 Hz to 48 Hz* — and both had to go. A reader here is deciding
+ * whether to click a link, not reading a spec sheet, and a description of how the example was built
+ * invites exactly the reading invariant 5 forbids: it makes the generated file look like an
+ * authored answer with its own settings, sitting above the box that actually has settings. The
+ * length and the description are still carried by `catalogue.ts` and still printed by
+ * `npm run samples:wav`, which is where somebody deciding what to change wants them.
+ */
+function referenceLines(target: SampleTarget): string[] {
+  const sample = sampleReference(target)
+  if (sample === undefined) return []
+  return [
+    '## A reference file',
+    '',
+    REFERENCE_OFFER,
+    '',
+    `[${REFERENCE_LINK}](${referenceUrl(target)}) — \`${sample.file}\``,
+    '',
+  ]
+}
+
 // ---------------------------------------------------------------------------
 // The document
 // ---------------------------------------------------------------------------
@@ -264,6 +307,7 @@ export function renderSample(resolution: SampleResolution): string {
     out.push(paragraph)
   })
   out.push('')
+  out.push(...referenceLines(target))
   if (resolution.outcome !== 'made') {
     /*
      * §3.8. **A gap ends the document.** The page has just said the rig cannot make this sound, and
