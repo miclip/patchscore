@@ -15,6 +15,7 @@ import {
   PatchEntrySchema,
   SoundSetupSchema,
   SourceAudioSchema,
+  SourcePlaybackSchema,
   PatternSchema,
   PhysicalSpecSchema,
   ProvenanceSchema,
@@ -39,6 +40,7 @@ import {
   type PatchEntry,
   type SoundSetup,
   type SourceAudio,
+  type SourcePlayback,
   type Pattern,
   type PhysicalSpec,
   type Provenance,
@@ -99,6 +101,12 @@ describe('schemas and types stay in step', () => {
 
     expectTypeOf<SoundSetup>().toExtend<z.infer<typeof SoundSetupSchema>>()
     expectTypeOf<z.infer<typeof SoundSetupSchema>>().toExtend<SoundSetup>()
+
+    // §3/#518. Bound in its own right rather than through `SourceAudio`: it is a discriminated
+    // union, and a variant added to the type and not to the schema would still satisfy a binding
+    // taken on the parent, since the parent's field is optional on both sides.
+    expectTypeOf<SourcePlayback>().toExtend<z.infer<typeof SourcePlaybackSchema>>()
+    expectTypeOf<z.infer<typeof SourcePlaybackSchema>>().toExtend<SourcePlayback>()
 
     expectTypeOf<ArticulationEntry>().toExtend<z.infer<typeof ArticulationEntrySchema>>()
     expectTypeOf<z.infer<typeof ArticulationEntrySchema>>().toExtend<ArticulationEntry>()

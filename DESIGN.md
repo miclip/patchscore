@@ -1202,6 +1202,53 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   loaded and nothing is stretched here"* written into a `need` whose documented job is saying what
   to load. Selecting a built-in sound is `soundSetup`, below.
 
+  **`playback` says what the voice does with the file, and it is what makes a duration
+  checkable** (#518).
+
+  ```ts
+  sourceAudio: {
+    need: 'A sustained tonal or atmospheric recording, two seconds or longer',
+    playback: {
+      kind: 'loops',              // or 'stretches', or 'plays-once'
+      param: 'LOP',               // a parameter this recipe sets; `RecipeSchema` checks it
+      evidence: cite(72),         // a manual page or a reading off the unit. Required.
+    },
+  }
+  ```
+
+  #506 asked a file-fed recipe on a held role to say how long its source has to be, and #517 wrote
+  that sentence into the seventeen that said nothing. A stated duration is still not a sufficient
+  one: `mpc-texture-soft` says *two seconds or longer* against a `texture` some direction holds for
+  32 seconds, and `rytm-texture-soft` says the same two seconds beside `LOP`, which holds the
+  sample for the length of the note. One of those is short by a factor of sixteen. A test over the
+  prose passes both, which is `CLAUDE.md`'s standing rule about a cited range arriving on a stated
+  length.
+
+  **The classification was read out of prose four times and gave a wrong count four times** — #517's
+  detector flagged itself, #516's count of built-in sources was wrong in both directions, and
+  #518's session first read nine recipes as silent that all state something, then missed the
+  Octatrack's `LOOP MODE ON` and the Rytm's `LOP`. A loop is spelled differently on every box, so a
+  pattern over names cannot find it. The recipe names its own parameter instead.
+
+  `param` names a parameter in this recipe's `params`, and `RecipeSchema` refuses one that matches
+  nothing there, as it refuses a patch entry naming an undeclared jack (§3.3). The claim is that
+  *this setting, in this recipe*, puts the voice in that state, and it keeps the pairing from
+  coming apart the way `CLAUDE.md` requires of a value read off a switched scale. There is no
+  `value` beside the name: the parameter holds one already.
+
+  `evidence` is a manual page or a reading off the unit, and it is required. It is not a
+  `Verified`, because `false` there would say the classification was made and nothing was checked,
+  which is the state this replaces; and `maker` (#191) is a published figure, which does not
+  describe what a track does with a note it is holding. **The audit counts each declared playback
+  as one capability fact** (§9): it is a claim about what the voice does, sitting where
+  `capabilityEvidence` sits, made per recipe because the same box loops under one recipe and plays
+  once under another.
+
+  The field is optional, and its absence says nothing has been established — the fourth state, as
+  it is for `content` (§2.6). A box that loops with no setting to name cannot make the claim and
+  stays silent. Nothing in the shipped library declares one yet; the migration is the next step,
+  and until it lands `test/source-length.test.ts` still reads prose.
+
 - **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
   (#516).
 
@@ -6057,7 +6104,9 @@ Three guards:
   capability facts a manifest has spoken about (§2.6), split six ways over two lines — `caps` for
   the states with a document behind them and `gaps` for the states without, because `undocumented`
   is finished work, `unchecked` is work nobody has started, and `unread` is work nobody here can
-  start at all
+  start at all. Since #518 `caps` also holds the playback claims recipes make (§3): a claim about
+  what a voice does with a file belongs with the claims about clocks and jacks, and it is counted
+  per recipe, so a recipe two manifests share by reference contributes once (#193)
 - an `EDITIONS` block (§2.3/#480) splitting the manifests three ways: those carrying a date
   somebody confirmed their cited edition current on, then those where nobody has asked, then
   those naming a manual with no edition, so there is no cited edition to confirm. Both of those
