@@ -12,14 +12,22 @@
  * `Math.floor` to IEEE-754 double semantics with no extended precision and no contraction, so a
  * polynomial in those operators gives the same bits on every engine and every CPU. It says the
  * opposite about the transcendentals: `Math.sin`, `Math.exp` and `Math.pow` are
- * *implementation-approximated*, and an engine is free to call the system library. V8 ships its
- * own fdlibm port and is consistent across operating systems, which is why a Node-only generator
- * would appear to be fine. The moment these bytes are produced in a browser instead — which is
- * where #519's download is heading — a different engine's `sin` moves the last bit of a sample,
- * and a pinned hash becomes a claim that is true on one machine.
+ * *implementation-approximated*, and an engine is free to call the system library.
  *
- * So the transcendentals are written out. A rounding boundary can still be crossed by an
- * approximation, in principle; the difference is that here every implementation is *this* one.
+ * **Be clear about how much of that argument still does work here.** This was first written expecting the
+ * download to be generated in the browser; it is not — #519 settled on a Node route. Every render
+ * that produces a shipped byte therefore happens in V8, which carries its own fdlibm port and is
+ * consistent across operating systems, so a version of this file built on `Math.sin` would in all
+ * likelihood produce the same hashes on a laptop and on CI. **The polynomial is insurance, not a
+ * fix for an observed break.**
+ *
+ * It is kept because the insurance is nearly free and covers the two cases the spec leaves open: a
+ * V8 that changes its approximation between versions, and a second host — a browser, a different
+ * runtime — that renders these bytes later. Neither is hypothetical enough to be worth a hash that
+ * is only true where it was generated, and the cost is sixty lines and no measurable time.
+ *
+ * A rounding boundary can still be crossed by an approximation, in principle; the difference is
+ * that here every implementation is *this* one.
  *
  * ## The accuracy this needs is not high
  *

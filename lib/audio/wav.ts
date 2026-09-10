@@ -22,11 +22,17 @@
  *
  * ## `DataView`, not `Buffer`
  *
- * `Buffer` is Node's. These bytes are heading for a download button, which is a browser, and a
- * generator that runs in one place and is verified in another is the arrangement #519's hash test
- * exists to prevent. `DataView` with an explicit `littleEndian` argument also states the byte order
- * in the code rather than inheriting the CPU's, which is the same discipline the rest of the
- * product applies to locale.
+ * **This first said the bytes were heading for a browser. They are not** — #519's download is a
+ * Node route handler (`app/samples/[id]/reference.wav/route.ts`), decided after this file was
+ * written, and the correction is recorded rather than quietly edited because the reason changed
+ * even though the code did not.
+ *
+ * What is left is still the better choice, on two counts that do not depend on where it runs.
+ * `DataView` with an explicit `littleEndian` on every field states the byte order in the code
+ * rather than inheriting the CPU's, which is the discipline the rest of the product applies to
+ * locale (§7.2). And nothing in this module needs Node, so nothing in it should name Node — the
+ * synthesis beside it is pure arithmetic, and a container that reached for a runtime-specific
+ * buffer would be the only thing standing between this pair and any other host.
  */
 
 /** The one rate everything here is written at. */

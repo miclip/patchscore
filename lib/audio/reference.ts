@@ -1,4 +1,5 @@
 import type { Role } from '../core/vocabulary'
+import { referenceSampleFor } from './catalogue'
 import {
   decayPerSample,
   exp2,
@@ -14,41 +15,11 @@ import {
 import { SAMPLE_RATE, writeWav } from './wav'
 
 /**
- * §3.9/#519. **Fourteen one-shots a reader with only a sampler can start from.**
+ * §3.9/#519. **How the fourteen reference one-shots are made.**
  *
- * ## Who this is for
- *
- * §3.8's `/samples` answers *how do I make this sound on the box I own*, and for most rigs that is
- * the better answer: it is the reader's own box, their own recording, and a cited recipe. It has
- * nothing to say to one rig. **Seven of the library's devices can make no sound from scratch** —
- * the Digitakt and Digitakt II, the Octatrack, the Polyend Tracker, the SP-404 mk2, the EP-133 and
- * the EP-40, all samplers, carrying 179 recipes between them and every one of those recipes asking
- * for a file. Somebody holding only those boxes is told how to synthesise a kick on a machine with
- * no oscillator.
- *
- * These fourteen files cover 114 of those 179 recipes, 64%.
- *
- * ## A reference sample is the target, not the answer
- *
- * Invariant 5, and it decides the copy on every surface that ever offers one of these. The recipe
- * still says what to bring and §3.8 still says how to make one. **This is a sound to compare
- * against**, so somebody who has never heard the difference between a rim and a closed hat has
- * something to aim at. If a page's wording lets a reader take the download to *be* the sound the
- * guide wants, every recipe pointing at it collapses to one timbre, and the library stops
- * describing sounds and starts shipping one.
- *
- * ## Fourteen, and what is deliberately absent
- *
- * The line is what can be made from noise, sines and envelopes without claiming something untrue:
- *
- *  - **`vox-chop` is out.** A generator cannot make a voice, and a synthesised approximation
- *    offered as a reference vocal would be a lie told to the reader least able to catch it. It is
- *    also the most-asked-for role in the library at 21 recipes. #521 is the answer: a phone
- *    records one.
- *  - **The tonal roles are out** — `pad`, `sub`, `lead`, `stab`, `arp`, `acid`, `bass-mid`,
- *    `texture`. Anybody with any synth at all is better served by §3.8, and a generated reference
- *    saw teaches nothing about what a lead should be. If a later pass adds them it should be
- *    because somebody asked for them.
+ * `catalogue.ts` says which fourteen and why those; this file is the synthesis and nothing else.
+ * The two are separate because the catalogue is browser-safe data and this is not — a page that
+ * only needs to know *whether a download exists* must not pull a filter bank into its bundle.
  *
  * ## Generated, and that is the licence
  *
@@ -59,8 +30,10 @@ import { SAMPLE_RATE, writeWav } from './wav'
  * `test/reference-samples.test.ts` does on every commit.
  *
  * The files are **not committed**. This repo has no binary story and #519's body says so; a
- * generator removes the need for one, because the bytes are a pure function of this file. `npm run
- * samples:wav` writes them to a gitignored directory for anybody who wants to listen.
+ * generator removes the need for one, because the bytes are a pure function of this file. The
+ * download route runs this fourteen times during `next build` and Next stores the responses under
+ * `.next/`, which is ignored, so a checkout still has no WAV in it. `npm run samples:wav` writes
+ * them to an ignored directory for anybody who wants to listen, and is part of no build.
  *
  * ## What is the same across all fourteen
  *
@@ -70,20 +43,6 @@ import { SAMPLE_RATE, writeWav } from './wav'
  * and it is still normalised, because level is the reader's to set and a file delivered quiet is a
  * file somebody has to fix before it is useful.
  */
-export type ReferenceSample = {
-  /** §1. The part of a mix this sound is a reference for. One file per role. */
-  role: Role
-  /** `closed-hat.wav`. The name the file is offered under, and the role's own slug. */
-  file: string
-  /** Rendered length. Every one is over #507's 20 ms floor and far inside #517's ten-second cap. */
-  seconds: number
-  /**
-   * What was built, in the words somebody would use out loud. It says how the sound was made,
-   * which is the opposite of a `SampleTarget.technique` and is allowed to be, because here there
-   * is no cited recipe for it to contradict: this file *is* the synthesis.
-   */
-  note: string
-}
 
 /**
  * Everything here lands on the same peak. `0.891` is -1.0 dBFS, which leaves a sample's own
@@ -627,37 +586,16 @@ const RECIPES: Readonly<Record<string, () => Float64Array>> = {
 }
 
 /**
- * The fourteen, in `KIT_ROLES` order for the twelve that are in it, then the two transitions.
- *
- * The order is §3.6's, for §3.8's reason: somebody who has just read a kit page must not find the
- * same sounds in a different order here.
- */
-export const REFERENCE_SAMPLES: readonly ReferenceSample[] = [
-  { role: 'kick', file: 'kick.wav', seconds: 0.6, note: 'Sine falling 145 Hz to 48 Hz, with a noise tick.' },
-  { role: 'snare', file: 'snare.wav', seconds: 0.35, note: 'Body at 185 Hz and 330 Hz under noise between 1.2 and 8.5 kHz.' },
-  { role: 'clap', file: 'clap.wav', seconds: 0.45, note: 'Three bursts of 800 Hz to 3.5 kHz noise, 11 ms apart, then a tail.' },
-  { role: 'rim', file: 'rim.wav', seconds: 0.12, note: 'Tones at 1.7 kHz and 2.4 kHz, gone in thirty milliseconds.' },
-  { role: 'tom', file: 'tom.wav', seconds: 0.5, note: 'Sine falling 210 Hz to 110 Hz, four times slower than the kick.' },
-  { role: 'closed-hat', file: 'closed-hat.wav', seconds: 0.18, note: 'Noise above 7 kHz with metal partials, cut at sixty milliseconds.' },
-  { role: 'open-hat', file: 'open-hat.wav', seconds: 0.7, note: 'The closed hat over two decays, the slower one 450 ms.' },
-  { role: 'ride', file: 'ride.wav', seconds: 1.6, note: 'Eight partials off 480 Hz, a high wash, and a ping.' },
-  { role: 'metallic', file: 'metallic.wav', seconds: 0.8, note: 'Six partials off 320 Hz, no noise, high ones decaying first.' },
-  { role: 'ghost-perc', file: 'ghost-perc.wav', seconds: 0.15, note: 'Noise between 400 Hz and 2 kHz, soft front, gone in fifty milliseconds.' },
-  { role: 'noise', file: 'noise.wav', seconds: 0.8, note: 'Full band, rolled off above 12 kHz, shaped over six-tenths of a second.' },
-  { role: 'impact', file: 'impact.wav', seconds: 1.4, note: 'Tone falling 55 Hz to 38 Hz under a low boom, with a crack on the front.' },
-  { role: 'riser', file: 'riser.wav', seconds: 2.0, note: 'Noise climbing 300 Hz to 9 kHz over five octaves, rising in level.' },
-  { role: 'sweep', file: 'sweep.wav', seconds: 1.5, note: 'Noise falling 9 kHz to 200 Hz, decaying behind it.' },
-]
-
-/**
  * The float samples for one role, or `undefined` where none is offered.
  *
- * `undefined` rather than a throw for the same reason `sampleTargetById` answers that way: a
- * caller holding a role this pass does not cover — `vox-chop`, or any of the tonal eight — is
- * asking a reasonable question and the answer is *there isn't one*, which a surface has to be able
- * to say.
+ * **The catalogue decides, and this map has to agree with it.** A role reaches synthesis only when
+ * `catalogue.ts` offers it *and* a recipe exists here, so a recipe added without a catalogue entry
+ * is unreachable rather than half-offered, and a catalogue entry with no recipe answers
+ * `undefined` rather than throwing at a reader. `test/reference-samples.test.ts` asserts the two
+ * lists are equal, which is where a drift is supposed to be caught.
  */
 export function renderReference(role: Role): Float64Array | undefined {
+  if (referenceSampleFor(role) === undefined) return undefined
   const recipe = RECIPES[role]
   return recipe === undefined ? undefined : recipe()
 }

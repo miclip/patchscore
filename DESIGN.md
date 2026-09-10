@@ -2826,17 +2826,24 @@ them to a gitignored directory for anybody who wants to listen.
 
 #519 settled that this must not add an audio dependency, and it does not: a 44-byte RIFF header and
 16-bit PCM is `lib/audio/wav.ts`, written with `DataView` and an explicit `littleEndian` on every
-field. `Buffer` is deliberately not used — these bytes are heading for a download button, which is a
-browser.
+field. `Buffer` is deliberately not used: the byte order is then stated in the code rather than
+inherited from the CPU, which is the discipline §7.2 applies to locale, and nothing in the module
+needs Node.
 
 `lib/audio/dsp.ts` goes one step further and implements `sin` and `2^x` as polynomials in `+`, `-`,
 `*` and `/`. **Invariant 6 is byte-identical output on any platform**, and ECMAScript pins the four
 arithmetic operators to IEEE-754 with no extended precision and no contraction while leaving
-`Math.sin`, `Math.exp` and `Math.pow` implementation-approximated. V8 ships its own fdlibm port and
-is consistent across operating systems, so a Node-only generator would appear to be fine; the moment
-these bytes are produced in a browser instead, a different engine's `sin` moves the last bit of a
-sample and a pinned hash becomes a claim that is true on one machine. Measured against `Math`, the
+`Math.sin`, `Math.exp` and `Math.pow` implementation-approximated. Measured against `Math`, the
 series agree to `6.6e-10` and `2.4e-10`, against a 16-bit LSB of `3.05e-5`.
+
+**How much of that is doing work is worth stating plainly, because the first draft overstated it.**
+It was written expecting the browser to generate the download. It does not — the route below runs in
+Node, so every shipped byte is rendered by V8, which carries its own fdlibm port and is consistent
+across operating systems. A version of `dsp.ts` built on `Math.sin` would in all likelihood produce
+the same hashes on a laptop and on CI. The polynomial is insurance rather than a fix for an observed
+break, and it is kept because it costs sixty lines and no measurable time while covering the two
+cases the specification leaves open: a V8 that changes its approximation between versions, and a
+second host rendering these bytes later.
 
 Noise comes from a seeded xorshift32 — three shifts and three xors, all exact 32-bit integer
 operations — with a distinct fixed seed per role, for the reason invariant 7 bans `Math.random` in
@@ -2871,12 +2878,88 @@ these one-shots are under half a second by design. `ffmpeg`
 and `afconvert` exist if some box turns out to need AIFF or another rate, and **neither becomes a
 build dependency**.
 
+#### Where they are offered: a route, not a button that builds one
+
+**`/samples/<target-id>/reference.wav`**, a Node route handler. One segment past the page a reader
+is already on.
+
+Three shapes were available and the other two are worse. A committed binary is ruled out by #519's
+body: the repo has no binary story and fourteen files at broadcast quality is not the thing to start
+one for. A client-side generator behind a download button looks cheaper and is not — the synthesis
+is a filter bank, six oscillators, a noise source and a polynomial `sin`, and every reader who never
+clicked would have downloaded all of it instead of the file. A generated `Blob` also cannot be
+linked to, cached, `curl`'d, or opened on the tablet propped against the rack, and §8/#21 has that
+tablet as a primary context rather than a fallback.
+
+**The bytes are made at build, not at request**, and saying otherwise is the easy mistake this
+paragraph exists to stop. `generateStaticParams` with `dynamicParams = false` and a handler reading
+no dynamic API means Next runs the route fourteen times during `next build` and stores fourteen
+static response bodies under `.next/server/app/samples/<id>/reference.wav.body`, headers beside
+them; a request is served from those and the handler does not run again. What holds either way is
+the part #519 cares about — **the synthesis runs in Node and never in a browser, and no audio is
+committed**. `.next/` is ignored, so a checkout has no WAV in it.
+
+**The cache policy is `public, max-age=0, must-revalidate`, and it started out wrong.** It was
+`max-age=31536000, immutable`, which cannot work here: `immutable` tells a browser not to
+revalidate, so the `ETag` beside it is never consulted and never invalidates anything. The URL is
+stable and **not** content-addressed — `/samples/kick/reference.wav` is where the kick lives,
+whatever the kick sounds like this build — so an edit to `reference.ts` serves different bytes at
+the same address, and every reader who had already fetched it would have held the old file for a
+year. Revalidating makes that work as intended: a browser asks every time rather than serving a frozen
+copy, so **a changed build serves changed bytes at the same URL**.
+
+What the `ETag` *saves* is a separate question, and the answer measured against `next start` is
+nothing: a conditional request carrying a matching `If-None-Match` is answered `200` with the whole
+body, because Next does not implement conditional GET for a prerendered route handler. The tag is a
+correct content tag that a caching layer in front can use; on this server every revalidation costs
+the full 176 KB. That is worth stating rather than assuming, because the 304 is the thing everybody
+expects an `ETag` to buy.
+
+**`lib/audio/catalogue.ts` exists because of the bundle.** `sample-text.ts` has to answer *does this
+sound have a reference file*, and it is pulled into the browser by the sound page's client island;
+importing the generator to answer a yes-or-no question would have carried the whole synthesis into
+a page that never synthesises anything. Nothing about that would have failed — the page renders, the
+tests pass, the bundle is bigger. So the catalogue is fourteen objects, one lookup and one type
+import, and `test/reference-download.test.ts` walks the island's import graph to hold the line.
+
+#### What the two surfaces say, and it is one sentence
+
+> Need a sound to start from? Download this generated example. Compare it with the recipe's
+> description; it is a reference, not the answer.
+
+`REFERENCE_OFFER` in `sample-text.ts`, one string for both renderers (#495/#33) — this is the
+sentence where half an edit does the damage. It names what the file is twice and tells the reader
+what to do with it, which is compare.
+
+**Then a `Download WAV` link, the file name, and a stop.** A first cut also printed the length and a
+description of the synthesis — *sine falling 145 Hz to 48 Hz, with a noise tick* — and both had to
+come out. A reader here is deciding whether to click, and a generated example annotated with its own
+build reads as an authored answer carrying its own settings, directly above the box that actually
+has settings. Both facts are still in `catalogue.ts` and still printed by `npm run samples:wav`,
+which is where somebody deciding what to change wants them; the absence on the two surfaces is
+asserted rather than left to a golden, because it is the kind of detail that gets helpfully added
+back.
+
+It sits **above the rig section** in both. A reader who has just been told what the take must contain
+is the one an example helps; a reader who has scrolled past the settings for their own box already
+has the better answer. The order is the argument, and both renderers are asserted on it.
+
+It is printed **under a gap as well as under a made page**, and the gap is where it earns its place:
+a rig of nothing but samplers reaches `loads-audio` — *bring a recording, or record one* — and for
+eleven of these roles that sentence is the whole document. `test/golden/kick-on-a-sampler.sample.golden.md`
+pins exactly that page, and its whole diff against `vocal-chop-on-a-sampler` is the reference block.
+
+The Markdown link is absolute and the page's is relative: a `.md` is read after it has left the
+site (#487). **The ten targets with no reference print nothing** — no heading, no sentence, no link,
+and the route answers 404 rather than an empty file, because a zero-byte `vocal-chop.wav` is a worse
+answer than none.
+
 #### What this step is not
 
-No download UI. No change to any device, recipe, template or role request, so `npm run audit` and
-`npm run measure:search` are untouched by it — confirmed rather than assumed. Where these are
-offered, and in what words, is the next step's question, and §3.8's own answer to two renderers
-(#33) is the one to follow.
+No change to any device, recipe, template or role request, so `npm run audit` and
+`npm run measure:search` are untouched by it — confirmed rather than assumed. No new capability, no
+recording arm on any device, and no second address space: the file lives under the sound it
+illustrates.
 
 ---
 
