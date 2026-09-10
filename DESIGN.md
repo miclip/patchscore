@@ -2770,6 +2770,116 @@ restyle costs nothing and a lost cable fails.
 
 ---
 
+### 3.9 Reference samples: fourteen files, generated here, for a rig that makes no sound
+
+§3.8 answers *how do I make this sound on the box I own*, and for most rigs it is the better
+answer. It has nothing to say to one rig.
+
+**Seven of the library's devices can make no sound from scratch** — `elektron-digitakt`,
+`elektron-digitakt-ii`, `elektron-octatrack-mkii`, `polyend-tracker`, `roland-sp-404mk2`,
+`te-ep-133` and `te-ep-40`, all samplers, carrying **179 recipes between them and every one of
+those recipes asking for a file**. Somebody holding only those boxes opens `/samples` and is told
+how to synthesise a kick on a machine with no oscillator. That reader is who this is for, and it is
+the case #519 was filed for: *"someone buys a synth even with one osc and a sampler like the roland
+sp-404 and no drum machine."*
+
+**Fourteen one-shots cover 114 of those 179 recipes, 64%.**
+
+#### A reference sample is the target, not the answer
+
+Invariant 5, and it decides the copy on every surface that ever offers one. The recipe still says
+what to bring and §3.8 still says how to make one; this is a sound to compare against, so somebody
+who has never heard the difference between a rim and a closed hat has something to aim at. If a
+page's wording lets a reader take the download to *be* the sound the guide wants, every recipe
+pointing at it collapses to one timbre, and the library stops describing sounds and starts shipping
+one.
+
+#### What is in, and what is deliberately out
+
+The line is what can be made from noise, sines and envelopes without claiming something untrue.
+
+**In**: `kick`, `snare`, `clap`, `rim`, `tom`, `closed-hat`, `open-hat`, `ride`, `metallic`,
+`ghost-perc`, `noise`, `impact`, `riser`, `sweep`.
+
+**Out**:
+
+- **`vox-chop`.** A generator cannot make a voice, and a synthesised approximation offered as a
+  reference vocal would be a lie told to the reader least able to catch it. It is also the
+  most-asked-for role in the library at 21 recipes. #521 is the answer: a phone records one.
+- **The tonal roles** — `pad`, `sub`, `lead`, `stab`, `arp`, `acid`, `bass-mid`, `texture`. Anybody
+  with any synth is better served by §3.8, and a generated reference saw teaches nothing about what
+  a lead should be. `test/reference-samples.test.ts` asserts all nine are absent, so a later pass
+  that adds one has to come through that list deliberately.
+
+#### Generated, and that is the licence
+
+Every byte comes out of `lib/audio/reference.ts`. There is no sample pack behind it, nothing
+scraped, and no vendor audio near it — `manuals/` is gitignored precisely so nothing of that kind is
+redistributed, and these files have no such problem to manage. *Generated here* is checkable rather
+than asserted: `test/reference-samples.test.ts` hashes all fourteen on every commit.
+
+**Nothing is committed.** This repo has no binary story and #519's body says so. A generator removes
+the need for one, because the bytes are a pure function of one file. `npm run samples:wav` writes
+them to a gitignored directory for anybody who wants to listen.
+
+#### No dependency, and no platform maths library either
+
+#519 settled that this must not add an audio dependency, and it does not: a 44-byte RIFF header and
+16-bit PCM is `lib/audio/wav.ts`, written with `DataView` and an explicit `littleEndian` on every
+field. `Buffer` is deliberately not used — these bytes are heading for a download button, which is a
+browser.
+
+`lib/audio/dsp.ts` goes one step further and implements `sin` and `2^x` as polynomials in `+`, `-`,
+`*` and `/`. **Invariant 6 is byte-identical output on any platform**, and ECMAScript pins the four
+arithmetic operators to IEEE-754 with no extended precision and no contraction while leaving
+`Math.sin`, `Math.exp` and `Math.pow` implementation-approximated. V8 ships its own fdlibm port and
+is consistent across operating systems, so a Node-only generator would appear to be fine; the moment
+these bytes are produced in a browser instead, a different engine's `sin` moves the last bit of a
+sample and a pinned hash becomes a claim that is true on one machine. Measured against `Math`, the
+series agree to `6.6e-10` and `2.4e-10`, against a 16-bit LSB of `3.05e-5`.
+
+Noise comes from a seeded xorshift32 — three shifts and three xors, all exact 32-bit integer
+operations — with a distinct fixed seed per role, for the reason invariant 7 bans `Math.random` in
+the resolver.
+
+#### Nobody working on this can hear them, so the descriptions are measured
+
+A hash proves a file has not changed and says nothing about whether a kick sounds like a kick. So
+every sentence in `reference.ts` that describes a sound is an assertion in
+`test/reference-samples.test.ts`: the kick, tom and impact put over 90% of their energy under
+300 Hz; both hats put over 95% above 3 kHz and are cut from one seeded burst of noise, so *differ
+only in decay* is proved by dividing one by the other rather than inferred from two spectra; the
+ghost note's centroid stays
+under 3 kHz; the metallic sounds are checked for partials off the harmonic grid; the riser's second
+half is more than twice as bright as its first and the sweep's is less than half. The container is
+parsed in the test by hand rather than through `wav.ts`'s own reader, because a writer verified by
+its inverse agrees with itself about a format it has got wrong. `ffprobe` was run over all fourteen
+independently, and `ffmpeg -af volumedetect` reads every one back at `max_volume: -1.0 dB`.
+
+Every file is peak-normalised to the same -1 dBFS and faded to exactly zero, so a reader
+auditioning the set is comparing timbre rather than gain staging and nothing clicks when a pad
+retriggers it. `ghost-perc` is normalised too: quietness is placement, and it is the reader's fader
+rather than the file's.
+
+#### Lengths, and the two device constraints they were checked against
+
+The shortest is the rim at 120 ms and the longest the riser at two seconds. #507 records that the
+Deluge's wavetable engine wants a wavetable over 20 ms; #517 records that the SP-404 caps a pad at
+ten seconds. Neither binds here, and the test asserts both rather than assuming it. **Neither is a
+floor on how short a file may be**: the ten seconds is the only length #517 settles, and five of
+these one-shots are under half a second by design. `ffmpeg`
+and `afconvert` exist if some box turns out to need AIFF or another rate, and **neither becomes a
+build dependency**.
+
+#### What this step is not
+
+No download UI. No change to any device, recipe, template or role request, so `npm run audit` and
+`npm run measure:search` are untouched by it — confirmed rather than assumed. Where these are
+offered, and in what words, is the next step's question, and §3.8's own answer to two renderers
+(#33) is the one to follow.
+
+---
+
 ## 4. Layer 3 — Templates
 
 Genre definitions. Device-agnostic — they emit role requests, structure and harmony,
