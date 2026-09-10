@@ -461,6 +461,37 @@ describe('the shipped library (#518)', () => {
  * rendered for this batch**. That is the same evidence every other citation on those two boxes
  * already rests on.
  */
+/** Declared axes across the given devices — one capability fact each (§9). */
+function claimsOn(deviceIds: readonly string[]): number {
+  let claims = 0
+  for (const d of DEVICES) {
+    if (!deviceIds.includes(d.id)) continue
+    for (const r of d.recipes) {
+      const playback = r.sourceAudio?.playback
+      if (playback === undefined) continue
+      claims += PLAYBACK_AXES.filter((axis) => playback[axis] !== undefined).length
+    }
+  }
+  return claims
+}
+
+/** Recipes stating a source length on the given devices. Never a capability fact: no page states it. */
+function minimaOn(deviceIds: readonly string[]): number {
+  return DEVICES.filter((d) => deviceIds.includes(d.id)).reduce(
+    (total, d) =>
+      total + d.recipes.filter((r) => r.sourceAudio?.minimumSeconds !== undefined).length,
+    0,
+  )
+}
+
+const TE_AND_POLYEND = [
+  'polyend-play-plus',
+  'polyend-tracker',
+  'polyend-tracker-mini',
+  'te-ep-133',
+  'te-ep-40',
+]
+
 describe('the TE and Polyend batch (#518)', () => {
   const recipeById = (id: string) => {
     for (const d of DEVICES) {
@@ -595,20 +626,158 @@ describe('the TE and Polyend batch (#518)', () => {
    * that. `minimumSeconds` moved nothing, which is the other half of the split: it carries no
    * citation because no page states it.
    */
-  it('adds fifteen capability facts and nothing else', () => {
-    // The claims' share of the total, taken as the difference rather than against the day's
-    // figure: 1210 before this batch and 1225 after, and the next commit that cites a jack moves
-    // both. What cannot move without this batch moving is the fifteen.
+  it('adds fifteen capability facts and six minima', () => {
+    expect(claimsOn(TE_AND_POLYEND)).toBe(15)
+    // Six minima: the Play+ pair, the Tracker's acid, and the three EP legato parts, one of which
+    // the EP–40 borrows.
+    expect(minimaOn(TE_AND_POLYEND)).toBe(6)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The Elektron batch (#518)
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#518. **The thirteen Elektron recipes**, migrated off four rendered manuals.
+ *
+ * This is the batch where the axes earn themselves. Six of the thirteen answer two axes at once,
+ * and the Digitakt's own titles say so before the model did — *"Loop warped to the project
+ * tempo"*, *"Looped texture stretched under the track"*. A single `kind` would have made an
+ * author drop half of each.
+ *
+ * It is also the batch with the sharpest reminder that a boundary is not a sustain. Every
+ * Elektron loop entry ends the same way — *"This time is also constrained by the AMP page
+ * envelope parameters HLD and DEC"* (Digitakt p.82, Digitakt II p.94/96), and the Rytm's `LOP`
+ * says *"confined by the AMP page envelope parameter settings HLD and DEC"* (p.78) beside a
+ * recipe that sets `HLD 110`. The file does not run out; the part may still stop. #506's question
+ * stays open, and no field here claims to answer it.
+ */
+describe('the Elektron batch (#518)', () => {
+  const ELEKTRON = [
+    'elektron-analog-rytm-mkii',
+    'elektron-digitakt',
+    'elektron-digitakt-ii',
+    'elektron-octatrack-mkii',
+  ]
+
+  const recipeById = (id: string) => {
+    for (const d of DEVICES) {
+      const found = d.recipes.find((r) => r.id === id)
+      if (found !== undefined) return found
+    }
+    throw new Error(`no recipe ${id}`)
+  }
+  const audio = (id: string) => recipeById(id).sourceAudio as NonNullable<SourceAudio>
+
+  /**
+   * The six that answer two axes. `dt-texture-soft` and `dt2-texture-soft` are the pair #518's
+   * third model change was built for: a file that both repeats and is fitted to the bar.
+   */
+  it('records both axes on the six recipes that loop and stretch', () => {
+    for (const id of [
+      'dt-texture-soft',
+      'dt2-texture-soft',
+      'dt2-pad-soft',
+      'ot-texture-soft',
+      'ot-pad-soft',
+    ]) {
+      expect(audio(id).playback?.boundary?.kind, id).toBe('loops')
+      expect(audio(id).playback?.timing?.kind, id).toBe('stretches')
+      expect(audio(id).minimumSeconds, id).toBeUndefined()
+    }
+    // The sixth is the odd one, and the only recipe in the library answering `stretches` beside
+    // `stops-at-end`: Repitch fits the file to `BARS`, which this recipe does not set, and its
+    // `PLAY FORWARD` plays it once. Both are true, and the minimum stands because of the second.
+    expect(audio('dt2-sub-dark').playback?.timing?.kind).toBe('stretches')
+    expect(audio('dt2-sub-dark').playback?.boundary?.kind).toBe('stops-at-end')
+    expect(audio('dt2-sub-dark').minimumSeconds).toBe(10)
+  })
+
+  it('states a minimum on each of the four whose file is the hold', () => {
+    for (const [id, seconds] of [
+      ['dt-sub-dark', 10],
+      ['dt2-sub-dark', 10],
+      ['dt-acid-hard', 3],
+      ['dt2-acid-hard', 3],
+    ] as const) {
+      expect(audio(id).playback?.boundary?.kind, id).toBe('stops-at-end')
+      expect(audio(id).minimumSeconds, id).toBe(seconds)
+    }
+  })
+
+  /**
+   * All four Octatrack parts loop, and the two long ones stretch. Every claim cites three pages,
+   * because p.85 describes the attribute and p.118 (walked at p.109) is the track switch that has
+   * to be `AUTO` for the attribute to apply at all. A citation to p.85 alone would point at a
+   * setting that might not be in force.
+   */
+  it('cites the track switch beside the attribute on every Octatrack claim', () => {
+    for (const id of ['ot-sub-dark', 'ot-acid-hard', 'ot-texture-soft', 'ot-pad-soft']) {
+      expect(audio(id).playback?.boundary?.kind, id).toBe('loops')
+      const source = audio(id).playback?.boundary?.evidence.source as string
+      for (const page of ['p.85', 'p.109', 'p.118']) expect(source, id).toContain(page)
+    }
+  })
+
+  /**
+   * §3/#518. **The control names only what the recipe authors.** The Octatrack's attributes apply
+   * only while the *track's* `LOOP` and `TSTR` are `AUTO` in SRC SETUP, and this manifest
+   * deliberately authors neither switch — `AUTO` and `OFF` are the only values any page prints
+   * for them, so an option set of two would be a legality claim the manual does not support.
+   * Naming one here would be a claim about a setting the reader is never handed.
+   */
+  it('never names a control the recipe does not set', () => {
+    for (const d of DEVICES) {
+      for (const r of d.recipes) {
+        const playback = r.sourceAudio?.playback
+        if (playback === undefined) continue
+        for (const axis of PLAYBACK_AXES) {
+          const control = playback[axis]?.control
+          if (control?.kind !== 'parameters') continue
+          for (const name of control.params) {
+            expect(r.params.map((p) => p.name), `${r.id} ${axis}`).toContain(name)
+          }
+        }
+      }
+    }
+    // The two the Octatrack could have named and must not.
+    const ot = audio('ot-texture-soft').playback
+    expect(ot?.boundary?.control).toEqual({ kind: 'parameters', params: ['LOOP MODE'] })
+    expect(ot?.timing?.control).toEqual({ kind: 'parameters', params: ['TIMESTRETCH'] })
+  })
+
+  /**
+   * The Rytm is #518's own example of a recipe rescued by a parameter the prose named and the
+   * model could not hold. It records the loop and stops there: p.78 says the loop is *"confined
+   * by the AMP page envelope parameter settings HLD and DEC"*, and this recipe fixes `HLD 110`
+   * rather than leaving it `AUTO`, so the part may still stop before the trig does.
+   */
+  it('records the Rytm loop and makes no claim about the hold', () => {
+    const playback = audio('rytm-texture-soft').playback
+    expect(playback?.boundary?.kind).toBe('loops')
+    expect(playback?.boundary?.control).toEqual({ kind: 'parameters', params: ['LOP'] })
+    expect(playback?.timing).toBeUndefined()
+    expect(playback?.release).toBeUndefined()
+    expect(audio('rytm-texture-soft').minimumSeconds).toBeUndefined()
+    expect(recipeById('rytm-texture-soft').params.find((p) => p.name === 'HLD')?.value).toBe(110)
+  })
+
+  it('adds nineteen capability facts and four minima', () => {
+    expect(claimsOn(ELEKTRON)).toBe(19)
+    expect(minimaOn(ELEKTRON)).toBe(4)
+  })
+
+  /**
+   * §9. The two batches together, as the audit's own arithmetic: `caps` was 1210 before either
+   * and is 1244 after both. Taken as the difference from the manifests' own facts rather than
+   * against the day's figure, so the next commit that cites a jack moves neither side of this.
+   */
+  it('accounts for both batches in the library total', () => {
     const declared = DEVICES.reduce(
       (total, d) => total + Object.keys(d.capabilityEvidence ?? {}).length,
       0,
     )
-    expect(libraryCounts(DEVICES).capabilityFacts - declared).toBe(15)
-    const minima = DEVICES.flatMap((d) =>
-      d.recipes.filter((r) => r.sourceAudio?.minimumSeconds !== undefined),
-    )
-    // Six: the Play+ pair, the Tracker's acid, and the three EP legato parts, one of which the
-    // EP–40 borrows. The number is a fact about the batch and moves when the next one lands.
-    expect(minima).toHaveLength(6)
+    expect(libraryCounts(DEVICES).capabilityFacts - declared).toBe(15 + 19)
   })
 })

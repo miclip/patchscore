@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
 import { articulablePerStep } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { DIGITAKT_II_PANEL } from './panel'
@@ -159,6 +159,15 @@ const MANUAL = 'Digitakt II User Manual OS 1.15A'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#518. The pages a `playback` claim rests on, narrowed to the two kinds such a claim takes.
+ * Appendix A prints its own `PLAY` block under each machine, so which page carries the sentence
+ * depends on which machine the recipe loads.
+ */
+function citePlayback(pages: string): PlaybackEvidence {
+  return { kind: 'manual', source: `${MANUAL}, ${pages}` }
 }
 
 /**
@@ -380,6 +389,36 @@ const recipes: Recipe[] = [
         'A clean low sustained tone with a stable, known pitch, ten seconds or longer — the note ' +
         'is held for whole bars and the file is what fills them. REPITCH transposes it, so the ' +
         'tuning has to be true before it moves',
+      /*
+       * §3/#518. **Two axes that pull in opposite directions, which is why they are two.**
+       *
+       * p.96 on the machine: *"The Repitch machine allows samples and loops to be automatically
+       * stretched to the tempo of your pattern. It achieves this by automatically applying
+       * repitching of the sample to match the target tempo."* That is a `timing` claim and the
+       * `need` above is already about its consequence — a repitched file is a transposed one.
+       *
+       * p.97, that machine's `PLAY`: *"FORWARD — The sample will be played back once every time
+       * it is triggered."* So the file still stops when it runs out.
+       *
+       * **The minimum stands despite the stretch**, and the reason is on the same page: Repitch
+       * fits the file to `BARS`, *"the total duration of the sample measured in bars … relative
+       * to the set BPM"*, and this recipe does not set `BARS`. A reader following it is given no
+       * bar count, so nothing here fixes the stretched length and the file's own length is what
+       * they have. 80 steps under `weave` at 126 bpm is 9.52 s, rounded to ten.
+       */
+      minimumSeconds: 10,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['PLAY'] },
+          evidence: citePlayback('p.97'),
+        },
+        timing: {
+          kind: 'stretches',
+          control: { kind: 'parameters', params: ['SRC MACHINE'] },
+          evidence: citePlayback('pp.96-97'),
+        },
+      },
     },
     params: [src('REPITCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(96)],
     articulation: [art('downbeat', { 'note-length': 32 }, 'trig-params')],
@@ -657,6 +696,32 @@ const recipes: Recipe[] = [
       need:
         'A sustained tonal source, two seconds or longer. STRETCH holds it under the whole bar, ' +
         'so a loop point that clicks will click every bar',
+      /*
+       * §3/#518. **The recipe that made a discriminated union impossible.** Its own title says
+       * both — *"Looped texture stretched under the track"* — and the two facts sit on two
+       * parameters, each with its own sentence on p.96.
+       *
+       * `SRC MACHINE STRETCH`: *"The Stretch machine allows samples and loops to automatically
+       * stretch to the tempo of your project or pattern by chopping the audio up into tiny grains
+       * and then fading between them."* `PLAY FORWARD LOOP`: *"The sample starts at the STRT
+       * position and will loop continuously between Loop Position and Length."*
+       *
+       * The same `PLAY` entry ends *"This time is also constrained by the AMP page envelope
+       * parameters HLD and DEC"*, so the loop is a fact about the file and not a promise about
+       * the part. #506's sustain question is not this field's to answer.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY'] },
+          evidence: citePlayback('p.96'),
+        },
+        timing: {
+          kind: 'stretches',
+          control: { kind: 'parameters', params: ['SRC MACHINE'] },
+          evidence: citePlayback('p.96'),
+        },
+      },
     },
     params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(24)],
     articulation: [art('downbeat', { 'note-length': 64 }, 'trig-params')],
@@ -750,6 +815,19 @@ const recipes: Recipe[] = [
       need:
         'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
         'movement recorded into it; the filter is the part this recipe is for',
+      /*
+       * §3/#518. The Oneshot machine, and p.94's `PLAY` block: *"FORWARD — The sample will be
+       * played back once every time it is triggered."* Nothing stretches it and nothing repeats
+       * it, so the file is the hold. 22 steps under `acid-lineage` at 122 bpm is 2.70 s.
+       */
+      minimumSeconds: 3,
+      playback: {
+        boundary: {
+          kind: 'stops-at-end',
+          control: { kind: 'parameters', params: ['PLAY'] },
+          evidence: citePlayback('p.94'),
+        },
+      },
     },
     routing:
       '**Slide:** `PORT` is on TRIG PAGE 2 and locks per step like the rest of the track ' +
@@ -892,6 +970,20 @@ const recipes: Recipe[] = [
       need:
         'Sustained chord sample(s), two seconds or longer — one per chord shape the hook plays; ' +
         'see Hook',
+      // §3/#518. As `dt2-texture-soft`, off the same page and the same two parameters: p.96's
+      // Stretch machine fits the file to the tempo, its `PLAY FORWARD LOOP` repeats it.
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY'] },
+          evidence: citePlayback('p.96'),
+        },
+        timing: {
+          kind: 'stretches',
+          control: { kind: 'parameters', params: ['SRC MACHINE'] },
+          evidence: citePlayback('p.96'),
+        },
+      },
     },
     params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(32)],
     articulation: [art('downbeat', { 'note-length': 96 }, 'trig-params')],

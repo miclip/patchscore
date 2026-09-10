@@ -1349,6 +1349,33 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   fetched for this batch**, which is the evidence every other citation on those two boxes already
   rests on.
 
+  **The second batch is the thirteen Elektron recipes**, off four rendered manuals. Six answer two
+  axes, which is where the composable shape earns itself: the Digitakt's `dt-texture-soft` warps a
+  loop to the project tempo (`MACHINE WERP`, pp.83-84) while `PLAY FORWARD LOOP` repeats it
+  (p.84), and the Digitakt II's texture and pad do the same through `SRC MACHINE STRETCH` and
+  `PLAY FORWARD LOOP` (p.96). `dt2-sub-dark` is the one recipe in the library answering
+  `stretches` beside `stops-at-end`: Repitch fits the file to `BARS` (pp.96-97) and its `PLAY
+  FORWARD` plays it once, and its minimum stands because the recipe sets no bar count. The four
+  Octatrack parts loop on `LOOP MODE` and two of them stretch on `TIMESTRETCH`, each citing p.85
+  for the attribute **and** p.118 with p.109 for the track switch that has to be `AUTO` before an
+  attribute applies at all. The Rytm's texture records its `LOP` loop off pp.78-79.
+
+  **A control names only what the recipe authors, and the Octatrack is why that is a rule.** Its
+  `LOOP` and `TSTR` master switches are not authored anywhere in that manifest — `AUTO` and `OFF`
+  are the only values any page prints for them, and an option set of two would be a legality claim
+  the manual does not support — so the claims name `LOOP MODE` and `TIMESTRETCH`, the attributes a
+  reader actually sets, and the citation carries the dependency. Naming a parameter the recipe
+  does not hand the reader would be evidence that carries none.
+
+  **The batch is also the clearest statement of what a boundary is not.** Every Elektron loop
+  entry ends *"This time is also constrained by the AMP page envelope parameters HLD and DEC"*
+  (Digitakt p.82, Digitakt II pp.94, 96), and the Rytm's `LOP` is *"confined by the AMP page
+  envelope parameter settings HLD and DEC"* (p.78) on a recipe that fixes `HLD 110` rather than
+  leaving it `AUTO`. The file does not run out; the part may still stop. That is #506's sustain
+  question and nothing in `playback` answers it.
+
+  Nineteen more claims: `caps` went 1225 to 1244, and four more minima.
+
   `test/source-length.test.ts` still reads prose, and becomes a comparison once enough of the
   library is migrated for it to.
 

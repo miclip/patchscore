@@ -1,4 +1,10 @@
-import type { CapabilityEvidence, Device, JackSignalKind, Recipe } from '../../core/device'
+import type {
+  CapabilityEvidence,
+  Device,
+  JackSignalKind,
+  PlaybackEvidence,
+  Recipe,
+} from '../../core/device'
 import { articulablePerStep, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { OCTATRACK_MKII_PANEL } from './panel'
@@ -223,6 +229,33 @@ function cite(page: number): Cite {
 function cites(...pages: number[]): Cite {
   return { kind: 'manual', source: `${MANUAL}, ${pages.map((p) => `p.${p}`).join(', ')}` }
 }
+
+/**
+ * §3/#518. The pages a `playback` claim rests on, narrowed to the two kinds such a claim takes.
+ *
+ * Every claim on this box spans three: p.85 is where the attribute is described, and p.118 with
+ * p.109 are where the *track* switch that lets an attribute apply is stated. A citation to p.85
+ * alone would be a citation to a setting that might not be in force.
+ */
+function citesPlayback(...pages: number[]): PlaybackEvidence {
+  return { kind: 'manual', source: `${MANUAL}, ${pages.map((p) => `p.${p}`).join(', ')}` }
+}
+
+/**
+ * §3/#518. What a `LOOP MODE` or `TIMESTRETCH` claim on this box may name, and what it may not.
+ *
+ * The attribute is a recipe parameter and is named. The track-level `LOOP` and `TSTR` in SRC
+ * SETUP are **not** — p.118 gives them as master switches whose `AUTO` position lets the
+ * attribute apply, and this manifest deliberately authors neither, because `AUTO` and `OFF` are
+ * the only values any page prints for them and an option set of two would be a legality claim
+ * the manual does not support (see the module note above). Naming a parameter the recipe does not
+ * author would be a claim about a setting the reader is never handed, which is the shape of
+ * evidence that carries none.
+ *
+ * So the pages carry the dependency and the control names carry only what a reader sets here.
+ * Each recipe's own `note` on the attribute already names the switch that has to be `AUTO`.
+ */
+const PLAYBACK_PAGES = [85, 109, 118] as const
 
 // ---------------------------------------------------------------------------
 // Option sets, as the manual enumerates them
@@ -632,6 +665,23 @@ const recipes: Recipe[] = [
         'tuning has to be true before it moves. A second or two is enough with LOOP MODE ON ' +
         'below: it is the loop that fills the held bars rather than the file, so the loop point ' +
         'matters more than the length',
+      /*
+       * §3/#518. p.85: *"LOOP MODE controls the loop behavior of the sample … ON will loop a
+       * sample or sample slice containing a loop marker."* Which is the sentence the `need` above
+       * has been making in prose, and it is why the loop point matters more here than the length.
+       *
+       * The claim names `LOOP MODE` and nothing else. The track's `LOOP` in SRC SETUP has to be
+       * `AUTO` for the attribute to apply (p.118, walked at p.109 step 9), and this manifest does
+       * not author that switch — see `PLAYBACK_PAGES`. The pages carry the dependency; the param
+       * name carries what the reader sets here.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['LOOP MODE'] },
+          evidence: citesPlayback(...PLAYBACK_PAGES),
+        },
+      },
       hint: 'quick-assign',
     },
     params: [
@@ -896,6 +946,32 @@ const recipes: Recipe[] = [
       need:
         'A sustained tonal source, two seconds or longer, streamed from the card rather than ' +
         'loaded to RAM — a Static machine will take a file of any size (p.119)',
+      /*
+       * §3/#518. **Two attributes, two claims, one page describing both.**
+       *
+       * p.85 on the boundary — `PINGPONG` here for the texture, `ON` for the pad: *"ON will loop
+       * a sample or sample slice containing a loop marker"*, and *"PINGPONG makes the sample loop
+       * from the loop point to the end point, then play from the end point to the loop point"*.
+       * p.85 on the timing: *"TIMESTRETCH sets whether timestretch should be applied to the
+       * sample … NORMAL is an algorithm suitable for most material."* p.109 step 9 is what that
+       * buys — *"the loop will now be time stretched or time compressed accordingly"* whatever
+       * the sequencer's BPM.
+       *
+       * Both name only the attribute the recipe sets. Each depends on its own master switch being
+       * `AUTO` in SRC SETUP (p.118), which this manifest does not author — see `PLAYBACK_PAGES`.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['LOOP MODE'] },
+          evidence: citesPlayback(...PLAYBACK_PAGES),
+        },
+        timing: {
+          kind: 'stretches',
+          control: { kind: 'parameters', params: ['TIMESTRETCH'] },
+          evidence: citesPlayback(...PLAYBACK_PAGES),
+        },
+      },
       prep: PREP_A_LOOP,
       hint: 'audio-editor',
     },
@@ -1081,6 +1157,32 @@ const recipes: Recipe[] = [
       need:
         'Sustained chord sample(s), two seconds or longer — one per chord shape the hook plays; ' +
         'see Hook',
+      /*
+       * §3/#518. **Two attributes, two claims, one page describing both.**
+       *
+       * p.85 on the boundary — `PINGPONG` here for the texture, `ON` for the pad: *"ON will loop
+       * a sample or sample slice containing a loop marker"*, and *"PINGPONG makes the sample loop
+       * from the loop point to the end point, then play from the end point to the loop point"*.
+       * p.85 on the timing: *"TIMESTRETCH sets whether timestretch should be applied to the
+       * sample … NORMAL is an algorithm suitable for most material."* p.109 step 9 is what that
+       * buys — *"the loop will now be time stretched or time compressed accordingly"* whatever
+       * the sequencer's BPM.
+       *
+       * Both name only the attribute the recipe sets. Each depends on its own master switch being
+       * `AUTO` in SRC SETUP (p.118), which this manifest does not author — see `PLAYBACK_PAGES`.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['LOOP MODE'] },
+          evidence: citesPlayback(...PLAYBACK_PAGES),
+        },
+        timing: {
+          kind: 'stretches',
+          control: { kind: 'parameters', params: ['TIMESTRETCH'] },
+          evidence: citesPlayback(...PLAYBACK_PAGES),
+        },
+      },
       prep: PREP_A_LOOP,
       hint: 'audio-editor',
     },
@@ -1433,6 +1535,23 @@ const recipes: Recipe[] = [
         'A saw or square bass tone of one known pitch, with no filter movement recorded into ' +
         'it \u2014 the filter is the part this recipe is for. A second or two is enough with ' +
         'LOOP MODE ON below, as long as the loop point is clean',
+      /*
+       * §3/#518. p.85: *"LOOP MODE controls the loop behavior of the sample … ON will loop a
+       * sample or sample slice containing a loop marker."* Which is the sentence the `need` above
+       * has been making in prose, and it is why the loop point matters more here than the length.
+       *
+       * The claim names `LOOP MODE` and nothing else. The track's `LOOP` in SRC SETUP has to be
+       * `AUTO` for the attribute to apply (p.118, walked at p.109 step 9), and this manifest does
+       * not author that switch — see `PLAYBACK_PAGES`. The pages carry the dependency; the param
+       * name carries what the reader sets here.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['LOOP MODE'] },
+          evidence: citesPlayback(...PLAYBACK_PAGES),
+        },
+      },
       hint: 'quick-assign',
     },
     routing:
