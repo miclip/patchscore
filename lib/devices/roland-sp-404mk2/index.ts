@@ -703,8 +703,8 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need:
         'A pure low sine with a stable, known pitch — nothing above the fundamental to filter. ' +
-        'Exactly ten seconds, which is both what the held bars need and the longest the ' +
-        'generator will export — `SOUND GEN · Pad Length` below sets it',
+        'The length below is also the longest the generator will export, and ' +
+        '`SOUND GEN · Pad Length` is what sets it',
       /*
        * §3/#518. Two axes, two buttons, two pages.
        *
@@ -1465,8 +1465,8 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
-        'movement recorded into it — the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, with no filter movement recorded into it ' +
+        '— the filter is the part this recipe is for',
       /*
        * §3/#518. **One parameter, both axes, and one page states both.** p.31: *"When the sample
        * playback mode is set to one-shot playback, the sample plays back once to the end when you

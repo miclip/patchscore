@@ -573,9 +573,9 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Factory sub, legato under the kick',
     sourceAudio: fromLibrary(
-      'A sine or near-sine bass note with no harmonics above the fundamental, ten seconds or ' +
-      'longer — the note is held for whole bars and the sound is what fills them, so audition ' +
-      'the band for one that holds rather than one that decays',
+      'A sine or near-sine bass note with no harmonics above the fundamental — the note is held ' +
+      'for whole bars and the sound is what fills them, so audition the band for one that holds ' +
+      'rather than one that decays',
       'bass is sounds 400-499',
       /*
        * §3/#518. **A number, and deliberately no `playback`.** `sub` is held for 80 steps under
@@ -623,8 +623,8 @@ const recipes: Recipe[] = [
     voice: 'pad',
     title: 'Squelch line, legato so notes run into each other',
     sourceAudio: fromLibrary(
-      'A resonant sawtooth bass note, one sustained note rather than a phrase, three seconds ' +
-      'or longer — audition the band for one that still sounds that far in',
+      'A resonant sawtooth bass note, one sustained note rather than a phrase — audition the ' +
+      'band for one that still sounds that far in',
       'bass is sounds 400-499',
       // §3/#518. `acid` is held for 22 steps under `acid-lineage` at 122 bpm — 2.70 s, rounded
       // to three. `legato` leaves the boundary unestablished here for the reason the sub gives.

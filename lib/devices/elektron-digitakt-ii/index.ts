@@ -386,9 +386,9 @@ const recipes: Recipe[] = [
     verified: false,
     sourceAudio: {
       need:
-        'A clean low sustained tone with a stable, known pitch, ten seconds or longer — the note ' +
-        'is held for whole bars and the file is what fills them. REPITCH transposes it, so the ' +
-        'tuning has to be true before it moves',
+        'A clean low sustained tone with a stable, known pitch — the note is held for whole bars ' +
+        'and the file is what fills them. REPITCH transposes it, so the tuning has to be true ' +
+        'before it moves',
       /*
        * §3/#518. **Two axes that pull in opposite directions, which is why they are two.**
        *
@@ -813,8 +813,8 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
-        'movement recorded into it; the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, with no filter movement recorded into it; ' +
+        'the filter is the part this recipe is for',
       /*
        * §3/#518. The Oneshot machine, and p.94's `PLAY` block: *"FORWARD — The sample will be
        * played back once every time it is triggered."* Nothing stretches it and nothing repeats

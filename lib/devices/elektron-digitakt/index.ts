@@ -881,9 +881,9 @@ const recipes: Recipe[] = [
     verified: false,
     sourceAudio: {
       need:
-        'A clean low sustained tone with a stable, known pitch, ten seconds or longer — the note ' +
-        'is held for whole bars and the file is what fills them. TUNE transposes it, so the ' +
-        'tuning has to be true before it moves',
+        'A clean low sustained tone with a stable, known pitch — the note is held for whole bars ' +
+        'and the file is what fills them. TUNE transposes it, so the tuning has to be true ' +
+        'before it moves',
       /*
        * §3/#518. p.82, the Oneshot machine's `PLAY`: *"FORWARD — The sample will be played back
        * once every time it is triggered."* Nothing repeats it, so the file is the hold, and the
@@ -1537,8 +1537,8 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
-        'movement recorded into it; the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, with no filter movement recorded into it; ' +
+        'the filter is the part this recipe is for',
       // §3/#518. As the sub: `PLAY FORWARD` on the Oneshot machine plays the file once (p.82).
       // `acid` is held for 22 steps under `acid-lineage` at 122 bpm — 2.70 s, rounded to three.
       minimumSeconds: 3,

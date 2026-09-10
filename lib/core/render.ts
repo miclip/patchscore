@@ -49,6 +49,7 @@ import type {
   ResolvedSoundSetup,
   ResolvedSourceAudio,
 } from './resolver'
+import { sourceLengthLine } from './resolver'
 import {
   shortfallsOfKind,
   type Gap,
@@ -2557,7 +2558,28 @@ function sourceLines(
   options: HintSetting,
 ): Line[] {
   const out: Line[] = [`Source — ${source.need}`]
+  /*
+   * §3/#518. **The length, as a bullet of its own, in one wording everywhere.**
+   *
+   * Above the procedure because it is part of choosing the file and the procedure is what you do
+   * with it once chosen — the order things happen at the machine, which is the same argument that
+   * puts this whole block ahead of the knobs.
+   *
+   * It used to live inside the need, in whatever words that recipe's author reached for: *"ten
+   * seconds or longer"*, *"a second or two"*, *"Several seconds"*, *"about one bar"*. Two of those
+   * were wrong against the hold they served and #518 is the record of four readings of the prose
+   * giving four wrong counts. `sourceLengthLine` is the one sentence they all became.
+   */
+  const length = source.minimumSeconds === undefined ? undefined : sourceLengthLine(source.minimumSeconds)
   if (source.prep === undefined) {
+    if (length !== undefined) {
+      out.push('')
+      out.push(`- ${length}`)
+      if (options.hints && source.hint !== undefined) {
+        subordinate(out, '  ', 'hint', hintText(device, source.hint))
+      }
+      return out
+    }
     // Nothing documented to do, so the jog attaches to the need itself.
     if (options.hints && source.hint !== undefined) {
       out.push('')
@@ -2566,6 +2588,7 @@ function sourceLines(
     return out
   }
   out.push('')
+  if (length !== undefined) out.push(`- ${length}`)
   out.push(`- ${source.prep.text}`)
   if (options.hints && source.hint !== undefined) {
     subordinate(out, '  ', 'hint', hintText(device, source.hint))

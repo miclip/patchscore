@@ -971,8 +971,8 @@ const SAMPLE_RECIPES: Recipe[] = [
     title: 'Sub tone under everything, filter well down, full bit depth',
     sourceAudio: {
       need:
-        'A clean sine or near-sine sub one-shot with no harmonics above the fundamental, ten ' +
-        'seconds or longer — the note is held for whole bars and the one-shot is what fills them',
+        'A clean sine or near-sine sub one-shot with no harmonics above the fundamental — the ' +
+        'note is held for whole bars and the one-shot is what fills them',
       /*
        * §3/#518. `sub` is held for 80 steps at worst, under `weave` at 126 bpm, which is 9.52 s.
        * Ten is that rounded to the figure the `need` already asks for, now in a form a rule can
@@ -1170,8 +1170,8 @@ const SAMPLE_RECIPES: Recipe[] = [
        * the prose says what to look for.
        */
       need:
-        'A sustained atmospheric recording, thirty-two seconds or longer — field noise, tape ' +
-        'hiss, a held chord. Nothing here loops it, so the recording is the whole of the part',
+        'A sustained atmospheric recording — field noise, tape hiss, a held chord. Nothing here ' +
+        'loops it, so the recording is the whole of the part',
       minimumSeconds: 32,
       playback: {
         boundary: { kind: 'stops-at-end', control: { kind: 'inherent' }, evidence: citeSampleEnd() },

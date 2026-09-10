@@ -19,6 +19,7 @@ import {
   inertBlocks,
   inertNotice,
   renderedParams,
+  sourceLengthLine,
 } from '@/lib/core'
 import type {
   CapabilityEvidence,
@@ -86,13 +87,31 @@ function Source({ source, owner }: { source: ResolvedSourceAudio; owner: Device 
   return (
     <>
       {source.prep === undefined ? (
-        // Nothing documented to do, so the need itself takes the reserved hint column (#21).
-        <Instruction {...(hint === undefined ? {} : { hint })}>
-          <span className="quiet">Source — {source.need}</span>
-        </Instruction>
+        source.minimumSeconds === undefined ? (
+          // Nothing documented to do, so the need itself takes the reserved hint column (#21).
+          <Instruction {...(hint === undefined ? {} : { hint })}>
+            <span className="quiet">Source — {source.need}</span>
+          </Instruction>
+        ) : (
+          <>
+            <p className="quiet">Source — {source.need}</p>
+            <Instruction {...(hint === undefined ? {} : { hint })}>
+              <span>{sourceLengthLine(source.minimumSeconds)}</span>
+            </Instruction>
+          </>
+        )
       ) : (
         <>
           <p className="quiet">Source — {source.need}</p>
+          {/*
+            §3/#518. The length above the procedure, in the wording `sourceLengthLine` gives every
+            surface: part of choosing the file, where the procedure is what you do with it once
+            chosen. The reserved hint column stays on the last line under the need, so nothing
+            reflows when hints are toggled (#21).
+          */}
+          {source.minimumSeconds === undefined ? null : (
+            <p>{sourceLengthLine(source.minimumSeconds)}</p>
+          )}
           <Instruction {...(hint === undefined ? {} : { hint })}>
             <span>{source.prep.text}</span>
           </Instruction>

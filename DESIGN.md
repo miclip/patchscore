@@ -1405,10 +1405,25 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   instead of p.193, and a span retargeted a page at a time would have named the wrong one. The XL
   keeps the shared v3.7 citations, since it takes the recipe by reference.
 
-  Sixteen more claims in the library total: `caps` went 1244 to 1260, and three more minima. Every
-  file-fed recipe on a held role now either records what makes its source last or states how long
-  the source has to be. `test/source-length.test.ts` still reads prose, and can become a comparison
-  against `minimumSeconds` whenever somebody wants it to.
+  Sixteen more claims in the library total: `caps` went 1244 to 1260, and three more minima.
+
+  **`test/source-length.test.ts` is a comparison now, and reads no prose at all.** It derives each
+  held role's worst case from `TEMPLATES` — the longest `HookNote.len` any shipped hook asks of the
+  role, at the slowest tempo any direction carrying such a hook allows — and then: `boundary:
+  'loops'` passes, `boundary: 'stops-at-end'` requires `minimumSeconds >= required`, an evidenced
+  `timing: 'stretches'` with no stop beside it passes, and anything else requires a sufficient
+  minimum. Where a recipe declares both a stretch and a stop, the stop wins and the number is
+  required; `dt2-sub-dark` is the library's only one. All four requirements and all forty
+  occurrences are pinned by name, so lowering 32, 10, 9 or 3 fails rather than passing against some
+  other role's figure.
+
+  **What reaches the reader is the number, not the classification.** `minimumSeconds` travels
+  through `ResolvedSourceAudio` and prints as a bullet under the `Source —` line, above the
+  procedure, in one wording every surface shares (`sourceLengthLine`): *At least 32 s long*. The
+  guide, the riff page and both web components use it, so the four prose spellings the field
+  replaced are gone from the ink as well as from the model. The classification behind it prints
+  nowhere: §8 carries no per-value provenance (invariant 4), and *loops, per p.32* beside a knob is
+  the mark #394 removed.
 
 - **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
   (#516).

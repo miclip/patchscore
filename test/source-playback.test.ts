@@ -5,11 +5,17 @@ import type {
   SourceAudio,
   SourcePlayback,
 } from '../lib/core/index'
-import { PLAYBACK_AXES, RecipeSchema, SourcePlaybackSchema } from '../lib/core/index'
+import {
+  PLAYBACK_AXES,
+  RecipeSchema,
+  SourcePlaybackSchema,
+  sourceLengthLine,
+} from '../lib/core/index'
 import { ZERO_COUNTS, auditDevice, totalCounts } from '../scripts/audit-verified'
 import { libraryCounts } from '../lib/studio/provenance'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { TEMPLATES } from '../lib/templates/index'
+import { TEMPLATES, droneStudy, weave } from '../lib/templates/index'
+import { moodState, renderGuide, resolve, type Template } from '../lib/core/index'
 import { device, enumParam, numericParam, recipe } from './fixtures'
 
 /**
@@ -384,6 +390,72 @@ describe('a playback claim counts as a capability fact (#518)', () => {
     expect(totals.capabilityFacts).toBe(3)
   })
 })
+// ---------------------------------------------------------------------------
+// What a reader is handed (#518)
+// ---------------------------------------------------------------------------
+
+/**
+ * §8/§3/#518. **The number reaches the reader, and the classification does not.**
+ *
+ * The two answer different people. A reader standing at the machine is choosing a file, and the
+ * actionable half of that is a length — which used to sit inside the prose in four incompatible
+ * spellings, none of them comparable and two of them wrong. The classification behind it belongs
+ * to the author and to `test/source-length.test.ts`: §8 prints no provenance anywhere (invariant
+ * 4), and *"loops, per p.32"* on a line beside a knob is exactly the mark #394 took out.
+ *
+ * **No committed golden covers this**, and that is a fact about the fixtures rather than about
+ * the renderer: none of the eight guide fixtures assigns a held role to one of the thirteen
+ * recipes that state a minimum. So the bytes are asserted here instead, on a real one-box rig.
+ */
+describe('a source length reaches the guide (#518)', () => {
+  const PLAY_PLUS = DEVICES.filter((d) => d.id === 'polyend-play-plus')
+
+  function guide(template: Template): string {
+    return renderGuide(resolve({ devices: PLAY_PLUS, template, mood: moodState(), seed: 0 }))
+  }
+
+  /**
+   * `drone-study` holds a `texture` for 128 steps at 60 bpm, which is the library's worst case at
+   * 32 seconds, and the Play+ is the box whose audio track cannot loop. This is the pairing #518
+   * was filed about, rendered.
+   */
+  it('prints the length as a bullet under the Source line', () => {
+    const text = guide(droneStudy)
+    expect(text).toContain('- At least 32 s long')
+    const source = text.indexOf('Source \u2014 A sustained atmospheric recording')
+    expect(source).toBeGreaterThan(-1)
+    // Directly beneath the need, ahead of the parameters: a length is part of choosing the file.
+    expect(text.slice(source, source + 400)).toMatch(
+      /Source \u2014 A sustained atmospheric recording[^\n]*\n\n- At least 32 s long/,
+    )
+  })
+
+  /** Where a procedure exists too, the length comes first: choose the file, then prepare it. */
+  it('puts the length above the procedure', () => {
+    const text = guide(weave)
+    const at = text.indexOf('- At least 10 s long')
+    expect(at).toBeGreaterThan(-1)
+    expect(text.slice(at, at + 200)).toContain('- Tune the sample to C4 before loading')
+  })
+
+  /**
+   * Invariant 4. **The guide says how long, and never how anybody knows what the voice does.**
+   *
+   * The vocabulary is what is asserted, not the document: §8 already names the documents a
+   * device block's settings rest on, once per box (`citationSentence`, #394), and the Play+
+   * manual is in that sentence for the ordinary reason. What must not appear is a classification
+   * on a line — *loops*, *stops-at-end*, a page beside a value — which is the per-value mark
+   * #394 removed and this field must not put back.
+   */
+  it('prints no playback classification anywhere in a guide', () => {
+    for (const text of [guide(droneStudy), guide(weave)]) {
+      for (const word of ['stops-at-end', 'plays-through', 'plays-once', 'boundary:', 'timing:']) {
+        expect(text, word).not.toContain(word)
+      }
+    }
+  })
+})
+
 
 // ---------------------------------------------------------------------------
 // The shipped library
@@ -586,8 +658,13 @@ describe('the TE and Polyend batch (#518)', () => {
    * hold, and it passed #517's presence check because it says something.
    */
   it('replaces the Play+ texture’s "several seconds" with a number', () => {
-    expect(audio('pp-texture-soft').need).not.toContain('several seconds')
-    expect(audio('pp-texture-soft').need).toContain('thirty-two seconds or longer')
+    const source = audio('pp-texture-soft')
+    expect(source.need.toLowerCase()).not.toContain('several seconds')
+    // The length is no longer prose at all: it is the number, printed by the one wording every
+    // surface shares. `need` says what to look for and stops there.
+    expect(source.need).not.toMatch(/second/i)
+    expect(source.minimumSeconds).toBe(32)
+    expect(sourceLengthLine(32)).toBe('At least 32 s long')
   })
 
   /**
@@ -924,8 +1001,9 @@ describe('the Roland and MPC batch (#518)', () => {
   it('replaces the TR-8S pad’s bar count with seconds', () => {
     const pad = audio('tr8s-pad-soft')
     expect(pad.need).not.toContain('about one bar')
-    expect(pad.need).toContain('nine seconds or longer')
+    expect(pad.need).not.toMatch(/\bbar\b/)
     expect(pad.minimumSeconds).toBe(9)
+    expect(sourceLengthLine(9)).toBe('At least 9 s long')
     expect(pad.playback?.boundary?.kind).toBe('stops-at-end')
     // Both parameters: `Whole` on a Loop tone would not stop at the end, and a Sample tone under
     // `Time` or `Step` would decay before it.

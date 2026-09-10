@@ -1203,10 +1203,9 @@ const recipes: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A rendered chord sample nine seconds or longer per shape the hook plays, loaded as a ' +
-        'User tone; HOLD MODE Whole plays it to its end without decaying, so the sample\'s own ' +
-        'length is the pad\'s length. See Hook for which shapes and for the semitone offset on ' +
-        'each step',
+        'A rendered chord sample per shape the hook plays, loaded as a User tone; HOLD MODE ' +
+        'Whole plays it to its end without decaying, so the sample\'s own length is the pad\'s ' +
+        'length. See Hook for which shapes and for the semitone offset on each step',
       /*
        * §3/#518. **The second prose defect this issue was filed about.** It read *"about one bar
        * long"*, which is not a length until somebody supplies a tempo, and the sentence beside it

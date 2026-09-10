@@ -1284,8 +1284,8 @@ const RECIPES: Recipe[] = [
      */
     sourceAudio: {
       need:
-        'A saw or square bass tone of one known pitch, three seconds or longer, with no filter ' +
-        'movement recorded into it — the filter is the part this recipe is for',
+        'A saw or square bass tone of one known pitch, with no filter movement recorded into it ' +
+        '— the filter is the part this recipe is for',
       /*
        * §3/#518. Nothing here makes the file last, so the file is the hold. p.121: *"1-Shot —
        * Basic sample playback. Plays start to end once."* p.123's 1-Shot parameter table is
