@@ -6372,6 +6372,111 @@ nobody later mistakes it for the same kind of claim.
 **No level count is proposed, and no middle of the axis is described.** Whether difficulty should
 also touch part count, pattern band or voice allocation is unexamined and stays that way.
 
+**12.8 — Conditional voices: not built. Voice capacity is unconditional.** See §2.2, §3.3 and
+§7.1. [#515](https://github.com/miclip/patchscore/issues/515) asked whether a Cascadia can carry
+two parts when a guide tells the reader to patch it that way — over MIDI in Dual Mono (p.100), or
+over CV from a Metropolix's two tracks, which needs no Dual Mono at all. The capability is real
+and verified against the manual; the decision is still no. A device declares the voices it has out
+of the case, and neither a recipe nor a cable adds one. Nothing moves in a manifest, nothing moves
+in a recipe, and no authored kind is added.
+
+**Two things block it, and they sit in different layers.**
+
+- **The assignable does not exist while the search is running.** `expand` is a pure function of
+  device data (§2.2), cached per `Device`, and `expandAll` produces the whole candidate set before
+  the first node is opened. A voice that exists only once a recipe is chosen would have to be
+  created *inside* the search by the step that is choosing among candidates, so the candidate set
+  would depend on a choice being made from it.
+- **§3.3 routes one pair, and it routes it after assignment.** `routeVoiceControl` reads the
+  resolved assignments, and for each target reads `bundles(device, 'in')[0]` — the first input
+  bundle, one pitch-and-gate pair, allocated once. Measured on the rig #515's own comment
+  proposes: a Metropolix + Cascadia rig resolves **one** Cascadia part and routes `TRK 1 · PITCH`
+  and `TRK 1 · GATE` into `EXT IN · PITCH` and `EXT IN · GATE`. The source offers two bundles and
+  reports `candidates: 2`; `TRK 2` goes nowhere, because a target is a box rather than a voice.
+
+**Making routing create the capacity closes a ring.** The voices would come from the cables; the
+cables come from `routeVoiceControl`, which runs after assignment and reads the clock source, which
+reads occupancy; and assignment needs the voices. Capacity → assignment → routing → capacity. A
+repair has to break that ring rather than route around it, which is what makes this an architecture
+change and not a field.
+
+**External control does not itself add capacity, and the rule generalises that way.** Playing a
+Mother-32, a DFAM or a Grandmother from a sequencer replaces where the part's notes come from; it
+does not add a second part sounding at the same time, and the box carries the same number of
+simultaneous voices either way. What makes the Cascadia case different is that Dual Mono, or a
+second cable pair into VCO B and Envelope B, produces **another independent concurrent part**. So
+if conditional capacity is ever reconsidered, that is the test to apply: capacity may change only
+where patching creates a further independent concurrent part, and never where it relocates the note
+source of the part already declared. Every "played from outside" box in the library fails that test
+today.
+
+**What a guide says today, which is an honest modelled limitation.** One part on the Cascadia,
+one routed pair, and nothing about a second voice — not as a shortfall either, because the model
+has no second voice to be short of and §7.3 reports what a request could not reach rather than what
+a manifest does not say. Invariant 5 is what forbids the alternative: a two-voice Cascadia setup
+would hand a reader an allocation no search made, on a box that has one voice until they patch it.
+The limitation is recorded here, and this entry is where it stays visible.
+
+**What it costs the search, measured rather than assumed.** #515 asked for the before-and-after
+before anyone starts, and #229 is why. Baseline from `npm run measure:search`: **47,284** nodes on
+the worst legal rig (weave seed 15) and **586,551** over the catalogue (industrial-techno seed 18),
+against a 2,000,000 cap. Two no-write simulations then gave the Cascadia two equivalent
+assignables, over the same 24-seed sweep of every direction: one adding a second `fixed` voice with
+its recipes duplicated onto it, one turning the single voice into a pool of two with the recipes
+shared.
+
+```
+                                          legal rig   catalogue
+baseline                                     47,284     586,551
+second fixed voice, recipes duplicated       47,284     585,721
+one pool of 2, recipes shared                47,284     563,106
+```
+
+**The unchanged legal figure is arithmetic, not evidence.** The worst rig in that deterministic
+stride sample contains no Cascadia, so nothing in it could move. Three of the eleven sampled
+ten-device rigs do contain one, and those are the numbers worth reading — second fixed voice
+first, pool of two second:
+
+```
+stride 2 offset 0     8,280  →  10,766  /  6,237
+stride 4 offset 0     7,006  →   9,313  /  5,006
+stride 3 offset 1     2,825  →   2,973  /  1,737
+```
+
+So a second fixed voice costs about 30% on a rig holding the box and a pool of two *saves* about
+25% (one member set per pool per node, §12.4). Those three rigs peak at **10,766** nodes under
+either shape, over 180x below the 2,000,000 cap — the catalogue row is not that far under it and
+never was, which is #301's whole point about which number is the gate.
+
+**The measured search cost is therefore not a blocker, and no cost measurement will unblock
+this** — the two layers above are the reason, and a cheap change that returns a wrong
+allocation is still wrong. The catalogue figure moving *down* in both shapes is the standing
+reminder that cost is not monotonic (§7.1) — and *measured* is the operative word in the sentence
+above it, because this is the deterministic stride sample `measure:search` sweeps rather than every
+rig that could hold the box. It bounds what was sampled, not the worst case.
+
+**What would reopen it — both, not either.**
+
+1. **A second device case, proven from a manual.** A box in the library where the same kind of
+   patch demonstrably creates another independent concurrent part, established the way #515
+   established p.100. Until then the Cascadia's second voice is a capability this model does not
+   support, and that is the whole of its status: **not a device owed an exception.** Special-casing
+   one manifest to carry a voice the model cannot express would put the claim somewhere no
+   invariant checks it, and the next box would arrive with the same argument and no shared answer.
+   A second proven case is what justifies reopening the general model, and the general model is
+   the only thing that would be reopened.
+2. **A design that makes the enabling cables and settings a search-time feasibility question**
+   rather than a post-assignment rendering one — a candidate assignable carrying the conditions
+   that create it, so an infeasible one is pruned rather than priced (§7.1/#25 is the shape: a
+   feasibility constraint cuts the tree rather than complicating it) — **and** a rendering that
+   puts those conditions where the reader will act on them. For the CV route that is four cables:
+   `TRK 1 · PITCH` → `VCO A · PITCH`, `TRK 1 · GATE` → `ENVELOPE A · GATE`, `TRK 2 · PITCH` →
+   `VCO B · PITCH`, `TRK 2 · GATE` → `ENVELOPE B · GATE/SYNC` — plus
+   `VCO B · PITCH SOURCE = PITCH B`, without which VCO B follows VCO A however the rig is patched
+   (p.17), and `VCF · FM 1` off zero, without which Envelope B moves the cutoff by nothing. A
+   design that routes the cables and leaves the switch to prose has not solved the case; it has
+   printed a patch that does not sound like two parts.
+
 ### Still open
 
 Neither item blocks build step 1: item 1 is a value inside an existing field and item 2 is a
