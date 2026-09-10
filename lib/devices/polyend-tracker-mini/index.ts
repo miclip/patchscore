@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type {
   AuthoredEnumParam,
@@ -156,6 +156,14 @@ const MANUAL = 'Polyend Tracker Mini Manual 2.2.1b'
 /** A range citation. The page is the one carrying that parameter's own printed bound. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#518. A citation over the pages a `playback` claim spans. The play-mode table names the mode
+ * and a later page says what that mode does with the file, so the claim rests on both.
+ */
+function citePages(...pages: number[]): PlaybackEvidence {
+  return { kind: 'manual', source: `${MANUAL}, pp.${pages.join(', ')}` }
 }
 
 /**
@@ -1298,6 +1306,21 @@ const SAMPLE_RECIPES: Recipe[] = [
         '(p.127), so it is the loop that fills the pad rather than the file: a clean boundary ' +
         'matters more than a long recording, and a steady bar loops where a bar still moving ' +
         'clicks',
+      /*
+       * §3/#518. The sentence in the `need` above, as a fact. p.127: *"Forward Loop — Sample
+       * playback. Plays start to end and cycles on loop."* p.130 opens the loop play modes:
+       * *"Three loop playback modes exist, forward loop, backward loop and pingpong loop."*
+       *
+       * `PLAY MODE` alone, unlike the Tracker's: this recipe sets no loop points, so there is
+       * nothing else here that the reader has to get right for the claim to hold.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY MODE'] },
+          evidence: citePages(127, 130),
+        },
+      },
       prep: {
         text:
           'Manual p.104, Rendering Tracks To Audio Chords: place the notes of one chord on ' +
@@ -1475,6 +1498,19 @@ const SAMPLE_RECIPES: Recipe[] = [
         'A sustained tonal source, two seconds or longer — a held synth note, a field recording, ' +
         'a feedback loop. Pitch matters; transients do not, because Granular re-reads the file ' +
         'rather than playing it through',
+      /*
+       * §3/#518. What *"re-reads the file rather than playing it through"* is, cited. p.141:
+       * *"Sound is generated in a granular synthesizer by looping playback around a grain."*
+       * p.142 is the parameter table for it. The grain is a window, so the file's end is not what
+       * ends the sound.
+       */
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY MODE'] },
+          evidence: citePages(141, 142),
+        },
+      },
     },
     params: [
       // §6.11's four core parameters, in the order the Sample Playback page lays them out
@@ -1611,6 +1647,15 @@ const SAMPLE_RECIPES: Recipe[] = [
         'Load it at the octave you want to hear: the recipe does not transpose it, so a source ' +
         'recorded high stays high. A second or two is enough with `Forward loop` below, as long ' +
         'as the loop point is clean: it is the loop that fills the held bars rather than the file',
+      // §3/#518. As `tm-pad-soft-chord`, on the same two pages: p.127's table gives Forward Loop
+      // as *"Plays start to end and cycles on loop"*, p.130 opens the three loop modes.
+      playback: {
+        boundary: {
+          kind: 'loops',
+          control: { kind: 'parameters', params: ['PLAY MODE'] },
+          evidence: citePages(127, 130),
+        },
+      },
     },
     /**
      * **The most-wanted role on this box**: seven of the eleven directions request it, all of

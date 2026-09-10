@@ -539,7 +539,19 @@ describe('Tracker Mini manifest', () => {
       })
       // Nowhere for a citation to attach to the need, by construction — the shape has no slot
       // for one, which is the repair. Before this, the page sat on a text param's point.
-      expect(Object.keys(source ?? {}).sort()).toEqual(['need', 'prep'])
+      //
+      // Asserted as *which* keys may carry a citation rather than as the whole key set, since
+      // #518 added two more fields beside `need`: `playback`, whose claims carry their own pages,
+      // and `minimumSeconds`, which carries none because no page states it. The rule this test is
+      // about is unchanged — the choice of sample stays uncited — and a key set pinned by hand
+      // would have failed for a field that keeps it.
+      const keys = Object.keys(source ?? {})
+      expect(keys, id).toContain('need')
+      expect(keys, id).toContain('prep')
+      expect(
+        keys.filter((k) => !['need', 'prep', 'playback', 'minimumSeconds'].includes(k)),
+        id,
+      ).toEqual([])
     }
     // And `INSTRUMENT` — the text param whose *point* carried p.104 — is gone for good. Text
     // params exist again on this box (#102), but for the opposite reason: they are the settings

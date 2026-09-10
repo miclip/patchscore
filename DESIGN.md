@@ -1202,6 +1202,34 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   loaded and nothing is stretched here"* written into a `need` whose documented job is saying what
   to load. Selecting a built-in sound is `soundSetup`, below.
 
+  **`minimumSeconds` is the shortest source that can carry the part**, as a number (#518).
+
+  ```ts
+  sourceAudio: {
+    need: 'A sustained atmospheric recording, thirty-two seconds or longer — field noise, tape hiss',
+    minimumSeconds: 32,   // no citation: no page states it
+  }
+  ```
+
+  It sits beside the prose because four readings of the prose gave four wrong counts (#516, #517,
+  #518). Stated durations are written as *"ten seconds or longer"*, *"a second or two"*, *"Several
+  seconds"* and *"a sustained two- or four-bar loop"*, and #518's session read nine recipes as
+  silent that all state something. `need` keeps saying what to look for; this says how much of it,
+  once, in a unit a rule can compare.
+
+  **It is not a capability fact and carries no citation.** No manual states it, because it is not
+  about the box: it is the longest hold some direction asks of this recipe's role, at the slowest
+  tempo that direction allows — 32.00 s for a `texture` under `drone-study` at 60 bpm, 9.52 for a
+  `sub` under `weave`, 8.89 for a `pad` under `ambient-dub`, 2.70 for an `acid` under
+  `acid-lineage`. A page beside it would be a page made to say something it does not, which is why
+  `comfortableVoices` stays out of `capabilityEvidence` (§2.6). `npm run audit` leaves it alone,
+  and the figures are rounded up to something a reader can audition against rather than carried to
+  two decimals.
+
+  **It is owed where nothing rescues the file.** A recipe declaring `boundary: 'loops'` or
+  `timing: 'stretches'` has a voice that makes the file last, so its length is a question of a
+  clean loop point. Where the file stops at its end, the file is the hold.
+
   **`playback` says what the voice does with the file, on three axes that do not decide each
   other** (#518).
 
@@ -1299,8 +1327,30 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
 
   **The audit counts each declared axis as one capability fact** (§9): a claim about what the voice
   does, sitting where `capabilityEvidence` sits, made per recipe because the same box loops under
-  one recipe and does not under another. Nothing in the shipped library declares one yet; the
-  migration is the next step, and until it lands `test/source-length.test.ts` still reads prose.
+  one recipe and does not under another.
+
+  **The first batch is the seventeen TE and Polyend recipes** #518 measured — every one declaring
+  `sourceAudio` on a role some shipped hook holds for a bar or more. Nine are rescued: the
+  Tracker's and Mini's forward-loop and granular parts by `boundary: 'loops'` (Tracker pp.121,
+  125, 135-136; Mini pp.127, 130, 141-142), the EPs' BAR parts by `timing: 'stretches'` (guide
+  8.2.4 / 8.2.5). Three carry a number instead, because nothing on those boxes makes the file
+  last: the Play+ pair, whose audio track has no play mode to set and whose claim is therefore
+  `inherent` off pp.68-69, and the Tracker's 1-Shot acid. Three EP legato parts stay
+  **unclassified** and carry only their minimum: 8.2.1 describes `legato` as continuing *"from the
+  same point as it was left off"* when the note changes, which is about a second note and says
+  nothing about the end of the file, so recording a boundary there would be reading a page for
+  something it does not say. `ep40-pad-clean` is the one recipe answering two axes, and it is the
+  one that made a single `kind` impossible.
+
+  Fifteen claims, fifteen capability facts: `caps` went 1210 to 1225. The three Polyend documents
+  are PDFs in `manuals/` and every cited page was rendered and read. The two teenage engineering
+  guides are web pages, and the sections cited were read in the verbatim mirrors under
+  `manuals/te-ep-133` and `manuals/te-ep-40` taken on 2026-08-28; **the live pages were not
+  fetched for this batch**, which is the evidence every other citation on those two boxes already
+  rests on.
+
+  `test/source-length.test.ts` still reads prose, and becomes a comparison once enough of the
+  library is migrated for it to.
 
 - **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
   (#516).

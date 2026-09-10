@@ -2020,6 +2020,32 @@ export type SourceAudio = {
    * on a sample recipe is ever cited.
    */
   need: string
+  /**
+   * §3/#518. **The shortest source that can carry this part, in seconds.**
+   *
+   * A number beside the prose, for the reason four readings of the prose gave four wrong counts
+   * (#516, #517, #518): stated durations are written as *"ten seconds or longer"*, *"a second or
+   * two"*, *"Several seconds"* and *"a sustained two- or four-bar loop"*, and a parser over that
+   * is a parser somebody will be wrong about again. `need` keeps saying what to look for. This
+   * says how much of it, once, in a unit a rule can compare.
+   *
+   * **It is not a capability fact and carries no citation.** No manual states it, because it is
+   * not about the box: it is the longest hold some direction asks of this recipe's role, at the
+   * slowest tempo that direction allows, which is a fact about `TEMPLATES` and arithmetic. A page
+   * beside it would be a page made to say something it does not, which is `comfortableVoices`'
+   * reason for staying out of `capabilityEvidence` (§2.6). The audit leaves it alone.
+   *
+   * **It is owed where nothing rescues the file.** A recipe whose `playback` declares
+   * `boundary: 'loops'` or `timing: 'stretches'` has a source the voice makes last, so its length
+   * is a question of a clean loop point rather than of covering the hold. Where the file stops at
+   * its end, the file is the hold, and this is the number that says so — 32 seconds for a
+   * `texture` under `drone-study` at 60 bpm, 9.52 for a `sub` under `weave`, 8.89 for a `pad`
+   * under `ambient-dub`, 2.70 for an `acid` under `acid-lineage`.
+   *
+   * Rounded up to something a reader can act on rather than carried to two decimals: nobody
+   * auditions a sample against 9.52 seconds.
+   */
+  minimumSeconds?: number
   /** A documented way to obtain or prepare it, when the box's manual prints one. */
   prep?: { text: string; verified: Verified }
   /**
@@ -2037,6 +2063,13 @@ export type SourceAudio = {
 
 export const SourceAudioSchema = z.strictObject({
   need: z.string().min(1),
+  // Positive and finite: a source of no length is not a source, and `Infinity` would pass every
+  // comparison a rule could make of it while saying nothing.
+  minimumSeconds: z
+    .number()
+    .finite()
+    .positive('a minimum source length is a number of seconds greater than zero')
+    .optional(),
   prep: z
     .strictObject({ text: z.string().min(1), verified: VerifiedSchema })
     .optional(),

@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import type { AuthoredParam, PlaybackAxis, SourcePlayback } from '../lib/core/index'
+import type {
+  AuthoredParam,
+  PlaybackAxis,
+  SourceAudio,
+  SourcePlayback,
+} from '../lib/core/index'
 import { PLAYBACK_AXES, RecipeSchema, SourcePlaybackSchema } from '../lib/core/index'
 import { ZERO_COUNTS, auditDevice, totalCounts } from '../scripts/audit-verified'
 import { libraryCounts } from '../lib/studio/provenance'
@@ -433,5 +438,177 @@ describe('the shipped library (#518)', () => {
       }
     }
     expect(libraryCounts(DEVICES).capabilityFacts).toBe(evidence + axes)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The migrated batch (#518)
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#518. **The seventeen file-fed recipes on held roles that TE and Polyend author**, migrated
+ * in one batch and pinned here.
+ *
+ * They are the ones #518 measured: every recipe declaring `sourceAudio` on a role some shipped
+ * hook holds for a bar or more. Four boxes, four different ways of answering, which is why the
+ * batch is worth pinning rather than counting.
+ *
+ * **Where the pages came from.** The three Polyend documents are PDFs in `manuals/` and every
+ * page cited below was rendered and read — Tracker pp.121, 123, 125, 135-136; Tracker Mini
+ * pp.127, 130, 141-142; Play+ pp.68-69. The two teenage engineering guides are **web pages**, and
+ * `manuals/te-ep-133` and `manuals/te-ep-40` hold verbatim mirrors of them taken on 2026-08-28;
+ * the sections cited below were read in those mirrors and **the live pages were not fetched or
+ * rendered for this batch**. That is the same evidence every other citation on those two boxes
+ * already rests on.
+ */
+describe('the TE and Polyend batch (#518)', () => {
+  const recipeById = (id: string) => {
+    for (const d of DEVICES) {
+      const found = d.recipes.find((r) => r.id === id)
+      if (found !== undefined) return found
+    }
+    throw new Error(`no recipe ${id}`)
+  }
+  const audio = (id: string) => recipeById(id).sourceAudio as NonNullable<SourceAudio>
+
+  /**
+   * The rescued nine. `loops` on the Polyend boxes: p.121/p.127 give Forward Loop as *"Plays
+   * start to end and cycles on loop"*, and the granular pair rest on *"Sound is generated in a
+   * granular synthesizer by looping playback around a grain"* (Tracker p.135, Mini p.141).
+   * `stretches` on the EPs: 8.2.4/8.2.5, *"BAR will stretch the sample, automatically fitting it
+   * to the chosen time division of the project's bpm"*.
+   *
+   * None of them carries a `minimumSeconds`, and that is the point of the axis: the voice makes
+   * the file last, so its length is a question of a clean loop point rather than of the hold.
+   */
+  it('records a rescue on the nine recipes whose voice makes the file last', () => {
+    const looping = [
+      'tr-sub-dark',
+      'tr-pad-soft',
+      'tr-texture-soft',
+      'tm-sub-dark',
+      'tm-pad-soft-chord',
+      'tm-texture-soft',
+      'ep40-pad-clean',
+    ]
+    for (const id of looping) {
+      expect(audio(id).playback?.boundary?.kind, id).toBe('loops')
+      expect(audio(id).minimumSeconds, id).toBeUndefined()
+    }
+    const stretching = ['ep133-pad-soft', 'ep133-texture-soft', 'ep40-pad-soft', 'ep40-texture-soft']
+    for (const id of stretching) {
+      expect(audio(id).playback?.timing?.kind, id).toBe('stretches')
+      expect(audio(id).minimumSeconds, id).toBeUndefined()
+    }
+  })
+
+  /**
+   * The three that are not rescued carry the number instead. Each is the longest hold its role
+   * receives, at the slowest tempo any direction holding it allows, rounded up: `texture` 128
+   * steps at 60 bpm is 32.00 s, `sub` 80 at 126 is 9.52, `acid` 22 at 122 is 2.70.
+   */
+  it('states a minimum on every recipe whose file is the hold', () => {
+    expect(audio('pp-texture-soft').playback?.boundary?.kind).toBe('stops-at-end')
+    expect(audio('pp-texture-soft').minimumSeconds).toBe(32)
+    expect(audio('pp-sub-dark').playback?.boundary?.kind).toBe('stops-at-end')
+    expect(audio('pp-sub-dark').minimumSeconds).toBe(10)
+    expect(audio('tr-acid-hard').playback?.boundary?.kind).toBe('stops-at-end')
+    expect(audio('tr-acid-hard').minimumSeconds).toBe(3)
+  })
+
+  /**
+   * #518's own example of the defect. *"Several seconds"* is unactionable against a 32-second
+   * hold, and it passed #517's presence check because it says something.
+   */
+  it('replaces the Play+ texture’s "several seconds" with a number', () => {
+    expect(audio('pp-texture-soft').need).not.toContain('several seconds')
+    expect(audio('pp-texture-soft').need).toContain('thirty-two seconds or longer')
+  })
+
+  /**
+   * The three EP legato parts. 8.2.1 describes `legato` as monophonic and as continuing *"from
+   * the same point as it was left off"* when the note changes, which is about a second note and
+   * not about the end of the file. So the boundary is unestablished and the axis is absent —
+   * `minimumSeconds` still applies, because a file that might stop needs to be long enough.
+   */
+  it('leaves the EP legato parts unclassified while still stating their minimum', () => {
+    for (const [id, seconds] of [
+      ['ep133-sub-dark', 10],
+      ['ep40-sub-dark', 10],
+      ['ep133-acid-dirty', 3],
+    ] as const) {
+      expect(audio(id).playback, id).toBeUndefined()
+      expect(audio(id).minimumSeconds, id).toBe(seconds)
+    }
+  })
+
+  /**
+   * §2.6/invariant 2. **A borrowed claim is re-cited, never inherited.** `te-ep-40` builds four of
+   * these recipes from the EP–133's, and its `borrowed()` spreads the sibling's `sourceAudio`, so
+   * without `retargetPlayback` the claim would arrive pointing at the wrong guide. The two boxes'
+   * guides also number the section differently: 8.2.4 there, 8.2.5 here, because the EP–40's
+   * inserts supertone parameters at 8.2.3 and pushes the rest down.
+   */
+  it('re-cites a borrowed claim onto the EP–40’s own guide', () => {
+    const there = audio('ep133-pad-soft').playback?.timing?.evidence.source as string
+    const here = audio('ep40-pad-soft').playback?.timing?.evidence.source as string
+    expect(there).toContain('/ep-133/modes 8.2.4')
+    expect(here).toContain('/ep-40/modes 8.2.5')
+    expect(here).not.toContain('ep-133')
+  })
+
+  /**
+   * Every claim in the batch is cited to the box's own document, and the Play+ pair is the only
+   * `inherent` one: that track has no play mode to set, so there is no parameter to name.
+   */
+  it('cites each claim to its own box, naming parameters wherever there are any', () => {
+    const expected: Record<string, string> = {
+      'polyend-tracker': 'Polyend Tracker Manual 1.9.2a',
+      'polyend-tracker-mini': 'Polyend Tracker Mini Manual 2.2.1b',
+      'polyend-play-plus': 'Polyend Play+ Manual Rev 2',
+      'te-ep-133': 'EP–133 K.O. II guide',
+      'te-ep-40': 'EP–40 riddim guide',
+    }
+    let claims = 0
+    for (const d of DEVICES) {
+      const document = expected[d.id]
+      if (document === undefined) continue
+      for (const r of d.recipes) {
+        for (const axis of PLAYBACK_AXES) {
+          const claim = r.sourceAudio?.playback?.[axis]
+          if (claim === undefined) continue
+          claims++
+          expect(claim.evidence.kind, `${r.id} ${axis}`).toBe('manual')
+          expect(claim.evidence.source, `${r.id} ${axis}`).toContain(document)
+          const inherent = claim.control.kind === 'inherent'
+          expect(inherent, `${r.id} ${axis}`).toBe(d.id === 'polyend-play-plus')
+        }
+      }
+    }
+    // Fifteen claims across fourteen recipes: `ep40-pad-clean` answers two axes, and it is the
+    // recipe that made a single `kind` impossible.
+    expect(claims).toBe(15)
+  })
+
+  /**
+   * §9. The fifteen claims are fifteen capability facts, and the audit's total moved by exactly
+   * that. `minimumSeconds` moved nothing, which is the other half of the split: it carries no
+   * citation because no page states it.
+   */
+  it('adds fifteen capability facts and nothing else', () => {
+    // The claims' share of the total, taken as the difference rather than against the day's
+    // figure: 1210 before this batch and 1225 after, and the next commit that cites a jack moves
+    // both. What cannot move without this batch moving is the fifteen.
+    const declared = DEVICES.reduce(
+      (total, d) => total + Object.keys(d.capabilityEvidence ?? {}).length,
+      0,
+    )
+    expect(libraryCounts(DEVICES).capabilityFacts - declared).toBe(15)
+    const minima = DEVICES.flatMap((d) =>
+      d.recipes.filter((r) => r.sourceAudio?.minimumSeconds !== undefined),
+    )
+    // Six: the Play+ pair, the Tracker's acid, and the three EP legato parts, one of which the
+    // EP–40 borrows. The number is a fact about the batch and moves when the next one lands.
+    expect(minima).toHaveLength(6)
   })
 })
