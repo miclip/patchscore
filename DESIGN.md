@@ -1202,17 +1202,26 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   loaded and nothing is stretched here"* written into a `need` whose documented job is saying what
   to load. Selecting a built-in sound is `soundSetup`, below.
 
-  **`playback` says what the voice does with the file, and it is what makes a duration
-  checkable** (#518).
+  **`playback` says what the voice does with the file, on three axes that do not decide each
+  other** (#518).
 
   ```ts
   sourceAudio: {
-    need: 'A sustained tonal or atmospheric recording, two seconds or longer',
+    need: 'A sustained tonal source, two seconds or longer',
     playback: {
-      // loops | stretches | gated | plays-once
-      kind: 'gated',
-      control: { kind: 'parameter', param: 'Sample Play' },   // or { kind: 'inherent' }
-      evidence: cite(212),                     // a manual page or a unit reading. Required.
+      // What happens when the file runs out.
+      boundary: {
+        kind: 'loops',                                  // loops | stops-at-end
+        control: { kind: 'parameters', params: ['PLAY'] },   // or { kind: 'inherent' }
+        evidence: cite(94),           // a manual page or a unit reading. Required, per axis.
+      },
+      // Whether the file is fitted to a musical length.
+      timing: {
+        kind: 'stretches',                              // stretches | unaltered
+        control: { kind: 'parameters', params: ['SRC MACHINE'] },
+        evidence: cite(93),
+      },
+      // What a note release does. Omitted here: nobody has established it.
     },
   }
   ```
@@ -1225,53 +1234,73 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   prose passes both, which is `CLAUDE.md`'s standing rule about a cited range arriving on a stated
   length.
 
-  **The classification was read out of prose four times and gave a wrong count four times** — #517's
-  detector flagged itself, #516's count of built-in sources was wrong in both directions, and
-  #518's session first read nine recipes as silent that all state something, then missed the
+  **The classification was read out of prose four times and gave a wrong count four times** —
+  #517's detector flagged itself, #516's count of built-in sources was wrong in both directions,
+  and #518's session first read nine recipes as silent that all state something, then missed the
   Octatrack's `LOOP MODE ON` and the Rytm's `LOP`. A loop is spelled differently on every box, so a
   pattern over names cannot find it. The recipe says what its own voice does instead.
 
-  **Four states, and `gated` is the one the MPC forced.** `loops` repeats the file for as long as
-  the note lasts and `stretches` fits it to a musical length, so under either, any usable length
-  covers any hold. `gated` is the note gating playback: the file starts on the note, stops on
-  release, **and stops when it runs out**. `plays-once` is the file playing at its own length
-  whatever the note does. The last two both owe a duration covering the worst-case hold, which
-  `needsSourceCoveringHold` is the one place that says so.
+  **Three axes, because the manuals refuse one choice.** The first two drafts of this shape were a
+  discriminated union, three states and then four, and two boxes broke it in opposite directions.
+  `dt2-texture-soft` sets `SRC MACHINE` to `STRETCH` **and** `PLAY` to `FORWARD LOOP`; its title is
+  *"Looped texture stretched under the track"*, and a union makes an author drop one of two true
+  facts. The MPC pushes the other way: p.216 of the v3.7 guide says *"For Pad Loop to work, you
+  must (1) set the Sample Play field (in the Global tab) to Note On instead of One Shot and (2) set
+  the Slice field (in the first Samples tab) to Pad instead of All or a slice number"*, and `Sample
+  Play: Note On` is the release behaviour (p.212, *"The sample will play only as long as the pad is
+  held"*). On that box a looping pad is necessarily a gated one, so a union would have made
+  alternatives of two things the manual makes a precondition and its consequence.
 
-  `gated` was missing from the first draft of this shape, and `mpc-texture-soft` is the case: it
-  sets `Sample Play` to `Note On`, which p.212 of the v3.7 guide describes as *"The sample will
-  play only as long as the pad is held. This is better for longer samples so you can control a
-  sound's duration by pressing and holding its corresponding pad."* With three states that recipe
-  would have been recorded as `plays-once`, which is the same page's `One Shot` — *"The entire
-  sample will play from start to end"* — and the option the recipe deliberately avoids. (`Note
-  Off` is the third value and is `plays-once` here: the whole sample plays, and only the moment it
-  starts differs.) Both states owe a duration, so folding them together would have looked harmless
-  in a duration rule and been wrong at the machine: a `gated` part that stops early is a sample
-  running out under a held pad, a `plays-once` part that overruns is a sample playing on after the
-  note ended.
+  ```
+  boundary   loops | stops-at-end     what happens when the file runs out
+  timing     stretches | unaltered    whether the file is fitted to a musical length
+  release    gated | plays-through    what a note release does
+  ```
 
-  **`control` says how the state is selected, in two forms.** `parameter` names a setting in this
-  recipe's `params`, and `RecipeSchema` refuses a name matching nothing there, as it refuses a
-  patch entry naming an undeclared jack (§3.3). The claim is that *this setting, in this recipe*,
-  puts the voice in that state, which keeps the pairing from coming apart the way `CLAUDE.md`
-  requires of a value read off a switched scale. `inherent` is the box doing it with nothing to
-  set; there is nothing to check beyond the citation the claim already carries. Requiring a
-  parameter everywhere would leave a box that loops unconditionally silent — reading as
-  unexamined — and would push an author toward naming an adjacent parameter to satisfy the shape,
-  which is the failure this field exists to remove. There is no `value` beside the name: the
-  parameter holds one already.
+  **Every axis is optional, and silence is not a guess.** A recipe declares what somebody
+  established and leaves the rest out; `dt2-texture-soft` has a page for its boundary and its
+  timing and nothing anywhere about what its `AMP MODE` envelope does on release. Requiring all
+  three is what turns a model into a guessing game, which is the failure #518 records. A `playback`
+  declaring no axis at all is refused: it says what an absent `playback` says, in a shape that
+  looks like work was done.
 
-  `evidence` is a manual page or a reading off the unit, and it is required. It is not a
-  `Verified`, because `false` there would say the classification was made and nothing was checked,
-  which is the state this replaces; and `maker` (#191) is a published figure, which does not
-  describe what a track does with a note it is holding. **The audit counts each declared playback
-  as one capability fact** (§9): it is a claim about what the voice does, sitting where
-  `capabilityEvidence` sits, made per recipe because the same box gates under one recipe and plays
-  once under another.
+  **What this settles, and what it does not.** It settles #518's question, which is about the
+  *source's boundary*: is a two-second file enough? `boundary` and `timing` answer it, because a
+  file that loops or is stretched is not short and a file that stops at its end has to be as long
+  as the hold. It does not settle #506's, which is about the *voice's sustain*: a looping source
+  can still be cut short by a trigger length shorter than the note, by an amp envelope whose decay
+  runs out under a held pad, by a mute group. `boundary: 'loops'` says the file does not run out.
+  It is not a promise the part sounds for the whole hold. An earlier draft carried a
+  `needsSourceCoveringHold` boolean that answered both questions with one bit, and it is gone; the
+  sustain fact is its own and is not this field's to state.
 
-  The field is optional, and its absence says nothing has been established — the fifth state, as it
-  is for `content` (§2.6). Nothing in the shipped library declares one yet; the migration is the
-  next step, and until it lands `test/source-length.test.ts` still reads prose.
+  **`control` says how the state is reached, in two forms.** `parameters` names one or more
+  settings in this recipe's `params`, and `RecipeSchema` refuses **every** name matching nothing
+  there, each at its own index, as it refuses a patch entry naming an undeclared jack (§3.3).
+  `inherent` is the box doing it with nothing to set; there is nothing to check beyond the citation
+  the claim already carries. Requiring a parameter everywhere would leave a box that loops
+  unconditionally silent — reading as unexamined — and would push an author toward naming an
+  adjacent parameter to satisfy the shape.
+
+  **The list is a list because the MPC's loop is a conjunction of four parameters**: `Sample Play`
+  (p.212), `Slice` and `Pad Loop` (p.216), and `Repeats` (p.215), which the same page ties to the
+  behaviour — *"a Repeat value of 0 will create infinite repeats, and a value of 1 will play a
+  sample one time through"*, a difference *"only evident when a Pad's Sample Play parameter is set
+  to Note On"*. One name there would be a quarter of the setup presented as all of it. Where a
+  conjunction spans pages, the `evidence` source names the span. There is no `value` beside a name:
+  the parameter holds one already.
+
+  `evidence` is a manual page or a reading off the unit, required on **each** axis, because the
+  axes are established separately and often on different pages — the MPC's release is p.212 and its
+  boundary is p.216. One citation over three claims is the recipe-level `verified` mistake (§3.1)
+  in a smaller box. It is not a `Verified`: `false` there would say the classification was made and
+  nothing was checked, which is the state this replaces; and `maker` (#191) is a published figure,
+  which does not describe what a track does with a note it is holding.
+
+  **The audit counts each declared axis as one capability fact** (§9): a claim about what the voice
+  does, sitting where `capabilityEvidence` sits, made per recipe because the same box loops under
+  one recipe and does not under another. Nothing in the shipped library declares one yet; the
+  migration is the next step, and until it lands `test/source-length.test.ts` still reads prose.
 
 - **`soundSetup` says which of the box's own sounds the recipe plays, and how to get at it**
   (#516).
@@ -6129,8 +6158,10 @@ Three guards:
   the states with a document behind them and `gaps` for the states without, because `undocumented`
   is finished work, `unchecked` is work nobody has started, and `unread` is work nobody here can
   start at all. Since #518 `caps` also holds the playback claims recipes make (§3): a claim about
-  what a voice does with a file belongs with the claims about clocks and jacks, and it is counted
-  per recipe, so a recipe two manifests share by reference contributes once (#193)
+  what a voice does with a file belongs with the claims about clocks and jacks. One fact per
+  declared *axis*, since `boundary`, `timing` and `release` are established separately and each
+  carries its own citation, and counted per recipe, so a recipe two manifests share by reference
+  contributes once (#193)
 - an `EDITIONS` block (§2.3/#480) splitting the manifests three ways: those carrying a date
   somebody confirmed their cited edition current on, then those where nobody has asked, then
   those naming a manual with no edition, so there is no cited edition to confirm. Both of those
