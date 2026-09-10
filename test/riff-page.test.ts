@@ -10,6 +10,8 @@ import RiffIndexPage from '../app/riffs/page'
 import RiffRoute, { dynamicParams, generateMetadata, generateStaticParams } from '../app/riffs/[id]/page'
 import { RigPicker } from '../components/rig/rig-picker'
 import { NAV_LINKS } from '../components/site-nav'
+import { hintText } from '../components/guide/format'
+import type { DeviceId, RiffVoicing } from '../lib/core'
 import { MAX_RIG_DEVICES, resolveRiff } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS, blueMondayBass } from '../lib/riffs'
@@ -72,19 +74,30 @@ function text(markup: string): string {
  *
  * Three lines are dropped and each is a stated difference rather than a gap:
  *
- *  - The **grid rows** (`1 xxxx xxxx…`). Both renderers draw them from `gridRows`, so they are
- *    identical by construction — but the page sets them in a `<pre>` and tag-stripping collapses
- *    the runs of space that make them line up. Compared separately, un-normalised, below.
+ *  - The **grid rows** (`1 xxxx xxxx…`). The page draws boxes over the same hits since #528 and
+ *    carries these rows underneath, visually hidden, as the text a reader copies — so they are
+ *    identical by construction and tag-stripping collapses the runs of space that make them line
+ *    up. Compared separately, un-normalised, below.
+ *  - The **slot rows** (`ghost · 2, 4, 6`). The page's carry the velocity and the export's do
+ *    not, which is #528's second half: `ghost — 4, 12 (all vel 44)` is what a guide's page says
+ *    and what a reader at the machine needs, where the Markdown row is a bare list of steps. Not
+ *    a fact the page invents and not one the export drops — every step is on both — so the two
+ *    are compared step for step below rather than string for string.
  *  - `Patch` and `Settings`, which are the Markdown's own ink: it has nothing but a bold line to
  *    separate two blocks, where the page has a list and a heading.
  *  - The **step-count line**, `step 1 · F2 · degree 1 …`, keeps every one of its facts; only the
  *    separators differ, and those are ink.
  */
+const SLOT_ROW = /^- `([a-z-]+)` · (.+)$/
+
 function markdownFacts(md: string): string[] {
   const fence = /^[ ]*\d+ [x·]/
   return md
     .split('\n')
-    .filter((line) => line.trim() !== '' && line !== '```' && !fence.test(line))
+    .filter(
+      (line) =>
+        line.trim() !== '' && line !== '```' && !fence.test(line) && !SLOT_ROW.test(line),
+    )
     .map((line) =>
       line
         .replace(/^#+ /, '')
@@ -125,16 +138,59 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
     }
   })
 
-  it('draws the grid from the same rows, character for character', async () => {
+  it('draws the grid as boxes, and copies as the rows the Markdown prints (#528)', async () => {
     // The one block the normaliser above cannot compare, because the alignment *is* the content.
-    // `gridRows` is shared, so this is a check that neither renderer re-wrapped or re-padded it.
+    // The page draws `StepGrid` — the figure a guide draws — and carries the export's own rows
+    // under it as hidden text, so a selection still copies `1 xxxx xxxx xxxx xxxx`. The step
+    // number is `.step-index` here and the padding that right-aligns it in a `<pre>` is CSS, so
+    // the rows are compared with that padding trimmed and nothing else.
     for (const riff of RIFFS) {
       const md = renderRiff(resolveRiff(riff, []))
-      const rows = md.slice(md.indexOf('```') + 4, md.lastIndexOf('```')).trimEnd()
+      const rows = md.slice(md.indexOf('```') + 4, md.lastIndexOf('```')).trimEnd().split('\n')
       const markup = await markupFor(riff.id)
-      const pre = /<pre class="riff-grid mono">([\s\S]*?)<\/pre>/.exec(markup)
-      expect(pre, riff.id).not.toBeNull()
-      expect(pre?.[1], riff.id).toBe(rows)
+      // The Markdown's ink is gone from the page: no `<pre>`, and no second treatment of it.
+      expect(markup, riff.id).not.toContain('<pre class="riff-grid')
+      const drawn = [
+        ...markup.matchAll(
+          /<span class="step-index">(\d+)<\/span><span class="step-text">([^<]*)<\/span>/g,
+        ),
+      ]
+      expect(
+        drawn.map((row) => `${row[1] ?? ''}${row[2] ?? ''}`),
+        riff.id,
+      ).toEqual(rows.map((row) => row.trimStart()))
+
+      // And the boxes say what the text says: one cell per step, filled on every `x`.
+      const cells = markup.match(/class="step(?: on)?(?: beat)?"/g) ?? []
+      const filled = markup.match(/class="step on(?: beat)?"/g) ?? []
+      expect(cells.length, riff.id).toBe(riff.pattern.length)
+      expect(filled.length, riff.id).toBe(rows.join('').split('x').length - 1)
+    }
+  })
+
+  it('puts the velocity and #457’s definition trigger on every slot row (#528)', async () => {
+    // The export's row is a bare list of steps. The page's is the guide's: the slot word is a
+    // button that opens its definition, and a velocity the reader has to dial is on the line.
+    for (const riff of RIFFS) {
+      const md = renderRiff(resolveRiff(riff, []))
+      const exported = [...md.matchAll(new RegExp(SLOT_ROW.source, 'gm'))]
+      expect(exported.length, riff.id).toBeGreaterThan(0)
+      const markup = await markupFor(riff.id)
+      const drawn = [
+        ...markup.matchAll(
+          /<button type="button" class="vocab-term"[^>]*>([a-z-]+)<\/button><\/span><span class="token-sep">—<\/span><span class="mono">([^<]*)<\/span>/g,
+        ),
+      ]
+      expect(
+        drawn.map((row) => row[1]),
+        riff.id,
+      ).toEqual(exported.map((row) => row[1]))
+      for (const [i, row] of drawn.entries()) {
+        const steps = (row[2] ?? '').replace(/ \(all vel \d+\)/, '').replace(/ \(vel \d+\)/g, '')
+        expect(steps, `${riff.id}: ${row[1] ?? ''}`).toBe(exported[i]?.[2])
+      }
+      // Not vacuous: this library authors velocities, and the page is where they are read.
+      expect(drawn.some((row) => /vel \d+/.test(row[2] ?? '')), riff.id).toBe(true)
     }
   })
 
@@ -437,23 +493,29 @@ describe('the riff page at 1280px and 390px', () => {
    * the page *looks* right at either width, and the two viewports still want an operator's eyes.
    */
   it('scrolls the grid inside its own container, never the body', () => {
-    expect(rule('.riff-grid-scroll')).toContain('overflow-x: auto')
-    expect(rule('.riff-grid-scroll')).toContain('min-width: 0')
-    expect(rule('.riff-grid')).toContain('white-space: pre')
+    // The guide's scroller, since #528: the figure is one figure and it is drawn once.
+    expect(rule('.table-scroll')).toContain('overflow-x: auto')
+    // A grid column is a grid item, where a guide's block is not — without this the widest row
+    // sets the column's width and takes the page sideways.
+    expect(rule('.table-scroll')).toContain('min-width: 0')
+    expect(rule('.step-grid')).toContain('min-width: max-content')
   })
 
   it('keeps values monospace and does not shrink type to fit (#21)', () => {
-    // 0.95rem, not a fraction chosen to make a 64-step row fit 390px.
-    expect(rule('.riff-grid')).toContain('font-size: 0.95rem')
-    expect(BLUE).toContain('<pre class="riff-grid mono">')
+    expect(BLUE).toContain('<div class="step-grid mono"')
+    // Fixed cells, not a fraction chosen to make a 64-step row fit 390px: it scrolls instead.
+    expect(rule('.step')).toContain('width: 15px')
+    // And the copy keeps the spacing that makes a row countable.
+    expect(rule('.step-text')).toContain('white-space: pre')
   })
 
   it('wraps every fact row rather than taking the page sideways', () => {
     for (const selector of ['.riff-param-line', '.riff-where', '.riff-trigger']) {
       expect(rule(selector), selector).toContain('flex-wrap: wrap')
     }
-    // The note row is one of a grouped selector, so it is found by the group it heads.
-    expect(rule('.riff-note,\n.riff-slot,\n.riff-articulation > li')).toContain('flex-wrap: wrap')
+    expect(rule('.riff-note')).toContain('flex-wrap: wrap')
+    // The slot rows are the guide's list since #528, and they wrap there too.
+    expect(rule('.slots > li')).toContain('flex-wrap: wrap')
     expect(rule('.riff-lead')).toContain('overflow-wrap: break-word')
   })
 
@@ -500,19 +562,34 @@ describe('the riff page at 1280px and 390px', () => {
     }
 
     expect(print).toContain('.site-nav,')
-    expect(print).toContain('.riff-grid-scroll,')
+    // The grid prints as the guide's does: nothing clips, and the fill is toner (#219).
+    expect(print).toContain('.table-scroll,')
+    expect(print).toContain('.step,')
   })
 })
 
-/** One rig, resolved on the server, so the voice block can be asserted without a browser. */
-async function renderWithRig(): Promise<string> {
+/**
+ * One rig, resolved on the server, so the voice block can be asserted without a browser.
+ *
+ * The voice comes back with the markup because two of the things this block renders are the
+ * device's own — a slot it articulates and the jog it authors for that slot — and a test that
+ * wrote them out as strings would be asserting one box's content rather than this page's shape.
+ */
+async function voiceFor(deviceId: DeviceId): Promise<{ markup: string; voice: RiffVoicing }> {
   const { RiffVoice } = await import('../components/riff/riff-voice')
-  const rig = DEVICES.filter((d) => d.id === 'moog-subsequent-37')
+  const rig = DEVICES.filter((d) => d.id === deviceId)
   const resolution = resolveRiff(blueMondayBass, rig)
-  if (resolution.outcome !== 'played') throw new Error('the fixture rig should play this')
-  return renderToStaticMarkup(
-    createElement(RiffVoice, { riff: blueMondayBass, voice: resolution.voice }),
-  )
+  if (resolution.outcome !== 'played') throw new Error(`${deviceId} should play this`)
+  return {
+    markup: renderToStaticMarkup(
+      createElement(RiffVoice, { riff: blueMondayBass, voice: resolution.voice }),
+    ),
+    voice: resolution.voice,
+  }
+}
+
+async function renderWithRig(): Promise<string> {
+  return (await voiceFor('moog-subsequent-37')).markup
 }
 
 describe('the voice block', () => {
@@ -550,16 +627,50 @@ describe('the voice block', () => {
   })
 
   it('renders articulation values as they are, whatever type they are', async () => {
-    const rig = DEVICES.filter((d) => d.id === 'elektron-digitakt-ii')
-    const resolution = resolveRiff(blueMondayBass, rig)
-    if (resolution.outcome !== 'played') throw new Error('the sampler should play this')
-    const { RiffVoice } = await import('../components/riff/riff-voice')
-    const markup = renderToStaticMarkup(
-      createElement(RiffVoice, { riff: blueMondayBass, voice: resolution.voice }),
-    )
+    const { markup } = await voiceFor('elektron-digitakt-ii')
     expect(markup).not.toContain('NaN')
     expect(text(markup)).toContain('velocity 112')
     // §2.1/#32. The bridge between the figure's C4 convention and a box that puts middle C at C5.
     expect(text(markup)).toContain('Trigger note C5 MIDI 60')
+  })
+
+  /**
+   * §4.3/§8.1/#528. **The fourth thing the riff page was rebuilding: the per-box block.**
+   *
+   * A guide answers *what does my box do to these steps* under a heading naming the box, in a
+   * list whose slot word opens its definition and whose jog sits in §8.1's reserved column. This
+   * page had `Articulation` over a list of its own, which named the concept rather than the box
+   * and put the jog in a paragraph. All four claims are checked here because the shared component
+   * is one import away from being replaced by a local copy again.
+   */
+  it('draws the per-box block as a guide does, jog and all (#528)', async () => {
+    const { markup, voice } = await voiceFor('elektron-digitakt-ii')
+    const entry = voice.articulation[0]
+    if (entry === undefined) throw new Error('the sampler should articulate this grid')
+
+    // Whose settings these are — the question a reader has after a grid that named no device.
+    expect(markup).toContain('<h3 class="riff-sub">On this box — Digitakt II</h3>')
+
+    // The guide's list, and no second treatment of it left anywhere on the page.
+    expect(markup).toContain('<ul class="articulation">')
+    expect(markup).not.toContain('riff-articulation')
+
+    // #457. The slot word is a definition trigger here, as it is on a guide.
+    expect(markup).toContain(
+      `class="vocab-term" aria-haspopup="dialog" aria-expanded="false">${entry.slot}</button>`,
+    )
+
+    // §8.1. The jog, in the reserved column rather than a paragraph of its own.
+    expect(entry.hint, 'this box must author a jog for the rest of this to check anything')
+      .toBeDefined()
+    const jog = /<p class="hint">([^<]*)<\/p>/.exec(markup)
+    expect(jog, 'the reserved hint column is missing').not.toBeNull()
+    expect(text(jog?.[1] ?? '')).toBe(hintText(voice.device, entry.hint as string))
+
+    // And it is *visible*: `.hint` is hidden until an ancestor turns hints on, and a riff page
+    // has no §8.1 toggle to turn them on with — so the block declares them on itself.
+    expect(markup).toContain('<div data-hints="on">')
+    expect(rule('.hint')).toContain('visibility: hidden')
+    expect(rule("[data-hints='on'] .hint")).toContain('visibility: visible')
   })
 })

@@ -1,8 +1,7 @@
-import { Fragment } from 'react'
+import { Articulation } from '@/components/pattern/articulation'
 import { PatchList } from '@/components/recipe/patch-list'
 import { ResolvedSettings } from '@/components/recipe/resolved-body'
-import { hintText } from '@/components/guide/format'
-import type { BoundArticulation, Device, Riff, RiffVoicing } from '@/lib/core'
+import type { Riff, RiffVoicing } from '@/lib/core'
 import { num, recipeRouting } from '@/lib/core'
 import { riffCitation, riffStack, riffSubstitution, voiceHeading } from '@/lib/studio/riff-text'
 
@@ -22,48 +21,24 @@ import { riffCitation, riffStack, riffSubstitution, voiceHeading } from '@/lib/s
  */
 
 /**
- * §4.3/§7 step 8. What the box says about the slots this grid actually contains.
+ * §4.3/§7 step 8/#528. **What the box says about the slots this grid actually contains** — the
+ * guide's own list, drawn by the shared component rather than by a second treatment of it.
  *
- * A slot the variant does not strike is dropped by `bindArticulation` and renders nothing — which
- * is the whole reason articulation addresses slots rather than absolute step numbers.
+ * The heading is the guide's sentence too. *Articulation* named the concept; **On this box —
+ * Subsequent 37** says whose settings these are, which is the question a reader has after a grid
+ * that named no device at all.
  *
- * `set` holds numbers, strings *and* booleans, so the value is stringified rather than coerced:
- * `Number(value)` on a named mode renders `NaN`, silently and only on the boxes authoring one.
+ * `data-hints="on"`, because a riff page has no §8.1 toggle to turn them on with. The jog is
+ * always shown here, as it always has been; what changes is that it now sits in the reserved
+ * column instead of a paragraph of its own.
  */
-function RiffArticulation({
-  entries,
-  device,
-}: {
-  entries: readonly BoundArticulation[]
-  device: Device
-}) {
-  if (entries.length === 0) return null
+function VoiceArticulation({ voice }: { voice: RiffVoicing }) {
+  if (voice.articulation.length === 0) return null
   return (
-    <>
-      <h3 className="riff-sub">Articulation</h3>
-      <ul className="riff-articulation">
-        {entries.map((bound) => (
-          <li key={bound.slot}>
-            <span className="mono riff-slot-name">{bound.slot}</span>
-            <span className="arrow" aria-hidden="true">
-              {' → '}
-            </span>
-            {Object.entries(bound.set).map(([key, value], i) => (
-              <Fragment key={key}>
-                {i > 0 ? ', ' : null}
-                <span className="mono">{key}</span> {typeof value === 'string' ? value : String(value)}
-              </Fragment>
-            ))}
-            <span className="riff-note-fact mono">
-              {bound.steps.length === 1 ? 'step' : 'steps'} {bound.steps.map(num).join(', ')}
-            </span>
-            {bound.hint === undefined ? null : (
-              <p className="riff-hint">{hintText(device, bound.hint)}</p>
-            )}
-          </li>
-        ))}
-      </ul>
-    </>
+    <div data-hints="on">
+      <h3 className="riff-sub">On this box — {voice.device.name}</h3>
+      <Articulation entries={voice.articulation} device={voice.device} />
+    </div>
   )
 }
 
@@ -117,7 +92,7 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
           <ResolvedSettings params={voice.params} device={voice.device} prefix="riff" />
         </>
       )}
-      <RiffArticulation entries={voice.articulation} device={voice.device} />
+      <VoiceArticulation voice={voice} />
       {cites === undefined ? null : <p className="riff-cites">{cites}</p>}
     </>
   )

@@ -1489,8 +1489,6 @@ body {
  * wraps breaks between facts rather than through the middle of `MIDI 41`.
  */
 .riff-notes,
-.riff-slots,
-.riff-articulation,
 .riff-params,
 .sample-params {
   display: grid;
@@ -1501,9 +1499,7 @@ body {
   min-width: 0;
 }
 
-.riff-note,
-.riff-slot,
-.riff-articulation > li {
+.riff-note {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
@@ -1512,7 +1508,6 @@ body {
 }
 
 .riff-step,
-.riff-slot-name,
 .riff-trigger-label,
 .sample-trigger-label {
   color: var(--ink-dim);
@@ -1535,33 +1530,6 @@ body {
  */
 .riff-sep {
   color: var(--ink-dim);
-}
-
-/*
- * §4.3/#21. **The grid scrolls inside its own container, never the body.**
- *
- * The alignment is the reading — the gutter and the groups of four are how a reader finds step 23
- * without counting from one — so it is a `pre` and it is never re-wrapped to fit. A 64-step
- * variant is four rows of sixteen and fits 390px at this size; a wider one scrolls here and the
- * page around it does not move.
- */
-.riff-grid-scroll {
-  overflow-x: auto;
-  min-width: 0;
-  margin: 0 0 10px;
-}
-
-.riff-grid {
-  margin: 0;
-  padding: 10px 12px;
-  background: var(--panel-2);
-  border: 1px solid var(--edge);
-  border-radius: 4px;
-  color: var(--ink);
-  line-height: 1.5;
-  /* Values stay legible at arm's length (#21): the grid shrinks for nobody. */
-  font-size: 0.95rem;
-  white-space: pre;
 }
 
 /*
@@ -4283,6 +4251,9 @@ button:active {
  */
 .table-scroll {
   max-width: 100%;
+  /* #528. So a scroller inside a grid column shrinks with it rather than setting its width — a
+     riff page's grid is a grid item where a guide's is not. */
+  min-width: 0;
   margin: 8px 0 4px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -4375,6 +4346,30 @@ button:active {
 .step.on {
   background: var(--accent);
   border-color: var(--accent);
+}
+
+/*
+ * §8/#528. **The grid as text: invisible, and copied with the figure.**
+ *
+ * A reader who selected the grid on a phone and pasted it got the step numbers and nothing else,
+ * because a struck step is a background colour. This carries the row the Markdown export prints,
+ * so a selection lands in a notes app as `1 x··· ···· x··· ····` and says what the boxes say.
+ *
+ * `.sr-only`'s technique with one change: `white-space: pre`, because the single spaces between
+ * groups of four are the counting aid and `nowrap` would collapse the one that separates the row
+ * from its step number. Announced to nobody — the grid is a `role="img"` whose label names the
+ * struck steps, so its children are already out of the accessibility tree.
+ */
+.step-text {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: pre;
+  border: 0;
 }
 
 /* --------------------------------------------------------- narrow screens */
@@ -4811,20 +4806,10 @@ html {
    * and half of one at the foot of a sheet is a reader turning the page mid-patch — `.module-box`'s
    * own claim, one scale down.
    */
-  .riff-grid-scroll,
   .riff-note,
   .riff-param,
   .sample-param {
     break-inside: avoid;
-  }
-
-  /*
-   * The grid's ground goes with the palette rather than staying dark: the print block repoints
-   * `--panel-2` to a light grey, which is what keeps `x` and `·` legible on paper. Nothing here
-   * hard-codes a colour, for that reason.
-   */
-  .riff-grid-scroll {
-    overflow-x: visible;
   }
 
   .rack-section {
