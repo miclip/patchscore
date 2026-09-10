@@ -1,4 +1,4 @@
-import { STEPS_PER_BAR, type Pattern } from './template'
+import { STEPS_PER_BAR, type Pattern, type PatternHit } from './template'
 
 /**
  * §4.3/§8/#512. **The marks a step grid is drawn with, and the one drawing of it.**
@@ -23,10 +23,16 @@ const ROW = STEPS_PER_BAR
  * starts at. A 64-step variant is four rows of the shape a box's screen shows, not one line that
  * wraps somewhere different on every reader's phone.
  *
- * One function rather than one per surface. The guide, the riff's Markdown and the riff's page
- * all draw this figure, and the drawing *is* the fact — two of them disagreeing about a step
- * would be two different patterns under one name. It lived in `render.ts` and again in
- * `riff-text.ts`, in copies that agreed by inspection only (#512).
+ * One function rather than one per surface, and **what it shares is the hit data, not the
+ * drawing** (#528). Which steps are struck, and how they group into rows, is one fact: two
+ * surfaces disagreeing about it would be two different patterns under one name. How a renderer
+ * *draws* those hits is its own ink (#33) — Markdown has `x` and `·` and nothing else, where the
+ * React surfaces draw a filled box per step and carry these rows underneath, visually hidden, as
+ * the text a reader selects and copies.
+ *
+ * This used to read "the drawing *is* the fact", which is what led a riff page to put the
+ * Markdown's own `<pre>` on a surface that could draw boxes (#528). It lived in `render.ts` and
+ * again in `riff-text.ts`, in copies that agreed by inspection only (#512).
  */
 export function stepGridRows(pattern: Pattern): readonly string[] {
   const hit = new Set(pattern.hits.map((h) => h.step))
@@ -41,4 +47,41 @@ export function stepGridRows(pattern: Pattern): readonly string[] {
     rows.push(`${String(start).padStart(width, ' ')} ${cells.join('')}`)
   }
   return rows
+}
+
+/** One slot's hits, sharing the grouping decision rather than the ink. */
+export type SlotGroup = { slot: PatternHit['slot']; hits: readonly PatternHit[] }
+
+/**
+ * Hits by slot, in the order the slots first appear in the authored pattern.
+ *
+ * The other half of the shared hit data (#528). Three surfaces list a pattern's slots — the
+ * guide's Markdown, the guide's page and a riff's both halves — and each held its own copy of
+ * this loop, agreeing by inspection in the way `stepGridRows` used to. The order is authored
+ * order and never sorted: a slot list re-ordered alphabetically stops matching the grid above it.
+ *
+ * What each surface still decides for itself is how a row reads — `—` or `·`, a hoisted velocity
+ * or none, a vocabulary trigger or a plain word.
+ */
+export function slotGroups(pattern: Pattern): readonly SlotGroup[] {
+  const bySlot = new Map<PatternHit['slot'], PatternHit[]>()
+  for (const hit of pattern.hits) {
+    const existing = bySlot.get(hit.slot)
+    if (existing === undefined) bySlot.set(hit.slot, [hit])
+    else existing.push(hit)
+  }
+  return [...bySlot].map(([slot, hits]) => ({ slot, hits }))
+}
+
+/**
+ * The steps this pattern strikes, ascending and without repeats.
+ *
+ * §8/#528. What a screen reader is told the figure *is*. A box grid says which sixteenths are
+ * struck by filling a cell, which is nothing at all to a reader who cannot see it, and the
+ * `aria-label` it carried said how many hits there were and never which — a count is not a
+ * pattern. Deduplicated because two slots may strike one step, and the reader is being told which
+ * steps to press rather than how many events sit on them.
+ */
+export function struckSteps(pattern: Pattern): readonly number[] {
+  return [...new Set(pattern.hits.map((h) => h.step))].sort((a, b) => a - b)
 }

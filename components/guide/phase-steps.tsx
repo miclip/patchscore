@@ -1,9 +1,7 @@
 import type {
-  BoundArticulation,
   Device,
   DeviceId,
   Pattern,
-  PatternHit,
   ResolveResult,
   ResolvedAssignment,
   SectionChain,
@@ -21,11 +19,13 @@ import {
   reStrikesHeldNote,
   tightestReStrike,
 } from '@/lib/core'
-import { count, hintText, num, voicesLabel } from './format'
+import { count, num, voicesLabel } from './format'
 import { VocabularyTerm } from '../vocabulary-term'
+import { Articulation } from '../pattern/articulation'
+import { SlotList } from '../pattern/slot-list'
+import { StepGrid } from '../pattern/step-grid'
 import {
   HookRef,
-  Instruction,
   ReArticulationRef,
   SoundRef,
   EnteredElsewhereRef,
@@ -33,121 +33,7 @@ import {
   SingleTrigRef,
 } from './instruction'
 
-const ROW = 16
-
-/**
- * The pattern as a grid, in rows of sixteen steps grouped in fours. A 64-step variant is four
- * rows of the shape a box's screen shows, not one line that wraps somewhere different on every
- * reader's phone.
- *
- * In its own `overflow-x: auto` container (#21): sixteen fixed-width cells do not fit 390px, and
- * a grid that reflows is a grid whose step numbers stop lining up with the box in front of you.
- */
-function StepGrid({ pattern }: { pattern: Pattern }) {
-  const hit = new Set(pattern.hits.map((h) => h.step))
-  const rows: { start: number; steps: number[] }[] = []
-  for (let start = 1; start <= pattern.length; start += ROW) {
-    const steps: number[] = []
-    for (let step = start; step < start + ROW && step <= pattern.length; step++) steps.push(step)
-    rows.push({ start, steps })
-  }
-
-  return (
-    <div className="table-scroll">
-      <div className="step-grid mono" role="img" aria-label={`${num(pattern.hits.length)} hits over ${num(pattern.length)} steps`}>
-        {rows.map((row) => (
-          <div className="step-row" key={row.start}>
-            <span className="step-index">{num(row.start)}</span>
-            {row.steps.map((step) => (
-              <span
-                key={step}
-                className={[
-                  'step',
-                  hit.has(step) ? 'on' : '',
-                  (step - row.start) % 4 === 0 ? 'beat' : '',
-                ]
-                  .filter(Boolean)
-                  .join(' ')}
-              />
-            ))}
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-/** Hits by slot, in the order the slots first appear in the authored pattern. */
-function slotGroups(pattern: Pattern): { slot: PatternHit['slot']; hits: PatternHit[] }[] {
-  const bySlot = new Map<PatternHit['slot'], PatternHit[]>()
-  for (const h of pattern.hits) {
-    const existing = bySlot.get(h.slot)
-    if (existing === undefined) bySlot.set(h.slot, [h])
-    else existing.push(h)
-  }
-  return [...bySlot].map(([slot, hits]) => ({ slot, hits }))
-}
-
-function Articulation({
-  entries,
-  device,
-}: {
-  entries: readonly BoundArticulation[]
-  device: Device | undefined
-}) {
-  return (
-    <ul className="articulation">
-      {entries.map((entry) => {
-        const hint = entry.hint === undefined ? undefined : hintText(device, entry.hint)
-        return (
-          <li key={`${entry.slot}-${entry.steps.join('.')}`}>
-            <Instruction {...(hint === undefined ? {} : { hint })}>
-              <span className="mono slot">
-                <VocabularyTerm word={entry.slot} />
-              </span>
-              <span className="arrow" aria-hidden="true">
-                →
-              </span>
-              {Object.entries(entry.set).map(([key, value]) => (
-                <span className="set" key={key}>
-                  <span className="mono param-name">{key}</span>
-                  <span className="mono value-now">
-                    {typeof value === 'string' ? value : String(value)}
-                  </span>
-                </span>
-              ))}
-              <span className="quiet">
-                on step{entry.steps.length === 1 ? '' : 's'}{' '}
-                <span className="mono">{entry.steps.map(num).join(', ')}</span>
-              </span>
-            </Instruction>
-          </li>
-        )
-      })}
-    </ul>
-  )
-}
-
 type Block = { sections: SectionName[]; entry: ResolvedAssignment['patterns'][number] }
-
-/**
- * One slot's hits as steps, with a shared velocity hoisted to the end: `2, 4, 6, 8 (all vel 42)`
- * rather than eight copies of `(vel 42)`. The Markdown sibling words it the same way — a band-3
- * ghost slot is eight sixteenths, and per-hit it wraps three times on a phone (§10).
- */
-function slotSteps(hits: readonly PatternHit[]): string {
-  const first = hits[0] as PatternHit
-  const uniform =
-    hits.length > 1 &&
-    first.velocity !== undefined &&
-    hits.every((h) => h.velocity === first.velocity)
-  if (uniform) {
-    return `${hits.map((h) => num(h.step)).join(', ')} (all vel ${num(first.velocity as number)})`
-  }
-  return hits
-    .map((h) => (h.velocity === undefined ? num(h.step) : `${num(h.step)} (vel ${num(h.velocity)})`))
-    .join(', ')
-}
 
 /**
  * Sections that program identically, merged into one block.
@@ -282,25 +168,17 @@ function BlockBody({
 
       <StepGrid pattern={selection.pattern} />
 
-      <ul className="slots">
-        {slotGroups(selection.pattern).map(({ slot, hits }) => (
-          <li key={slot}>
-            <span className="mono slot">
-              <VocabularyTerm word={slot} />
-            </span>
-            <span className="token-sep">—</span>
-            <span className="mono">{slotSteps(hits)}</span>
-          </li>
-        ))}
-        {/* #155. The arithmetic the guide was leaving to the reader. Worded exactly as the
-            Markdown sibling words it — two wordings of one claim are two chances to be wrong —
-            and inside the same list, because it is another fact about this map. */}
+      {/* #155. The arithmetic the guide was leaving to the reader, as a row of the shared list.
+          Worded exactly as the Markdown sibling words it — two wordings of one claim are two
+          chances to be wrong — and inside the same list, because it is another fact about this
+          map. */}
+      <SlotList pattern={selection.pattern}>
         <ReStrike
           pattern={selection.pattern}
           bpm={bpm}
           reArticulates={reStrikesHeldNote(a)}
         />
-      </ul>
+      </SlotList>
 
       {block.entry.articulation.length === 0 ? null : (
         <>

@@ -8,7 +8,7 @@ import type {
   RiffResolution,
   RiffVoicing,
 } from '@/lib/core'
-import { citationSentence, count, num, resolvedClaims, stepGridRows } from '@/lib/core'
+import { citationSentence, count, num, resolvedClaims, slotGroups, stepGridRows } from '@/lib/core'
 
 /**
  * §5A/#495. **Everything a riff page says in words, and the shapes both renderings walk.**
@@ -153,11 +153,13 @@ export function heldLabel(row: NoteRow): string {
 
 /**
  * §4.3's grid for this riff's pattern, drawn by `stepGridRows` in the marks every step grid in the
- * product uses — the guide's included.
+ * product uses — the guide's Markdown included.
  *
- * The drawing lives in `lib/core` rather than here because *three* surfaces draw it: the riff's
- * Markdown, the riff's page and the guide. This file used to hold a second copy, identical to the
- * guide's and connected to it by nothing (#512).
+ * **The export's rows, and no longer the page's** (#528). The page draws boxes, as a guide's page
+ * always has; what it shares with this is the hit data underneath, and it carries these very rows
+ * visually hidden so the figure still copies as `x` and `·`. The drawing lives in `lib/core`
+ * because more than one surface prints it, and this file used to hold a second copy of it,
+ * identical to the guide's and connected to it by nothing (#512).
  */
 export function gridRows(riff: Riff): readonly string[] {
   return stepGridRows(riff.pattern)
@@ -166,14 +168,16 @@ export function gridRows(riff: Riff): readonly string[] {
 /** One entry per `PatternSlot` present, in the order the variant first reaches each. */
 export type SlotRow = { slot: string; steps: readonly number[] }
 
+/**
+ * The grouping is `lib/core`'s (#528), for `gridRows`' reason: which hits belong to which slot is
+ * shared data, and every surface listing them held its own copy of this loop. What stays here is
+ * the export's own row — a bare list of steps, joined by `stepList`.
+ */
 export function slotRows(riff: Riff): readonly SlotRow[] {
-  const bySlot = new Map<string, number[]>()
-  for (const hit of riff.pattern.hits) {
-    const steps = bySlot.get(hit.slot)
-    if (steps === undefined) bySlot.set(hit.slot, [hit.step])
-    else steps.push(hit.step)
-  }
-  return [...bySlot].map(([slot, steps]) => ({ slot, steps }))
+  return slotGroups(riff.pattern).map(({ slot, hits }) => ({
+    slot,
+    steps: hits.map((hit) => hit.step),
+  }))
 }
 
 export function stepList(steps: readonly number[]): string {

@@ -41,7 +41,7 @@ import type { InertFinding } from './inert'
 import { inertBlocks, inertNotice } from './inert'
 import type { Pattern, PatternHit } from './template'
 import { STEPS_PER_BAR } from './template'
-import { stepGridRows } from './grid'
+import { slotGroups, stepGridRows } from './grid'
 import { reStrikesHeldNote, tightestReStrike } from './timing'
 import type { BoundArticulation, ResolvedPatchEntry, ResolvedSourceAudio } from './resolver'
 import {
@@ -1783,15 +1783,14 @@ function phaseHook(result: ResolveResult, deviceById: Map<DeviceId, Device>): Li
 // Phase 5 — Step programming
 // ---------------------------------------------------------------------------
 
-/** Hits by slot, in the order the slots first appear in the authored pattern. */
+/**
+ * Hits by slot, in the order the slots first appear in the authored pattern.
+ *
+ * The grouping is `grid.ts`' (#528) — shared hit data, and until then a third copy of one loop.
+ * The row is this renderer's: a backtick, an em dash and a hoisted velocity.
+ */
 function slotLines(pattern: Pattern): Line[] {
-  const bySlot = new Map<PatternHit['slot'], PatternHit[]>()
-  for (const h of pattern.hits) {
-    const existing = bySlot.get(h.slot)
-    if (existing === undefined) bySlot.set(h.slot, [h])
-    else existing.push(h)
-  }
-  return [...bySlot].map(([slot, hits]) => `- \`${slot}\` — ${slotSteps(hits)}`)
+  return slotGroups(pattern).map(({ slot, hits }) => `- \`${slot}\` — ${slotSteps(hits)}`)
 }
 
 /**

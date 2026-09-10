@@ -1,17 +1,16 @@
 import type { Riff, RiffResolution } from '@/lib/core'
 import { num } from '@/lib/core'
+import { SlotList } from '@/components/pattern/slot-list'
+import { StepGrid } from '@/components/pattern/step-grid'
 import {
   RIFF_GRID_LEAD,
   degreeLabel,
-  gridRows,
   heldLabel,
   midiLabel,
   noteRows,
   riffNoteSummary,
   riffNotesUnresolved,
-  slotRows,
   spellingLabel,
-  stepList,
 } from '@/lib/studio/riff-text'
 
 /**
@@ -79,31 +78,23 @@ function Notes({ resolution }: { resolution: RiffResolution }) {
 }
 
 /**
- * §4.3's grid, in the same rows the Markdown draws — the rows come from `gridRows`, which is
- * `lib/core`'s one drawing of a step grid (#512), so a page whose grid disagreed with its export,
- * or with the guide's, is not reachable.
+ * §4.3's grid, and it is **the figure a guide draws, not a picture of the export** (#528).
  *
- * A `<pre>` because the alignment *is* the reading: the gutter and the groups of four are how a
- * reader finds step 23 without counting from one. It scrolls inside its own container at any
- * width rather than taking the body sideways (#21), and the whole block is one `mono` face.
+ * This was `gridRows` in a `<pre>`, which is the Markdown's ink on a surface that can draw boxes:
+ * a reader moving between a guide and a riff page in one sitting saw two treatments of one
+ * figure, and the text one gives nothing to count sixteen `x` against. `StepGrid` is shared, so
+ * the boxes, the stronger border every fourth step, the copyable `x`/`·` rows underneath and the
+ * label naming the struck steps all arrive here rather than being chosen again.
+ *
+ * The slot rows come with it, and with the two facts this page was dropping: the velocity on the
+ * line, and #457's definition trigger on the slot word.
  */
 function Grid({ riff }: { riff: Riff }) {
   return (
     <>
       <p className="riff-grid-lead">{RIFF_GRID_LEAD}</p>
-      <div className="riff-grid-scroll">
-        <pre className="riff-grid mono">{gridRows(riff).join('\n')}</pre>
-      </div>
-      <ul className="riff-slots">
-        {slotRows(riff).map((row) => (
-          <li key={row.slot} className="riff-slot">
-            <span className="mono riff-slot-name">{row.slot}</span>
-            {/* The export's own join, for `Sep`'s reasons: punctuation rather than spacing. */}
-            <Sep />
-            <span className="mono riff-slot-steps">{stepList(row.steps)}</span>
-          </li>
-        ))}
-      </ul>
+      <StepGrid pattern={riff.pattern} />
+      <SlotList pattern={riff.pattern} />
     </>
   )
 }
