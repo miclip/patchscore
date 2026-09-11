@@ -635,6 +635,14 @@ function ownProse(where: string, text: string): string {
  * `minimumSeconds` is not touched and does not need to be: it carries no citation, because it is
  * the hold some direction asks of the role rather than anything a guide states, and the two boxes
  * serve the same roles from the same pool.
+ *
+ * **The sub's `stops-at-end` re-cites onto this guide's 8.2.1, and the inference runs a little
+ * differently here.** The sibling infers the stop from an enumeration of three play modes with
+ * no looping mode among them. This guide's enumeration is four — *"oneshot, key, legato and
+ * loop"* — and the fourth is the one that loops (*"use loop to loop your samples, they will run
+ * in the background staying in time"*), so `legato` is inferred not to by the list naming the
+ * mode that does. Same section, same inference from a closed list, by exclusion here rather than
+ * by absence; the re-citation sends the reader to the enumeration this box's guide prints.
  */
 function retargetPlayback(playback: SourcePlayback): SourcePlayback {
   const here = (claim: { evidence: PlaybackEvidence }) =>

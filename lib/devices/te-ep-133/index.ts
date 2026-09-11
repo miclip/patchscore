@@ -578,20 +578,39 @@ const recipes: Recipe[] = [
       'rather than one that decays',
       'bass is sounds 400-499',
       /*
-       * §3/#518. **A number, and deliberately no `playback`.** `sub` is held for 80 steps under
-       * `weave` at 126 bpm, which is 9.52 s, and ten is that rounded to something a reader can
-       * audition against. It is the figure the `need` already asks for, in a form a rule can
-       * compare.
+       * §3/#518. **A number, and a boundary read off the closed list.** `sub` is held for 80
+       * steps under `weave` at 126 bpm, which is 9.52 s, and ten is that rounded to something a
+       * reader can audition against. It is the figure the `need` already asks for, in a form a
+       * rule can compare, and `stops-at-end` is what makes the rule require it.
        *
-       * The classification stays open because the guide does not answer it. 8.2.1 on `legato`:
-       * *"legato is monophonic, and plays a sample one at a time. when changing the note while
-       * being held, it will continue playing from the same point as it was left off."* That is
-       * about what a second note does, and says nothing about what happens when the file runs
-       * out. Recording a `boundary` here would be reading the page for something it does not say,
-       * which is the failure #518 exists to stop — so the axis is absent, which is how this model
-       * spells *nobody has established it*.
+       * The boundary used to be left absent, on the ground that 8.2.1's sentence on `legato` —
+       * *"when changing the note while being held, it will continue playing from the same point
+       * as it was left off"* — is about a second note and not about the end of the file. That
+       * is still true: no sentence on the page says what a legato sample does when it runs out.
+       * The stop is an inference, and what licenses it is the enumeration the section opens
+       * with: *"the (knobX) knob controls the play mode of the sample between oneshot, key and
+       * legato"* — the whole set the knob can select, three mutually exclusive modes, and no
+       * looping mode among them. The library already treats a written closed list as evidence
+       * of what it omits: the Tracker's `io.usbAudio` is `cited-against` on p.187's numbered
+       * list of audio sources, with USB not on it. This is the same move — a sample in any of
+       * the three modes has no mode that loops it, so it runs out — and `PLAY MODE` is the
+       * control because choosing it is what selects a mode from that list.
+       *
+       * `timing` stays absent. This recipe sets no `TIME STRETCH MODE`, and omitting a setting
+       * does not establish what the box does with it — the retained or default state is not on
+       * any page this manifest cites — so that axis is what *nobody has established it* looks
+       * like, and it is left that way rather than filled.
        */
-      { minimumSeconds: 10 },
+      {
+        minimumSeconds: 10,
+        playback: {
+          boundary: {
+            kind: 'stops-at-end',
+            control: { kind: 'parameters', params: ['PLAY MODE'] },
+            evidence: playbackCite(PLAY_MODE_PAGE),
+          },
+        },
+      },
     ),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
@@ -627,8 +646,19 @@ const recipes: Recipe[] = [
       'band for one that still sounds that far in',
       'bass is sounds 400-499',
       // §3/#518. `acid` is held for 22 steps under `acid-lineage` at 122 bpm — 2.70 s, rounded
-      // to three. `legato` leaves the boundary unestablished here for the reason the sub gives.
-      { minimumSeconds: 3 },
+      // to three. The boundary is inferred the way the sub's is, from the same enumeration on the
+      // same section: three play modes and none loops, so `legato` runs out and the three
+      // seconds are required rather than advisory. `timing` is left absent for the sub's reason.
+      {
+        minimumSeconds: 3,
+        playback: {
+          boundary: {
+            kind: 'stops-at-end',
+            control: { kind: 'parameters', params: ['PLAY MODE'] },
+            evidence: playbackCite(PLAY_MODE_PAGE),
+          },
+        },
+      },
     ),
     params: [pick('PLAY MODE', 'legato', PLAY_MODES, cite(PLAY_MODE_PAGE), { hint: 'play-mode' })],
     routing:
@@ -659,8 +689,9 @@ const recipes: Recipe[] = [
        * length a reader hears and the recording's own length is not, which is why no
        * `minimumSeconds` is owed here.
        *
-       * `timing` only. What the file does when it runs out is a separate question and this guide
-       * does not answer it for `key` mode — see the note on the legato parts below.
+       * `timing` only. What the file does when it runs out is a separate question, and the
+       * boundary axis is outside the pass that classified the three held legato parts below; it
+       * is left undeclared here.
        */
       {
         playback: {

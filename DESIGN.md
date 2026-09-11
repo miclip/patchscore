@@ -1339,14 +1339,27 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   125, 135-136; Mini pp.127, 130, 141-142), the EPs' BAR parts by `timing: 'stretches'` (guide
   8.2.4 / 8.2.5). Three carry a number instead, because nothing on those boxes makes the file
   last: the Play+ pair, whose audio track has no play mode to set and whose claim is therefore
-  `inherent` off pp.68-69, and the Tracker's 1-Shot acid. Three EP legato parts stay
-  **unclassified** and carry only their minimum: 8.2.1 describes `legato` as continuing *"from the
-  same point as it was left off"* when the note changes, which is about a second note and says
-  nothing about the end of the file, so recording a boundary there would be reading a page for
-  something it does not say. `ep40-pad-clean` is the one recipe answering two axes, and it is the
-  one that made a single `kind` impossible.
+  `inherent` off pp.68-69, and the Tracker's 1-Shot acid. Three EP legato parts were left
+  **unclassified** by the batch and carried only their minimum: 8.2.1 describes `legato` as
+  continuing *"from the same point as it was left off"* when the note changes, which is about a
+  second note and says nothing about the end of the file. **They carry `boundary: 'stops-at-end'`
+  now, as an inference rather than a reading: no sentence on the page states it, and the
+  enumeration the section opens with licenses it.** 8.2.1 lists every play mode the knob selects:
+  *"oneshot, key and legato"* on the EP–133, three mutually exclusive modes with no looping mode
+  among them, and *"oneshot, key, legato and loop"* on the EP–40, where the mode that loops is
+  named and `legato` is not it. The library already treats a written closed list as evidence of
+  what it omits — the Tracker's `io.usbAudio` is `cited-against` on p.187, whose numbered list of
+  audio sources has no USB on it — and this is the same move: a sample in a mode from that list has
+  no mode that loops it, so it runs out. `PLAY MODE` is the control because choosing it selects
+  from the list, and the minimum each recipe states becomes a requirement
+  `test/source-length.test.ts` checks rather than a figure it accepts. `timing` stays absent on all
+  three: none of them sets `TIME STRETCH MODE`, and leaving a control unset does not establish its
+  retained or default state, which is on no page these manifests cite. The `key` BAR parts are
+  outside this pass and declare no boundary. `ep40-pad-clean` is the one recipe answering two
+  axes, and it is the one that made a single `kind` impossible.
 
-  Fifteen claims, fifteen capability facts: `caps` went 1210 to 1225. The three Polyend documents
+  Fifteen claims, fifteen capability facts: `caps` went 1210 to 1225; the three legato
+  boundaries, read after the batches, took it 1351 to 1354. The three Polyend documents
   are PDFs in `manuals/` and every cited page was rendered and read. The two teenage engineering
   guides are web pages, and the sections cited were read in the verbatim mirrors under
   `manuals/te-ep-133` and `manuals/te-ep-40` taken on 2026-08-28; **the live pages were not
