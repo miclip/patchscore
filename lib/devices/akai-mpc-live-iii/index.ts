@@ -5,6 +5,7 @@ import type {
   JackSignalKind,
   PlaybackEvidence,
   Recipe,
+  SustainEvidence,
 } from '../../core/device'
 import { articulablePerStep, jackFact } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset } from '../../core/params'
@@ -259,6 +260,11 @@ function cites(pages: string): Cite {
 /** §3/#518. A span citation, narrowed to the two kinds a `playback` claim takes. */
 function citesPlayback(pages: string): PlaybackEvidence {
   return { kind: 'manual', source: `${MANUAL}, ${pages}` }
+}
+
+/** §3/#506. One page, narrowed to the two kinds a `sustain` claim takes. */
+function citeSustain(page: number): SustainEvidence {
+  return { kind: 'manual', source: `${MANUAL}, p.${page}` }
 }
 
 /**
@@ -1191,6 +1197,17 @@ const recipes: Recipe[] = [
     voice: 'poly-track',
     title: 'TubeSynth pad, quad-detuned, slow in and slow out',
     verified: false,
+    /*
+     * §3/#506. p.517's Envelope tab: Amp `Sustain` is the *"Level that a sustained note is held
+     * at, as a percentage of the maximum level"*, and `Amp Sustain 78` below is that level.
+     * The `akai-mpc-one-g2` borrow moves this page through `pageInV39` like every other p.517
+     * value; the XL takes it by reference.
+     */
+    sustain: {
+      kind: 'sustains',
+      control: { kind: 'parameters', params: ['Amp Sustain'] },
+      evidence: citeSustain(517),
+    },
     params: [
       trackType('Plugin'), plugin('TubeSynth'),
       ...inModule('Oscillator 1', [

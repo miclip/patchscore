@@ -16,7 +16,7 @@ import {
 import { device, type CascadiaJack } from '../lib/devices/intellijel-cascadia/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { kitRecipes } from '../lib/studio/device-page'
-import { generativeDrift, industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, generativeDrift, industrialTechno } from '../lib/templates/index'
 
 /**
  * #49. The Cascadia is the first device in the library whose recipes carry a `patch` list, so
@@ -750,5 +750,88 @@ describe('Cascadia manifest', () => {
     expect(device.clock.canSendClock).toBe(true)
     expect(device.clock.canReceiveClock).toBe(true)
     expect(device.clock.transport).toEqual(['midi-din', 'usb', 'analog-clock'])
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * Three pages, rendered and read. p.53: *"If nothing is patched into the LEVEL MOD IN jack, then the
+ * output of ENV A [4.F] is used as the modulation source"*; p.32: *"if the GATE IN is high, the
+ * envelope moves through its stages until it hits the sustain stage, and remains there until the
+ * gate goes low"*; p.28: the S slider is 0 V to 5 V. The routing assumption is that both normals
+ * stand, and the test below checks that no held recipe patches into either jack. A `decays` would
+ * also need the VCA's bias at zero (p.52), which neither acid authors, so both are left.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('holds on the subs, the texture and the pad, Envelope A normalled to VCA A', () => {
+    const ids = ['cascadia-sub-dark', 'cascadia-sub-clean', 'cascadia-texture-soft', 'cascadia-pad-dark']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['ENVELOPE A · SUSTAIN'] },
+        evidence: { kind: 'manual', source: 'Intellijel Cascadia Manual v1.4, pp.28, 32, 53' },
+      })
+      for (const name of ['ENVELOPE A · SUSTAIN']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['cascadia-sub-dark', 'cascadia-sub-clean', 'cascadia-texture-soft', 'cascadia-pad-dark'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    // Both acids sit at `SUSTAIN 0 V` and author no VCA bias, so the page cannot say which way
+    // their note ends on the recipe as written; read, and left.
+    expect(unclaimed).toEqual(['cascadia-acid-dirty', 'cascadia-acid-bright'])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+
+  it('rests on the normals: no held recipe patches into VCA A LEVEL MOD IN or ENVELOPE A GATE IN', () => {
+    for (const r of device.recipes) {
+      if (r.sustain === undefined) continue
+      for (const entry of r.patch ?? []) {
+        expect(entry.to, `${r.id}: ${entry.from} -> ${entry.to}`).not.toMatch(/^VCA A · LEVEL MOD IN$/)
+        expect(entry.to, `${r.id}: ${entry.from} -> ${entry.to}`).not.toMatch(/^ENVELOPE A · GATE/)
+      }
+    }
+  })
+
+  it('pairs each claim with a sustain level above zero, and neither acid authors the VCA bias', () => {
+    const level = (id: string, name: string) => {
+      const p = device.recipes.find((r) => r.id === id)?.params.find((p) => p.name === name)
+      return p?.kind === 'numeric' ? p.value : undefined
+    }
+    for (const id of ['cascadia-sub-dark', 'cascadia-sub-clean', 'cascadia-texture-soft', 'cascadia-pad-dark']) {
+      expect(level(id, 'ENVELOPE A · SUSTAIN'), id).toBeGreaterThan(0)
+    }
+    for (const id of ['cascadia-acid-dirty', 'cascadia-acid-bright']) {
+      expect(level(id, 'ENVELOPE A · SUSTAIN'), id).toBe(0)
+      expect(level(id, 'VCA A · LEVEL'), id).toBeUndefined()
+    }
   })
 })

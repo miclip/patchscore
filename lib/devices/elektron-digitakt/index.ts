@@ -1,4 +1,4 @@
-import type { Device, JackSignalKind, PlaybackEvidence, Recipe } from '../../core/device'
+import type { Device, JackSignalKind, PlaybackEvidence, Recipe, SustainClaim } from '../../core/device'
 import { articulablePerStep } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
 import { DIGITAKT_PANEL } from './panel'
@@ -252,6 +252,25 @@ const MANUAL = 'Digitakt User Manual OS 1.51'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **A fixed hold and a finite decay end the note whatever the trigger says.** p.46, AMP
+ * page: *"Fixed Hold time values (0–126) specify the length of the hold phase, and the envelope
+ * ignores Note Off events such as Trig Length … releasing a [TRIG] key or a key on an external
+ * controller"*, and `DEC` is *"the length of the decay phase"* — `(0–126, INF)`. A recipe that
+ * authors both, each inside its numeric range, has an envelope that runs its hold, runs its decay
+ * and stops, so it `decays`. The claim names both because either alone would not do it: `HOLD` at
+ * `NOTE` follows the note, and `DEC` at `INF` never ends.
+ *
+ * Declared on the sub, the acid and the pad. **`dt-texture-soft` is left unestablished on
+ * purpose**: it authors `HOLD 96` and no `AMP DEC`, so the decay could be anything up to `INF`
+ * and the page cannot say which way the note ends.
+ */
+const DECAYS: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['HOLD', 'AMP DEC'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, p.46` },
 }
 
 function cites(pages: string): Cite {
@@ -874,6 +893,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'dt-sub-dark',
+    sustain: DECAYS,
     role: 'sub',
     character: 'dark',
     voice: 'track',
@@ -1512,6 +1532,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'dt-acid-hard',
+    sustain: DECAYS,
     role: 'acid',
     character: 'hard',
     voice: 'track',
@@ -1768,6 +1789,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'dt-pad-soft',
+    sustain: DECAYS,
     role: 'pad',
     character: 'soft',
     voice: 'track',

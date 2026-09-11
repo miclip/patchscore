@@ -7,6 +7,7 @@ import type {
   ResolvedHook,
   ResolvedNote,
   StackedPart,
+  SustainNotice,
 } from '@/lib/core'
 import { Fragment } from 'react'
 import {
@@ -17,6 +18,7 @@ import {
   noteOffSteps,
   printsNoteDuration,
   stackedPart,
+  sustainNotice,
 } from '@/lib/core'
 import {
   barOf,
@@ -83,6 +85,23 @@ function NoteDurationBlock({ notice }: { notice: NoteDurationNotice }) {
   return (
     <div className="callout">
       <p>{noteDurationText(notice)}</p>
+    </div>
+  )
+}
+
+/**
+ * §3/#506. **The hold this sound will not carry out**, directly under the note-duration sentence
+ * — the box's fact, then the sound's. Hand-written to match `sustainText` in
+ * `lib/core/render.ts` word for word; `sustainNotice` decides, and `test/sustain-notice.test.ts`
+ * asserts both copies. The duration is spelled as the row below spells it.
+ */
+function SustainBlock({ notice }: { notice: SustainNotice }) {
+  return (
+    <div className="callout">
+      <p>
+        The longest note here is held for {durationText(notice.longest)}, and this sound cannot
+        hold it: its amplitude stage decays instead of holding a level.
+      </p>
     </div>
   )
 }
@@ -503,6 +522,11 @@ function HookBlock({
   const notice = noteDurationNotice(device)
   // §12.4/#431. The other shared verdict this block reads, asked once for the same reason.
   const stack = carriedBy === undefined ? undefined : stackedPart(carriedBy)
+  // §3/#506. Where the recipe says its envelope decays and the hook holds a note for a bar.
+  const sustain =
+    carriedBy !== undefined && choice.chosen.outcome === 'resolved'
+      ? sustainNotice(carriedBy.recipe, choice.chosen.hook)
+      : undefined
 
   return (
     <section className="hook">
@@ -558,6 +582,8 @@ function HookBlock({
             print, because they are the part rather than a claim about hardware.
           */}
           {carriedBy === undefined ? null : <NoteDurationBlock notice={notice} />}
+          {/* §3/#506. And, where the recipe says its envelope decays, that the hold will not hold. */}
+          {sustain === undefined ? null : <SustainBlock notice={sustain} />}
           {/*
             §12.4: a part carried by a `sampled-chord` recipe is not played note by note, and the
             ordinary rendering below would tell its reader to enter three notes on a voice that

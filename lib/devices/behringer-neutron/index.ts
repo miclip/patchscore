@@ -4,6 +4,7 @@ import type {
   JackSignalKind,
   PatchEntry,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
@@ -168,6 +169,20 @@ const MANUAL = 'Neutron User Manual'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **Envelope 1 holds the VCA open for the note**, on every recipe a shipped hook holds
+ * for a bar or more. p.12: *"ENVELOPE 1 is routed to the VCA CV by default. This allows the signal
+ * to pass through the unit when a MIDI note is being played and closes the VCA when no note is
+ * being played"*, and p.25 gives its sustain a level, *"Sustain: 0 V to 9 V"*. `ENV 1 S` is that
+ * level, above zero on every recipe below, and none of them repatches the VCA CV. Declared on the
+ * two subs, two acids, two pads and the texture; the rest no hook asks to hold.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['ENV 1 S'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, pp.12, 25` },
 }
 
 // ---------------------------------------------------------------------------
@@ -872,6 +887,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'neutron-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -892,6 +908,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'neutron-sub-clean',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'clean',
     voice: 'voice',
@@ -933,6 +950,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'neutron-acid-bright',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -959,6 +977,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'neutron-acid-dirty',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'dirty',
     voice: 'voice',
@@ -1130,6 +1149,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'neutron-pad-soft',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'voice',
@@ -1152,6 +1172,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'neutron-pad-dark',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'dark',
     voice: 'voice',
@@ -1185,6 +1206,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'neutron-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'voice',

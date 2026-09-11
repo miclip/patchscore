@@ -75,7 +75,7 @@ import {
   type InterDevicePatch,
   type ResolveResult,
   type ResolvedAssignment,
-  type VoiceControlSource, type SequencerGroup, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks, devicesInGroup, devicesOutsideGroups, stackedPart, type StackedPart,} from './pipeline'
+  type VoiceControlSource, type SequencerGroup, patternDriver, sequencerGroups, narrowToGroup, unplayedHooks, devicesInGroup, devicesOutsideGroups, stackedPart, type StackedPart, sustainNotice, type SustainNotice,} from './pipeline'
 import { GUIDE_PHASES, count, devicePageUrl, ioText, mixerText, num, searchCapNotice} from './guide'
 import { inRigSource } from './in-rig-source'
 import type { GuideLayout } from './guide'
@@ -1408,6 +1408,23 @@ function noteDurationLines(notice: NoteDurationNotice): Line[] {
 }
 
 /**
+ * §3/#506. **The hold this sound will not carry out**, directly under the sentence saying how the
+ * box ends a note — because that sentence is about the box and this one is about the sound, and
+ * a reader who has just been told where the length goes is the reader about to enter it.
+ *
+ * The decision is `sustainNotice` in `lib/core/pipeline.ts`; the words are this renderer's, and
+ * `components/guide/phase-hook.tsx` restates them word for word under the same test discipline
+ * as `noteDurationText`. The duration is spelled exactly as the row below spells it, so the two
+ * numbers are recognisably one number.
+ */
+function sustainText(notice: SustainNotice): string {
+  return (
+    `The longest note here is held for ${durationText(notice.longest)}, and this sound cannot ` +
+    'hold it: its amplitude stage decays instead of holding a level.'
+  )
+}
+
+/**
  * #142. **The note-off rows, interleaved with the notes in the order they are typed in.**
  *
  * On an `until-next` box the rows below are the pattern: a reader fills one voice top to bottom,
@@ -1726,7 +1743,12 @@ function hookLines(
   // Not for a part nothing carries. Every sentence `noteDurationText` has says *this box*, and
   // there is no box — the line above has already said so. The durations still print, because they
   // are the part rather than a claim about hardware.
-  if (carriedBy !== undefined) out.push(...noteDurationLines(notice))
+  if (carriedBy !== undefined) {
+    out.push(...noteDurationLines(notice))
+    // §3/#506. And, where the recipe says its envelope decays, that the hold above will not hold.
+    const sustain = sustainNotice(carriedBy.recipe, hook)
+    if (sustain !== undefined) out.push(sustainText(sustain), '')
+  }
 
   // §12.4. A part carried by a `sampled-chord` recipe is not played note by note, and the
   // ordinary rendering below would tell its reader to enter three notes on a voice that sounds

@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { SUBSEQUENT_37_PANEL } from './panel'
 
@@ -168,6 +168,21 @@ const MANUAL = "Subsequent 37 User's Manual"
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **The amplifier envelope holds**, on every recipe a shipped hook holds for a bar or
+ * more. p.30: *"The sustain level is held until the key is released"*; p.32, AMPLIFIER ENVELOPE
+ * SUSTAIN: *"Use this knob to specify the mixer output's amplitude once the decay stage is
+ * complete. The sustain stage is held until the envelope receives a Note Off command or the gate
+ * ends"*. Every recipe below sets `AMP EG · SUSTAIN` between 3.5 and 9 on the printed 1-10 scale;
+ * `LOOP` is off on all of them, so the envelope runs once and settles. Two subs, three acids, the
+ * texture and the pad.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['AMP EG · SUSTAIN'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, pp.30, 32` },
 }
 
 /**
@@ -926,6 +941,7 @@ const recipes: Recipe[] = [
   // ---- sub: the octave-below square, and what surrounds it ---------------
   {
     id: 'sub37-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -946,6 +962,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'sub37-sub-dirty',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dirty',
     voice: 'voice',
@@ -968,6 +985,7 @@ const recipes: Recipe[] = [
   // ---- acid: glide, resonance and a short filter envelope ----------------
   {
     id: 'sub37-acid-dirty',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'dirty',
     voice: 'voice',
@@ -991,6 +1009,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'sub37-acid-bright',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -1012,6 +1031,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'sub37-acid-hard',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'hard',
     voice: 'voice',
@@ -1143,6 +1163,7 @@ const recipes: Recipe[] = [
   // ---- texture: the box's own looping envelope, used as one --------------
   {
     id: 'sub37-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'voice',
@@ -1176,6 +1197,7 @@ const recipes: Recipe[] = [
   // ---- pad: the second role that spends the second note ------------------
   {
     id: 'sub37-pad-dark',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'dark',
     voice: 'voice',

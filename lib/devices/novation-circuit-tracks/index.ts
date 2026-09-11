@@ -234,6 +234,18 @@ function prg(page: number): Cite {
   return { kind: 'manual', source: `Circuit Tracks Programmer's Reference Guide v3, p.${page}` }
 }
 
+
+/**
+ * §3/#506. **Read for sustain and deliberately left unestablished, all four held-role recipes.**
+ *
+ * The Programmer's Reference p.4 prints `env 1 sustain CC 70 0 – 127` in a four-stage envelope,
+ * and the User Guide p.63 labels Macro 3 *Amp Envelope*. That env 1 is the amplitude envelope is
+ * the inference the header records, and no page in either document says the level is held while
+ * a note is on. A claim here would rest on a parameter's name and an inference, which is not a
+ * page and not a reading off the unit (§3), so none is made: `ct-sub-dark`, `ct-acid-dirty`,
+ * `ct-pad-soft` and `ct-texture-dark` all set `AMP SUSTAIN` above zero and say nothing.
+ */
+
 /** One claim answered across several User Guide pages — the MPC manifests' `cites` shape. */
 function ugPages(pages: string): Cite {
   return { kind: 'manual', source: `Circuit Tracks User Guide v3, ${pages}` }

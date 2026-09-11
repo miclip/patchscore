@@ -730,3 +730,59 @@ describe('a real NEUTRON guide renders one box per section (#385)', () => {
     expect(md).not.toContain('● NOISE')
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amp envelope holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.12: *"ENVELOPE 1 is routed to the VCA CV by default. This allows the signal to pass through the
+ * unit when a MIDI note is being played and closes the VCA when no note is being played"*; p.25:
+ * *"Sustain: 0 V to 9 V"*. Every held recipe sets `ENV 1 S` above zero and none repatches the VCA.
+ *
+ * Declared on the recipes a shipped hook holds for a bar or more — the roles `HELD_ROLES` derives
+ * from `TEMPLATES` — and on nothing else, which no hook asks to hold.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('declares `sustains` on exactly these recipes, off the page that says so', () => {
+    const declared = device.recipes.filter((r) => r.sustain !== undefined)
+    expect(declared.map((r) => r.id)).toEqual(['neutron-sub-dark', 'neutron-sub-clean', 'neutron-acid-bright', 'neutron-acid-dirty', 'neutron-pad-soft', 'neutron-pad-dark', 'neutron-texture-soft'])
+    for (const r of declared) {
+      expect(r.sustain, r.id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['ENV 1 S'] },
+        evidence: { kind: 'manual', source: 'Neutron User Manual, pp.12, 25' },
+      })
+      // Every parameter the claim names is one this recipe hands the reader.
+      for (const name of ['ENV 1 S']) {
+        expect(r.params.some((p) => p.name === name), `${r.id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

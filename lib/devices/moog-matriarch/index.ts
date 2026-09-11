@@ -5,6 +5,7 @@ import type {
   JackSpec,
   PatchEntry,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
@@ -180,6 +181,28 @@ import { MATRIARCH_PANEL } from './panel'
 /** The manual, by printed page — which is the PDF page on this document. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Moog Matriarch Manual (012023), p.${page}` }
+}
+
+/**
+ * §3/#506. **Two shapes hold here, and p.26 and p.29 state both.** SUSTAIN (p.26): *"the control
+ * signal will remain at the level set by the SUSTAIN slider, keeping the Amplitude and/or Filter
+ * at a steady level for as long as a key is held"*. VCA MODE (p.29): under `AMP ENV` *"the output
+ * level of both VCA 1 and VCA 2 will be controlled by the Amplifier Envelope Generator"*, so
+ * `AMPLITUDE SUSTAIN` is the claim; under `DRONE` the VCAs *"are unaffected by either EG"* and
+ * *"Matriarch will continue to drone at this level, whether a key is held or not"*, so the switch
+ * alone carries it. Two pads, the sub and the acid hold under `AMP ENV` — the acid at `AMPLITUDE
+ * SUSTAIN 10`, low and not silent — and the texture holds under `DRONE`, with nothing patched
+ * into either VCA CV IN (p.30) to take the level away from the switch.
+ */
+const SUSTAINS_UNDER_ENV: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['AMPLITUDE SUSTAIN', 'VCA MODE'] },
+  evidence: { kind: 'manual', source: 'Moog Matriarch Manual (012023), pp.26, 29' },
+}
+const SUSTAINS_DRONE: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['VCA MODE'] },
+  evidence: { kind: 'manual', source: 'Moog Matriarch Manual (012023), p.29' },
 }
 
 /** §2.6/#22. Jack citations are recorded here and merged into `capabilityEvidence` below. */
@@ -985,6 +1008,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'mat-sub-dark',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -1031,6 +1055,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'mat-acid-bright',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -1179,6 +1204,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'mat-texture-soft',
+    sustain: SUSTAINS_DRONE,
     role: 'texture',
     character: 'soft',
     voice: 'voice',
@@ -1210,6 +1236,7 @@ const RECIPES: Recipe[] = [
   // ---- tonal ------------------------------------------------------------------------
   {
     id: 'mat-pad-soft',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'pad',
     character: 'soft',
     voice: 'voice',
@@ -1234,6 +1261,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'mat-pad-dark',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'pad',
     character: 'dark',
     voice: 'voice',

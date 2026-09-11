@@ -699,3 +699,90 @@ describe('a real Matriarch guide renders one box per enclosure (#385)', () => {
     }
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * pp.26 and 29, rendered and read. SUSTAIN: *"keeping the Amplitude and/or Filter at a steady level
+ * for as long as a key is held"*; VCA MODE `AMP ENV`: *"the output level of both VCA 1 and VCA 2
+ * will be controlled by the Amplifier Envelope Generator"*; `DRONE`: *"Matriarch will continue to
+ * drone at this level, whether a key is held or not"*. Four hold under `AMP ENV` on the slider — the
+ * acid at 10, low and not silent — and the texture holds under `DRONE`, naming only the switch;
+ * nothing patches into either VCA CV IN.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('holds on the sub, the acid and both pads, amplitude envelope on the VCAs with its sustain up', () => {
+    const ids = ['mat-sub-dark', 'mat-acid-bright', 'mat-pad-soft', 'mat-pad-dark']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['AMPLITUDE SUSTAIN', 'VCA MODE'] },
+        evidence: { kind: 'manual', source: 'Moog Matriarch Manual (012023), pp.26, 29' },
+      })
+      for (const name of ['AMPLITUDE SUSTAIN', 'VCA MODE']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('holds on the texture with the VCAs in DRONE, and names only the switch', () => {
+    const ids = ['mat-texture-soft']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['VCA MODE'] },
+        evidence: { kind: 'manual', source: 'Moog Matriarch Manual (012023), p.29' },
+      })
+      for (const name of ['VCA MODE']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['mat-sub-dark', 'mat-acid-bright', 'mat-pad-soft', 'mat-pad-dark', 'mat-texture-soft'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+
+  it('pairs each claim with the switch position and level it rests on', () => {
+    const param = (id: string, name: string) => device.recipes.find((r) => r.id === id)?.params.find((p) => p.name === name)
+    for (const id of ['mat-sub-dark', 'mat-acid-bright', 'mat-pad-soft', 'mat-pad-dark']) {
+      expect(param(id, 'VCA MODE'), id).toMatchObject({ value: 'AMP ENV' })
+      const s = param(id, 'AMPLITUDE SUSTAIN')
+      expect(s?.kind, id).toBe('numeric')
+      if (s?.kind === 'numeric') expect(s.value, id).toBeGreaterThan(0)
+    }
+    expect(param('mat-texture-soft', 'VCA MODE')).toMatchObject({ value: 'DRONE' })
+    for (const entry of device.recipes.find((r) => r.id === 'mat-texture-soft')?.patch ?? []) {
+      expect(entry.to).not.toMatch(/VCA \d CV IN/)
+    }
+  })
+})

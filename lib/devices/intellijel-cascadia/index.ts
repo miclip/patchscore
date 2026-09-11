@@ -5,6 +5,7 @@ import type {
   JackSpec,
   PatchEntry,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, Cite } from '../../core/params'
@@ -215,6 +216,36 @@ function cite(page: number): Cite {
 function citePages(pages: readonly number[]): Cite {
   const ascending = [...pages].sort((a, b) => a - b)
   return { kind: 'manual', source: `Intellijel Cascadia Manual v1.4, pp.${ascending.join(', ')}` }
+}
+
+
+/**
+ * §3/#506. **Envelope A is the amplitude stage on every held-role recipe, by the box's own
+ * normals, and its sustain slider is the claim.**
+ *
+ *  - p.53, VCA A LEVEL MOD IN: *"If nothing is patched into the LEVEL MOD IN jack, then the
+ *    output of ENV A [4.F] is used as the modulation source"*. No recipe below patches into it —
+ *    the acids patch ENV A's *output* to the filter, which leaves the input normal in place.
+ *  - p.32, GATE IN: *"if the GATE IN is high, the envelope moves through its stages until it hits
+ *    the sustain stage, and remains there until the gate goes low"*, and with nothing patched
+ *    there the EXT IN: GATE — MIDI or CV — gates it. No recipe below patches into it either.
+ *  - p.28, the S slider: *"sets the level of the sustain stage. It is 0 V at the bottom and 5 V at
+ *    the top"*.
+ *
+ * So a sustain above zero holds, and the four recipes that set one — two subs, the texture and
+ * the pad — say so.
+ *
+ * **Both acids are read and left unestablished.** They sit at `SUSTAIN 0 V`, but a sustain of
+ * zero closes the VCA only if the VCA's own bias is at zero — p.52: `LEVEL` *"Sets the initial
+ * base level (or 'bias') of the amplifier before any external modulation is applied"* — and
+ * neither acid authors `VCA A · LEVEL` or `VCA A · MOD`. With the bias up the box passes sound
+ * with no envelope at all, so the page cannot say which way the note ends on the recipe as
+ * written. A claim is not a reason to change a recipe; the missing bias is the acids' own gap.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['ENVELOPE A · SUSTAIN'] },
+  evidence: { kind: 'manual', source: 'Intellijel Cascadia Manual v1.4, pp.28, 32, 53' },
 }
 
 /**
@@ -950,6 +981,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'cascadia-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -981,6 +1013,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'cascadia-sub-clean',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'clean',
     voice: 'voice',
@@ -1355,6 +1388,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'cascadia-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'voice',
@@ -1477,6 +1511,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'cascadia-pad-dark',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'dark',
     voice: 'voice',

@@ -1,4 +1,4 @@
-import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe, SustainClaim } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type {
   AuthoredEnumParam,
@@ -164,6 +164,35 @@ function cite(page: number): Cite {
  */
 function citePages(...pages: number[]): PlaybackEvidence {
   return { kind: 'manual', source: `${MANUAL}, pp.${pages.join(', ')}` }
+}
+
+/**
+ * §3/#506. **Two amplitude stages on one box, one per engine, and the page for each.**
+ *
+ * A sample instrument's is its Envelope page — p.126, Sustain Level: *"This is the nominal level
+ * at which the note / sound will sustain after the initial 'note on' request. This will be the
+ * level continuously played while holding a note"*. The chord pad at 84, the texture at 84 and
+ * the whole-sample sub at 100 hold on `ENVELOPE · SUSTAIN`.
+ *
+ * A synth's is the Amplifier section — p.154, *"Amplifier envelope sustain level"* `0.00-100%`
+ * and *"Amplifier envelope decay time"* `0.00-10 Sec`. Both acid twins sit at `AMPLIFIER SUSTAIN
+ * 0` with `AMPLIFIER DECAY 0.22 s`, so the level runs to silence and stops; the decay is named
+ * because a zero sustain with no decay stage would be a different envelope. Declared once on the
+ * base and carried onto both pools by `onBothPools`, exactly as the parameters are.
+ *
+ * **The two VAP pads are left.** `tm-pad-soft-sample` and `tm-pad-soft-synth` author `AMP ENV
+ * ATTACK` and `AMP ENV RELEASE` and neither a sustain nor a decay, so the level while the note is
+ * held is whatever the engine was last set to and the page cannot say.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['ENVELOPE · SUSTAIN'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, p.126` },
+}
+const DECAYS: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['AMPLIFIER SUSTAIN', 'AMPLIFIER DECAY'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, p.154` },
 }
 
 /**
@@ -899,6 +928,7 @@ const SYNTH_RECIPES: Recipe[] = [
    */
   ...onBothPools({
     id: 'tm-acid-dirty',
+    sustain: DECAYS,
     role: 'acid',
     character: 'dirty',
     title: 'Squelching single-oscillator line, resonance up and envelope biting',
@@ -1293,6 +1323,7 @@ const SAMPLE_RECIPES: Recipe[] = [
    */
   {
     id: 'tm-pad-soft-chord',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'track-sample',
@@ -1488,6 +1519,7 @@ const SAMPLE_RECIPES: Recipe[] = [
   },
   {
     id: 'tm-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'track-sample',
@@ -1636,6 +1668,7 @@ const SAMPLE_RECIPES: Recipe[] = [
    */
   {
     id: 'tm-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'track-sample',

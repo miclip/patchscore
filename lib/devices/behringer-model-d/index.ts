@@ -1,4 +1,4 @@
-import type { CapabilityEvidence, Device, JackSignalKind, PatchEntry, Recipe } from '../../core/device'
+import type { CapabilityEvidence, Device, JackSignalKind, PatchEntry, Recipe, SustainClaim } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
 import { MODEL_D_PANEL, MODEL_D_PANEL_SPAN_MM } from './panel'
@@ -172,6 +172,20 @@ const MANUAL = 'MODEL D User Manual'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **The loudness contour holds**, on every recipe a shipped hook holds for a bar or more.
+ * p.10, under LOUDNESS CONTOUR: *"SUSTAIN - adjust the volume level that the signal is sustained
+ * after the attack time and initial decay time have been reached"*, and the decay switch beside
+ * it decides only what happens *"once a note is released"*. Every recipe below sets `LOUDNESS
+ * SUSTAIN` above zero, so the level it settles at is a level and not silence. Declared on the two
+ * subs, the acid, the pad and the texture; the rest no hook asks to hold.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['LOUDNESS SUSTAIN'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, p.10` },
 }
 
 /** The Specifications chapter. Every range below comes from it unless the call site says otherwise. */
@@ -927,6 +941,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'model-d-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -961,6 +976,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'model-d-sub-clean',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'clean',
     voice: 'voice',
@@ -1171,6 +1187,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'model-d-acid-bright',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -1206,6 +1223,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'model-d-pad-soft',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'voice',
@@ -1295,6 +1313,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'model-d-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'voice',

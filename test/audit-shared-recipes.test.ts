@@ -31,10 +31,11 @@ describe('the library total counts a shared recipe once (#193)', () => {
      * so the XL's two are the Live III's two and de-duplication takes them — which is the same
      * rule as the params above, arriving in the `caps` column.
      *
-     * Two, and named rather than counted loosely: `mpc-texture-soft` declares `boundary` and
-     * `release`, and it is the only recipe in that shared set carrying a playback claim.
+     * Three, and named rather than counted loosely: `mpc-texture-soft` declares `boundary` and
+     * `release`, the only playback claims in that shared set, and `mpc-pad-soft` declares a
+     * `sustain` (§3/#506), which is a capability fact on a recipe in exactly the same way.
      */
-    expect(summed.capabilityFacts - deduped.capabilityFacts).toBe(2)
+    expect(summed.capabilityFacts - deduped.capabilityFacts).toBe(3)
     expect(deduped.unverifiedRanges).toBe(summed.unverifiedRanges)
   })
 

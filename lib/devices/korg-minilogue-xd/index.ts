@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { MINILOGUE_XD_PANEL } from './panel'
 
@@ -115,6 +115,18 @@ const MANUAL = "minilogue xd Owner's Manual E 9"
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **The amp envelope holds**, on every recipe a shipped hook holds for a bar or more.
+ * p.24, AMP EG SUSTAIN: *"specifies the level that will be maintained after the decay time while
+ * the key is held down"*, `[0...1023]`. Every held recipe sets it between 520 and 900. Six pads,
+ * two subs, two textures.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['AMP EG · SUSTAIN'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, p.24` },
 }
 
 /**
@@ -518,6 +530,7 @@ const recipes: Recipe[] = [
   // ---- pad: all six characters, because this is the role the box is for ---
   {
     id: 'mxd-pad-soft',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'voice',
@@ -539,6 +552,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-pad-dark',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'dark',
     voice: 'voice',
@@ -560,6 +574,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-pad-bright',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'bright',
     voice: 'voice',
@@ -581,6 +596,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-pad-clean',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'clean',
     voice: 'voice',
@@ -602,6 +618,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-pad-dirty',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'dirty',
     voice: 'voice',
@@ -623,6 +640,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-pad-hard',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'hard',
     voice: 'voice',
@@ -897,6 +915,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-sub-dark',
+    sustain: SUSTAINS,
     // §12.4/#85. UNISON stacks all four voices onto one note, *"as a mono synth"* (p.17), so
     // this patch sounds one however many the box has.
     patchPolyphony: 1,
@@ -921,6 +940,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-sub-clean',
+    sustain: SUSTAINS,
     // §12.4/#85. UNISON stacks all four voices onto one note, *"as a mono synth"* (p.17), so
     // this patch sounds one however many the box has.
     patchPolyphony: 1,
@@ -947,6 +967,7 @@ const recipes: Recipe[] = [
   // ---- texture: the sustaining, non-melodic use of four voices ------------
   {
     id: 'mxd-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'voice',
@@ -968,6 +989,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mxd-texture-dirty',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'dirty',
     voice: 'voice',

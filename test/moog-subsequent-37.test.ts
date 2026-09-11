@@ -1204,3 +1204,58 @@ describe('a real Subsequent 37 guide renders one box per section (#385)', () => 
     expect(bullets.some((line) => line.includes('**OSC 2 \u00b7 OCTAVE**'))).toBe(true)
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.30: *"The sustain level is held until the key is released"*; p.32, AMPLIFIER ENVELOPE SUSTAIN:
+ * *"The sustain stage is held until the envelope receives a Note Off command or the gate ends"*.
+ * Both rendered and read. Every held recipe sets `AMP EG · SUSTAIN` between 3.5 and 9 on the
+ * printed 1-10 scale with `LOOP` off.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it("holds on every held-role recipe, on the amplifier envelope's sustain", () => {
+    const ids = ['sub37-sub-dark', 'sub37-sub-dirty', 'sub37-acid-dirty', 'sub37-acid-bright', 'sub37-acid-hard', 'sub37-texture-soft', 'sub37-pad-dark']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['AMP EG · SUSTAIN'] },
+        evidence: { kind: 'manual', source: "Subsequent 37 User's Manual, pp.30, 32" },
+      })
+      for (const name of ['AMP EG · SUSTAIN']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['sub37-sub-dark', 'sub37-sub-dirty', 'sub37-acid-dirty', 'sub37-acid-bright', 'sub37-acid-hard', 'sub37-texture-soft', 'sub37-pad-dark'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

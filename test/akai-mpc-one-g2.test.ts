@@ -125,6 +125,11 @@ describe('the borrow is guarded on content as well as on page number (invariant 
       if (prep !== undefined && prep.verified !== false) {
         expect(prep.verified.source, recipe.id).toMatch(/^MPC Standalone OS User Guide v3\.9, /)
       }
+      // §3/#506. A borrowed sustain claim is moved the same way, or it would reach a One G2
+      // reader carrying the sibling's page.
+      if (recipe.sustain !== undefined) {
+        expect(recipe.sustain.evidence.source, recipe.id).toMatch(/^MPC Standalone OS User Guide v3\.9, /)
+      }
     }
   })
 

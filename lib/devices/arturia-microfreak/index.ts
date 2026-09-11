@@ -6,6 +6,8 @@ import type {
   JackSignalKind,
   JackSpec,
   Recipe,
+  SustainClaim,
+  SustainEvidence,
 } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
@@ -313,6 +315,28 @@ import type { Role } from '../../core/vocabulary'
 
 /** p.N is the printed folio; the module header records that it is the PDF page minus five. */
 const cite = (page: number): Cite => ({ kind: 'manual', source: `MicroFreak User Manual 4.0.3 p.${page}` })
+
+/** §3/#506. The same page, narrowed to the two kinds a sustain claim takes. */
+const sustainCite = (page: number): SustainEvidence => ({
+  kind: 'manual',
+  source: `MicroFreak User Manual 4.0.3 p.${page}`,
+})
+
+/**
+ * §3/#506. **Every recipe on a held role holds**, on the one envelope this box has. p.56: the
+ * envelope *"will remain in the Sustain stage for as long as your finger touches the keyboard"*,
+ * and §9.3 calls it an ADS *"because the Sustain stage can be held indefinitely"*. `Sustain` is
+ * the level it holds at, and every recipe here sets it above zero; `Amp Mod On` is what puts that
+ * envelope on the loudness at all — p.56 again: *"When the Amp Mod button is lit, the envelope
+ * will control both the volume and the filter cutoff"*. Both are the reader's to set, so both are
+ * named. Declared on the seven recipes a shipped hook holds for a bar or more — three pads, two
+ * subs, two textures — and left off the rest, which no hook asks to hold.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['Sustain', 'Amp Mod'] },
+  evidence: sustainCite(56),
+}
 
 /**
  * #191. Arturia's own published figure, because the manual prints no dimension at all — see the
@@ -871,6 +895,7 @@ const recipes: Recipe[] = [
     voice: 'voice',
     verified: false,
     title: 'Four-note SuperWave pad, detuned wide and opening slowly',
+    sustain: SUSTAINS,
     params: [
       paraphonic(true),
       ...osc('SuperWave', 30, 62, 70),
@@ -887,6 +912,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mf-pad-dark',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'dark',
     voice: 'voice',
@@ -905,6 +931,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mf-pad-bright',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'bright',
     voice: 'voice',
@@ -1139,6 +1166,7 @@ const recipes: Recipe[] = [
   // ---- sub ----------------------------------------------------------------
   {
     id: 'mf-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -1159,6 +1187,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mf-sub-clean',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'clean',
     voice: 'voice',
@@ -1222,6 +1251,7 @@ const recipes: Recipe[] = [
   // ---- texture ------------------------------------------------------------
   {
     id: 'mf-texture-dark',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'dark',
     voice: 'voice',
@@ -1243,6 +1273,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'mf-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'voice',

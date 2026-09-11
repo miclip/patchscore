@@ -1119,3 +1119,93 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     }
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.120, rendered and read, Sustain Level: *"This is the nominal level at which the note / sound will
+ * sustain after the initial 'note on' request. This will be the level continuously played while
+ * holding a note"*; p.115 makes `VOLUME AUTOMATION TYPE: Envelope` what applies it to the Volume
+ * row, so both are named. The acid at 0 names its finite decay as well. `tr-texture-soft` is a
+ * Granular instrument with no envelope on the Volume row and is left.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('holds on the sub and the pad, the Volume row under an envelope with its sustain up', () => {
+    const ids = ['tr-sub-dark', 'tr-pad-soft']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['VOLUME AUTOMATION TYPE', 'VOLUME ENVELOPE · SUSTAIN'] },
+        evidence: { kind: 'manual', source: 'Polyend Tracker Manual 1.9.2a, pp.115, 120' },
+      })
+      for (const name of ['VOLUME AUTOMATION TYPE', 'VOLUME ENVELOPE · SUSTAIN']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('decays on the acid, sustain at zero with a finite decay', () => {
+    const ids = ['tr-acid-hard']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'decays',
+        control: { kind: 'parameters', params: ['VOLUME AUTOMATION TYPE', 'VOLUME ENVELOPE · SUSTAIN', 'VOLUME ENVELOPE · DECAY'] },
+        evidence: { kind: 'manual', source: 'Polyend Tracker Manual 1.9.2a, pp.115, 120' },
+      })
+      for (const name of ['VOLUME AUTOMATION TYPE', 'VOLUME ENVELOPE · SUSTAIN', 'VOLUME ENVELOPE · DECAY']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['tr-sub-dark', 'tr-pad-soft', 'tr-acid-hard'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual(['tr-texture-soft'])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+
+  it('pairs each claim with the level and automation type it rests on', () => {
+    const param = (id: string, name: string) => device.recipes.find((r) => r.id === id)?.params.find((p) => p.name === name)
+    for (const id of ['tr-sub-dark', 'tr-pad-soft', 'tr-acid-hard']) {
+      expect(param(id, 'VOLUME AUTOMATION TYPE'), id).toMatchObject({ value: 'Envelope' })
+    }
+    for (const id of ['tr-sub-dark', 'tr-pad-soft']) {
+      const s = param(id, 'VOLUME ENVELOPE · SUSTAIN')
+      if (s?.kind === 'numeric') expect(s.value, id).toBeGreaterThan(0)
+      else expect.unreachable(id)
+    }
+    const acid = param('tr-acid-hard', 'VOLUME ENVELOPE · SUSTAIN')
+    expect(acid).toMatchObject({ kind: 'numeric', value: 0 })
+    const decay = param('tr-acid-hard', 'VOLUME ENVELOPE · DECAY')
+    if (decay?.kind === 'numeric') expect(decay.value).toBeGreaterThan(0)
+    else expect.unreachable('tr-acid-hard decay')
+    expect(param('tr-texture-soft', 'VOLUME AUTOMATION TYPE')).toBeUndefined()
+  })
+})

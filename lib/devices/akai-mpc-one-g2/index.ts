@@ -6,6 +6,7 @@ import type {
   PlaybackEvidence,
   Recipe,
   SourcePlayback,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredParam, Cite, Verified } from '../../core/params'
@@ -388,6 +389,27 @@ function retargetPlayback(playback: SourcePlayback): SourcePlayback {
   }
 }
 
+/**
+ * §3/#506. One borrowed `sustain` claim, moved onto this document.
+ *
+ * A sustain claim cites one page — the envelope tab its level is printed on — so it goes through
+ * `pageInV39` like the parameter it names, rather than through `PLAYBACK_SPANS`, which exists for
+ * the one conjunction whose pages recompose. A span here would be a claim nobody has authored,
+ * and the parse refuses it rather than guessing which page of it moved.
+ */
+function retargetSustain(claim: SustainClaim): SustainClaim {
+  const ref = refOf(claim.evidence)
+  if (ref === undefined) throw new Error('a sustain claim carries no citation to retarget')
+  const from = Number(/^p\.(\d+)$/.exec(ref)?.[1])
+  if (Number.isNaN(from)) {
+    throw new Error(
+      `the MPC Live III manifest cites ${SIBLING_MANUAL} ${ref} for a sustain claim, and this ` +
+        `retargets a single page only — open the span against ${MANUAL} and map it before borrowing it`,
+    )
+  }
+  return { ...claim, evidence: { kind: 'manual', source: `${MANUAL}, p.${pageInV39(from)}` } }
+}
+
 function pageInV39(page: number): number {
   const to = PAGES[page]
   if (to === undefined) {
@@ -531,6 +553,7 @@ function retargetRecipe(recipe: Recipe): Recipe {
   return {
     ...recipe,
     title: retargetNote(recipe.title),
+    ...(recipe.sustain === undefined ? {} : { sustain: retargetSustain(recipe.sustain) }),
     ...(recipe.routing === undefined ? {} : { routing: retargetNote(recipe.routing) }),
     ...(recipe.articulation === undefined
       ? {}

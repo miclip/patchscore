@@ -5,6 +5,7 @@ import type {
   JackSpec,
   PatchEntry,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
@@ -227,6 +228,27 @@ import { GRANDMOTHER_PANEL } from './panel'
 /** The manual, by printed page — which is the PDF page on this document. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Moog Grandmother User’s Manual (Version 2), p.${page}` }
+}
+
+/**
+ * §3/#506. **Two shapes hold here, and p.19 and p.21 state both.** SUSTAIN (p.19): *"Once the
+ * Attack and Decay stages are complete, the control signal will remain at the level set by the
+ * SUSTAIN slider for as long as a key is held"*. VCA MODE (p.21): under `ENV` the envelope is the
+ * amplitude stage, so the slider's level is the claim; under `DRONE` *"Grandmother will continue
+ * to output sound at the current volume level whether a key is held or not"*, and the envelope is
+ * out of the path, so the switch alone carries it. Two pads, the sub and the acid hold under
+ * `ENV` — the acid at `SUSTAIN 6`, a low level and not silence — and the texture holds under
+ * `DRONE`, with nothing patched into VCA AMT IN (p.22) to take the level away from the switch.
+ */
+const SUSTAINS_UNDER_ENV: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['SUSTAIN', 'VCA MODE'] },
+  evidence: { kind: 'manual', source: 'Moog Grandmother User’s Manual (Version 2), pp.19, 21' },
+}
+const SUSTAINS_DRONE: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['VCA MODE'] },
+  evidence: { kind: 'manual', source: 'Moog Grandmother User’s Manual (Version 2), p.21' },
 }
 
 /** §2.6/#22. Jack citations are recorded here and merged into `capabilityEvidence` below. */
@@ -835,6 +857,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'gm-sub-dark',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -873,6 +896,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'gm-acid-bright',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -1015,6 +1039,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'gm-texture-soft',
+    sustain: SUSTAINS_DRONE,
     role: 'texture',
     character: 'soft',
     voice: 'voice',
@@ -1043,6 +1068,7 @@ const RECIPES: Recipe[] = [
   // ---- tonal ------------------------------------------------------------------------
   {
     id: 'gm-pad-soft',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'pad',
     character: 'soft',
     voice: 'voice',
@@ -1062,6 +1088,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'gm-pad-dark',
+    sustain: SUSTAINS_UNDER_ENV,
     role: 'pad',
     character: 'dark',
     voice: 'voice',

@@ -1,4 +1,4 @@
-import type { CapabilityEvidence, Device, JackSignalKind, JackSpec, Recipe } from '../../core/device'
+import type { CapabilityEvidence, Device, JackSignalKind, JackSpec, Recipe, SustainClaim } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
 import type { Role } from '../../core/vocabulary'
@@ -168,6 +168,35 @@ import { MINITAUR_PANEL } from './panel'
  */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Moog Minitaur Manual, p.${page}` }
+}
+
+/**
+ * §3/#506. **The amplifier EG's sustain level is what decides whether a held note holds**, and
+ * nothing else on the panel does. Printed p.15, AMPLIFIER SUSTAIN: *"Sets the Amplifier EG level
+ * after the Decay and before the Release portion. A note must be held longer than both the Attack
+ * and Decay time to reach the Sustain level. The level is adjustable from 0 to 100%"*. Above zero
+ * the voice settles at that level and stays for the note; at zero the decay runs to silence and
+ * the hold is over whatever the gate says.
+ *
+ * `DECAY/RELEASE MODE` is deliberately not named, though every recipe carries it. The addendum
+ * (PDF p.17) makes the mode decide only which *time* the one knob edits — Mode 1 links decay and
+ * release, Mode 2 separates them — and in neither mode does it touch the level the envelope
+ * settles at. A control that does not decide the claim is not evidence for it. The RELEASE switch
+ * likewise decides what happens after the note, which is after the hold.
+ *
+ * Three subs hold at 95-100 and four recipes — the hard sub and all three acids — sit at 0; every
+ * one is a role a shipped hook holds for a bar or more.
+ */
+const BY_AMPLIFIER_SUSTAIN: SustainClaim['control'] = { kind: 'parameters', params: ['AMPLIFIER SUSTAIN'] }
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: BY_AMPLIFIER_SUSTAIN,
+  evidence: { kind: 'manual', source: 'Moog Minitaur Manual, p.15' },
+}
+const DECAYS: SustainClaim = {
+  kind: 'decays',
+  control: BY_AMPLIFIER_SUSTAIN,
+  evidence: { kind: 'manual', source: 'Moog Minitaur Manual, p.15' },
 }
 
 /**
@@ -577,6 +606,7 @@ const recipes: Recipe[] = [
   // ---- sub -------------------------------------------------------------------------------
   {
     id: 'minitaur-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -593,6 +623,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'minitaur-sub-clean',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'clean',
     voice: 'voice',
@@ -608,6 +639,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'minitaur-sub-hard',
+    sustain: DECAYS,
     role: 'sub',
     character: 'hard',
     voice: 'voice',
@@ -623,6 +655,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'minitaur-sub-soft',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'soft',
     voice: 'voice',
@@ -706,6 +739,7 @@ const recipes: Recipe[] = [
   // ---- acid ------------------------------------------------------------------------------
   {
     id: 'minitaur-acid-dirty',
+    sustain: DECAYS,
     role: 'acid',
     character: 'dirty',
     voice: 'voice',
@@ -723,6 +757,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'minitaur-acid-bright',
+    sustain: DECAYS,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -740,6 +775,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'minitaur-acid-hard',
+    sustain: DECAYS,
     role: 'acid',
     character: 'hard',
     voice: 'voice',

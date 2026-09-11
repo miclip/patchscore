@@ -1052,6 +1052,10 @@ the hook (§4.1), true whatever plays it, and withholding it over a gap in *our*
 authored content. What is withheld there is the claim about the box. It does not under `until-next`
 or `trigger`, where a number would be a value to enter into a field that does not exist.
 
+Under that sentence, and only where the recipe has said so, sits the sound's own: `sustainNotice`
+(§3/#506) prints that the longest hold in the hook is one this sound's amplitude stage will not carry
+out. The box's fact first, then the sound's, then the rows both govern.
+
 `until-next` renders the same fact as the gesture instead: a note whose sustain ends before the next
 note starts gets a note-off row at the step it ends on, **interleaved with the notes in the order
 they are typed in**, because on a tracker a note-off is entered exactly the way a note is. A note
@@ -1499,6 +1503,208 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   all and so declares one on every recipe) and its own test enforces it. The Tracker Mini's
   three synth slots used to be enforced the same way and are not any more: they are a declared
   resource (§2.3/#25), which is what a rule becomes once the model can hold it.
+- **`sustain` says whether the recipe's amplitude stage holds a note for as long as it is held**
+  (#506).
+
+  ```ts
+  sustain: {
+    kind: 'sustains',                                          // sustains | decays
+    control: { kind: 'parameters', params: ['Sustain', 'Amp Mod'] },   // or { kind: 'inherent' }
+    evidence: cite(56),                                        // a manual page or a unit reading
+  }
+  ```
+
+  A Deluge running `lydian-house` printed *held for 64 steps (4 bars)* against a pad the reader at
+  the machine could not hold, and nothing in the model could have disagreed. A template authors
+  `HookNote.len`, the resolver hands the hook to whichever voice serves the role, and there was no
+  fact anywhere about whether that voice could hold the note — so nothing could prevent the
+  pairing and nothing could report it. Invariant 5 says a gap is shown honestly; this one was not
+  expressible, which is worse than unshown.
+
+  **One claim, about the amplitude stage and nothing else.** The amplitude stage is whatever
+  decides the voice's level while a note is held, and the manuals refuse to make that one thing:
+  on most boxes it is an envelope routed to the VCA with a sustain level (the MicroFreak's ADS, the
+  Digitone's ADSR, the Minitaur's amplifier EG); on the Mother-32 with `VCA MODE ON` it is a VCA
+  held open with no envelope in the path; on the Subharmonicon under a gate it is an AD envelope
+  that holds its peak until the gate ends. The claim is about the *level while the note is held*,
+  not the shape that produces it, and a vocabulary that said "ADSR" would be wrong about two of
+  those three. `sustains` is a level that settles above silence and stays there for the length of
+  the gate — a sustain above zero on an envelope routed to the VCA, a VCA switched always-open, an
+  envelope holding its peak under a gate. `decays` is a level that falls to silence on its own
+  whatever the hold — a sustain at zero, an AD or percussion envelope on the VCA, a decay that runs
+  out under a held pad.
+
+  **A file running out is not a `decays`.** A one-shot sample and a wavetable with no loop both
+  stop under a held note, and both are the *source's* boundary: `playback.boundary:
+  'stops-at-end'` (#518) already owns that fact and cites it per recipe, and recording it here as
+  well would be one fact with two spellings. The two claims are independent and a recipe may
+  carry both. #518 wrote down the other half of the same sentence — that `boundary: 'loops'` is
+  not a promise the part sounds for the whole hold, because every Elektron loop entry ends *"also
+  constrained by the AMP page envelope parameters HLD and DEC"*. This is the amplitude's half, and
+  the eventual rule over a hook's `len` reads both: a part sounds for the whole hold only where
+  the amplitude stage sustains *and* the file does not run out. The Deluge that opened the issue
+  is the second half, not this one.
+
+  **On the recipe, because the fact is.** A TubeSynth pad with `Amp Sustain 78` holds and a stab
+  with `Amp Sustain 0` decays, on the same voice of the same box; a Mother-32 holds with `VCA MODE
+  ON` and decays with `SUSTAIN OFF` under `EG`. A device-level flag would be wrong about whichever
+  half it did not mean, which is the reason `playback` is on the recipe too. It sits **beside**
+  `sourceAudio` and `soundSetup` rather than inside either, because a voice has an amplitude stage
+  whether it loads a file or makes its own sound — the MicroFreak's is p.56 and the box loads
+  nothing.
+
+  **Two other things it is not, and each already has an owner.** It is not the trigger's length:
+  `Device.noteDuration` (§2.7/#142) says how the *pattern editor* ends a note, and a `trigger`
+  box there fires a step and lets the sound's own decay be its length — a fact about how the box
+  takes a note, not about whether the amplitude stage could have held it. And it is not a mute group,
+  which is a property of the kit rather than of either recipe and is not modelled.
+
+  **Control and evidence, part for part as a playback axis carries them, in types of its own.**
+  `control` names the settings in this recipe that put the amplitude stage where the claim says —
+  `Sustain` and `Amp Mod` on the MicroFreak, since p.56 makes the second what routes the envelope
+  to the loudness at all; `Amp Sustain` on the MPC; `VCA MODE` on the Mother-32 — and
+  `RecipeSchema` refuses every name no entry in `params` carries, each at its own index, under a
+  rule and a message that say `sustain`. `inherent` is a voice that does this with nothing to set.
+  `evidence` is required
+  and is a page or a unit, not a `Verified`: `false` there would say the claim was made and
+  nothing was checked, which is the state the field replaces. It is not inherited from the
+  recipe's `verified`, which is a default for parameter points and nothing else. The types are
+  deliberately not shared with `PlaybackClaim`'s: the two claims are about different things, and
+  a rule written over one must not be able to reach the other by accident.
+
+  **Absence says nothing was established.** Every shipped recipe predates the field, and a
+  required one would be a claim hundreds of manifests never made. The audit counts each declared
+  claim as one capability fact (§9), beside the playback axes; a shared recipe contributes once to
+  the library total (#193) and the One G2 borrow moves the page onto v3.9 through `pageInV39`.
+
+  **The first batch is thirty claims on ten manifests**, every one a recipe on a role some
+  shipped hook holds for a bar or more (`acid`, `pad`, `sub`, `texture`), and every page rendered
+  and read. Twenty-four say `sustains`, all on an ADSR whose level the recipe already sets above
+  zero: the MicroFreak's seven off p.56 — *"It will remain in the Sustain stage for as long as your
+  finger touches the keyboard"* — naming `Sustain` and `Amp Mod`, since the same page makes the
+  button what puts the envelope on the loudness at all; the Model D's five off p.10, *"the volume
+  level that the signal is sustained after the attack time and initial decay time have been
+  reached"*, on `LOUDNESS SUSTAIN`; the Neutron's seven on `ENV 1 S`, off p.12 — *"ENVELOPE 1 is
+  routed to the VCA CV by default … closes the VCA when no note is being played"* — with p.25's
+  *"Sustain: 0 V to 9 V"*; the Digitone's four on `SUS`, pp.52-53's amp envelope with no hold
+  stage; and the MPC's TubeSynth pad on `Amp Sustain`, v3.7 p.517, which the One G2 borrow moves
+  to v3.9 p.436.
+
+  **Five say `decays`, and they are the ones the sentence is for.** The Digitakt's sub, acid and
+  pad name `HOLD` and `AMP DEC` together off p.46 — *"Fixed Hold time values (0–126) specify the
+  length of the hold phase, and the envelope ignores Note Off events such as Trig Length"* — and
+  the claim needs both, because `HOLD` at `NOTE` follows the note and `DEC` at `INF` never ends.
+  `dt-texture-soft` authors `HOLD 96` and no `AMP DEC`, so it is **left unestablished on
+  purpose**: the page cannot say which way that note ends. The RD-8 and RD-9 subs name `DECAY`
+  (p.9, p.10: *"DECAY controls how long the drum will ring"*), on boxes whose rows print no
+  duration at all; the sentence still prints there, and it is the one place it says something the
+  rows do not. Today no shipped direction hands either drum machine a held sub, so what moves in
+  the library is the Digitakt: `lydian-house`'s pad, `weave`'s sub, `ambient-dub`'s pad and six
+  more directions on that box now print the sentence — the exact guide #506 was filed over.
+
+  **The MPC's other three held-role recipes are recorded as unread**, not as settled: the pad's
+  page is TubeSynth's envelope tab, and the Bassline plugin and the drum-pad sample have pages of
+  their own nobody has opened for this. `test/voice-sustain.test.ts` carries the read record —
+  which manifests were read, and per manifest what was established and what was named as left —
+  and it is exhaustive on a read manifest, so a recipe added to a held role there has to be read
+  or listed. Each device's own test pins the page and the parameters. 133 held-role recipes on 29
+  unread boxes say nothing, and that is the honest state.
+
+  **The second batch is the Moogs, and it is where the wording earned its breadth.** Twenty-seven
+  claims on five manifests read, twenty-one `sustains` and six `decays`, and one manifest read and
+  left. The Minitaur's amplifier EG level alone decides (printed p.15: *"A note must be held longer
+  than both the Attack and Decay time to reach the Sustain level"*): three subs at 95-100 hold and
+  the hard sub with all three acids at 0 decay, and `DECAY/RELEASE MODE` is on every recipe and
+  deliberately not named, since the addendum has it decide which *time* the one knob edits and
+  never the level. The Mother-32 is three shapes on one page (p.16): `SUSTAIN ON` under `VCA MODE
+  EG` holds on the subs and the pad, `SUSTAIN OFF` under `EG` decays on both acids, and the
+  texture holds under `VCA MODE ON` — *"simply held at its maximum level"* — with no envelope in
+  the path, so its claim names one control where the others name two. The Muse's seven hold on
+  `VCA ENV · SUSTAIN` (pp.38-39, *"the level the envelope sustains at while a key is held down"*)
+  and the Subsequent 37's seven on `AMP EG · SUSTAIN` (pp.30, 32, *"held until the envelope
+  receives a Note Off command or the gate ends"*).
+
+  **The Subharmonicon is read and all six held-role recipes are left, and the reason is the
+  clearest statement of what the claim is about.** p.25: *"When a trigger is received, the VCA EG
+  will complete the Attack stage, and then proceed to the Decay stage. When a gate is received, the
+  VCA will complete the Attack stage and hold at the maximum level until the gate ends"*. The
+  amplitude stage holds under a gate and decays under a trigger, and which one a note arrives as
+  is not a setting on any recipe — the rhythm generators the routing aims the pattern at fire
+  triggers, a held key is a gate, and the EG button's *Held* position (p.28) pins the envelopes at
+  maximum, a control nothing here authors. A `sustains` would be true of a keyboard and false of
+  the box's own sequencer; a `decays` the reverse. Either is a claim about how the part is played
+  wearing a claim about the voice, so neither is made.
+
+  **The third batch is five boxes and twenty-six claims, and two more boxes read and left, which
+  is where "a page or a reading, and nothing else" was tested.** The Cascadia's amplitude stage
+  is Envelope A by the box's own normals — p.53, *"If nothing is patched into the LEVEL MOD IN
+  jack, then the output of ENV A is used as the modulation source"*; p.32, the gate holds the
+  sustain stage *"until the gate goes low"* and comes from EXT IN when nothing is patched — and
+  the test checks that no held recipe patches into either jack. Four hold on `ENVELOPE A ·
+  SUSTAIN`. The two acids sit at 0 V, but a sustain of zero closes the VCA only if the VCA's own
+  bias is at zero (p.52, *"the initial base level (or 'bias') of the amplifier before any external
+  modulation"*), and neither acid authors it; with the bias up the box drones. A draft authored
+  the bias onto the acids to make the `decays` provable and was backed out: a claim is not a
+  reason to change a recipe, and the missing bias is the acids' own gap, recorded beside them.
+  Both are read and left. The Circuit Tracks is the other: the Programmer's Reference p.4 prints
+  `env 1 sustain CC 70 0 – 127` and the User Guide p.63 labels Macro 3 *Amp Envelope*, and that
+  env 1 is the amplitude envelope is the folder's standing inference from `env 2 to frequency`.
+  No page says the level is held while a note is on, and an inference is neither a page nor a
+  reading, so all four are read and left.
+
+  The rest state the claim outright. The minilogue xd's ten on `AMP EG · SUSTAIN` (p.24, *"the
+  level that will be maintained after the decay time while the key is held down"*). The DFAM's
+  two `decays` on `VCA DECAY`: pp.20-21 give the VCA EG an attack switch and a decay knob and
+  nothing else, on a box with trigger inputs and no gate, and the `VCA EG` switch is on both
+  recipes and not named because it sets the attack. The Grandmother's five and the Matriarch's
+  five are the Mother-32's two shapes again — four on the slider under `VCA MODE ENV` / `AMP ENV`
+  (pp.19, 21; pp.26, 29), the texture under `DRONE` naming the switch alone, with the acids held
+  at 6 and 10 on the slider: low, and not silence.
+
+  **The fourth batch is the two Polyend trackers, eight claims, and a negative claim names its
+  decay.** The Tracker's amplitude stage is the Volume row's envelope where a recipe puts one
+  there — p.115 makes `VOLUME AUTOMATION TYPE: Envelope` what applies it, and p.120, Sustain
+  Level: *"This will be the level continuously played while holding a note"* — so the sub and the
+  pad name both, and the acid at 0 names `VOLUME ENVELOPE · DECAY` as well, because a zero sustain
+  with no decay stage would be a different envelope. The Granular texture puts no envelope on the
+  Volume row and is left. The Mini has one stage per engine: a sample instrument's Envelope page
+  (p.126, the same sentence) holds the chord pad, the texture and the whole-sample sub on
+  `ENVELOPE · SUSTAIN`, and a synth's Amplifier section (p.154) decays both acid twins on
+  `AMPLIFIER SUSTAIN 0` with a finite `AMPLIFIER DECAY`, declared once on the base and carried
+  onto both pools by `onBothPools` as the parameters are. The two VAP pads author an amp attack
+  and release and neither a sustain nor a decay, and are left.
+
+  **Of the 174 recipes on held roles, 92 now carry a claim and 25 were read and named as left**
+  — the three MPCs' Bassline and drum-pad parts, the Digitakt and Tracker textures, the
+  Subharmonicon's six, the Cascadia's two acids, the Circuit Tracks' four, the Mini's two VAP
+  pads — which is 117 read against 57 that nobody has opened a page for.
+  `test/voice-sustain.test.ts` pins all three figures, and its read record is exhaustive on a
+  read manifest.
+
+  `caps` went 1260 to 1290 on the first batch, 1317 on the second, 1343 on the third and 1351 on the fourth. `RESOLVER_VERSION` went 14 to 15, because a rendered byte moves under
+  an old link: the field is read in step 9 and never by the search, `Score` is untouched and no
+  allocation moves, but a Digitakt guide that printed a four-bar hold and nothing now prints the
+  sentence beside it; so do a Minitaur, a Mother-32, a Tracker and a Tracker Mini under
+  `acid-lineage`, off an acid whose sustain is at zero or switched off, and a DFAM under
+  `drone-study` over an eight-bar texture its AD envelope will not hold.
+
+  **What reaches the reader is one sentence, above the row it is about.** The resolver carries
+  the *state* — `ResolvedRecipeRef.sustain` is the kind and not the claim, since `control` and
+  `evidence` are the author's and the audit's and §8 prints no provenance (invariant 4) — and
+  `sustainNotice(recipe, hook)` decides once for both renderers (#33): a recipe that says
+  `decays` under a hook holding any note for a bar or more. The Markdown prints, directly under
+  the note-duration sentence, *The longest note here is held for 64 steps (4 bars), and this sound
+  cannot hold it: its amplitude stage decays instead of holding a level*; the web restates it word for
+  word and `test/sustain-notice.test.ts` asserts both. The row below still prints the hold, because
+  the hold is the part (#142); what was missing was the sentence saying the box will not do it.
+
+  **A sentence on a line, not a shortfall (§7.3), and the search never hears of it.** The
+  allocation stands: the voice carries the part, the parameters resolve, and nothing in the
+  objective reads the claim. Whether the resolver should *prefer* a voice that holds is #506's open
+  question, and the cost of answering it is a `RESOLVER_VERSION` bump and a different optimum at
+  equal score (#228); the sentence costs neither. The bar is where `held for` begins — under it a
+  note is a hit, and a decay is what a hit does. A file that runs out under the hold is the other
+  half and `playback.boundary`'s; the sentence for that is not this one.
 - **A routing fact that is about the box goes in `routingPreamble`, not in every recipe's
   `routing`** (§3.7/#496). Six folders open every recipe with one shared constant — *Plays its
   own 8-step analog sequencer…*, *played from MIDI IN or EXT IN PITCH/GATE…* — because it is the
@@ -6284,7 +6490,8 @@ Three guards:
   what a voice does with a file belongs with the claims about clocks and jacks. One fact per
   declared *axis*, since `boundary`, `timing` and `release` are established separately and each
   carries its own citation, and counted per recipe, so a recipe two manifests share by reference
-  contributes once (#193)
+  contributes once (#193). Since #506 a recipe's `sustain` claim is counted the same way, one per
+  declared claim
 - an `EDITIONS` block (§2.3/#480) splitting the manifests three ways: those carrying a date
   somebody confirmed their cited edition current on, then those where nobody has asked, then
   those naming a manual with no edition, so there is no cited edition to confirm. Both of those

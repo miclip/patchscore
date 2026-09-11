@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange, ParamScope } from '../../core/params'
 import { MUSE_PANEL } from './panel'
 
@@ -443,6 +443,20 @@ const MANUAL = "Muse User's Manual v1.4.0"
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **The VCA envelope holds**, on every recipe a shipped hook holds for a bar or more.
+ * p.38: the VCA ENVELOPE *"is normalized to control the Voltage-Controlled Amplifier (VCA) level"*
+ * and both envelopes are *"classic Attack, Decay, Sustain, Release (ADSR) envelopes"*; p.39,
+ * SUSTAIN: *"Sets the level the ENVELOPE settles to after the DECAY stage and the level the
+ * envelope sustains at while a key is held down"*. Every recipe below sets `VCA ENV · SUSTAIN`
+ * at 85 or above. Three pads, two subs, two textures.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['VCA ENV · SUSTAIN'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, pp.38-39` },
 }
 
 /**
@@ -1927,6 +1941,7 @@ const recipes: Recipe[] = [
   // ---- pad: the reason an eight-voice box is in the library ---------------
   {
     id: 'muse-pad-soft',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'timbre',
@@ -1974,6 +1989,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'muse-pad-dark',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'dark',
     voice: 'timbre',
@@ -2014,6 +2030,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'muse-pad-bright',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'bright',
     voice: 'timbre',
@@ -2426,6 +2443,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'muse-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'timbre',
@@ -2460,6 +2478,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'muse-sub-clean',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'clean',
     voice: 'timbre',
@@ -2497,6 +2516,7 @@ const recipes: Recipe[] = [
   // ---- texture: eight voices held, non-melodic ---------------------------
   {
     id: 'muse-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'timbre',
@@ -2539,6 +2559,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'muse-texture-dirty',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'dirty',
     voice: 'timbre',
