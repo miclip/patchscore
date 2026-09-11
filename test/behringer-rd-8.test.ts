@@ -389,3 +389,58 @@ describe('RD-8 manifest', () => {
     expect(doc).toContain('Pattern-wide')
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amp envelope holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.9: *"DECAY controls how long the drum will ring. Turn CW for longer tones"*. The bass drum
+ * rings for its knob and stops; nothing on a step extends it, and this is a `trigger` box.
+ *
+ * Declared on the recipes a shipped hook holds for a bar or more — the roles `HELD_ROLES` derives
+ * from `TEMPLATES` — and on nothing else, which no hook asks to hold.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('declares `decays` on exactly these recipes, off the page that says so', () => {
+    const declared = device.recipes.filter((r) => r.sustain !== undefined)
+    expect(declared.map((r) => r.id)).toEqual(['rd8-sub-dark'])
+    for (const r of declared) {
+      expect(r.sustain, r.id).toEqual({
+        kind: 'decays',
+        control: { kind: 'parameters', params: ['DECAY'] },
+        evidence: { kind: 'manual', source: 'RHYTHM DESIGNER RD-8 User Manual, p.9' },
+      })
+      // Every parameter the claim names is one this recipe hands the reader.
+      for (const name of ['DECAY']) {
+        expect(r.params.some((p) => p.name === name), `${r.id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

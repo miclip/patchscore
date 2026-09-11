@@ -1128,3 +1128,43 @@ describe('Circuit Tracks LFO routing (#465)', () => {
     for (const depth of depths) expect(depth).toBeGreaterThan(DEPTH_CENTRE)
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * The Programmer's Reference p.4 prints `env 1 sustain CC 70 0 – 127` and the User Guide p.63 labels
+ * Macro 3 *Amp Envelope*; that env 1 is the amplitude envelope is the folder's standing inference,
+ * and no page says in words that the level is held while a note is on. An inference is not a page
+ * and not a reading off the unit, so **all four held-role recipes are read and left**, each with
+ * `AMP SUSTAIN` above zero and no claim.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id)).toEqual([])
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual(['ct-sub-dark', 'ct-acid-dirty', 'ct-pad-soft', 'ct-texture-dark'])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

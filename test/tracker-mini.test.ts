@@ -2398,3 +2398,96 @@ describe('the bright riser keeps its arrival and says how to reach eight bars (�
     expect(need).not.toMatch(/drops the\s+note/)
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * Two pages, rendered and read. p.126, a sample instrument's Envelope page: *"This will be the level
+ * continuously played while holding a note"*; p.154, a synth's Amplifier section: *"Amplifier
+ * envelope sustain level"* and *"Amplifier envelope decay time"*. The chord pad, the texture and the
+ * whole-sample sub hold on the first; both acid twins decay on the second, at `AMPLIFIER SUSTAIN 0`
+ * with a finite `AMPLIFIER DECAY`. The two VAP pads author an amp attack and release and neither a
+ * sustain nor a decay, and are left.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('holds on the chord pad, the texture and the whole-sample sub, on the sample envelope sustain', () => {
+    const ids = ['tm-pad-soft-chord', 'tm-texture-soft', 'tm-sub-dark']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['ENVELOPE · SUSTAIN'] },
+        evidence: { kind: 'manual', source: 'Polyend Tracker Mini Manual 2.2.1b, p.126' },
+      })
+      for (const name of ['ENVELOPE · SUSTAIN']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('decays on both acid twins, amplifier sustain at zero with a finite decay', () => {
+    const ids = ['tm-acid-dirty-sample', 'tm-acid-dirty-synth']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'decays',
+        control: { kind: 'parameters', params: ['AMPLIFIER SUSTAIN', 'AMPLIFIER DECAY'] },
+        evidence: { kind: 'manual', source: 'Polyend Tracker Mini Manual 2.2.1b, p.154' },
+      })
+      for (const name of ['AMPLIFIER SUSTAIN', 'AMPLIFIER DECAY']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['tm-pad-soft-chord', 'tm-texture-soft', 'tm-sub-dark', 'tm-acid-dirty-sample', 'tm-acid-dirty-synth'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual(['tm-pad-soft-sample', 'tm-pad-soft-synth'])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+
+  it('pairs each claim with the level it rests on, and the VAP pads author neither a sustain nor a decay', () => {
+    const param = (id: string, name: string) => device.recipes.find((r) => r.id === id)?.params.find((p) => p.name === name)
+    for (const id of ['tm-pad-soft-chord', 'tm-texture-soft', 'tm-sub-dark']) {
+      const s = param(id, 'ENVELOPE · SUSTAIN')
+      if (s?.kind === 'numeric') expect(s.value, id).toBeGreaterThan(0)
+      else expect.unreachable(id)
+    }
+    for (const id of ['tm-acid-dirty-sample', 'tm-acid-dirty-synth']) {
+      expect(param(id, 'AMPLIFIER SUSTAIN'), id).toMatchObject({ kind: 'numeric', value: 0 })
+      const d = param(id, 'AMPLIFIER DECAY')
+      if (d?.kind === 'numeric') expect(d.value, id).toBeGreaterThan(0)
+      else expect.unreachable(id)
+    }
+    for (const id of ['tm-pad-soft-sample', 'tm-pad-soft-synth']) {
+      expect(param(id, 'AMP ENV ATTACK'), id).toBeDefined()
+      expect(param(id, 'AMP ENV SUSTAIN'), id).toBeUndefined()
+      expect(param(id, 'AMP ENV DECAY'), id).toBeUndefined()
+    }
+  })
+})

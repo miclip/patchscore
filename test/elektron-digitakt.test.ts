@@ -1006,3 +1006,61 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amp envelope holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.46: *"Fixed Hold time values (0–126) specify the length of the hold phase, and the envelope
+ * ignores Note Off events such as Trig Length"*, and `DEC` is `(0–126, INF)`. A recipe authoring
+ * both inside their numeric ranges runs its hold, runs its decay and stops. **`dt-texture-soft` is
+ * left unestablished on purpose**: it authors `HOLD 96` and no `AMP DEC`, so the decay could be
+ * anything up to `INF` and the page cannot say which way the note ends.
+ *
+ * Declared on the recipes a shipped hook holds for a bar or more — the roles `HELD_ROLES` derives
+ * from `TEMPLATES` — and on nothing else, which no hook asks to hold.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('declares `decays` on exactly these recipes, off the page that says so', () => {
+    const declared = device.recipes.filter((r) => r.sustain !== undefined)
+    expect(declared.map((r) => r.id)).toEqual(['dt-sub-dark', 'dt-acid-hard', 'dt-pad-soft'])
+    for (const r of declared) {
+      expect(r.sustain, r.id).toEqual({
+        kind: 'decays',
+        control: { kind: 'parameters', params: ['HOLD', 'AMP DEC'] },
+        evidence: { kind: 'manual', source: 'Digitakt User Manual OS 1.51, p.46' },
+      })
+      // Every parameter the claim names is one this recipe hands the reader.
+      for (const name of ['HOLD', 'AMP DEC']) {
+        expect(r.params.some((p) => p.name === name), `${r.id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual(['dt-texture-soft'])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

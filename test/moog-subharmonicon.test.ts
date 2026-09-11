@@ -439,3 +439,45 @@ describe('a real Subharmonicon guide renders the same six runs every time (#385)
     expect(bullets.some((l) => l.includes('**RHYTHM 4 · SEQ 2**'))).toBe(true)
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.25, VCA DECAY, rendered and read: *"When a trigger is received, the VCA EG will complete the
+ * Attack stage, and then proceed to the Decay stage. When a gate is received, the VCA will complete
+ * the Attack stage and hold at the maximum level until the gate ends"*. Which one a note arrives as
+ * is not a setting on any recipe — the rhythm generators fire triggers, a held key is a gate, and
+ * the EG button's *Held* position (p.28) pins both envelopes at maximum — so **all six held-role
+ * recipes are deliberately left unestablished**: a `sustains` would be true of a keyboard and false
+ * of the box's own sequencer, which is how every recipe here is routed.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual([].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual(['subh-sub-dark', 'subh-pad-soft', 'subh-pad-dark', 'subh-pad-bright', 'subh-acid-dirty', 'subh-texture-soft'])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

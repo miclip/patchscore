@@ -1,4 +1,4 @@
-import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe, SustainClaim } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type {
   AuthoredEnumParam,
@@ -138,6 +138,31 @@ function cite(page: number): Cite {
  */
 function citePages(...pages: number[]): PlaybackEvidence {
   return { kind: 'manual', source: `Polyend Tracker Manual 1.9.2a, pp.${pages.join(', ')}` }
+}
+
+
+/**
+ * §3/#506. **The Volume row's envelope is the amplitude stage, where a recipe puts one there.**
+ * p.115 makes `VOLUME AUTOMATION TYPE: Envelope` the thing that applies it to the Volume row, and
+ * p.120, Sustain Level: *"This is the nominal level at which the note / sound will sustain after
+ * the initial 'note on' request. This will be the level continuously played while holding a
+ * note"*. The sub at 100 and the pad at 88 hold; the acid at 0 with `DECAY 0.26 s` runs its decay
+ * to silence and stops, and names the decay because a sustain of zero with no decay stage would
+ * be a different envelope. **`tr-texture-soft` is left**: it is a Granular instrument with no
+ * envelope on the Volume row, so nothing authored shapes its level and the page cannot say.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['VOLUME AUTOMATION TYPE', 'VOLUME ENVELOPE · SUSTAIN'] },
+  evidence: { kind: 'manual', source: 'Polyend Tracker Manual 1.9.2a, pp.115, 120' },
+}
+const DECAYS: SustainClaim = {
+  kind: 'decays',
+  control: {
+    kind: 'parameters',
+    params: ['VOLUME AUTOMATION TYPE', 'VOLUME ENVELOPE · SUSTAIN', 'VOLUME ENVELOPE · DECAY'],
+  },
+  evidence: { kind: 'manual', source: 'Polyend Tracker Manual 1.9.2a, pp.115, 120' },
 }
 
 function num(
@@ -542,6 +567,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'tr-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'track',
@@ -925,6 +951,7 @@ const RECIPES: Recipe[] = [
   // ---- Chords, which cost a render on this box ------------------------------
   {
     id: 'tr-pad-soft',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'track',
@@ -1255,6 +1282,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'tr-acid-hard',
+    sustain: DECAYS,
     role: 'acid',
     character: 'hard',
     voice: 'track',

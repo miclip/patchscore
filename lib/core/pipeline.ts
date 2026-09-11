@@ -19,9 +19,10 @@ import type {
   JackSpec,
   QuickTune,
   Realisation,
+  SustainKind,
   TriggerNote,
 } from './device'
-import type { RoleRequest, Template } from './template'
+import { STEPS_PER_BAR, type RoleRequest, type Template } from './template'
 import type { ResolvedParam } from './params'
 import {
   assignableKey,
@@ -1132,6 +1133,13 @@ export type ResolvedRecipeRef = {
    * playing a file and for every recipe whose voice needs no selecting to be the sound it is.
    */
   soundSetup?: ResolvedSoundSetup
+  /**
+   * §3/#506. **Whether this recipe's amplitude stage holds a note**, where the recipe says. The
+   * *state* and not the claim: `control` and `evidence` are the author's and the audit's, and §8
+   * prints no provenance (invariant 4), so a renderer holding them would be holding what it must
+   * not print. Absent where the recipe made no claim, which is every recipe until it is read.
+   */
+  sustain?: SustainKind
   routing?: string
 }
 
@@ -1321,6 +1329,45 @@ export function stackedPart(assignment: {
 }
 
 /**
+ * §3/#506. **A hold this sound's envelope will not carry out.**
+ *
+ * A hook asks a note to be held for a bar or more and the recipe carrying it says `decays`: its
+ * amplitude stage falls to silence on its own, whatever the note length says. The row below will
+ * still print *held for 64 steps (4 bars)*, because that is the part (#142); this is the sentence
+ * above it saying the box will not do that with this sound, so the reader is told before entering
+ * sixty-four steps rather than after — which is how #506 was reported.
+ *
+ * One decision in one place, the arrangement `noteDurationNotice`, `patternEntryNotice` and
+ * `stackedPart` sit in (#33). The words are each renderer's own (§8); the verdict is not.
+ *
+ * **A verdict on a rendered line, not a shortfall (§7.3).** The allocation stands: the voice can
+ * carry the part, the parameters resolve, the search is untouched. What cannot be carried out is
+ * one instruction, and the honest thing is to print it and say so beside it. Whether the resolver
+ * should *prefer* a voice that holds is #506's open question and not this function's.
+ *
+ * `undefined` for the ordinary case, like `stackedPart`: a recipe that made no claim, a recipe
+ * that sustains, or a hook with no note a bar long. A bar is the line `durationPhrase` already
+ * draws between *sounds for* and *held for* — under it the note is a hit and a decay is what a
+ * hit does.
+ *
+ * **Reads the amplitude's half only.** A file that runs out under the hold is the source's
+ * boundary (`sourceAudio.playback`, #518), and the sentence for that is not this one.
+ */
+export type SustainNotice = {
+  /** The longest hold the hook asks of this sound, in steps. Always a bar or more. */
+  longest: number
+}
+
+export function sustainNotice(
+  recipe: { sustain?: SustainKind },
+  hook: { notes: readonly { len: number }[] },
+): SustainNotice | undefined {
+  if (recipe.sustain !== 'decays') return undefined
+  const longest = Math.max(...hook.notes.map((note) => note.len))
+  return longest >= STEPS_PER_BAR ? { longest } : undefined
+}
+
+/**
  * Invariant 6, in full: *same inputs + same seed + **same resolver version** -> byte-identical
  * guide*. The version is the third term, and it exists because §8.2 permalinks carry inputs
  * only. A link made last month re-resolves under whatever engine is deployed today, so without
@@ -1504,12 +1551,36 @@ export function stackedPart(assignment: {
  * **Small blast radius, and deliberately so.** Five other sliced recipes ship unmarked, because
  * `noteAddressing` is cite-gated and none of their manuals supports the claim — see §4.1. The
  * bump is for the field existing and being read, not for the size of the change it made.
+ * * **15** — §3/#506. **A part whose amplitude stage decays says so above a hold it will not carry out.**
+ * A recipe may now declare `sustain: { kind: 'sustains' | 'decays', control, evidence }`, and
+ * step 9 hands the renderer the kind on `ResolvedRecipeRef.sustain`. Where a resolved hook holds
+ * any note for a bar or more and the recipe says `decays`, phase 4 prints one sentence under the
+ * note-duration line — *The longest note here is held for 64 steps (4 bars), and this sound
+ * cannot hold it: its amplitude stage decays instead of holding a level* — and the rows below are
+ * untouched.
+ *
+ * Entry 14's reading, a third time. `Score` is untouched, no candidate is added or excluded, the
+ * same recipes land on the same voices, and `measure:search` is identical, because the claim is
+ * read in step 9 after every allocation is settled and never by the search. What moves is what a
+ * renderer is handed, and therefore what a link renders: a Digitakt carrying `lydian-house`'s pad,
+ * `weave`'s sub or `ambient-dub`'s pad now prints that sentence where before it printed the hold
+ * and nothing — the exact guide #506 was filed over — off `dt-sub-dark`, `dt-acid-hard` and
+ * `dt-pad-soft` (p.46's fixed `HOLD` and finite `DEC`); a Minitaur, a Mother-32, a Tracker or a
+ * Tracker Mini under `acid-lineage` prints it off an acid whose sustain is at zero or switched
+ * off; a DFAM under `drone-study` prints it over an eight-bar texture its AD envelope will not
+ * hold. The RD-8 and RD-9 subs say `decays` too and print nothing today, because no shipped
+ * direction hands them a held sub. Seventy-odd recipes on sixteen boxes say `sustains` and print
+ * nothing by design. That is a rendered byte moving under an old link, so it is a bump.
+ *
+ * **The bump is for the field being read, not for the size of the change.** Over a hundred
+ * held-role recipes on unread boxes say nothing, and their silence is the honest state (§3): the
+ * sentence appears only where a page was opened. `test/voice-sustain.test.ts` carries the count.
  *
  * It lives beside `ResolveInput` because that is the contract it versions. `permalink.ts`
  * stamps it; nothing in the resolver reads it, and nothing may branch on it — a resolver that
  * behaved differently per version would be two resolvers wearing one name.
  */
-export const RESOLVER_VERSION = 14
+export const RESOLVER_VERSION = 15
 
 /**
  * #161. The two decisions the user may take back off the direction: tempo and key. Both
@@ -1952,6 +2023,7 @@ export function resolve(input: ResolveInput): ResolveResult {
         realisation: realisationOf(a.recipe),
         ...(sourceAudio === undefined ? {} : { sourceAudio }),
         ...(soundSetup === undefined ? {} : { soundSetup }),
+        ...(a.recipe.sustain === undefined ? {} : { sustain: a.recipe.sustain.kind }),
         ...(routing === undefined ? {} : { routing }),
       },
       // §7 step 9/#433, #424. Both allocation sources reach the parameters here. The stack width

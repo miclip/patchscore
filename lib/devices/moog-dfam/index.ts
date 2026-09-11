@@ -5,6 +5,7 @@ import type {
   JackSpec,
   PatchEntry,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
@@ -109,6 +110,22 @@ import { DFAM_PANEL } from './panel'
 /** The manual, by **printed** page — which is the PDF page here. See the header note. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Moog DFAM Owner’s Manual, p.${page}` }
+}
+
+/**
+ * §3/#506. **The VCA envelope has an attack and a decay and no third stage**, so every note
+ * decays whatever fires it. p.20, VCA EG: the switch *"is used to determine the Attack Time of
+ * the VCA EG"*, 1 ms or 100 ms; p.21, VCA DECAY: *"The third and final Envelope Generator in your
+ * DFAM is dedicated to modulating the Output volume of the VCA. The Decay time of this EG is set
+ * using the VCA DECAY knob"*. Nothing on either page holds a level, and the box has trigger
+ * inputs and no gate. `VCA DECAY` is named because it is the stage the note lives in; the `VCA
+ * EG` switch is on both recipes and not named, since it sets the attack and decides nothing here.
+ * The sub and the texture are the two recipes a shipped hook holds for a bar or more.
+ */
+const DECAYS: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['VCA DECAY'] },
+  evidence: { kind: 'manual', source: 'Moog DFAM Owner’s Manual, pp.20-21' },
 }
 
 /** §2.6/#22. Jack citations are recorded here and merged into `capabilityEvidence` below. */
@@ -633,6 +650,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'dfam-sub-dark',
+    sustain: DECAYS,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -1053,6 +1071,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'dfam-texture-soft',
+    sustain: DECAYS,
     role: 'texture',
     character: 'soft',
     voice: 'voice',

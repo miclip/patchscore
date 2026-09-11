@@ -3,7 +3,7 @@ import { moodState, receiveTransports, resolve, sendTransports } from '../lib/co
 import { device } from '../lib/devices/moog-grandmother/index'
 import { device as mother32 } from '../lib/devices/moog-mother-32/index'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { industrialTechno } from '../lib/templates/index'
+import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 
 /**
  * The Grandmother, and the four claims in its manifest that a schema cannot check.
@@ -270,5 +270,91 @@ describe('Grandmother patch points (§3.3)', () => {
       }
     }
     expect(cables).toBeGreaterThan(0)
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * pp.19 and 21, rendered and read. SUSTAIN: *"the control signal will remain at the level set by the
+ * SUSTAIN slider for as long as a key is held"*; VCA MODE `DRONE`: *"Grandmother will continue to
+ * output sound at the current volume level whether a key is held or not"*. Four hold under `ENV`
+ * on the slider — the acid at 6, low and not silent — and the texture holds under `DRONE`, naming
+ * only the switch; nothing patches into VCA AMT IN.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('holds on the sub, the acid and both pads, envelope on the VCA with its sustain up', () => {
+    const ids = ['gm-sub-dark', 'gm-acid-bright', 'gm-pad-soft', 'gm-pad-dark']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['SUSTAIN', 'VCA MODE'] },
+        evidence: { kind: 'manual', source: 'Moog Grandmother User’s Manual (Version 2), pp.19, 21' },
+      })
+      for (const name of ['SUSTAIN', 'VCA MODE']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('holds on the texture with the VCA in DRONE, and names only the switch', () => {
+    const ids = ['gm-texture-soft']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['VCA MODE'] },
+        evidence: { kind: 'manual', source: 'Moog Grandmother User’s Manual (Version 2), p.21' },
+      })
+      for (const name of ['VCA MODE']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['gm-sub-dark', 'gm-acid-bright', 'gm-pad-soft', 'gm-pad-dark', 'gm-texture-soft'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+
+  it('pairs each claim with the switch position and level it rests on', () => {
+    const param = (id: string, name: string) => device.recipes.find((r) => r.id === id)?.params.find((p) => p.name === name)
+    for (const id of ['gm-sub-dark', 'gm-acid-bright', 'gm-pad-soft', 'gm-pad-dark']) {
+      expect(param(id, 'VCA MODE'), id).toMatchObject({ value: 'ENV' })
+      expect(param(id, 'SUSTAIN'), id).toMatchObject({ kind: 'numeric' })
+      const s = param(id, 'SUSTAIN')
+      if (s?.kind === 'numeric') expect(s.value, id).toBeGreaterThan(0)
+    }
+    expect(param('gm-texture-soft', 'VCA MODE')).toMatchObject({ value: 'DRONE' })
+    for (const entry of device.recipes.find((r) => r.id === 'gm-texture-soft')?.patch ?? []) {
+      expect(entry.to).not.toMatch(/VCA AMT IN/)
+    }
   })
 })

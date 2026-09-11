@@ -845,3 +845,59 @@ describe('a real MODEL D guide draws the panel, repeats and all (#385)', () => {
     expect(md).not.toContain('● MIDI')
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amp envelope holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.10, rendered and read: *"SUSTAIN - adjust the volume level that the signal is sustained after
+ * the attack time and initial decay time have been reached"*. The decay switch decides what happens
+ * once a note is released, which is after the hold. Every held recipe sets the level above zero.
+ *
+ * Declared on the recipes a shipped hook holds for a bar or more — the roles `HELD_ROLES` derives
+ * from `TEMPLATES` — and on nothing else, which no hook asks to hold.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('declares `sustains` on exactly these recipes, off the page that says so', () => {
+    const declared = device.recipes.filter((r) => r.sustain !== undefined)
+    expect(declared.map((r) => r.id)).toEqual(['model-d-sub-dark', 'model-d-sub-clean', 'model-d-acid-bright', 'model-d-pad-soft', 'model-d-texture-soft'])
+    for (const r of declared) {
+      expect(r.sustain, r.id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['LOUDNESS SUSTAIN'] },
+        evidence: { kind: 'manual', source: 'MODEL D User Manual, p.10' },
+      })
+      // Every parameter the claim names is one this recipe hands the reader.
+      for (const name of ['LOUDNESS SUSTAIN']) {
+        expect(r.params.some((p) => p.name === name), `${r.id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

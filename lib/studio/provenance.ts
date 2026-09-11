@@ -117,8 +117,9 @@ export type AuditCounts = {
    *
    * Since #518 that includes claims made on a *recipe*: `sourceAudio.playback` says what the
    * voice does with the file it is handed, on up to three axes, each cited to a page or a
-   * unit, and `auditPlayback` counts one per declared axis. Those two states are already
-   * members below, so the identity needs no new term.
+   * unit, and `auditPlayback` counts one per declared axis. Since #506 `sustain` says whether
+   * the voice holds a note, and `auditSustain` counts one per declared claim. Those two states
+   * are already members below, so the identity needs no new term.
    *
    * `capabilityFacts` = manualCapabilities + observedCapabilities + citedAgainstCapabilities +
    * uncheckedCapabilities + undocumentedCapabilities + unreadCapabilities + partlyCapabilities.
@@ -218,8 +219,24 @@ function auditPlayback(recipe: Recipe, into: DeviceAudit): void {
   }
 }
 
+/**
+ * §3/#506, §9. **A sustain claim is a capability fact made on a recipe**, counted exactly as a
+ * playback axis is and for the same reason: it says what the amp envelope does with a note it is
+ * handed, cited to a page or a unit, and no reader dials it. One per recipe, since a recipe makes
+ * one claim about its amp envelope; the same box holds under one recipe and decays under another,
+ * which is why it is here and not in `capabilityEvidence`.
+ */
+function auditSustain(recipe: Recipe, into: DeviceAudit): void {
+  const claim = recipe.sustain
+  if (claim === undefined) return
+  into.counts.capabilityFacts++
+  if (claim.evidence.kind === 'manual') into.counts.manualCapabilities++
+  else into.counts.observedCapabilities++
+}
+
 function auditRecipe(deviceId: string, recipe: Recipe, into: DeviceAudit): void {
   auditPlayback(recipe, into)
+  auditSustain(recipe, into)
 
   for (const param of recipe.params as AuthoredParam[]) {
     into.counts.params++

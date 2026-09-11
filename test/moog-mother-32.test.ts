@@ -265,3 +265,106 @@ describe('Mother-32 accent articulation (§4.3)', () => {
     expect(block.filter((l) => l.startsWith('- `accent` → `accent` true on step '))).toHaveLength(4)
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.16, rendered and read. `SUSTAIN`: *"With the SUSTAIN switch in the ON position, the Envelope
+ * signal will hold at its maximum level for the duration a note is held … With the SUSTAIN switch
+ * in the OFF position, the Attack stage immediately moves to the Decay stage"*. `VCA MODE`:
+ * *"determines whether the VCA is modulated by the Envelope or is simply held at its maximum
+ * level"*. Three shapes: `SUSTAIN ON` under `EG` holds, `SUSTAIN OFF` under `EG` decays, and `VCA
+ * MODE ON` holds with no envelope in the path — the always-open case, which names one control.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('holds on the two subs and the pad, envelope on the VCA with its sustain on', () => {
+    const ids = ['m32-sub-dark', 'm32-sub-clean', 'm32-pad-soft']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['SUSTAIN', 'VCA MODE'] },
+        evidence: { kind: 'manual', source: 'Moog Mother-32 User Manual (Version 2), p.16' },
+      })
+      for (const name of ['SUSTAIN', 'VCA MODE']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('decays on both acids, envelope on the VCA with its sustain off', () => {
+    const ids = ['m32-acid-dirty', 'm32-acid-bright']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'decays',
+        control: { kind: 'parameters', params: ['SUSTAIN', 'VCA MODE'] },
+        evidence: { kind: 'manual', source: 'Moog Mother-32 User Manual (Version 2), p.16' },
+      })
+      for (const name of ['SUSTAIN', 'VCA MODE']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('holds on the texture with the VCA open, and names only the switch that opens it', () => {
+    const ids = ['m32-texture-soft']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['VCA MODE'] },
+        evidence: { kind: 'manual', source: 'Moog Mother-32 User Manual (Version 2), p.16' },
+      })
+      for (const name of ['VCA MODE']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['m32-sub-dark', 'm32-sub-clean', 'm32-pad-soft', 'm32-acid-dirty', 'm32-acid-bright', 'm32-texture-soft'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+
+  it('pairs each claim with the switch positions it rests on', () => {
+    const value = (id: string, name: string) => {
+      const p = device.recipes.find((r) => r.id === id)?.params.find((p) => p.name === name)
+      return p?.kind === 'enum' ? p.value : undefined
+    }
+    for (const id of ['m32-sub-dark', 'm32-sub-clean', 'm32-pad-soft']) {
+      expect([value(id, 'SUSTAIN'), value(id, 'VCA MODE')], id).toEqual(['ON', 'EG'])
+    }
+    for (const id of ['m32-acid-dirty', 'm32-acid-bright']) {
+      expect([value(id, 'SUSTAIN'), value(id, 'VCA MODE')], id).toEqual(['OFF', 'EG'])
+    }
+    expect(value('m32-texture-soft', 'VCA MODE')).toBe('ON')
+  })
+})

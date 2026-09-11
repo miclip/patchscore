@@ -2157,6 +2157,135 @@ export const SoundSetupSchema = z.strictObject({
 })
 
 /**
+ * §3/#506. **Whether this recipe's amplitude stage holds a note for as long as the note is held.**
+ *
+ * A Deluge running `lydian-house` printed *held for 64 steps (4 bars)* against a pad the reader
+ * at the machine could not hold, and nothing in the model could have said so. A template authors
+ * `HookNote.len`, the resolver hands the hook to whichever voice serves the role, and if that
+ * voice cannot hold a note there was no fact anywhere for a rule to read. Invariant 5 says a gap
+ * is shown honestly; this one was not expressible, which is worse than unshown.
+ *
+ * ## One claim, about the amplitude stage and nothing else
+ *
+ * The *amplitude stage* is whatever decides the voice's level while a note is held — and the
+ * manuals refuse to make that one thing. On most boxes it is an envelope routed to the VCA with a
+ * sustain level (the MicroFreak's ADS, the Digitone's ADSR, the Minitaur's amplifier EG); on the
+ * Mother-32 with `VCA MODE ON` it is a VCA held open with no envelope in the path at all; on the
+ * Subharmonicon under a gate it is an AD envelope that holds its peak until the gate ends. The
+ * claim is about the *level while the note is held*, not about the shape that produces it, and
+ * a vocabulary that said "ADSR" would be wrong about two of those three.
+ *
+ *  - **`sustains`** — with the note held, the level settles above silence and stays there for
+ *    the length of the gate. A sustain level above zero on an envelope routed to the VCA, a VCA
+ *    switched always-open, an envelope that holds its peak under a gate.
+ *  - **`decays`** — the level falls to silence on its own, whatever the hold. A sustain level of
+ *    zero, an AD or a percussion envelope on the VCA, a decay that runs out under a held pad.
+ *
+ * **A file running out is not a `decays`.** A one-shot sample and a wavetable with no loop both
+ * stop under a held note, and both are the *source's* boundary — `sourceAudio.playback.boundary:
+ * 'stops-at-end'` (#518), which already owns that fact and cites it per recipe. Recording it here
+ * as well would be one fact with two spellings, one drift from disagreeing with itself. The
+ * eventual rule over a hook's `len` reads both: a part sounds for the whole hold only where the
+ * amplitude stage sustains *and* the file does not run out. #518 wrote down the other half of the
+ * same sentence — that `boundary: 'loops'` is not a promise the part sounds, because every
+ * Elektron loop entry ends *"also constrained by the AMP page envelope parameters HLD and DEC"*.
+ * This is the amplitude's half.
+ *
+ * ## Per recipe, because the fact is
+ *
+ * A TubeSynth pad with `Amp Sustain 78` holds and a stab with `Amp Sustain 0` decays, on the same
+ * voice of the same box; a Mother-32 holds with `VCA MODE ON` and decays with `SUSTAIN OFF` under
+ * `EG`. A device-level flag would be wrong about whichever half it did not mean. It sits beside
+ * `sourceAudio` and `soundSetup` rather than inside either, because a voice has an amplitude
+ * stage whether it loads a file or makes its own sound — the MicroFreak's is p.56 and the box
+ * loads nothing.
+ *
+ * ## Two other things it is not, and each already has an owner
+ *
+ *  - **Not the trigger's length.** `Device.noteDuration` (§2.7/#142) says how the *pattern
+ *    editor* ends a note — a `LEN` field, a tie, a gate. A `trigger` box there fires a step and
+ *    lets the sound's decay be its length, which is a fact about how the box takes a note, not
+ *    about whether the amplitude stage could have held it.
+ *  - **Not a mute group.** A second voice choking the first is a property of the kit rather than
+ *    of either recipe, and is not modelled here.
+ *
+ * ## Control and evidence
+ *
+ * `control` names the settings in this recipe that put the amplitude stage where the claim says
+ * it is — `Sustain` and `Amp Mod` on the MicroFreak, `Amp Sustain` on the MPC, `VCA MODE` on the
+ * Mother-32 — and `RecipeSchema` refuses any name no entry in `params` carries, so the claim
+ * cannot rest on a knob the reader is never told to set. `inherent` is a voice that does this
+ * with nothing to set. `evidence`
+ * is required and is a page or a unit: it is not a `Verified`, because `false` there would say
+ * the claim was made and nothing was checked, which is the state this field replaces.
+ *
+ * The shape matches a `PlaybackClaim`'s part for part, and the types are deliberately its own
+ * rather than shared: the two claims are about different things, and a rule or a message written
+ * over one must not be able to reach the other by accident.
+ *
+ * **Absence says nothing was established.** Every shipped recipe predates the field, and a
+ * required one would be a claim hundreds of manifests never made. The audit counts each declared
+ * claim as one capability fact (§9), beside the playback axes.
+ *
+ * **What reads it: the schema, the audit, and one sentence in the guide.** `ResolvedRecipeRef`
+ * carries the kind, `sustainNotice` (§8/#506) decides whether a hook's hold is one this envelope
+ * will not carry out, and both renderers say so above the row. The resolver does not prefer a
+ * voice that holds and search eligibility is untouched; that is #506's open question.
+ */
+export const SUSTAIN_KINDS = ['sustains', 'decays'] as const
+
+export type SustainKind = (typeof SUSTAIN_KINDS)[number]
+
+/**
+ * How the amplitude stage comes to be in that state. `parameters` are settings the reader makes
+ * here and are checked against this recipe's `params`; `inherent` is a voice that does it with
+ * nothing to set.
+ */
+export type SustainControl =
+  | { kind: 'inherent' }
+  | { kind: 'parameters'; params: [string, ...string[]] }
+
+export const SustainControlSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('inherent') }),
+  z.strictObject({
+    kind: z.literal('parameters'),
+    // A variadic tuple for `PlaybackControlSchema`'s reason: the non-emptiness is in the type.
+    params: z.tuple(
+      [z.string().min(1, 'name a parameter of this recipe that sets the amplitude stage, in the words the box prints')],
+      z.string().min(1, 'name a parameter of this recipe that sets the amplitude stage, in the words the box prints'),
+    ),
+  }),
+])
+
+/** A page somebody can re-read or a reading somebody took off the unit. */
+export type SustainEvidence =
+  | { kind: 'manual'; source: string }
+  | { kind: 'observed'; source: string }
+
+export const SustainEvidenceSchema = z.discriminatedUnion('kind', [
+  z.strictObject({
+    kind: z.literal('manual'),
+    source: z.string().min(1, 'a sustain claim needs the page that establishes it'),
+  }),
+  z.strictObject({
+    kind: z.literal('observed'),
+    source: z.string().min(1, 'a sustain claim needs the unit it was read off'),
+  }),
+])
+
+export type SustainClaim = {
+  kind: SustainKind
+  control: SustainControl
+  evidence: SustainEvidence
+}
+
+export const SustainClaimSchema = z.strictObject({
+  kind: z.enum(SUSTAIN_KINDS),
+  control: SustainControlSchema,
+  evidence: SustainEvidenceSchema,
+})
+
+/**
  * §12.4. How a recipe turns the notes a request asks for into sound.
  *
  * The request says *how many notes* the part needs; the recipe says *how this box makes them*,
@@ -2344,6 +2473,13 @@ export type Recipe = {
    */
   soundSetup?: SoundSetup
   /**
+   * §3/#506. **Whether the amplitude stage holds a note for as long as it is held** — see
+   * `SustainClaim`. Beside both of the above rather than inside either: a voice has an amplitude
+   * stage whether it loads a file or makes its own sound, and the claim is about that stage, not
+   * the source.
+   */
+  sustain?: SustainClaim
+  /**
    * §12.4/#85. The most simultaneous notes this patch can sound, when that is fewer than the
    * voice offers — a UNISON or mono-legato mode, a pair-per-key stack. Omitted means the patch
    * spends nothing the box does not have, which is the ordinary case and the pre-#85 behaviour.
@@ -2409,6 +2545,7 @@ export const RecipeSchema = z
     realisation: RealisationSchema.optional(),
     sourceAudio: SourceAudioSchema.optional(),
     soundSetup: SoundSetupSchema.optional(),
+    sustain: SustainClaimSchema.optional(),
     patchPolyphony: z.int().min(1).optional(),
     consumes: z.array(ResourceUseSchema).min(1).optional(),
     params: z.array(AuthoredParamSchema),
@@ -2473,6 +2610,26 @@ export const RecipeSchema = z
         })
       })
     }
+  })
+  /*
+   * §3/#506. **Every parameter a sustain claim names is one this recipe authors.** The claim is
+   * that these settings, in this recipe, are what hold the amplitude stage open; a name matching
+   * nothing in `params` is evidence that carries none. Its own rule rather than a branch of the
+   * playback one above, because the two claims are about different things and an author fixing
+   * one should be told which — the message and the path say `sustain`.
+   */
+  .superRefine((r, ctx) => {
+    const control = r.sustain?.control
+    if (control?.kind !== 'parameters') return
+    const authored = new Set(r.params.map((param) => param.name))
+    control.params.forEach((name, i) => {
+      if (authored.has(name)) return
+      ctx.addIssue({
+        code: 'custom',
+        message: `sustain names parameter '${name}', which this recipe does not set — a sustain claim rests on a setting the reader makes here (§3/#506)`,
+        path: ['sustain', 'control', 'params', i],
+      })
+    })
   })
   // §3.7/#496. A preamble is one half of a routing line, so the other half has to exist. Without
   // this a folder could put its whole routing in the shared field, where the kit page would hoist

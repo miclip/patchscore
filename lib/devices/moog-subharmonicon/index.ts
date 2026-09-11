@@ -174,6 +174,23 @@ function cite(page: number): Cite {
   return { kind: 'manual', source: `Moog Subharmonicon Manual, p.${page}` }
 }
 
+/**
+ * §3/#506. **Read for sustain and deliberately left unestablished, all six held-role recipes.**
+ *
+ * p.25, VCA DECAY: *"When a trigger is received, the VCA EG will complete the Attack stage, and
+ * then proceed to the Decay stage. When a gate is received, the VCA will complete the Attack stage
+ * and hold at the maximum level until the gate ends"*. So the amplitude stage holds under a gate
+ * and decays under a trigger, and which one a note arrives as is not a setting on the recipe: the
+ * rhythm generators the routing tells the reader to aim the pattern at fire triggers, a held key
+ * or the TRIGGER button with EG unlit is a gate (p.28), and the EG button's *Held* position pins
+ * both envelopes at maximum whatever arrives — a control no recipe here authors.
+ *
+ * A `sustains` would be true of a MIDI keyboard and false of the box's own sequencer, which is
+ * how every recipe is routed; a `decays` the reverse. Either would be a claim about how the part
+ * is played dressed as a claim about the voice, so neither is made, and `noteDuration: trigger`
+ * above keeps saying the one thing that is true either way: `VCA DECAY` is what sets the length.
+ */
+
 /** §2.6/#22. Jack citations are recorded here and merged into `capabilityEvidence` below. */
 const JACK_EVIDENCE: Record<string, CapabilityEvidence> = {}
 

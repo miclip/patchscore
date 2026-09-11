@@ -3,6 +3,7 @@ import type {
   Device,
   JackSignalKind,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import { RD9_PANEL } from './panel'
@@ -116,6 +117,18 @@ const MANUAL = 'RD-9 User Manual V 1.0'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **The bass drum rings for its DECAY and stops.** p.10: *"DECAY controls how long
+ * the drum will ring. Turn CW for longer tones"* — the length is the knob's, and nothing on the
+ * step or the note extends it. Declared on the sub, which is the one recipe here a shipped hook
+ * holds for a bar or more; the drums no hook asks to hold.
+ */
+const DECAYS: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['DECAY'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, p.10` },
 }
 
 // ---------------------------------------------------------------------------
@@ -465,6 +478,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'rd9-sub-dark',
+    sustain: DECAYS,
     role: 'sub',
     character: 'dark',
     voice: 'bd',

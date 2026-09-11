@@ -5,6 +5,7 @@ import type {
   JackSpec,
   PatchEntry,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
@@ -206,6 +207,39 @@ import { MOTHER_32_PANEL } from './panel'
 /** The manual, by **printed** page (PDF page minus one). */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Moog Mother-32 User Manual (Version 2), p.${page}` }
+}
+
+/**
+ * §3/#506. **Two switches decide whether a held note holds, and p.16 states both.** `SUSTAIN`:
+ * *"With the SUSTAIN switch in the ON position, the Envelope signal will hold at its maximum level
+ * for the duration a note is held, similar to an organ. With the SUSTAIN switch in the OFF
+ * position, the Attack stage immediately moves to the Decay stage when complete"*. `VCA MODE`:
+ * *"determines whether the VCA is modulated by the Envelope or is simply held at its maximum
+ * level"* — under `ON` *"the audio signal is allowed to pass without the need for a Gate or note ON
+ * message"*.
+ *
+ * So there are three shapes here and two of them hold. Under `VCA MODE EG` the envelope is the
+ * amplitude stage and its `SUSTAIN` switch is the claim: `ON` sustains, `OFF` decays. Under `VCA
+ * MODE ON` the VCA is held open and the envelope is not in the path at all, so the switch alone
+ * carries the claim — which is the always-open case the vocabulary is worded for, and why the
+ * texture names one control where the others name two.
+ *
+ * Two subs and the pad hold under `EG`; both acids decay under `EG`; the texture holds under `ON`.
+ */
+const SUSTAINS_UNDER_EG: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['SUSTAIN', 'VCA MODE'] },
+  evidence: { kind: 'manual', source: 'Moog Mother-32 User Manual (Version 2), p.16' },
+}
+const DECAYS_UNDER_EG: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['SUSTAIN', 'VCA MODE'] },
+  evidence: { kind: 'manual', source: 'Moog Mother-32 User Manual (Version 2), p.16' },
+}
+const SUSTAINS_VCA_OPEN: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['VCA MODE'] },
+  evidence: { kind: 'manual', source: 'Moog Mother-32 User Manual (Version 2), p.16' },
 }
 
 /** §2.6/#22. Jack citations are recorded here and merged into `capabilityEvidence` below. */
@@ -880,6 +914,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'm32-sub-dark',
+    sustain: SUSTAINS_UNDER_EG,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -905,6 +940,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'm32-sub-clean',
+    sustain: SUSTAINS_UNDER_EG,
     role: 'sub',
     character: 'clean',
     voice: 'voice',
@@ -972,6 +1008,7 @@ const RECIPES: Recipe[] = [
   // ---- acid, lead, stab, pad --------------------------------------------------------
   {
     id: 'm32-acid-dirty',
+    sustain: DECAYS_UNDER_EG,
     role: 'acid',
     character: 'dirty',
     voice: 'voice',
@@ -1028,6 +1065,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'm32-acid-bright',
+    sustain: DECAYS_UNDER_EG,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -1153,6 +1191,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'm32-pad-soft',
+    sustain: SUSTAINS_UNDER_EG,
     role: 'pad',
     character: 'soft',
     voice: 'voice',
@@ -1349,6 +1388,7 @@ const RECIPES: Recipe[] = [
   // ---- long parts, played with the amplifier held open -----------------------------
   {
     id: 'm32-texture-soft',
+    sustain: SUSTAINS_VCA_OPEN,
     role: 'texture',
     character: 'soft',
     voice: 'voice',

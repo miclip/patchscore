@@ -493,11 +493,15 @@ describe('the shipped library (#518)', () => {
    * The de-duplication mirrors `libraryCounts` — a recipe two manifests share by reference is one
    * recipe (#193) — because a playback claim is counted from `auditRecipe` and follows that rule.
    * Device-level evidence is summed instead: each box makes its own claim about itself.
+   *
+   * Since #506 a recipe's `sustain` is the other claim `auditRecipe` counts, so it is the other
+   * term here; `test/voice-sustain.test.ts` states the same identity from that side.
    */
   it('accounts for every capability fact the library counts', () => {
     const ordered = [...DEVICES].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
     const seen = new Set<string>()
     let axes = 0
+    let sustains = 0
     let evidence = 0
     for (const d of ordered) {
       evidence += Object.keys(d.capabilityEvidence ?? {}).length
@@ -505,12 +509,13 @@ describe('the shipped library (#518)', () => {
         const key = JSON.stringify(r)
         if (seen.has(key)) continue
         seen.add(key)
+        if (r.sustain !== undefined) sustains++
         const playback = r.sourceAudio?.playback
         if (playback === undefined) continue
         axes += PLAYBACK_AXES.filter((axis) => playback[axis] !== undefined).length
       }
     }
-    expect(libraryCounts(DEVICES).capabilityFacts).toBe(evidence + axes)
+    expect(libraryCounts(DEVICES).capabilityFacts).toBe(evidence + axes + sustains)
   })
 })
 

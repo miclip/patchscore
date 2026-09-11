@@ -1,4 +1,4 @@
-import type { Device, Recipe } from '../../core/device'
+import type { Device, Recipe, SustainClaim } from '../../core/device'
 import { articulablePerStep } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, ParamScope } from '../../core/params'
 import { DIGITONE_PANEL } from './panel'
@@ -200,6 +200,19 @@ const MANUAL = 'Digitone User Manual OS 1.41'
 
 function cite(page: number): Cite {
   return { kind: 'manual', source: `${MANUAL}, p.${page}` }
+}
+
+/**
+ * §3/#506. **The amp envelope holds**, on every recipe a shipped hook holds for a bar or more.
+ * pp.52-53, AMP page 1: an ATK / DEC / SUS / REL envelope with no hold stage, and *"Sustain Level
+ * sets the sustain level of the amp envelope"* (p.53). `SUS` is that level, above zero on every
+ * recipe below. Declared on the sub, the pad, the acid and the texture; the rest no hook asks to
+ * hold.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['SUS'] },
+  evidence: { kind: 'manual', source: `${MANUAL}, pp.52-53` },
 }
 
 function cites(pages: string): Cite {
@@ -597,6 +610,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'dn-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'track',
@@ -990,6 +1004,7 @@ const recipes: Recipe[] = [
   // -------------------------------------------------------------------------
   {
     id: 'dn-pad-soft',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'track',
@@ -1134,6 +1149,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'dn-acid-dirty',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'dirty',
     voice: 'track',
@@ -1164,6 +1180,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'dn-texture-soft',
+    sustain: SUSTAINS,
     role: 'texture',
     character: 'soft',
     voice: 'track',

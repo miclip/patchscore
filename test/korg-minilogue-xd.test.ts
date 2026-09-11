@@ -1037,3 +1037,57 @@ describe('a real minilogue xd guide renders one box per section (#385)', () => {
     }
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * p.24, rendered and read: AMP EG SUSTAIN *"specifies the level that will be maintained after the
+ * decay time while the key is held down"*, `[0...1023]`. Every held recipe sets it between 520 and
+ * 900.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it('holds on every held-role recipe, on the amp envelope sustain', () => {
+    const ids = ['mxd-pad-soft', 'mxd-pad-dark', 'mxd-pad-bright', 'mxd-pad-clean', 'mxd-pad-dirty', 'mxd-pad-hard', 'mxd-sub-dark', 'mxd-sub-clean', 'mxd-texture-soft', 'mxd-texture-dirty']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['AMP EG · SUSTAIN'] },
+        evidence: { kind: 'manual', source: "minilogue xd Owner's Manual E 9, p.24" },
+      })
+      for (const name of ['AMP EG · SUSTAIN']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['mxd-pad-soft', 'mxd-pad-dark', 'mxd-pad-bright', 'mxd-pad-clean', 'mxd-pad-dirty', 'mxd-pad-hard', 'mxd-sub-dark', 'mxd-sub-clean', 'mxd-texture-soft', 'mxd-texture-dirty'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})

@@ -1910,3 +1910,58 @@ describe('every LFO 1 either says where it goes or is not printed (#460)', () =>
     }
   })
 })
+
+
+// ---------------------------------------------------------------------------
+// §3/#506 — whether the amplitude stage holds a note
+// ---------------------------------------------------------------------------
+
+/**
+ * §3/#506. **This manifest has been read for sustain**, and the record is pinned so the next
+ * declaration is a deliberate one with a page behind it.
+ *
+ * pp.38-39, rendered and read: the VCA ENVELOPE *"is normalized to control the Voltage-Controlled
+ * Amplifier (VCA) level"* (p.38) and SUSTAIN *"Sets the level the ENVELOPE settles to after the
+ * DECAY stage and the level the envelope sustains at while a key is held down"* (p.39). Every held
+ * recipe sets `VCA ENV · SUSTAIN` at 85 or above.
+ */
+describe('sustain claims (§3/#506)', () => {
+  const heldRoles = (() => {
+    const longest = new Map<string, number>()
+    for (const t of TEMPLATES) {
+      for (const hook of t.hooks) {
+        for (const note of hook.notes) {
+          if (note.len > (longest.get(hook.forRole) ?? 0)) longest.set(hook.forRole, note.len)
+        }
+      }
+    }
+    return new Set([...longest].filter(([, len]) => len >= 16).map(([role]) => role))
+  })()
+
+  it("holds on every held-role recipe, on the VCA envelope's sustain", () => {
+    const ids = ['muse-pad-soft', 'muse-pad-dark', 'muse-pad-bright', 'muse-sub-dark', 'muse-sub-clean', 'muse-texture-soft', 'muse-texture-dirty']
+    for (const id of ids) {
+      const r = device.recipes.find((recipe) => recipe.id === id)
+      expect(r, id).toBeDefined()
+      expect(r?.sustain, id).toEqual({
+        kind: 'sustains',
+        control: { kind: 'parameters', params: ['VCA ENV · SUSTAIN'] },
+        evidence: { kind: 'manual', source: "Muse User's Manual v1.4.0, pp.38-39" },
+      })
+      for (const name of ['VCA ENV · SUSTAIN']) {
+        expect(r?.params.some((p) => p.name === name), `${id} ${name}`).toBe(true)
+      }
+    }
+  })
+
+  it('declares on exactly those, leaves exactly these held-role recipes unestablished, and every unheld one silent', () => {
+    expect(device.recipes.filter((r) => r.sustain !== undefined).map((r) => r.id).sort()).toEqual(['muse-pad-soft', 'muse-pad-dark', 'muse-pad-bright', 'muse-sub-dark', 'muse-sub-clean', 'muse-texture-soft', 'muse-texture-dirty'].sort())
+    const unclaimed = device.recipes
+      .filter((r) => heldRoles.has(r.role) && r.sustain === undefined)
+      .map((r) => r.id)
+    expect(unclaimed).toEqual([])
+    for (const r of device.recipes) {
+      if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
+    }
+  })
+})
