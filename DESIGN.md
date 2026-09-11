@@ -1195,6 +1195,25 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   search their own folders with, not a category we invented. It names no device and no genre, and
   travels device → renderer exactly as `routing` and `note` do.
 
+  **Where the reader can make the file, `need` says so** (#521). `vox-chop` is the most-requested
+  source role in the library and the one no box can synthesise, and seventeen of its twenty-one
+  recipes described a vocal and stopped, sending a reader with no sample library off to find one
+  when a phone in a quiet room records exactly what they ask for. The offer is direct help, *You
+  can record one on a phone*, and states the three constraints a recording has to meet: one voice,
+  close to the mic so it stays dry, nothing playing behind it. It goes in `need` and not in `prep`,
+  on the same split as above: it is uncited advice about what to obtain and it belongs beside
+  those constraints, where `prep` is the box's own procedure with a page on it. A transfer step nobody read off a page would
+  arrive in `prep` wearing the manual's badge, so none was added. The offer is authored in each
+  `need` rather than kept in one constant, because the seventeen split by what they ask for: an
+  ordinary phrase to slice, several separate one-shots (*one word per take*), transient-heavy
+  material (*hard consonants to slice on*), and two phrases that have to be at the project tempo,
+  which a phone recording is not by itself: sing against the project playing in headphones, so
+  the bar lands at tempo while the phone still hears one dry voice with nothing behind it. Unlike
+  #496, one resolved guide carries one `vox-chop` part, so
+  wording that recurs across recipes never recurs on a page. The four recipes that already said
+  *record* in `need` or `prep` (the Deluge pair, the two EPs) carry no phone sentence.
+  `test/vox-chop-record.test.ts` holds the set and the constraints every form states.
+
   **It means a file and only a file, since #516.** It used to mean *load a file you supply* and
   *select a sound the box already has* at once, which are different actions with different failure
   modes: only a file has a length, only a file can be missing, and only a file makes the box's

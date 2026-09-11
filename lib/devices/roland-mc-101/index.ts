@@ -852,7 +852,8 @@ const TONE_RECIPES: Recipe[] = [
     sourceAudio: {
       need:
         'A vocal one-shot per note — a word or a syllable, dry, so the bit crusher is the only ' +
-        'dirt on it',
+        'dirt on it. You can record them on a phone in a quiet room, one word per take: one ' +
+        'voice, close to the mic so it stays dry, nothing playing behind it',
       prep: {
         text: 'Load the chop from the SD card: Sound Browser, WAVE FILE.',
         verified: false,

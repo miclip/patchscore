@@ -796,7 +796,11 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Sixteen even slices of a vocal phrase',
     sourceAudio: {
-      need: 'One bar of a sung or spoken phrase, already in time with the project tempo',
+      need:
+        'One bar of a sung or spoken phrase, already in time with the project tempo. You can ' +
+        'record one on a phone: play the project through headphones and sing the bar against ' +
+        'it, so the phrase lands at tempo and the phone hears one voice with nothing playing ' +
+        'behind it, close to the mic in a quiet room so it stays dry',
       hint: 'slice-sample',
     },
     params: [
@@ -825,7 +829,10 @@ const RECIPES: Recipe[] = [
     voice: 'track',
     title: 'Transient-sliced phrase, crushed and driven',
     sourceAudio: {
-      need: 'A busy vocal or breakbeat phrase with clear transients to slice on',
+      need:
+        'A busy vocal or breakbeat phrase with clear transients to slice on. You can record the ' +
+        'vocal kind on a phone in a quiet room: one voice, close to the mic so it stays dry, ' +
+        'nothing playing behind it, hard consonants to slice on',
       hint: 'slice-sample',
     },
     params: [

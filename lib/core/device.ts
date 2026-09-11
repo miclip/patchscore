@@ -2018,6 +2018,31 @@ export type SourceAudio = {
    * What to load, in terms a reader can search their own library by. Never cited: no page
    * anywhere states which recording suits this part, which is the same reason no *point* value
    * on a sample recipe is ever cited.
+   *
+   * §3/#521. **Where the reader can make the file themselves, this is also where to say so.**
+   * Seventeen `vox-chop` recipes described a vocal to obtain and stopped there, and a reader
+   * with no sample library was left to go and find one when a phone in a quiet room records
+   * what every one of them asks for. The offer is direct help, *You can record one on a phone*,
+   * and states the three constraints a recording has to meet: one voice, close to the mic so it
+   * stays dry, nothing playing behind it. It is advice about what to obtain, no page states it,
+   * and it belongs beside those constraints, so it lives here and not in `prep`: `prep` is the
+   * box's own procedure with a citation on it, and a transfer step nobody read off a page would arrive there wearing the
+   * manual's badge. The four recipes that already said *record* in `need` or `prep` (the two
+   * Deluge ones, the two EPs) carry no phone sentence, since the reader is already told where
+   * the file comes from.
+   *
+   * The offer is authored in each `need`, with no shared constant behind it, because the
+   * seventeen split by what they ask for: an ordinary phrase to slice, several separate
+   * one-shots (*one word per take*, on the boxes that want one file per slot), transient-heavy
+   * material (*hard consonants to slice on*), and two phrases that have to be at the project
+   * tempo (`tr-vox-chop-bright`, `tm-vox-chop-dirty`). A phone recording is not at tempo on its
+   * own, so those two say what to do about it; both Trackers have a metronome, but it only runs
+   * while the sequencer is live-recording, so the instruction is to sing against the project
+   * playing in headphones, which puts the bar at tempo while the phone still hears one dry
+   * voice with nothing playing behind it. Unlike
+   * #496, one resolved guide carries one `vox-chop` part, so wording that recurs across recipes
+   * never recurs on a page. `test/vox-chop-record.test.ts` holds the set and the constraints
+   * every form states.
    */
   need: string
   /**

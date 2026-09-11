@@ -577,7 +577,10 @@ const recipes: Recipe[] = [
     title: 'One-shot sampler vocal, played across the keys',
     realisation: 'sampled-chord',
     sourceAudio: {
-      need: 'A single sustained vowel or a short vocal phrase, sampled or copied to the sample library',
+      need:
+        'A single sustained vowel or a short vocal phrase, sampled or copied to the sample ' +
+        'library. You can record one on a phone in a quiet room: one voice, close to the mic so ' +
+        'it stays dry, nothing playing behind it',
       prep: {
         text: 'Sample it with [sample] (p.75), or copy an aiff or wav to the sample library over usb-c. A pitch in the file name, e.g. "a3", sets its root.',
         verified: cite(85),

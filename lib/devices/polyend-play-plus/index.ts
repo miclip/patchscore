@@ -1023,7 +1023,10 @@ const SAMPLE_RECIPES: Recipe[] = [
      * sample duration" is the whole of their printed range.
      */
     sourceAudio: {
-      need: 'A vocal phrase two to four bars long with clear syllable edges — a held note has nothing to cut on',
+      need:
+        'A vocal phrase two to four bars long with clear syllable edges — a held note has nothing ' +
+        'to cut on. You can record one on a phone in a quiet room: one voice, close to the mic ' +
+        'so it stays dry, nothing playing behind it',
       prep: {
         text: 'Move Sample Start and Sample End per step to place a different slice on each pad of the row.',
         verified: cite(68),
