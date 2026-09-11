@@ -709,9 +709,15 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
 
   /** Nodes visited per seed, index 0..23, on the unchanged search. */
   const RECORDED: Record<string, readonly number[]> = {
+    // #538. The sub request moved `dark` -> `clean`. Twelve of the twenty-four seeds rose by
+    // about 128 nodes, 159 -> 287, and the other twelve — seeds 0 and 8 at 250 among them — did
+    // not move by one. Thirty-nine of the forty-six boxes author a sub, all thirty-nine author a
+    // dark one and eight of them a clean one as well. Three digits against a 2,000,000 cap
+    // either way. The legal-rig figure `measure:search` gates on did not move — 47,284 before
+    // and after — and neither did the catalogue benchmark, 586,551.
     'acid-lineage': [
-      250, 159, 160, 159, 160, 159, 160, 159, 250, 158, 159, 159, 159, 158, 160, 158, 159, 159,
-      158, 159, 159, 159, 159, 160
+      250, 287, 160, 287, 160, 287, 160, 287, 250, 285, 159, 287, 159, 285, 160, 285, 287, 159,
+      285, 159, 287, 159, 287, 160
     ],
     // #443. The only row the TR-1000's `ghost-perc clean` moved, and it moved **both ways** —
     // another instance of the point recorded on `industrial-techno` below. `ambient-dub` is the
