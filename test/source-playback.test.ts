@@ -673,18 +673,32 @@ describe('the TE and Polyend batch (#518)', () => {
   })
 
   /**
-   * The three EP legato parts. 8.2.1 describes `legato` as monophonic and as continuing *"from
-   * the same point as it was left off"* when the note changes, which is about a second note and
-   * not about the end of the file. So the boundary is unestablished and the axis is absent —
-   * `minimumSeconds` still applies, because a file that might stop needs to be long enough.
+   * The three EP legato parts, inferred from the play-mode enumeration in 8.2.1. They were left
+   * unclassified at first because the `legato` entry itself — continuing *"from the same point
+   * as it was left off"* when the note changes — is about a second note and not about the end
+   * of the file, and no sentence on the page is. The stop is an inference the enumeration
+   * licenses: *"oneshot, key and legato"* on the EP–133, every mode the knob selects and none
+   * that loops, and *"oneshot, key, legato and loop"* on the EP–40, where the looping mode is
+   * named and `legato` is not it. The library already treats a written closed list as evidence
+   * of what it omits — the Tracker's `io.usbAudio` is `cited-against` on p.187's numbered list
+   * of audio sources — so `legato` is recorded as stopping and `PLAY MODE` as the control.
+   *
+   * `minimumSeconds` still applies, and `stops-at-end` is what turns it from a statement into a
+   * requirement (`test/source-length.test.ts`). `timing` stays absent: neither recipe sets
+   * `TIME STRETCH MODE`, and an unset control's retained state is on no page these cite.
    */
-  it('leaves the EP legato parts unclassified while still stating their minimum', () => {
-    for (const [id, seconds] of [
-      ['ep133-sub-dark', 10],
-      ['ep40-sub-dark', 10],
-      ['ep133-acid-dirty', 3],
+  it('infers a stop for the EP legato parts from each guide’s own play-mode enumeration', () => {
+    for (const [id, seconds, section] of [
+      ['ep133-sub-dark', 10, '/ep-133/modes 8.2.1'],
+      ['ep40-sub-dark', 10, '/ep-40/modes 8.2.1'],
+      ['ep133-acid-dirty', 3, '/ep-133/modes 8.2.1'],
     ] as const) {
-      expect(audio(id).playback, id).toBeUndefined()
+      const playback = audio(id).playback
+      expect(playback?.boundary?.kind, id).toBe('stops-at-end')
+      expect(playback?.boundary?.control, id).toEqual({ kind: 'parameters', params: ['PLAY MODE'] })
+      expect(playback?.boundary?.evidence.source, id).toContain(section)
+      expect(playback?.timing, id).toBeUndefined()
+      expect(playback?.release, id).toBeUndefined()
       expect(audio(id).minimumSeconds, id).toBe(seconds)
     }
   })
@@ -732,18 +746,19 @@ describe('the TE and Polyend batch (#518)', () => {
         }
       }
     }
-    // Fifteen claims across fourteen recipes: `ep40-pad-clean` answers two axes, and it is the
-    // recipe that made a single `kind` impossible.
-    expect(claims).toBe(15)
+    // Eighteen claims across seventeen recipes: `ep40-pad-clean` answers two axes, and it is the
+    // recipe that made a single `kind` impossible. Fifteen in the batch, and three more when the
+    // EP legato parts were read off the play-mode list.
+    expect(claims).toBe(18)
   })
 
   /**
-   * §9. The fifteen claims are fifteen capability facts, and the audit's total moved by exactly
-   * that. `minimumSeconds` moved nothing, which is the other half of the split: it carries no
-   * citation because no page states it.
+   * §9. The fifteen claims were fifteen capability facts, and the audit's total moved by exactly
+   * that; the three legato boundaries moved it by three more. `minimumSeconds` moved nothing,
+   * which is the other half of the split: it carries no citation because no page states it.
    */
-  it('adds fifteen capability facts and six minima', () => {
-    expect(claimsOn(TE_AND_POLYEND)).toBe(15)
+  it('adds eighteen capability facts and six minima', () => {
+    expect(claimsOn(TE_AND_POLYEND)).toBe(18)
     // Six minima: the Play+ pair, the Tracker's acid, and the three EP legato parts, one of which
     // the EP–40 borrows.
     expect(minimaOn(TE_AND_POLYEND)).toBe(6)
@@ -890,9 +905,10 @@ describe('the Elektron batch (#518)', () => {
    * §9. The two batches together, as the audit's own arithmetic: `caps` was 1210 before either
    * and is 1244 after both. Taken as the difference from the manifests' own facts rather than
    * against the day's figure, so the next commit that cites a jack moves neither side of this.
+   * The `+ 3` is the EP legato boundaries, read off the play-mode lists after the batches landed.
    */
   it('accounts for both batches in the library total', () => {
-    expect(claimsInLibrary()).toBe(15 + 19 + 16)
+    expect(claimsInLibrary()).toBe(15 + 3 + 19 + 16)
   })
 })
 
@@ -1105,9 +1121,8 @@ describe('the Roland and MPC batch (#518)', () => {
         if (!answered) silent.push(`${d.id} ${r.id}`)
       }
     }
-    // The three EP legato parts are answered by their minimum alone: the mirrored guide does not
-    // establish what happens at the end of the file, and a boundary invented to fill the hole is
-    // the thing #518 exists to stop.
+    // The three EP legato parts are answered twice over: a `stops-at-end` inferred from 8.2.1's
+    // play-mode enumeration, and the minimum that boundary makes required.
     expect(silent).toEqual([])
   })
 })
