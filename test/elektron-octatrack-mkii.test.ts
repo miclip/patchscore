@@ -884,12 +884,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * re-read the head note rather than a failure. What must not move is the relationship — no part
    * ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 222 grid parts blank, and pins how many there are', () => {
+  it('leaves 264 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    // 186 until #345 authored the six roles the pool declared and no recipe served.
-    expect(grid.length).toBe(246)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(222)
+    // 186 until #345 authored the six roles the pool declared and no recipe served; 222 until Hard
+    // Techno, which this box carries nine parts of — its only lead is `clean`, the opposite of
+    // the `dirty` one asked for, so that part is an honest gap rather than a grid.
+    expect(grid.length).toBe(294)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(264)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -897,9 +899,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   })
 
   it('prints a note only where the direction asked for a pitch of its own', () => {
-    // §4.1's precedence with one arm missing. The 24 are `sub` parts.
+    // §4.1's precedence with one arm missing. The 30 are `sub` parts.
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
   })
 
@@ -915,18 +917,18 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 48],
-      ['closed-hat', 42],
+      ['kick', 54],
+      ['closed-hat', 48],
       ['ghost-perc', 24],
+      ['snare', 24],
       ['clap', 18],
       ['rim', 18],
-      ['snare', 18],
+      ['tom', 18],
+      ['impact', 12],
       ['metallic', 12],
-      ['tom', 12],
+      ['open-hat', 12],
+      ['ride', 12],
       ['arp', 6],
-      ['impact', 6],
-      ['open-hat', 6],
-      ['ride', 6],
       ['vox-chop', 6],
     ])
   })
@@ -937,16 +939,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
     expect(hooked.length).toBe(132)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(24)
+    expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
+      'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 186 above an undercount rather than a measurement.
+    // classify — which is what would make the 264 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {

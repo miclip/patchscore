@@ -540,16 +540,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 240 is #334's figure for this device and it is expected to stay put, because nothing here is
-   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
-   * prompt to re-read the head note rather than a failure. What must not move is the relationship
+   * 288 is the figure for this device and none of it is a gap to close. #334 measured 240; Hard
+   * Techno took it to 288, ten parts this four-track box carries whole. The number moves when a
+   * direction gains or loses a part, and a diff is a prompt to re-read the head note rather than
+   * a failure. What must not move is the relationship
    * — no part ever gets a `trigger`, because neither pool has a note to give one.
    */
-  it('leaves 240 grid parts blank, and pins how many there are', () => {
+  it('leaves 288 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(270)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
+    expect(grid.length).toBe(318)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(288)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -559,8 +560,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   /**
    * **The split, which a total would hide.** The kit is blank end to end, because p.23 writes a
    * step by selecting an instrument pad. The tone tracks are where every note on this box's pages
-   * comes from and they are mostly filled — by the direction rather than by the device: 24 of
-   * their 30 carry a pitch and the six that do not are `arp` parts the direction left open.
+   * comes from and they are mostly filled — by the direction rather than by the device: 30 of
+   * their 36 carry a pitch and the six that do not are `arp` parts the direction left open.
    */
   it('splits the blanks the way the two pools differ', () => {
     const byPool = new Map<string, { grid: number; blank: number }>()
@@ -571,17 +572,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 240, blank: 240 }],
-      ['tone-track', { grid: 30, blank: 6 }],
+      ['drum-pad', { grid: 282, blank: 282 }],
+      ['tone-track', { grid: 36, blank: 6 }],
     ])
   })
 
   it('prints a note only where the direction asked for a pitch of its own', () => {
-    // §4.1's precedence with one arm missing. The 24 that carry a note are `sub` parts on the
+    // §4.1's precedence with one arm missing. The 30 that carry a note are `sub` parts on the
     // tone tracks, where the pitch is the direction's musical decision (#340) and owes this box
     // nothing — and none of them is on the kit.
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
     expect([...new Set(pitched.map((g) => g.poolId))]).toEqual(['tone-track'])
   })
@@ -597,18 +598,18 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 48],
-      ['closed-hat', 42],
+      ['kick', 54],
+      ['closed-hat', 48],
       ['ghost-perc', 42],
+      ['open-hat', 24],
+      ['snare', 24],
       ['clap', 18],
       ['metallic', 18],
-      ['open-hat', 18],
       ['rim', 18],
-      ['snare', 18],
+      ['impact', 12],
+      ['ride', 12],
+      ['tom', 12],
       ['arp', 6],
-      ['impact', 6],
-      ['ride', 6],
-      ['tom', 6],
     ])
   })
 
@@ -617,16 +618,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    *
    * Four tracks against eight means the MC-101 simply cannot take some parts. Those are §7.3
    * shortfalls — reported honestly as gaps (invariant 5) — and they never reach phase 5, so they
-   * are not among the 240. The sibling, with seven tone tracks, takes 18 more parts across the
+   * are not among the 288. The sibling, with seven tone tracks, takes 48 more parts across the
    * same sweep and leaves six of them with no variant to program.
    *
    * Asserted because it is the thing a reader would most easily mistake for a blank grid.
    */
   it('accounts for every part that draws no grid, by which reason', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(120)
+    expect(hooked.length).toBe(126)
     expect(sustained).toEqual([])
-    expect(noPattern).toEqual(Array(6).fill('hip-hop/texture'))
+    expect(noPattern).toEqual([
+      ...Array(6).fill('hard-techno/riser'),
+      ...Array(6).fill('hip-hop/texture'),
+    ])
 
     let assignments = 0
     let shortfalls = 0
@@ -638,13 +642,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       }
     }
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 240 above an undercount rather than a measurement.
+    // classify — which is what would make the 288 above an undercount rather than a measurement.
     expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
-    expect(assignments).toBe(396)
+    expect(assignments).toBe(456)
 
     // The parts this four-track box cannot take are §7.3 gaps, not blank grids: they never reach
-    // phase 5, so none of them is among the 240. The MC-707 takes 18 more parts over this sweep.
-    // 96 until #345 closed both pools' four unserved roles, which turned 18 shortfalls into parts.
+    // phase 5, so none of them is among the 288. The MC-707 takes 48 more parts over this sweep.
+    // 96 until #345 closed both pools' four unserved roles, which turned 18 shortfalls into parts;
+    // Hard Techno added none, because this box carries all ten of its parts.
     expect(shortfalls).toBe(78)
   })
 

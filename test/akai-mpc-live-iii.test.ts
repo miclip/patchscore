@@ -330,18 +330,20 @@ describe('MPC Live III manifest', () => {
     expect(device.recipes).toHaveLength(24)
   })
 
-  it('authors no recipe in a character no direction asks that role for, bar two named ones', () => {
+  it('authors no recipe in a character no direction asks that role for, bar one named one', () => {
     /**
      * §3 sets the target at roughly fifteen to twenty recipes and says outright there is no
      * expectation of filling the grid, so the four that were cut were chosen by a rule that can
      * be re-run rather than by taste: a recipe whose `(role, character)` no shipped direction
      * requests cannot be selected as authored.
      *
-     * Two survive it deliberately, and naming them here is what stops the rule from being
+     * Two survived it deliberately, and naming them here is what stops the rule from being
      * quietly relaxed later. §3.5's fallback means an approximate character is still a usable
-     * answer — a role nothing asks for is not, which is the asymmetry the cut turned on.
+     * answer — a role nothing asks for is not, which is the asymmetry the cut turned on. One of
+     * the two has since been asked for by name: Hard Techno requests `snare` at `hard`, so
+     * `mpc-snare-hard` is now selected as authored and the list is down to the vox-chop.
      */
-    const KEPT_APPROXIMATIONS = ['mpc-snare-hard', 'mpc-vox-chop-bright']
+    const KEPT_APPROXIMATIONS = ['mpc-vox-chop-bright']
 
     const asked = new Set<string>()
     for (const template of TEMPLATES) {
@@ -364,6 +366,7 @@ describe('MPC Live III manifest', () => {
     expect(asks('sweep', 'soft')).toBe(true)
     expect(asks('tom', 'bright')).toBe(true)
     expect(asks('tom', 'dark')).toBe(true)
+    expect(asks('snare', 'hard')).toBe(true)
   })
 
   /**
@@ -529,19 +532,20 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 258 is #334's figure for this device and none of it is a gap to close: a pad part is
-   * addressed by pad, and a plugin part has no note this manual states. The number moves when a
-   * direction gains or loses a part **or when this box gains a recipe** — it was 246 until #345
-   * authored `tom`, whose twelve parts had been going nowhere. A diff is a prompt to re-read the
-   * head note rather than a failure. What must not move is the relationship: no part ever gets a
-   * `trigger`, because no pool has a note to give one.
+   * 300 is the figure for this device and none of it is a gap to close: a pad part is addressed
+   * by pad, and a plugin part has no note this manual states. The number moves when a direction
+   * gains or loses a part **or when this box gains a recipe** — #334 measured 246, #345 took it
+   * to 258 by authoring `tom`, whose twelve parts had been going nowhere, and Hard Techno took it
+   * to 300 by asking for ten parts this box carries. A diff is a prompt to re-read the head note
+   * rather than a failure. What must not move is the relationship: no part ever gets a `trigger`,
+   * because no pool has a note to give one.
    */
-  it('leaves 258 grid parts blank, and pins where they are', () => {
+  it('leaves 300 grid parts blank, and pins where they are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(282)
+    expect(grid.length).toBe(330)
     const blank = grid.filter((g) => g.kind === 'none')
-    expect(blank.length).toBe(258)
+    expect(blank.length).toBe(300)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -552,17 +556,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const byPool = new Map<string, number>()
     for (const g of blank) byPool.set(g.pool, (byPool.get(g.pool) ?? 0) + 1)
     expect([...byPool].sort()).toEqual([
-      ['mono-track', 156],
-      ['pad', 96],
+      ['mono-track', 192],
+      ['pad', 102],
       ['poly-track', 6],
     ])
   })
 
   it('prints a note only where the direction asked for a pitch of its own', () => {
-    // §4.1's precedence with one arm missing. The 24 that carry a note are `sub` parts on a plugin
+    // §4.1's precedence with one arm missing. The 30 that carry a note are `sub` parts on a plugin
     // track — p.197's played note, decided by the direction (#340) and owing this box nothing.
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
     expect([...new Set(pitched.map((g) => g.pool))]).toEqual(['mono-track'])
   })
@@ -578,19 +582,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 42],
+      ['closed-hat', 48],
+      ['kick', 48],
       ['ghost-perc', 42],
-      ['kick', 42],
+      ['open-hat', 24],
+      ['snare', 24],
       ['clap', 18],
       ['metallic', 18],
-      ['open-hat', 18],
       ['rim', 18],
-      ['snare', 18],
-      ['tom', 12],
+      ['tom', 18],
+      ['impact', 12],
+      ['ride', 12],
       ['arp', 6],
-      ['impact', 6],
       ['noise', 6],
-      ['ride', 6],
       ['vox-chop', 6],
     ])
   })
@@ -600,13 +604,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(138)
+    expect(hooked.length).toBe(144)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'generative-drift/sweep',
+      'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

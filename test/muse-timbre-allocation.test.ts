@@ -344,7 +344,7 @@ describe('a Muse carrying two parts still splits four and four (#424)', () => {
         ).toBe('4')
       }
     }
-    expect(seen).toBe(64)
+    expect(seen).toBe(72)
   })
 
   /**

@@ -115,8 +115,8 @@ export type RoleRequest = {
    *  - **`kick` — the direction decides.** House, hip-hop and pop generally tune the kick to the
    *    root; techno deliberately does not, because a kick that stays put across a key change is
    *    the anchor the track turns on. Lydian House, Hip-Hop and Major-Key Electro follow;
-   *    Industrial Techno, Acid Lineage, Breakbeat, Ambient Dub and Weave do not, and each of
-   *    those is a position rather than an omission.
+   *    Industrial Techno, Hard Techno, Acid Lineage, Breakbeat, Ambient Dub and Weave do not,
+   *    and each of those is a position rather than an omission.
    *  - **Every other drum — never**, and `RoleRequestSchema` refuses the flag on them rather
    *    than trusting review. `snare` and `clap` are broadband; `closed-hat`, `open-hat` and
    *    `ride` are metal and inharmonic; `rim` is a click whose pitch is body resonance under a

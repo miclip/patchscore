@@ -1005,15 +1005,16 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
 
     // The population, as measured on this library. 258 until #345 authored the five roles the
     // pool declared and no recipe served — the count *fell*, because four of the five are pitched
-    // and a pitched part is hooked (#100) rather than drawn as a grid. The decline does not move
-    // it: what changes is which arm a part lands in, not whether it is counted.
-    expect(grid.length).toBe(246)
+    // and a pitched part is hooked (#100) rather than drawn as a grid — and 246 until Hard Techno,
+    // of which this box carries eight parts. The decline does not move it: what changes is which
+    // arm a part lands in, not whether it is counted.
+    expect(grid.length).toBe(288)
 
     // **Two arms, and `trigger` is not one of them.**
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
 
     // The blank arm, counted rather than glossed: every one of these printed `C5` before.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(222)
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(258)
   })
 
   it('leaves the direction’s own pitch untouched where there is one', () => {
@@ -1024,7 +1025,7 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     const grid = sweep().grid
     const pitched = grid.filter((g) => g.kind === 'pitch')
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect(grid.filter((g) => g.kind === 'trigger')).toEqual([])
   })
 
@@ -1071,18 +1072,18 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 42],
-      ['kick', 42],
+      ['closed-hat', 48],
+      ['kick', 48],
       ['ghost-perc', 30],
+      ['snare', 24],
       ['clap', 18],
+      ['open-hat', 18],
       ['rim', 18],
-      ['snare', 18],
       ['metallic', 12],
-      ['open-hat', 12],
+      ['ride', 12],
+      ['tom', 12],
       ['arp', 6],
       ['impact', 6],
-      ['ride', 6],
-      ['tom', 6],
       ['vox-chop', 6],
     ])
   })
@@ -1093,7 +1094,7 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     // program. Asserted rather than assumed — this box produces no sustained part at all here.
     const { hooked, sustained, noPattern } = sweep()
     // 78 until #345: four of its five roles are pitched, so they hook rather than draw a grid.
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
     expect(noPattern.length).toBe(30)
     expect([...new Set(noPattern)].sort()).toEqual([

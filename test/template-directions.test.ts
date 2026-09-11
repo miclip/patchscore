@@ -48,9 +48,9 @@ function patternedRoles(template: Template): Set<Role> {
 // The registry entries themselves
 // ---------------------------------------------------------------------------
 
-describe('the registry carries eleven directions (§4)', () => {
+describe('the registry carries twelve directions (§4)', () => {
   it('holds both new templates, in id order, reachable by id', () => {
-    // Eleven now, and every arrival has slotted in by id rather than at the end, which is what
+    // Twelve now, and every arrival has slotted in by id rather than at the end, which is what
     // the registry's UTF-16 ordering is for (§7.2) — `acid-lineage` sorting to the front of the
     // list rather than to the end of it is that rule doing its job. The other files own the other
     // arrivals: `small-rig-directions.test.ts` the two a one-voice box can finish, and
@@ -58,14 +58,16 @@ describe('the registry carries eleven directions (§4)', () => {
     // and `acid-lineage` have no such file — the first is a full-rig direction with nothing to
     // prove about a small one, and the second finishes whole on every groovebox that authors the
     // role, which `search-bound.test.ts` and the fit numbers in #283 record — so this list is the
-    // whole of what pins their registration. This file stays the record of the pair that came in
-    // with #6.
+    // whole of what pins their registration, and `hard-techno` is pinned the same way, with its
+    // own file (`hard-techno.test.ts`) carrying the musical claims. This file stays the record of
+    // the pair that came in with #6.
     expect(TEMPLATES.map((t) => t.id)).toEqual([
       'acid-lineage',
       'ambient-dub',
       'breakbeat',
       'drone-study',
       'generative-drift',
+      'hard-techno',
       'hip-hop',
       'industrial-techno',
       'lydian-house',

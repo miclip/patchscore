@@ -866,16 +866,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 240 is #334's figure for this device and it is expected to stay put, because nothing here is
-   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
-   * prompt to re-read the head note rather than a failure. What must not move is the relationship
+   * 282 is the figure for this device and none of it is a gap to close. #334 measured 240; Hard
+   * Techno took it to 282, ten parts this box carries whole. The number moves when a direction
+   * gains or loses a part, and a diff is a prompt to re-read the head note rather than a
+   * failure. What must not move is the relationship
    * — no part ever gets a `trigger`, because neither pool has a note to give one.
    */
-  it('leaves 240 grid parts blank, and pins how many there are', () => {
+  it('leaves 282 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(264)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(240)
+    expect(grid.length).toBe(312)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(282)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -886,7 +887,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The split, which a total would hide, and it runs the opposite way to the Roland pair's.**
    *
    * The synth pool is blank end to end — every part on it is PERC or an ordinary patch, and
-   * neither has a pool-wide note. The sample pool is where all 24 of this box's printed notes
+   * neither has a pool-wide note. The sample pool is where all 30 of this box's printed notes
    * land, and they come from the direction rather than from the device.
    */
   it('splits the blanks the way the two pools differ', () => {
@@ -898,17 +899,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['track-sample', { grid: 96, blank: 72 }],
-      ['track-synth', { grid: 168, blank: 168 }],
+      ['track-sample', { grid: 114, blank: 84 }],
+      ['track-synth', { grid: 198, blank: 198 }],
     ])
   })
 
   it('prints a note only where the direction asked for a pitch of its own', () => {
-    // §4.1's precedence with one arm missing. The 24 that carry a note are `sub` parts on the
+    // §4.1's precedence with one arm missing. The 30 that carry a note are `sub` parts on the
     // sample pool, where the pitch is the direction's musical decision (#340) and owes this box
     // nothing — and none of them is on a synth track.
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
     expect([...new Set(pitched.map((g) => g.poolId))]).toEqual(['track-sample'])
   })
@@ -924,19 +925,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 42],
+      ['closed-hat', 48],
+      ['kick', 48],
       ['ghost-perc', 42],
-      ['kick', 42],
+      ['open-hat', 24],
+      ['snare', 24],
       ['clap', 18],
-      ['open-hat', 18],
       ['rim', 18],
-      ['snare', 18],
+      ['impact', 12],
       ['metallic', 12],
+      ['ride', 12],
+      ['tom', 12],
       ['arp', 6],
-      ['impact', 6],
       ['noise', 6],
-      ['ride', 6],
-      ['tom', 6],
     ])
   })
 
@@ -945,23 +946,26 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program.
     //
     // 78 until #345 authored `pp-lead-bright`, and the twelve it added all land here rather than
-    // in the grid: `major-key-electro` and `relay` are the two directions that ask for a lead and
-    // both carry a hook for it, so the line is written in the hook and the part draws no steps of
-    // its own. Nothing else in this sweep moved, which is the shape of a hooked role arriving.
+    // in the grid: `major-key-electro` and `relay` were the two directions that asked for a lead
+    // and both carry a hook for it, so the line is written in the hook and the part draws no steps
+    // of its own. Nothing else in this sweep moved, which is the shape of a hooked role arriving.
+    // 90 until Hard Techno, the third direction to ask for one, whose six lead parts land on the
+    // same recipe by substitution and hook the same way.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(90)
+    expect(hooked.length).toBe(96)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'generative-drift/sweep',
+      'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 240 above an undercount rather than a measurement.
+    // classify — which is what would make the 282 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {

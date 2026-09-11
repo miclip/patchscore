@@ -554,17 +554,18 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 216 is #334's figure for this device and it is expected to stay put, because nothing here is
-   * a gap to close. The number moves when a direction gains or loses a part, and a diff is a
-   * prompt to re-read the head note rather than a failure. What must not move is the relationship
+   * 288 is the figure for this device and none of it is a gap to close. The number moves when a
+   * direction gains or loses a part or this box gains a recipe — #334 measured 216, #345 made it
+   * 246, Hard Techno 288 — and a diff is a prompt to re-read the head note rather than a
+   * failure. What must not move is the relationship
    * — no part ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 216 grid parts blank, and pins how many there are', () => {
+  it('leaves 288 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    // 240 until #345 authored `rim`, `ride` and `noise`.
-    expect(grid.length).toBe(270)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
+    // 240 until #345 authored `rim`, `ride` and `noise`; 270 until Hard Techno.
+    expect(grid.length).toBe(318)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(288)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -573,9 +574,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
 
   it('prints a note only where the direction asked for a pitch of its own', () => {
     // §4.1's precedence with one arm missing — and on this box that is the whole story rather
-    // than half of it, because a pitch is the only kind of note it has. The 24 are `sub` parts.
+    // than half of it, because a pitch is the only kind of note it has. The 30 are `sub` parts.
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
   })
 
@@ -590,19 +591,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 48],
+      ['closed-hat', 54],
+      ['kick', 48],
       ['ghost-perc', 42],
-      ['kick', 42],
+      ['open-hat', 24],
+      ['snare', 24],
       ['clap', 18],
-      ['open-hat', 18],
       ['rim', 18],
-      ['snare', 18],
+      ['impact', 12],
       ['metallic', 12],
+      ['ride', 12],
+      ['tom', 12],
       ['arp', 6],
-      ['impact', 6],
       ['noise', 6],
-      ['ride', 6],
-      ['tom', 6],
     ])
   })
 
@@ -610,19 +611,20 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'generative-drift/sweep',
+      'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 216 above an undercount rather than a measurement.
+    // classify — which is what would make the 288 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {

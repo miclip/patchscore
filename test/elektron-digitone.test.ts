@@ -912,14 +912,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * and a diff is a prompt to re-read the head note rather than a failure. It was 126 until #345
    * authored the clap, and on a four-track box that did not simply add eighteen parts — see
    * `prints a note only where the direction asked for a pitch of its own` below, where six went
-   * the other way. What must not move is the relationship: no part ever gets a `trigger`, because
-   * the pool has no note to give one.
+   * the other way. 132 until Hard Techno, which this box carries four parts of: the kick, the sub,
+   * the hat and the lead, by the direction's own priorities. What must not move is the
+   * relationship: no part ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 132 grid parts blank, and pins how many there are', () => {
+  it('leaves 144 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(150)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(132)
+    expect(grid.length).toBe(168)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(144)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -931,7 +932,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
      * §4.1's precedence with one arm missing — and on this box that is the whole story rather
      * than half of it, because a pitch is the only kind of note it has. All of them are `sub`.
      *
-     * **Eighteen rather than twenty-four, and the six that went are what a four-track box costs.**
+     * **Twenty-four rather than thirty, and the six that went are what a four-track box costs.**
+     * (Eighteen rather than twenty-four before Hard Techno, whose sub this box does take: the
+     * direction puts the sub at priority 1, so on four tracks it is never the part that goes.)
      * `acid-lineage` asks this box for acid, clap, closed-hat, kick and sub, which is five parts
      * for four tracks. Before #345 the clap had no recipe and could not compete, so `sub` took a
      * track; now it can, and the objective placed it. Neither outcome serves all five — what
@@ -940,7 +943,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
      * `answers the whole of that direction as soon as a second box is present` below pins that.
      */
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(18)
+    expect(pitched.length).toBe(24)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
   })
 
@@ -955,8 +958,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 42],
-      ['closed-hat', 24],
+      ['kick', 48],
+      ['closed-hat', 30],
       ['clap', 18],
       ['snare', 18],
       ['rim', 12],
@@ -971,12 +974,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // two arms are empty here, which is itself the successor's shape and not this box's — four
     // tracks take fewer parts, and every one they take resolves a variant somewhere.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(72)
+    expect(hooked.length).toBe(78)
     expect(sustained).toEqual([])
     expect(noPattern).toEqual([])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 126 above an undercount rather than a measurement.
+    // classify — which is what would make the 144 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {
