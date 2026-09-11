@@ -185,7 +185,12 @@ describe('asks for `hard` only where the library answers it (#538)', () => {
     expect(boxesWith('kick', 'hard')).toBeGreaterThanOrEqual(30)
     expect(boxesWith('snare', 'hard')).toBeGreaterThanOrEqual(20)
     expect(boxesWith('impact', 'hard')).toBeGreaterThanOrEqual(30)
-    expect(boxesWith('tom', 'hard')).toBe(8)
+    // Nine since `ct-tom-hard`. It was eight when this direction shipped, and the ninth exists
+    // *because* it shipped: the Circuit Tracks' only tom was `soft`, §3.5's refused opposite, so
+    // this direction resolved `no-recipe` there and the gap was ours to author. Kept exact rather
+    // than a bound, unlike the three above, because the tom is the thin one and a drift in it is
+    // the thing worth noticing.
+    expect(boxesWith('tom', 'hard')).toBe(9)
   })
 
   it('is the only direction asking for a hard tom or a dirty lead', () => {
@@ -283,26 +288,19 @@ describe('one box alone (§4.4/#81, #539)', () => {
     }
   })
 
-  it('refuses the Circuit Tracks a tom and the Octatrack a lead, because each authors only the opposite', () => {
-    // §3.5 excludes the opposite character outright. The Circuit Tracks' only tom is `soft` and
-    // the Octatrack's only lead is `clean`; both are `no-recipe`, which the guide files under
-    // `Waiting on us` — a hard tom on that box is ours to author, not the reader's to buy.
-    const tracks = solo('novation-circuit-tracks')
-    expect(tracks.missing.get('r-tom')?.reason).toBe('no-recipe')
-    expect(tracks.missing.get('r-tom')?.kind).toBe('unauthored')
+  it('refuses the Octatrack a lead, because it authors only the opposite', () => {
+    // §3.5 excludes the opposite character outright. The Octatrack's only lead is `clean`, so
+    // `r-lead` is `no-recipe` — which the guide files under `Waiting on us`, because a dirty lead
+    // on that box is ours to author rather than the reader's to buy.
+    //
+    // **The Circuit Tracks used to be the other half of this test and is not any more.** Its only
+    // tom was `soft`, the refused opposite, and `ct-tom-hard` was authored to answer exactly the
+    // gap this direction opened. That is the loop closing rather than a pin being loosened: the
+    // sweep below still asserts the total, so a second unauthored gap appearing would fail here.
     const characters = (deviceId: string, role: string) =>
       deviceById(deviceId)
         .recipes.filter((r) => r.role === role)
         .map((r) => r.character)
-    expect(characters('novation-circuit-tracks', 'tom')).toEqual(['soft'])
-    expect([...tracks.got.keys()].sort()).toEqual([
-      'r-closed-hat',
-      'r-kick',
-      'r-lead',
-      'r-open-hat',
-      'r-snare',
-      'r-sub',
-    ])
 
     const octatrack = solo('elektron-octatrack-mkii')
     expect(octatrack.missing.get('r-lead')?.reason).toBe('no-recipe')
@@ -310,7 +308,25 @@ describe('one box alone (§4.4/#81, #539)', () => {
     expect(octatrack.result.assignments).toHaveLength(9)
   })
 
-  it('has exactly those two unauthored gaps across every box in the library, at four seeds', () => {
+  it('gives the Circuit Tracks its tom, at the cost of the open hat below it', () => {
+    // `ct-tom-hard` closed the `no-recipe`. The box does not gain a part — it has four drum
+    // tracks — so the tom takes the slot the open hat held while the tom could not resolve.
+    // That is the ladder working: `tom` is priority 3 and `open-hat` is 4.
+    const tracks = solo('novation-circuit-tracks')
+    expect(tracks.got.get('r-tom')).toBeDefined()
+    expect(tracks.missing.get('r-tom')).toBeUndefined()
+    expect([...tracks.got.keys()].sort()).toEqual([
+      'r-closed-hat',
+      'r-kick',
+      'r-lead',
+      'r-snare',
+      'r-sub',
+      'r-tom',
+    ])
+    expect(tracks.missing.get('r-open-hat')?.reason).toBe('no-room')
+  })
+
+  it('has exactly one unauthored gap across every box in the library, at four seeds', () => {
     const unauthored = new Set<string>()
     for (const device of DEVICES) {
       for (const seed of [1, 2, 3, 4]) {
@@ -320,10 +336,10 @@ describe('one box alone (§4.4/#81, #539)', () => {
         }
       }
     }
-    expect([...unauthored].sort()).toEqual([
-      'elektron-octatrack-mkii/r-lead',
-      'novation-circuit-tracks/r-tom',
-    ])
+    // One, since `ct-tom-hard`. This asserted two when the direction shipped; the Circuit Tracks'
+    // tom was the other, and authoring it is what closed that half. The sweep stays exact so a
+    // third box falling into `no-recipe` names itself here rather than passing as a count.
+    expect([...unauthored].sort()).toEqual(['elektron-octatrack-mkii/r-lead'])
   })
 
   it('leaves the drum machines without a lead, and says so as a limit rather than a backlog', () => {

@@ -706,7 +706,7 @@ import { TEMPLATES } from '../lib/templates/index'
  * ## Hard Techno, the fifth row added rather than moved
  *
  * The twelfth direction, and like the four before it it moves nothing above it — the other
- * eleven rows reproduce to the node. Its own row runs 312-10,241 over the twenty-four seeds:
+ * eleven rows reproduce to the node. Its own row runs 313-10,316 over the twenty-four seeds:
  * two orders below `weave`'s 15,726 peak and three below `industrial-techno`, though it asks for
  * ten parts and seven of them are drums.
  *
@@ -715,7 +715,14 @@ import { TEMPLATES } from '../lib/templates/index'
  * at `dark`, `ride` and `riser` at `bright` — so `liveFloor` is tight from the first branch. The
  * three the seed permutes among are the substitutions: `tom` at `hard` lands on a `bright` or a
  * `dark` tom at equal distance on most boxes, `open-hat` at `dirty` the same, and `lead` at
- * `dirty` on a `bright` lead. Seed 3's 10,241 is the one where their tie-break order settles last.
+ * `dirty` on a `bright` lead. Seed 3's 10,316 is the one where their tie-break order settles last.
+ *
+ * **#541 wrote the first exact answer to `tom` at `hard`** — `ct-tom-hard`, authored because this
+ * direction resolved `no-recipe` on a Circuit Tracks rather than substituting, `soft` being the
+ * pole §3.5 refuses. It lifted every one of the twenty-four seeds, by one node at the smallest
+ * and by 75 at seed 3, and no other row by anything. A candidate that answers a request exactly
+ * still has to be priced at every tie its box is in, and a direction that asks for the role has
+ * no seed that can miss it.
  *
  * **This is the direction that moved the legal-rig figure**, the first to do so since #25: `npm
  * run measure:search` went from 47,284 on `weave` seed 15 to 68,253 on `hard-techno` seed 15,
@@ -766,7 +773,7 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       411, 668, 247, 668, 411, 675
     ],
     // The twelfth direction, added rather than moved: the other eleven rows reproduce to the
-    // node. Ten requests, seven of them drums, and it runs 312-10,241 over the twenty-four
+    // node. Ten requests, seven of them drums, and it runs 313-10,316 over the twenty-four
     // seeds — two orders below `weave` at its peak and three below `industrial-techno`, though it
     // asks for more percussion than either. Six of its ten requests are answered *exactly* on
     // most boxes that answer them at all (`kick`, `snare` and `impact` at `hard`, `sub` at
@@ -774,9 +781,15 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     // seed permutes among are `tom` at `hard`, `open-hat` at `dirty` and `lead` at `dirty`, each
     // a substitution on most boxes, and seed 3's 10,241 is the one where their tie-break order
     // settles last. See the note above the describe for why part count is not the unit.
+    // #541. `ct-tom-hard` moved this row and only this row, and it moved every seed of it — the
+    // smallest by one node, seed 3 by 75. A new exact answer to `tom / hard` is one more candidate
+    // the search has to price at every tie the Circuit Tracks is in, and this direction asks for
+    // that role, so there is no seed it can miss. Three digits against a 2,000,000 cap. The
+    // legal-rig figure `measure:search` gates on did not move — 68,253 before and after — and
+    // neither did the catalogue benchmark, 586,551.
     'hard-techno': [
-      655, 318, 347, 10241, 347, 2441, 912, 3453, 1413, 313, 2144, 318, 340, 312, 347, 313, 318,
-      612, 317, 713, 318, 342, 318, 1105
+      657, 319, 348, 10316, 348, 2460, 914, 3473, 1417, 314, 2160, 319, 341, 313, 348, 314, 319,
+      614, 318, 715, 319, 343, 319, 1108
     ],
     // #383. Both rows fell: `muse-stab-hard` and `muse-stab-dirty` are capped at one note and
     // every `stab` request asks for a chord, so two recipes stopped being candidates for three

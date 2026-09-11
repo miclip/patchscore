@@ -894,10 +894,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['ghost-perc', 24],
       ['snare', 24],
       ['clap', 18],
+      // #541: `tom` and `open-hat` traded places rather than one of them growing. Hard Techno
+      // ranks `tom / hard` above `open-hat / dirty`, so `ct-tom-hard` landing took the track the
+      // open hat had been getting on this box. The total is unchanged, which is the point of
+      // pinning by role: a count alone would have read this swap as no change at all.
+      ['tom', 18],
       ['metallic', 12],
-      ['open-hat', 12],
       ['rim', 12],
-      ['tom', 12],
+      ['open-hat', 6],
       ['ride', 6],
       ['vox-chop', 6],
     ])
