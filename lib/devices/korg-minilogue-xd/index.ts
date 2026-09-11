@@ -816,30 +816,6 @@ const recipes: Recipe[] = [
     ],
   },
   {
-    id: 'mxd-lead-dark',
-    // §12.4/#85. A non-zero VOICE MODE DEPTH under POLY is DUO — two voices stacked per key
-    // (p.17) — so four voices sound two notes.
-    patchPolyphony: 2,
-    role: 'lead',
-    character: 'dark',
-    voice: 'voice',
-    verified: false,
-    title: 'Muted lead an octave down, filter tracking the keys only halfway',
-    params: [
-      ...program(48, 0),
-      ...duo(620),
-      ...vco1('TRI', "8'", 0, 340),
-      ...vco2('SAW', "16'", -6, 300, 'OFF', 'OFF', 0),
-      ...noiseEngine('Low', 1200),
-      ...mix(720, 520, 60),
-      ...filt(400, 260, '50%', '50%'),
-      ...ampEg(120, 560, 720, 520),
-      ...eg(90, 500, -22, 'CUTOFF'),
-      ...lfo('TRI', 'NORMAL', 130, 80, 'PITCH'),
-      ...fx('REV', 'ON', 44),
-    ],
-  },
-  {
     id: 'mxd-lead-dirty',
     // §12.4/#85. A non-zero VOICE MODE DEPTH under POLY is DUO — two voices stacked per key
     // (p.17) — so four voices sound two notes.

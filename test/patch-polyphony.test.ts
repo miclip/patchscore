@@ -37,8 +37,12 @@ describe('a patch cannot be handed more notes than it sounds (#85)', () => {
 
   it('lets a DUO patch take two notes and refuses a third', () => {
     // A non-zero depth is two voices per key out of four, so the cap is 2 rather than 1 — the
-    // distinction a single "is it mono" flag could not have made.
-    expect(outcome('lead', 2).outcome).toBe('exact')
+    // distinction a single "is it mono" flag could not have made. Both leads this box authors
+    // are DUO, so what is asserted is the cap on whichever the character lands on: this asked
+    // for `dark` exactly until #538 removed the dark lead, and now substitutes to a neighbour.
+    const two = outcome('lead', 2)
+    expect(two.outcome).not.toBe('unvoiced')
+    expect(two.outcome !== 'unvoiced' && two.recipe.patchPolyphony).toBe(2)
     expect(outcome('lead', 3).outcome).toBe('unvoiced')
   })
 

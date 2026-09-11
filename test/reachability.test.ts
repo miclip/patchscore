@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   deadArticulationSlots,
   reachableSlots,
+  resolve,
   unpatternedArticulation,
   unrequestedRecipes,
   type Device,
@@ -9,7 +10,7 @@ import {
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { auditDevice, formatAudit } from '../scripts/audit-verified'
-import { TEMPLATES, droneStudy } from '../lib/templates/index'
+import { TEMPLATES, droneStudy, templateById } from '../lib/templates/index'
 import { device as fixtureDevice, recipe as fixtureRecipe, template as fixtureTemplate } from './fixtures'
 
 /**
@@ -124,32 +125,54 @@ describe('#108 no device authors a slot no direction emits', () => {
 describe('#108 keeps the template-library gaps out of the findings', () => {
   it('says nothing about a recipe no direction can reach', () => {
     /**
-     * **This was `acid`, and the change is the point of keeping the history.** The example here
-     * used to be *"`acid` is legal on five boxes and requested by no direction"* — 28 recipes over
-     * 20 boxes, every slot on them unreachable, and none of it a device-folder bug. #283 closed
-     * that by authoring `acid-lineage`, so the whole set became reachable in one commit and the
-     * example had to move.
+     * **This was `acid`, then `crave-lead-dark`, and the changes are the point of keeping the
+     * history.** The example here used to be *"`acid` is legal on five boxes and requested by no
+     * direction"* — 28 recipes over 20 boxes, every slot on them unreachable, and none of it a
+     * device-folder bug. #283 closed that by authoring `acid-lineage`, and the example moved to
+     * `crave-lead-dark`: a `dark` lead where both directions requesting `lead` ask for `bright`,
+     * which §3.5 excludes outright rather than ranking last. #538 deleted that recipe and its
+     * twin on the minilogue xd as the two the library had no direction for and no case for
+     * writing one — so a live example would now be a catalogue with nothing on the list, which
+     * proves nothing about what the check does when something is.
      *
-     * What is left is the same finding arriving by the other route: a recipe whose *character* no
-     * direction asks for on that role. `crave-lead-dark` is a `dark` lead and both directions that
-     * request `lead` ask for `bright`, which §3.5 excludes outright rather than ranking last — so
-     * the recipe is legal, authored, and reached through nothing. The `clean` vox-chops and the
-     * `dirty` snares are the same shape.
-     *
-     * The claim being defended never depended on which example carried it: whatever
-     * `unrequestedRecipes` names is a template-library gap (#81), and it must never also appear as
-     * dead authoring in a device folder.
+     * So the claim is carried by a fixture that is certain to keep carrying it. Three kicks on
+     * one box, against a template asking for `hard`: the `hard` one articulates a slot the
+     * template emits; the `dark` one — inside the radius, a candidate — articulates a slot it
+     * never emits, which is the finding #108 exists to make; and the `soft` one is the refused
+     * opposite and carries the *same* dead slot. The check must name the second and never the
+     * third. Whatever `unrequestedRecipes` names is a template-library gap (#81), and it must not
+     * also appear as dead authoring in a device folder.
      */
-    const unrequested = DEVICES.flatMap((d) => unrequestedRecipes(d, TEMPLATES))
-    expect(unrequested.map((r) => r.recipeId)).toContain('crave-lead-dark')
-    // The role that used to be the example, asserted from the other side now: a direction asks
-    // for it, so nothing about it is unreachable any more.
-    expect(unrequested.map((r) => r.recipeId)).not.toContain('crave-acid-dirty')
-    const roles = new Set(unrequested.map((r) => r.role))
-    expect(roles.has('acid')).toBe(false)
+    const template = fixtureTemplate()
+    expect(template.roles.find((r) => r.role === 'kick')?.character).toBe('hard')
+    const kick = (id: string, character: 'hard' | 'dark' | 'soft', slot: 'downbeat' | 'fill') =>
+      fixtureRecipe({ id, character, articulation: [{ slot, set: { velocity: 100 } }] })
+    const device = fixtureDevice({
+      recipes: [
+        kick('fx-kick-hard', 'hard', 'downbeat'),
+        kick('fx-kick-dark', 'dark', 'fill'),
+        kick('fx-kick-soft', 'soft', 'fill'),
+      ],
+    })
+
+    const unrequested = unrequestedRecipes(device, [template]).map((r) => r.recipeId)
+    expect(unrequested).toEqual(['fx-kick-soft'])
+    const findings = deadArticulationSlots(device, [template])
+    expect(findings.map((f) => f.recipeId)).toEqual(['fx-kick-dark'])
+    for (const found of findings) expect(unrequested).not.toContain(found.recipeId)
+
+    // And the library, from the same side: nothing `unrequestedRecipes` names anywhere in it is
+    // also a dead-slot finding. Not pinned to a recipe, because the healthy state of this list
+    // is empty and #538 got it there.
+    const libraryUnrequested = DEVICES.flatMap((d) => unrequestedRecipes(d, TEMPLATES)).map(
+      (r) => r.recipeId,
+    )
     for (const found of DEVICES.flatMap((d) => deadArticulationSlots(d, TEMPLATES))) {
-      expect(unrequested.map((r) => r.recipeId)).not.toContain(found.recipeId)
+      expect(libraryUnrequested).not.toContain(found.recipeId)
     }
+    // The role that used to be the example, asserted from the other side: a direction asks for
+    // it, so nothing about it is unreachable any more.
+    expect(libraryUnrequested).not.toContain('crave-acid-dirty')
   })
 
   it('says nothing about a requested role no direction patterns, and names it separately', () => {
@@ -281,5 +304,142 @@ describe('the audit surfaces unreachable recipes (#314)', () => {
   it('does not make the audit fail', () => {
     expect(report).toContain('TOTAL')
     expect(report.trimEnd().endsWith('more') || report.includes('REACH')).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #538 — what a resolve ever selects, which is a different question from what a request names
+// ---------------------------------------------------------------------------
+
+/**
+ * #538's predicate, run as it was measured: every device solo, every shipped direction, seeds
+ * 1-4 — 2,024 resolves at forty-six boxes and eleven directions. A `(role, character)` pair is
+ * *selected* if any of those resolves assigns a recipe authored on it.
+ *
+ * Solo rigs are the generous case, and that is why they are the case: with one box the resolver
+ * has nothing carrying the requested character and §3.5 substitutes into the neighbours, where a
+ * large rig finds the exact one and substitutes less. It is the issue's measurement, not a proof
+ * about every rig somebody could build.
+ *
+ * **Selected is not requested.** `unrequestedRecipes` above asks which pairs no direction names,
+ * and the answer was 44; substitution reaches fifteen of those, so the first figure overstates
+ * the problem — `snare / hard` is named by nothing and reached by everything. The other way round
+ * is the one this block exists for: a pair a direction *could* reach and never does, because a
+ * closer one is always there. `tom / hard` sits at sqrt(2) from both toms the library asks for
+ * and lost every time, on eight boxes, until a request named it or did not.
+ */
+function selectedPairs(): { authored: Map<string, number>; selected: Set<string> } {
+  const authored = new Map<string, number>()
+  for (const device of DEVICES) {
+    for (const recipe of device.recipes) {
+      const pair = `${recipe.role} / ${recipe.character}`
+      authored.set(pair, (authored.get(pair) ?? 0) + 1)
+    }
+  }
+  const selected = new Set<string>()
+  for (const device of DEVICES) {
+    for (const template of TEMPLATES) {
+      for (const seed of [1, 2, 3, 4]) {
+        const { assignments } = resolve({ devices: [device], template, seed })
+        // `a.role` is the request's; `a.recipe.character` is the one authored, which for a
+        // substitution is not the one asked for — and the authored pair is the one in question.
+        for (const a of assignments) selected.add(`${a.role} / ${a.recipe.character}`)
+      }
+    }
+  }
+  return { authored, selected }
+}
+
+describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select one', () => {
+  const acid = templateById('acid-lineage')
+  if (acid === undefined) throw new Error('acid-lineage missing from the templates')
+  const request = acid.roles.find((r) => r.id === 'r-sub')
+  if (request === undefined) throw new Error('acid-lineage has no r-sub')
+
+  it('asks for `sub` as `clean`', () => {
+    // Every other direction with a sub asks for `dark`, and all thirty-nine boxes that author
+    // a sub author a dark one — so `clean` was authored on eight of them and selected on none.
+    // Pinned so that a second direction moving to `clean` shows up here as the count changing.
+    expect(request.character).toBe('clean')
+    const subs = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'sub').map((r) => `${t.id}:${r.character}`),
+    )
+    expect(subs.filter((s) => s.endsWith(':clean'))).toEqual(['acid-lineage:clean'])
+  })
+
+  it('selects `sub / clean` somewhere in the 2,024, and loses no pair that was selected before', () => {
+    const { authored, selected } = selectedPairs()
+    expect(selected.has('sub / clean')).toBe(true)
+    // The ledger as #538 measured it, after this change: 86 authored pairs, 27 never selected,
+    // 72 recipes behind them — 87, 29 and 82 before; `sub / clean` left by being asked for and
+    // `lead / dark` by its two recipes being deleted. A pair leaving this list is progress; a
+    // pair joining it is the finding coming back, and the failure names which.
+    const never = [...authored.keys()].filter((pair) => !selected.has(pair)).sort()
+    expect(never).toEqual([
+      'arp / dark',
+      'bass-mid / bright',
+      'bass-mid / clean',
+      'bass-mid / hard',
+      'bass-mid / soft',
+      'clap / soft',
+      'lead / dirty',
+      'lead / hard',
+      'lead / soft',
+      'metallic / hard',
+      'noise / bright',
+      'noise / dark',
+      'noise / hard',
+      'noise / soft',
+      'pad / bright',
+      'pad / dark',
+      'pad / dirty',
+      'pad / hard',
+      'stab / bright',
+      'stab / clean',
+      'stab / dark',
+      'stab / dirty',
+      'sub / dirty',
+      'sub / hard',
+      'sub / soft',
+      'texture / dirty',
+      'tom / hard',
+    ])
+    expect(authored.size).toBe(86)
+    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(72)
+  })
+
+  it('moves three solo rigs from the dark sub to the clean one, and no other', () => {
+    // The five mono synths that author a clean sub put their one voice on the acid line, so the
+    // three boxes with a voice to spare are where the change is audible. Asserted as the pick
+    // rather than as reachability, because the pick is what the reader is told to build.
+    for (const [deviceId, recipeId] of [
+      ['arturia-microfreak', 'mf-sub-clean'],
+      ['korg-minilogue-xd', 'mxd-sub-clean'],
+      ['moog-muse', 'muse-sub-clean'],
+    ] as const) {
+      const { assignments } = resolve({ devices: [deviceById(deviceId)], template: acid, seed: 1 })
+      expect(assignments.find((a) => a.requestId === 'r-sub')?.recipe.id, deviceId).toBe(recipeId)
+    }
+    // A box with only a dark sub keeps the part, as a substitution the guide names — `dark` is
+    // at sqrt(2) from `clean` (§3.4), never refused.
+    const { assignments } = resolve({
+      devices: [deviceById('elektron-digitakt')],
+      template: acid,
+      seed: 1,
+    })
+    const sub = assignments.find((a) => a.requestId === 'r-sub')
+    expect(sub?.recipe.id).toBe('dt-sub-dark')
+  })
+
+  it('drops no sub for want of a recipe: every solo shortfall on the part is the rig, not authoring', () => {
+    // The one opposite in the library is the Subsequent 37's `dirty` sub, and it sits beside a
+    // dark one — so no box lost its only candidate. A `no-recipe` here would mean one had. The
+    // two reasons left are the rig's: a mono box whose voice went to the acid line, and a box
+    // with no voice that plays a sub at all.
+    for (const device of DEVICES) {
+      const { shortfalls } = resolve({ devices: [device], template: acid, seed: 1 })
+      const sub = shortfalls.find((s) => s.requestId === 'r-sub')
+      if (sub !== undefined) expect(sub.reason, device.id).not.toBe('no-recipe')
+    }
   })
 })

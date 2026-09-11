@@ -412,12 +412,23 @@ export const acidLineage: Template = {
      * here — but the direction is finished without it, and a reader whose box is full should not
      * be told they are short of anything. The acid line is already the bass; this is the
      * fundamental underneath it.
+     *
+     * `clean`, and it was `dark` until #538. Two parts share the bottom octave here, and the one
+     * on top is a resonant filter being driven by hand — so what the fundamental has to be is
+     * *separate* from it, which is the grit axis and not the tone axis: a plain sine or a
+     * triangle under the squelch, with nothing of its own to add. `dark` asked for a colour the
+     * squelch already supplies. It is also the request that reaches authoring nothing else did:
+     * eight boxes author a `clean` sub and every direction asking for a sub asked for `dark`,
+     * so all eight were cited work no guide could select (#538). All thirty-nine boxes that
+     * author a sub at all author a dark one, and `dark` sits at distance sqrt(2) from `clean`
+     * (§3.4), so the thirty-one without a clean sub still carry the part, as a substitution the
+     * guide names.
      */
     {
       id: 'r-sub',
       role: 'sub',
       priority: 4,
-      character: 'dark',
+      character: 'clean',
       sustain: 'continuous',
       inessential: { reason: 'the squelch already owns the bottom; a part under it is weight' },
       // §4.1/#334. The root, at the octave every authored `sub` hook uses. See industrial-techno.
