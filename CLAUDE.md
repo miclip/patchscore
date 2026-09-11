@@ -142,14 +142,17 @@ through a hand-edited URL. There is no "select all" and there must not be one.
 
 ```
 rig limit      10 devices  (MAX_RIG_DEVICES)
-worst rig      47,284 nodes   (weave seed 15)
+worst rig      68,253 nodes   (hard-techno seed 15)
 cap         2,000,000
-headroom             42x  —  2.36% of the cap
+headroom             29x  —  3.41% of the cap
 ```
 
 It got *cheaper* at #25, from 83,874 nodes, and the direction of that is worth keeping: a
 feasibility constraint prunes the tree rather than complicating it. An infeasible partial
-assignment is cut, where an expensive one still has to be explored.
+assignment is cut, where an expensive one still has to be explored. It moved up once since, from
+47,284 on `weave`, when Hard Techno arrived asking for seven drum parts on one rig — the same
+mechanism as `weave`, more roles contending for the same voices — and the catalogue figure did
+not move at all.
 
 **This section used to be an argument. It is now a fact, and the difference is the point.** The
 argument kept losing: the whole-catalogue sweep reports a worst case near the cap, and that figure

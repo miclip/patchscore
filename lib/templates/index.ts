@@ -5,6 +5,7 @@ import { ambientDub } from './ambient-dub'
 import { breakbeat } from './breakbeat'
 import { droneStudy } from './drone-study'
 import { generativeDrift } from './generative-drift'
+import { hardTechno } from './hard-techno'
 import { hipHop } from './hip-hop'
 import { industrialTechno } from './industrial-techno'
 import { lydianHouse } from './lydian-house'
@@ -32,6 +33,7 @@ export const TEMPLATES: readonly Template[] = [
   breakbeat,
   droneStudy,
   generativeDrift,
+  hardTechno,
   hipHop,
   industrialTechno,
   lydianHouse,
@@ -46,6 +48,7 @@ export {
   breakbeat,
   droneStudy,
   generativeDrift,
+  hardTechno,
   hipHop,
   industrialTechno,
   lydianHouse,

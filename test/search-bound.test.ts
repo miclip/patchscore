@@ -702,6 +702,27 @@ import { TEMPLATES } from '../lib/templates/index'
  * from the request — a different cost at every tie the LT is in, not a wider tree. Nothing here
  * reaches a rig anybody owns: `npm run measure:search` reports the worst legal rig unchanged at
  * 46,609 nodes on `weave`, which asks for no `bass-mid` at all.
+ *
+ * ## Hard Techno, the fifth row added rather than moved
+ *
+ * The twelfth direction, and like the four before it it moves nothing above it — the other
+ * eleven rows reproduce to the node. Its own row runs 312-10,241 over the twenty-four seeds:
+ * two orders below `weave`'s 15,726 peak and three below `industrial-techno`, though it asks for
+ * ten parts and seven of them are drums.
+ *
+ * The row is cheap for the reason `acid-lineage`'s is. Six of the ten requests are answered
+ * *exactly* on most boxes that answer them at all — `kick`, `snare` and `impact` at `hard`, `sub`
+ * at `dark`, `ride` and `riser` at `bright` — so `liveFloor` is tight from the first branch. The
+ * three the seed permutes among are the substitutions: `tom` at `hard` lands on a `bright` or a
+ * `dark` tom at equal distance on most boxes, `open-hat` at `dirty` the same, and `lead` at
+ * `dirty` on a `bright` lead. Seed 3's 10,241 is the one where their tie-break order settles last.
+ *
+ * **This is the direction that moved the legal-rig figure**, the first to do so since #25: `npm
+ * run measure:search` went from 47,284 on `weave` seed 15 to 68,253 on `hard-techno` seed 15,
+ * 29x headroom and 3.4% of the cap. Seven drum roles on a ten-box rig is `weave`'s mechanism
+ * with two more roles in it, and the number says so. The catalogue benchmark did not move —
+ * 586,551 on `industrial-techno` before and after — because on the full library every one of
+ * those seven is answered exactly somewhere and the search commits early.
  */
 describe('the bound, direction by direction (§7.1/#159)', () => {
   const LIFTED = 20_000_000
@@ -743,6 +764,19 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     'generative-drift': [
       612, 245, 942, 247, 905, 245, 942, 245, 675, 377, 866, 245, 668, 381, 313, 411, 245, 313,
       411, 668, 247, 668, 411, 675
+    ],
+    // The twelfth direction, added rather than moved: the other eleven rows reproduce to the
+    // node. Ten requests, seven of them drums, and it runs 312-10,241 over the twenty-four
+    // seeds — two orders below `weave` at its peak and three below `industrial-techno`, though it
+    // asks for more percussion than either. Six of its ten requests are answered *exactly* on
+    // most boxes that answer them at all (`kick`, `snare` and `impact` at `hard`, `sub` at
+    // `dark`, `ride` at `bright`), so `liveFloor` is tight from the first branch; the three the
+    // seed permutes among are `tom` at `hard`, `open-hat` at `dirty` and `lead` at `dirty`, each
+    // a substitution on most boxes, and seed 3's 10,241 is the one where their tie-break order
+    // settles last. See the note above the describe for why part count is not the unit.
+    'hard-techno': [
+      655, 318, 347, 10241, 347, 2441, 912, 3453, 1413, 313, 2144, 318, 340, 312, 347, 313, 318,
+      612, 317, 713, 318, 342, 318, 1105
     ],
     // #383. Both rows fell: `muse-stab-hard` and `muse-stab-dirty` are capped at one note and
     // every `stab` request asks for a chord, so two recipes stopped being candidates for three

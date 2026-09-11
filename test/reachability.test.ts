@@ -97,11 +97,13 @@ describe('#108 no device authors a slot no direction emits', () => {
 
   /**
    * The systemic cause, recorded so the next author does not rediscover it one recipe at a time:
-   * `first-hit` and `last-hit` exist in the shared vocabulary and exactly one direction emits
-   * them, for exactly one role each. Nine of the fourteen findings this check first produced were
-   * a device reaching for one of those two slots on some other role.
+   * `first-hit` and `last-hit` exist in the shared vocabulary and, for a long time, exactly one
+   * direction emitted them, for exactly one role each. Nine of the fourteen findings this check
+   * first produced were a device reaching for one of those two slots on some other role. Hard
+   * Techno now emits `first-hit` too, on the same role — a crash's entry gesture is what the slot
+   * is for — and `last-hit` is still Industrial Techno's alone.
    */
-  it('names the two slots only one direction emits, and the roles it emits them for', () => {
+  it('names the two slots only two directions emit, and the roles they emit them for', () => {
     const emitters = new Map<string, Set<string>>()
     for (const template of TEMPLATES) {
       for (const pattern of template.patterns) {
@@ -113,7 +115,10 @@ describe('#108 no device authors a slot no direction emits', () => {
         }
       }
     }
-    expect([...(emitters.get('first-hit') ?? [])].sort()).toEqual(['industrial-techno/impact'])
+    expect([...(emitters.get('first-hit') ?? [])].sort()).toEqual([
+      'hard-techno/impact',
+      'industrial-techno/impact',
+    ])
     expect([...(emitters.get('last-hit') ?? [])].sort()).toEqual(['industrial-techno/metallic'])
   })
 })
@@ -313,8 +318,9 @@ describe('the audit surfaces unreachable recipes (#314)', () => {
 
 /**
  * #538's predicate, run as it was measured: every device solo, every shipped direction, seeds
- * 1-4 — 2,024 resolves at forty-six boxes and eleven directions. A `(role, character)` pair is
- * *selected* if any of those resolves assigns a recipe authored on it.
+ * 1-4 — 2,024 resolves at forty-six boxes and eleven directions when it was measured, 2,208 at
+ * twelve. A `(role, character)` pair is *selected* if any of those resolves assigns a recipe
+ * authored on it.
  *
  * Solo rigs are the generous case, and that is why they are the case: with one box the resolver
  * has nothing carrying the requested character and §3.5 substitutes into the neighbours, where a
@@ -325,8 +331,8 @@ describe('the audit surfaces unreachable recipes (#314)', () => {
  * and the answer was 44; substitution reaches fifteen of those, so the first figure overstates
  * the problem — `snare / hard` is named by nothing and reached by everything. The other way round
  * is the one this block exists for: a pair a direction *could* reach and never does, because a
- * closer one is always there. `tom / hard` sits at sqrt(2) from both toms the library asks for
- * and lost every time, on eight boxes, until a request named it or did not.
+ * closer one is always there. `tom / hard` sat at sqrt(2) from both toms the library asked for
+ * and lost every time, on eight boxes, until Hard Techno named it.
  */
 function selectedPairs(): { authored: Map<string, number>; selected: Set<string> } {
   const authored = new Map<string, number>()
@@ -367,13 +373,14 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     expect(subs.filter((s) => s.endsWith(':clean'))).toEqual(['acid-lineage:clean'])
   })
 
-  it('selects `sub / clean` somewhere in the 2,024, and loses no pair that was selected before', () => {
+  it('selects `sub / clean` somewhere in the solo sweep, and loses no pair that was selected before', () => {
     const { authored, selected } = selectedPairs()
     expect(selected.has('sub / clean')).toBe(true)
-    // The ledger as #538 measured it, after this change: 86 authored pairs, 27 never selected,
-    // 72 recipes behind them — 87, 29 and 82 before; `sub / clean` left by being asked for and
-    // `lead / dark` by its two recipes being deleted. A pair leaving this list is progress; a
-    // pair joining it is the finding coming back, and the failure names which.
+    // The ledger as #538 measured it: 86 authored pairs, 25 never selected, 59 recipes behind
+    // them. It was 87, 29 and 82 when the issue was filed; `sub / clean` left by being asked for
+    // and `lead / dark` by its two recipes being deleted (#539), and `tom / hard` and
+    // `lead / dirty` left when Hard Techno asked for both. A pair leaving this list is progress;
+    // a pair joining it is the finding coming back, and the failure names which.
     const never = [...authored.keys()].filter((pair) => !selected.has(pair)).sort()
     expect(never).toEqual([
       'arp / dark',
@@ -382,7 +389,6 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'bass-mid / hard',
       'bass-mid / soft',
       'clap / soft',
-      'lead / dirty',
       'lead / hard',
       'lead / soft',
       'metallic / hard',
@@ -402,10 +408,9 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'sub / hard',
       'sub / soft',
       'texture / dirty',
-      'tom / hard',
     ])
     expect(authored.size).toBe(86)
-    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(72)
+    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(59)
   })
 
   it('moves three solo rigs from the dark sub to the clean one, and no other', () => {

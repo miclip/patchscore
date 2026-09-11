@@ -277,7 +277,10 @@ describe('direction search matches name and authored keys only', () => {
   const shown = (query: string) => templateView(TEMPLATES, undefined, query).rows.map((r) => r.item.id)
 
   it('finds a direction by the name anyone would search for', () => {
-    expect(shown('techno')).toEqual(['industrial-techno'])
+    // Two technos now, and 'techno' returns both; the qualifier is what separates them.
+    expect(shown('techno')).toEqual(['hard-techno', 'industrial-techno'])
+    expect(shown('hard techno')).toEqual(['hard-techno'])
+    expect(shown('industrial')).toEqual(['industrial-techno'])
     expect(shown('dub')).toEqual(['ambient-dub'])
     expect(shown('electro')).toEqual(['major-key-electro'])
   })
@@ -285,11 +288,11 @@ describe('direction search matches name and authored keys only', () => {
   it('finds a direction by its authored key, and each key genuinely excludes', () => {
     // The test for whether a field belongs in a search is whether it excludes anything.
     expect(shown('dorian')).toEqual(['ambient-dub'])
-    // Four directions author minor keys and all four come back; the narrower query still
+    // Five directions author minor keys and all five come back; the narrower query still
     // separates them, which is the exclusion this test is about. `acid-lineage` offers A, C and D
-    // minor, `breakbeat` D, A and E, `hip-hop` F, C and G, `industrial-techno` F, A and C — so
-    // 'f minor' drops the two that do not author it, and that is the search doing work rather
-    // than the list shortening on its own.
+    // minor, `breakbeat` D, A and E, `hard-techno` F, G and D, `hip-hop` F, C and G,
+    // `industrial-techno` F, A and C — so 'f minor' drops the two that do not author it, and
+    // that is the search doing work rather than the list shortening on its own.
     //
     // Not narrowed further to a single row on a tonic no other direction offers. `matches` splits
     // the query into terms and substring-tests each against the folded fields joined together, and
@@ -297,8 +300,14 @@ describe('direction search matches name and authored keys only', () => {
     // the `g` in "Acid Lineage" and that direction comes back too. Nothing to do with ids, which
     // this list does not search. Recorded here because it looks like a bug and is the documented
     // AND-of-substrings behaviour above doing exactly what it says.
-    expect(shown('minor')).toEqual(['acid-lineage', 'breakbeat', 'hip-hop', 'industrial-techno'])
-    expect(shown('f minor')).toEqual(['hip-hop', 'industrial-techno'])
+    expect(shown('minor')).toEqual([
+      'acid-lineage',
+      'breakbeat',
+      'hard-techno',
+      'hip-hop',
+      'industrial-techno',
+    ])
+    expect(shown('f minor')).toEqual(['hard-techno', 'hip-hop', 'industrial-techno'])
     // 'major' is in both a name and a key set; it still returns exactly the one direction.
     expect(shown('major')).toEqual(['major-key-electro'])
 

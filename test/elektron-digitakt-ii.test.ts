@@ -609,8 +609,9 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 270 of these 294 were blank before modes existed, and 6 are blank now. That is the whole
-   * change stated as a number, and the 6 are the ones that should be: every one of them is a
+   * 270 of the 294 grid parts this sweep drew when modes arrived were blank before they existed,
+   * and 6 are blank now; Hard Techno since took the sweep to 342, and the blanks stayed at 6. That
+   * is the whole change stated as a number, and the 6 are the ones that should be: every one is a
    * `vox-chop` part on the sliced recipe, where the note the manual prints is a slice address and
    * the model is right to say nothing. The total moves when a direction gains or loses a part or
    * this box gains a recipe; what must not move is that the blanks and the sliced recipe are the
@@ -619,9 +620,9 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
   it('leaves only the sliced parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(294)
+    expect(grid.length).toBe(342)
     expect(grid.filter((g) => g.kind === 'none').length).toBe(6)
-    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(264)
+    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(306)
 
     // Named rather than left to the count: all three arms are now in play on this box.
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
@@ -633,13 +634,13 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
   })
 
   it('prints the direction pitch where there is one, and the box note where there is not', () => {
-    // §4.1's precedence, now with both arms occupied. The 24 that carry a pitch are `sub` parts,
+    // §4.1's precedence, now with both arms occupied. The 30 that carry a pitch are `sub` parts,
     // where the pitch is the direction's musical decision (#340) and owes this box nothing —
     // and where printing `C5` instead would tell a reader to play a sub at the sample's own
     // pitch, which is the one thing the direction did not ask for.
     const grid = sweep().grid
     const pitched = grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
     expect(grid.filter((g) => g.role === 'sub' && g.kind === 'trigger')).toEqual([])
   })
@@ -655,19 +656,19 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 48],
-      ['kick', 48],
+      ['closed-hat', 54],
+      ['kick', 54],
       ['ghost-perc', 42],
+      ['open-hat', 24],
+      ['snare', 24],
       ['clap', 18],
       ['metallic', 18],
-      ['open-hat', 18],
       ['rim', 18],
-      ['snare', 18],
-      ['tom', 12],
+      ['tom', 18],
+      ['impact', 12],
+      ['ride', 12],
       ['arp', 6],
-      ['impact', 6],
       ['noise', 6],
-      ['ride', 6],
     ])
   })
 
@@ -675,9 +676,9 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(138)
+    expect(hooked.length).toBe(144)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     // `sweep` joins the list rather than the grid, and that is the recipe working as authored: no
     // direction writes a step variant for the role, so there is nothing to program and
     // `dt2-sweep-soft` articulates nothing. See its comment, and `lib/core/reachability.ts`.
@@ -685,6 +686,7 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'generative-drift/sweep',
+      'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])
@@ -732,8 +734,8 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
         }
       }
     }
-    expect(seen).toBe(462)
-    expect(carrying).toBe(450)
+    expect(seen).toBe(522)
+    expect(carrying).toBe(510)
   })
 
   /**

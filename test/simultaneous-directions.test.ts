@@ -100,6 +100,7 @@ describe('both directions are registered and parse (§4)', () => {
       'breakbeat',
       'drone-study',
       'generative-drift',
+      'hard-techno',
       'hip-hop',
       'industrial-techno',
       'lydian-house',
@@ -267,16 +268,18 @@ describe('both directions program every part a reader steps in (§4.3)', () => {
         expect(hit.step, `${pattern.id} step ${hit.step}`).toBeGreaterThan(pattern.length - 4)
       }
     }
-    // And here is why those four recipes were unreachable, which is the part worth pinning: the
-    // only other direction asking for a tom asks for the **opposite** character. Major-Key
-    // Electro emits tom fills of its own — the slot was never the problem — but `bright` and
-    // `dark` are the two ends of the tone axis at squared distance 4, and §3.5 refuses that
-    // outright, so its patterns could never reach a dark tom recipe however many fills it had.
-    // Weave is the first request in the library those recipes are candidates for.
+    // And here is why those four recipes were unreachable, which is the part worth pinning: when
+    // Weave arrived the only other direction asking for a tom asked for the **opposite**
+    // character. Major-Key Electro emits tom fills of its own — the slot was never the problem —
+    // but `bright` and `dark` are the two ends of the tone axis at squared distance 4, and §3.5
+    // refuses that outright, so its patterns could never reach a dark tom recipe however many
+    // fills it had. Weave was the first request in the library those recipes were candidates
+    // for. Hard Techno's `hard` tom came later and sits at √2 from both, so it reaches them too,
+    // and it is the only request that reaches the eight `hard` toms exactly (#538).
     const otherToms = TEMPLATES.filter((t) => t.id !== weave.id).flatMap((t) =>
       t.roles.filter((r) => r.role === 'tom').map((r) => `${t.id}:${r.character}`),
     )
-    expect(otherToms).toEqual(['major-key-electro:bright'])
+    expect(otherToms).toEqual(['hard-techno:hard', 'major-key-electro:bright'])
     expect(weave.roles.find((r) => r.role === 'tom')?.character).toBe('dark')
     expect(characterDistanceSq('dark', 'bright')).toBeGreaterThanOrEqual(MAX_SUBSTITUTION_DISTANCE_SQ)
   })

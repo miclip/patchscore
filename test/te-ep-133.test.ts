@@ -616,18 +616,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * The number is #334's own for this device and it is expected to stay put: 252 grid parts print
-   * no note, and that is the box being reported accurately rather than a gap. It moves when a
-   * direction gains or loses a part, and a diff here is a prompt to re-read this file's header
-   * rather than a failure. What must not move is the *relationship* — no part ever gets a
-   * `trigger`, because the pool has no note to give one.
+   * 300 grid parts print no note, and that is the box being reported accurately rather than a
+   * gap. #334 measured 252, #345 made it 258 and Hard Techno 300 — ten parts this box carries
+   * whole. It moves when a direction gains or loses a part, and a diff here is a prompt to
+   * re-read this file's header rather than a failure. What must not move is the *relationship*
+   * — no part ever gets a `trigger`, because the pool has no note to give one.
    */
   it('leaves every pad part blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    // 276 until #345 authored `ride` and `sweep`, the pool's last two unserved roles.
-    expect(grid.length).toBe(282)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(258)
+    // 276 until #345 authored `ride` and `sweep`, the pool's last two unserved roles; 282 until
+    // Hard Techno.
+    expect(grid.length).toBe(330)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(300)
 
     // The claim, named rather than left to the count: the `trigger` arm is empty and the only
     // notes this box ever prints are the direction's own.
@@ -635,10 +636,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   })
 
   it('prints a note only where the direction asked for a pitch of its own', () => {
-    // §4.1's precedence with one arm missing. The 24 that do carry a note are `sub` parts, where
+    // §4.1's precedence with one arm missing. The 30 that do carry a note are `sub` parts, where
     // the pitch is the direction's musical decision (#340) and owes this box nothing.
     const pitched = sweep().grid.filter((g) => g.kind === 'pitch')
-    expect(pitched.length).toBe(24)
+    expect(pitched.length).toBe(30)
     expect([...new Set(pitched.map((g) => g.role))]).toEqual(['sub'])
   })
 
@@ -654,19 +655,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 48],
-      ['kick', 48],
+      ['closed-hat', 54],
+      ['kick', 54],
       ['ghost-perc', 42],
+      ['open-hat', 24],
+      ['snare', 24],
       ['clap', 18],
-      ['open-hat', 18],
       ['rim', 18],
-      ['snare', 18],
+      ['impact', 12],
       ['metallic', 12],
+      ['ride', 12],
+      ['tom', 12],
       ['arp', 6],
-      ['impact', 6],
       ['noise', 6],
-      ['ride', 6],
-      ['tom', 6],
       ['vox-chop', 6],
     ])
   })
@@ -676,14 +677,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(138)
     expect(sustained).toEqual([])
     // 18 until #345: `sweep` gains two entries, and no direction authors a step variant for it.
-    expect(noPattern.length).toBe(30)
+    // 30 until Hard Techno, whose riser is a single trig with no grid (#473).
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'generative-drift/sweep',
+      'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
     ])

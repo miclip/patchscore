@@ -3643,7 +3643,7 @@ answer is not global. It depends on the drum, and for one drum on the genre:
 | role | follows the key |
 |---|---|
 | `tom` | **yes** — the most pitched thing in a kit, and a fill in the wrong key is audibly off |
-| `kick` | **the direction decides** — Lydian House, Hip-Hop and Major-Key Electro follow; Industrial Techno, Acid Lineage, Breakbeat, Ambient Dub and Weave do not, and each is a position |
+| `kick` | **the direction decides** — Lydian House, Hip-Hop and Major-Key Electro follow; Industrial Techno, Hard Techno, Acid Lineage, Breakbeat, Ambient Dub and Weave do not, and each is a position |
 | `snare`, `clap` | **no** — broadband by construction: moving one thins it or does nothing |
 | `closed-hat`, `open-hat`, `ride` | **no** — metal, inharmonic, no fundamental to move |
 | `rim` | **no** — a click, whose pitch is body resonance under a transient rather than a note |

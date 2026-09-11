@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve as resolvePath } from 'node:path'
 import { moodState, renderGuide, resolve, type Device, type Template } from '../../lib/core/index'
 import { DEVICES } from '../../lib/devices/registry.generated'
-import { droneStudy, industrialTechno, weave } from '../../lib/templates/index'
+import { droneStudy, hardTechno, industrialTechno, weave } from '../../lib/templates/index'
 
 /**
  * §8's output, pinned as bytes against the **real** device library and the real template.
@@ -17,8 +17,8 @@ import { droneStudy, industrialTechno, weave } from '../../lib/templates/index'
  * identically, a device whose every point is provisional. A hand-built rig small enough to read
  * is a rig too small to show any of that.
  *
- * Eight fixtures, chosen to differ in the thing §8 is worst at. Five are Industrial Techno on five
- * rigs; the last three change template, for the reasons given under them:
+ * Ten fixtures, chosen to differ in the thing §8 is worst at. Six are Industrial Techno on six
+ * rigs; the last four change template, for the reasons given under them:
  *
  *  - **full-rig** — every registry device, the rig that fills most parts and exercises pool
  *    voices, merged section blocks, a resolved hook and — since #49 — a real patch list.
@@ -85,6 +85,12 @@ import { droneStudy, industrialTechno, weave } from '../../lib/templates/index'
  *    with the move printed (`-5 → -1`), the kick's left exactly where its author put it — which is
  *    the distinction #339 is, and a change that started tuning both or neither would move these
  *    bytes and no others in this directory.
+ *  - **deluge-hard-techno** — the Deluge alone on Hard Techno, the twelfth direction, and the only
+ *    committed bytes in which that direction is rendered at all. The Deluge fills all ten of its
+ *    requests, so one file pins the direction whole: a four-bar one-chord harmony table, a
+ *    seven-section arrangement with eight continuous parts and two scoped ones, a mono lead hook
+ *    resolved above middle C, the rolling patterns, and the characters the library answers with.
+ *    Its argument is beside `DELUGE_HARD_TECHNO` below.
  *
  * **`full-rig` used to be the third case and #80 changed that**, which is worth recording because
  * it looks like a fixture losing its purpose. It resolved onto `usb`, because the Metropolix was
@@ -250,6 +256,49 @@ const RD_9 = DEVICES.filter((d) => d.id === 'behringer-rd-9')
  */
 const MOTHER_32 = DEVICES.filter((d) => d.id === 'moog-mother-32')
 
+/**
+ * §4/#538. **The one fixture that renders Hard Techno**, and the reason it is the Deluge.
+ *
+ * Every other direction with a golden here is pinned on at least one box, and a direction with no
+ * committed bytes is a direction whose rendering can drift without moving a file: a harmony table
+ * with one row, a lead hook whose every note is above middle C, a kick that is four-to-the-floor
+ * in the Intro. None of that is exercised by Industrial Techno's six files, and the unit tests in
+ * `hard-techno.test.ts` check the resolver's answers rather than the page.
+ *
+ * **The Deluge, because it fills all ten requests alone** — thirteen boxes do, and this is the
+ * one the directory already renders, so a diff here is a rendering diff and not a second box's
+ * habits arriving. What the bytes pin, and nothing else pins:
+ *
+ *  1. **One chord.** The harmony table has one row, `i · 4`, and the hook phase says
+ *     `2 bars in <key>` with every note a root, a 3rd or a 5th. No other direction here holds the
+ *     tonic for the whole track.
+ *  2. **The register.** Seed 18 picks the hammer hook (`htek-hook-lead-1`) and resolves it in D
+ *     minor: nine notes, D4 / A4 / D5 / F4, MIDI 62–74, every one a root, a 3rd or a 5th. That is
+ *     one hook in one key, which is all a golden holds; the #37 claim that *both* hooks sit
+ *     between C4 and G5 in *every* key is `hard-techno.test.ts`'s, not this file's. The sub
+ *     beneath prints at D1, MIDI 26.
+ *  3. **Eight continuous parts across all seven sections, 120 bars**, the lead included, with only
+ *     the crash and the riser scoped (§4.2). The arrangement chart draws no entrance for anything
+ *     else, because a continuous request occupies every section and nothing in the direction
+ *     decides otherwise; what the sections change is the band, `0 / 2 / 3 / 1 / 2 / 3 / 0`, and
+ *     phase 7 groups the sections that program alike on exactly that vector.
+ *  4. **The characters the library answers with.** Five of the ten are substitutions and phase 2
+ *     names each — `tom / hard` lands on a dark tom, `lead / dirty` on a bright lead,
+ *     `snare / hard` on a bright snare, `closed-hat / bright` on a clean hat, `open-hat / dirty`
+ *     on a dark one — and five are exact: kick, sub, ride, impact, riser. A change to §3.5's
+ *     substitution or to the Deluge's recipes moves these lines.
+ *  5. **A tuned request on a box with nothing to tune.** The tom carries `followsKey` and the
+ *     Deluge's tom is a kit row with no `fundamentalPitch` parameter, so §4.1/#339's other half
+ *     renders here: no arrow, no note, the row where its author put it. `weave-tracker-mini`
+ *     pins the half where the box does move, and `guide-golden.test.ts` keeps this file on the
+ *     no-arrow side of that line with every techno fixture.
+ *
+ * Deliberately not the four-track allocation: that is `hard-techno.test.ts`'s claim about the
+ * Digitone, made against the resolver, and a golden of a box with six gaps would pin the gaps
+ * rather than the direction.
+ */
+const DELUGE_HARD_TECHNO = DELUGE
+
 export const GUIDE_NAMES = [
   'full-rig',
   'tr-1000',
@@ -260,6 +309,7 @@ export const GUIDE_NAMES = [
   'deluge-drone-study',
   'tracker-mini-drone-study',
   'weave-tracker-mini',
+  'deluge-hard-techno',
 ] as const
 export type GuideName = (typeof GUIDE_NAMES)[number]
 
@@ -292,6 +342,7 @@ const RIGS: Record<GuideName, Fixture> = {
   'deluge-drone-study': { devices: DELUGE, template: droneStudy },
   'tracker-mini-drone-study': { devices: TRACKER_MINI, template: droneStudy },
   'weave-tracker-mini': { devices: TRACKER_MINI, template: weave },
+  'deluge-hard-techno': { devices: DELUGE_HARD_TECHNO, template: hardTechno },
 }
 
 export function guideText(name: GuideName): string {

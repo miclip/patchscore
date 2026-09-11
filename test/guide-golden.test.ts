@@ -210,24 +210,30 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     }
   })
 
-  it('pins one box that fills the direction, which is a pairing no other fixture has', () => {
+  it('pins one box that fills the direction, which is a pairing no techno fixture has', () => {
     // Neither half is new on its own — `full-rig` also reaches §7.3's `None.`, and `tr-1000` is
     // also a single box being told there is nothing else to sync to. The *pairing* is: one box,
     // every request filled, no shortfall of any kind. `tr-1000` is the small rig that cannot
     // carry the direction; this is the small rig that can, and between them they are §7.3's two
     // answers at the same scale.
-    const doc = guideText('deluge-drone-study')
+    //
+    // `deluge-hard-techno` carries the same pairing on the same box, and is not what pins it: it
+    // is there for the direction it renders, and it fills all ten requests because the Deluge
+    // does — a rig of ten parts on a groovebox is the ordinary case, not the claim.
     const filled = '### Gaps\n\nNone.'
     const oneBox = 'Nothing else is here to sync to it.'
 
-    expect(doc).toContain('Deluge')
-    expect(doc).toContain(filled)
-    expect(doc).toContain(oneBox)
-    expect(doc).not.toContain('This rig cannot make these parts.')
-    expect(doc).not.toContain('### Waiting on us')
-    expect(doc).not.toContain('nothing in your rig plays this part')
+    for (const name of ['deluge-drone-study', 'deluge-hard-techno'] as const) {
+      const doc = guideText(name)
+      expect(doc, name).toContain('Deluge')
+      expect(doc, name).toContain(filled)
+      expect(doc, name).toContain(oneBox)
+      expect(doc, name).not.toContain('This rig cannot make these parts.')
+      expect(doc, name).not.toContain('### Waiting on us')
+      expect(doc, name).not.toContain('nothing in your rig plays this part')
+    }
 
-    // The pairing, not either half, is what would stop being pinned if this file were dropped.
+    // The pairing, not either half, is what would stop being pinned if these files were dropped.
     for (const name of TECHNO_GUIDE_NAMES) {
       const other = guideText(name)
       expect(other.includes(filled) && other.includes(oneBox), name).toBe(false)
@@ -316,4 +322,58 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     }
   })
 
+  it('pins Hard Techno whole on one box: one chord, a lead above middle C, five substitutions', () => {
+    // The only committed bytes that render the twelfth direction. Each line here is a fact the
+    // page states and no other fixture can: see `DELUGE_HARD_TECHNO` in `golden/guides.ts`.
+    const doc = guideText('deluge-hard-techno')
+    expect(doc).toContain('# Hard Techno')
+    expect(doc).toContain('**BPM** 150 (template range 145…160)')
+    expect(doc).toContain('**Harmonic cycle** 4 bars')
+    // One row in the harmony table: the tonic for the whole track.
+    expect(doc).toContain('| i | 4 |')
+    expect(doc).not.toMatch(/\| (VI|VII|iv|v) \|/)
+
+    // The register, on the page. Seed 18 resolves D minor and picks the hammer hook, so the hook
+    // phase renders exactly these nine lead notes, MIDI 62–74 — one hook in one key, which is
+    // what a golden can hold. The #37 claim about both hooks in every key belongs to
+    // `hard-techno.test.ts`.
+    expect(doc).toContain('**Key** D minor')
+    const hookPhase = doc.slice(doc.indexOf('## 4. Hook'), doc.indexOf('## 5. Step programming'))
+    const noteLine = /`([A-G][#b]?\d)` · (root|3rd|5th) · MIDI (\d+)$/gm
+    const leadNotes = [...hookPhase.matchAll(noteLine)].map((m) => `${m[1]} ${m[2]} ${m[3]}`)
+    expect(leadNotes).toEqual([
+      'D4 root 62',
+      'D4 root 62',
+      'A4 5th 69',
+      'D5 root 74',
+      'D4 root 62',
+      'F4 3rd 65',
+      'A4 5th 69',
+      'F4 3rd 65',
+      'D4 root 62',
+    ])
+    // And the sub beneath it, a pitch rather than a hook (#334), three octaves under the lowest.
+    expect(doc).toContain('**Note** — `D1` · MIDI 26')
+
+    // The lead defers to its hook and the riser is one trig; everything else has a grid.
+    expect(doc.split('**The hook is the pattern**')).toHaveLength(2)
+    expect(doc).toContain('**One trig, not a figure**')
+    expect(doc).toContain('`lead` and `riser` have no pattern authored at any band')
+
+    // Four-to-the-floor at band 0: the Intro's kick is the whole kick.
+    expect(doc).toContain('**Intro, Outro** — 16 steps, band 0\n\n```\n 1 x··· x··· x··· x···\n```')
+
+    // The characters the library answers with, named as substitutions in phase 2.
+    for (const line of [
+      'substituted — asked `hard`, authored `dark`',
+      'substituted — asked `dirty`, authored `bright`',
+      'substituted — asked `hard`, authored `bright`',
+      'substituted — asked `bright`, authored `clean`',
+      'substituted — asked `dirty`, authored `dark`',
+    ]) {
+      expect(doc).toContain(line)
+    }
+    expect((doc.match(/· exact `/g) ?? []).length).toBe(5)
+    expect((doc.match(/· substituted — /g) ?? []).length).toBe(5)
+  })
 })
