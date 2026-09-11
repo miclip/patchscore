@@ -1597,8 +1597,11 @@ const recipes: Recipe[] = [
     title: 'Vocal chops across a pad bank, one syllable per pad',
     verified: false,
     sourceAudio: {
-      need: 'One or two bars of vocal with evenly spaced syllables. Chop it in Chop Mode and ' +
-        'assign the slices across a pad bank, so the pattern picks a slice by picking a pad',
+      need:
+        'One or two bars of vocal with evenly spaced syllables. You can record one on a phone in ' +
+        'a quiet room: one voice, close to the mic so it stays dry, nothing playing behind it. ' +
+        'Chop it in Chop Mode and assign the slices across a pad bank, so the pattern picks a ' +
+        'slice by picking a pad',
       prep: {
         text: 'Sample Edit Mode > Chop, then Convert or Assign Slices to a new drum track',
         verified: cite(304),

@@ -1260,7 +1260,10 @@ const SAMPLE_RECIPES: Recipe[] = [
     sourceAudio: {
       need:
         'One or two bars of vocal at this tempo — a phrase, not a word. Beat Slice cuts it into ' +
-        '16, so evenly spaced syllables land on the grid',
+        '16, so evenly spaced syllables land on the grid. You can record one on a phone: play ' +
+        'the project through headphones and sing against it, so the bars land at tempo and the ' +
+        'phone hears one voice with nothing playing behind it, close to the mic in a quiet room ' +
+        'so it stays dry',
     },
     params: [
       pick('PLAY MODE', 'Beat Slice', PLAY_MODES, 127),

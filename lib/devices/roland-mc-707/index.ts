@@ -472,8 +472,8 @@ const PROSE: Record<string, string> = {
     'The LFO tab of TONE EDIT; draw the sweep with MOTION DESIGNER (p. 35) if you prefer',
   'A pitched sampler on a TONE track (p.16) — one chop per note':
     'A pitched sampler on a TONE track (p. 20) — one chop per note',
-  'A vocal one-shot per note — a word or a syllable, dry, so the bit crusher is the only dirt on it':
-    'A vocal one-shot per note — a word or a syllable, dry, so the bit crusher is the only dirt on it',
+  'A vocal one-shot per note — a word or a syllable, dry, so the bit crusher is the only dirt on it. You can record them on a phone in a quiet room, one word per take: one voice, close to the mic so it stays dry, nothing playing behind it':
+    'A vocal one-shot per note — a word or a syllable, dry, so the bit crusher is the only dirt on it. You can record them on a phone in a quiet room, one word per take: one voice, close to the mic so it stays dry, nothing playing behind it',
   'Load the chop from the SD card: Sound Browser, WAVE FILE.':
     'Load the chop from the SD card: press [SOUND], then WAVE FILE.',
   'One setting for the whole clip, not per step': 'One setting for the whole clip, not per step',

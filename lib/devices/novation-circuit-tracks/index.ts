@@ -1185,7 +1185,8 @@ const DRUM_RECIPES: Recipe[] = [
     sourceAudio: {
       need:
         'Several short vocal one-shots — single syllables or words, one per sample slot, so a step ' +
-        'can choose between them',
+        'can choose between them. You can record them on a phone in a quiet room, one word per ' +
+        'take: one voice, close to the mic so it stays dry, nothing playing behind it',
       hint: 'pick-sample',
     },
     /**
@@ -1236,7 +1237,9 @@ const DRUM_RECIPES: Recipe[] = [
     sourceAudio: {
       need:
         'Several short vocal one-shots with body to lose — a thin sample distorts into a thinner ' +
-        'one; one per sample slot so a step can choose between them',
+        'one; one per sample slot so a step can choose between them. You can record them on a ' +
+        'phone in a quiet room, one word per take: one voice, close to the mic so it stays dry, ' +
+        'nothing playing behind it',
       hint: 'pick-sample',
     },
     /**

@@ -859,7 +859,9 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need:
         'One or two bars of vocal with evenly spaced syllables; STA and END are a window on one ' +
-        'file, not a slice grid, so the window has to land on a syllable',
+        'file, not a slice grid, so the window has to land on a syllable. You can record one on ' +
+        'a phone in a quiet room: one voice, close to the mic so it stays dry, nothing playing ' +
+        'behind it',
       prep: { text: 'Load it to a sample slot first — a project holds 127', verified: cite(14) },
       hint: 'sample',
     },

@@ -1343,7 +1343,8 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need:
         'One or two bars of vocal with evenly spaced syllables, so a sixteen-way slice grid lands ' +
-        'on them rather than between them',
+        'on them rather than between them. You can record one on a phone in a quiet room: one ' +
+        'voice, close to the mic so it stays dry, nothing playing behind it',
     },
     /**
      * `SLICE` is a fixed slice number rather than `NOTE`, and that is the honest half of what this

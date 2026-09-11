@@ -998,7 +998,10 @@ const recipes: Recipe[] = [
     title: 'Vocal cut at its transients and spread across the pads',
     verified: false,
     sourceAudio: {
-      need: 'One or two bars of vocal with syllables that start clearly — AUTO MARK finds attacks, not meaning',
+      need:
+        'One or two bars of vocal with syllables that start clearly — AUTO MARK finds attacks, not ' +
+        'meaning. You can record one on a phone in a quiet room: one voice, close to the mic so ' +
+        'it stays dry, nothing playing behind it',
       prep: {
         text: 'Mark it, then split it: hold [SHIFT] and press [START/END], use AUTO MARK on TRANSIENT, then CHOP assigns each piece to its own pad',
         verified: cite(76),
