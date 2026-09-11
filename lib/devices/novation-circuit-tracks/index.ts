@@ -1001,6 +1001,42 @@ const DRUM_RECIPES: Recipe[] = [
     ],
     verified: false,
   },
+  /**
+   * #541. Hard Techno (#540) asks for `tom / hard`, and this box's only tom
+   * was `soft` — §3.5's refused opposite, so Hard Techno resolved `no-recipe` on a Circuit Tracks
+   * rather than substituting. A pounding tom is the sound that direction is built on, so the gap
+   * was ours to author rather than the direction's to soften.
+   *
+   * **`hard` on this box is already defined by its own recipes**, and this follows them rather
+   * than inventing a reading: `ct-kick-hard` and `ct-snare-hard` both sit high on `LEVEL`, cut
+   * `DECAY` to a third of the soft tom's, push `DISTORTION` four to five times higher, and take
+   * `REVERB SEND` to nothing. The distance from `ct-tom-soft` is the same distance in every case.
+   *
+   * Tuned below the soft tom rather than above it: a hard techno tom is a low hit under the kick,
+   * not a fill up near the snare, which is what `ct-tom-soft`'s own title says it is for.
+   */
+  {
+    id: 'ct-tom-hard',
+    role: 'tom',
+    character: 'hard',
+    voice: 'drum-track',
+    title: 'Low tom hit hard, tuned under the kick with the tail gone',
+    sourceAudio: { need: 'A single low tom with weight at the bottom and no ring', hint: 'pick-sample' },
+    params: [
+      num('LEVEL', 112, DRUM_FULL),
+      signed('PITCH', 44, DRUM_FULL, { hint: 'drum-macro-2', mood: [{ axis: 'darkness', amount: -10 }] }),
+      num('DECAY', 42, DRUM_FULL, { hint: 'drum-macro-4', mood: [{ axis: 'density', amount: -20 }] }),
+      num('DISTORTION', 34, DRUM_FULL, { hint: 'drum-macro-6', mood: [{ axis: 'grit', amount: 30 }] }),
+      signed('EQ', 60, DRUM_FULL, { hint: 'drum-macro-8' }),
+      reverbSend(4, { mood: [{ axis: 'space', amount: 40 }] }),
+      swing(),
+    ],
+    articulation: [
+      { slot: 'fill', set: { velocity: 120 }, hint: 'edit-velocity' },
+      { slot: 'accent', set: { velocity: 127 }, hint: 'edit-velocity' },
+    ],
+    verified: false,
+  },
   {
     id: 'ct-metallic-dirty',
     role: 'metallic',

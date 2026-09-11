@@ -752,6 +752,11 @@ describe('reference samples: who this is for', () => {
    * 284 since #516, and the three that came off are exactly the EP–40 supertones — which were
    * counted as asking for a file and never asked for one. The difference is checked rather than
    * asserted, so this stays the issue's own reading rather than a new number beside it.
+   *
+   * 285 since #541, which is the number moving the ordinary way: `ct-tom-hard` is a new drum
+   * recipe on a box that loads samples, so it asks for a file like every other drum on it. That is
+   * a recipe added rather than a definition changed, and the two are worth telling apart here —
+   * #516 moved this figure without a single recipe being written.
    */
   it('reproduces the library-wide figure the issue was sized against', () => {
     const asking = DEVICES.flatMap((device) => device.recipes).filter(
@@ -760,9 +765,9 @@ describe('reference samples: who this is for', () => {
     const selecting = DEVICES.flatMap((device) => device.recipes).filter(
       (recipe) => recipe.soundSetup !== undefined,
     )
-    expect(asking).toHaveLength(284)
+    expect(asking).toHaveLength(285)
     expect(selecting).toHaveLength(3)
-    expect(asking.length + selecting.length).toBe(287)
+    expect(asking.length + selecting.length).toBe(288)
   })
 
   it('leaves the roles it declines to the surface that can answer them', () => {

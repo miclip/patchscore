@@ -381,6 +381,12 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // and `lead / dark` by its two recipes being deleted (#539), and `tom / hard` and
     // `lead / dirty` left when Hard Techno asked for both. A pair leaving this list is progress;
     // a pair joining it is the finding coming back, and the failure names which.
+    //
+    // **26 and 62 since #541, and that is a pair joining.** `tom / soft` was reachable only as a
+    // substitution on the one box whose sole tom was soft; `ct-tom-hard` answers that box's tom
+    // requests exactly now, so nothing selects a soft tom anywhere. Worth being plain about: the
+    // trade was a real `no-recipe` closed against a pair going dark, and it is the right trade,
+    // but it is not this list getting shorter.
     const never = [...authored.keys()].filter((pair) => !selected.has(pair)).sort()
     expect(never).toEqual([
       'arp / dark',
@@ -408,9 +414,18 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'sub / hard',
       'sub / soft',
       'texture / dirty',
+      // #541. Joined when `ct-tom-hard` was authored to close Hard Techno's `no-recipe` on the
+      // Circuit Tracks. No direction asks for a soft tom, so this pair was only ever reached by
+      // §3.5 substitution — and that box, whose only tom was soft, was the last place it won one.
+      // The Rytm's and the DFAM's soft toms lose their tie-breaks to an exact answer elsewhere.
+      'tom / soft',
     ])
     expect(authored.size).toBe(86)
-    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(59)
+    // 62 since #541: `tom / soft` joined carrying its three recipes (the Rytm, the DFAM and the
+    // Circuit Tracks). `authored.size` is unchanged at 86, because `tom / hard` was authored on
+    // eight boxes already and a ninth adds no pair — which is why recipes-behind is the number
+    // worth pinning beside it. A pair can go dark with the pair count saying nothing at all.
+    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(62)
   })
 
   it('moves three solo rigs from the dark sub to the clean one, and no other', () => {
