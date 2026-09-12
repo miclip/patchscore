@@ -16,6 +16,14 @@ Hold each entry until the next chord is already sounding, then release. The over
 
 Over the four minor chords either side, do the same thing with the plain third or fifth: one note, late, held. The shape is what repeats; only these two are raised.
 
+## The rules
+
+These are checked, not advice: an edit that breaks one fails the build.
+
+- Over I, never the 3rd — the natural third against the raised one is the turn collapsing.
+- Over IV, never the 6th — the same move one chord later, and the natural sixth cancels the chord.
+- Enter each chord at least 4 steps after it lands — the lead floats free of the harmonic grid; entering on the bar head pins it to one.
+
 ## The chords
 
 6 chords over 12 bars, in F# minor. The figure is bars 7–10.

@@ -132,6 +132,41 @@ export function riffChordSummary(riff: Riff): string | undefined {
 }
 
 /**
+ * §5A/#554. **The rules, in the reader's words**, where the entry states any.
+ *
+ * Rendered rather than kept for the build alone: a rule a reader cannot see is a rule they will
+ * break the first time they take the figure somewhere else, and the `reason` an author had to
+ * write is exactly the sentence that stops them. The build checks the notes; this tells the
+ * person holding the box why the notes are what they are.
+ */
+export function ruleLines(riff: Riff): readonly string[] {
+  const rules = riff.constraints
+  if (rules === undefined) return []
+  const out: string[] = []
+  for (const rule of rules.forbiddenDegrees ?? []) {
+    const spelling = rule.alter === undefined ? '' : rule.alter > 0 ? 'raised ' : 'lowered '
+    out.push(
+      `Over ${rule.chord}, never the ${spelling}${ordinal(rule.degree)} — ${rule.reason}.`,
+    )
+  }
+  if (rules.onsetOffset !== undefined) {
+    out.push(
+      `Enter each chord at least ${count(rules.onsetOffset.minSteps, 'step')} after it lands — ` +
+        `${rules.onsetOffset.reason}.`,
+    )
+  }
+  return out
+}
+
+/** `3rd`, `6th` — the degree as a musician says it, matching the guide's own `degreeName`. */
+function ordinal(degree: number): string {
+  const tens = degree % 100
+  if (tens >= 11 && tens <= 13) return `${num(degree)}th`
+  const ones = degree % 10
+  return `${num(degree)}${ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'}`
+}
+
+/**
  * §5A.5. **There is no reference line, and its absence is the decision.**
  *
  * A subtitle reading *The technique from Blue Monday. The figure below is ours, not a

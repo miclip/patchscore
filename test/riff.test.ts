@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { RiffSchema, resolveHook, trackSlug, type Riff } from '@/lib/core'
+import {
+  ForbiddenDegreeSchema,
+  RiffConstraintsSchema,
+  RiffSchema,
+  resolveHook,
+  riffConstraintViolations,
+  trackSlug,
+  type Riff,
+} from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
+import { ruleLines } from '@/lib/studio/riff-text'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import {
   RIFFS,
@@ -428,5 +437,92 @@ describe('the Blade Runner Blues lead lines up with its chords (#552)', () => {
     expect(entries.size).toBe(2)
     expect(riff.hook.notes).toHaveLength(3)
     expect(riff.technique.some((p) => p.includes('The third note is not an entry'))).toBe(true)
+  })
+})
+
+/**
+ * §5A/#554. **The rules, as data and as a gate.**
+ *
+ * #552 caught a figure whose prose forbade a collision while its notes had stopped keeping it, and
+ * fixed it with checks written by hand for that one entry. These are the same checks driven off
+ * the entry's own declared rules, so the next riff gets them for nothing and a broken one does not
+ * parse.
+ *
+ * The two negative cases are the two defects that were actually reported, reconstructed.
+ */
+describe('riff constraints are checked, not described (#554)', () => {
+  it('finds nothing wrong with any shipped entry', () => {
+    for (const entry of RIFFS) {
+      expect(riffConstraintViolations(entry), entry.id).toEqual([])
+    }
+  })
+
+  it('catches the natural third over the borrowed chord, which is the reported collision', () => {
+    const broken: Riff = {
+      ...bladeRunnerBluesLead,
+      hook: {
+        ...bladeRunnerBluesLead.hook,
+        notes: bladeRunnerBluesLead.hook.notes.map((n) =>
+          n.step === 9 ? { step: 9, degree: 3, octave: 0, len: 26 } : n,
+        ),
+      },
+    }
+    const found = riffConstraintViolations(broken)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain('A4 sounds over I')
+    // The author's own reason is carried into the failure, so it is actionable without opening
+    // the manifest to find out what the rule was for.
+    expect(found[0]).toContain('the turn collapsing')
+    // And it is a build failure rather than a report.
+    expect(RiffSchema.safeParse(broken).success).toBe(false)
+  })
+
+  it('catches an entry on the bar head, which is the timing the first version shipped', () => {
+    const broken: Riff = {
+      ...bladeRunnerBluesLead,
+      hook: {
+        ...bladeRunnerBluesLead.hook,
+        notes: bladeRunnerBluesLead.hook.notes.map((n) =>
+          n.step === 37 ? { ...n, step: 33 } : n,
+        ),
+      },
+    }
+    const found = riffConstraintViolations(broken)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain('IV is entered at step 33, 0 steps in')
+    expect(RiffSchema.safeParse(broken).success).toBe(false)
+  })
+
+  it('checks a held note across its whole span, not only where it starts', () => {
+    // The collision arriving a beat late: legal at its onset, forbidden by the time it is still
+    // sounding over the next chord. A rule checked at onset alone would pass this.
+    const broken: Riff = {
+      ...bladeRunnerBluesLead,
+      constraints: {
+        forbiddenDegrees: [
+          { chord: 'IV', degree: 3, alter: 1, reason: 'invented for this test' },
+        ],
+      },
+    }
+    // `A#4` enters at step 9 over the `I` and is still sounding at step 33, where `IV` begins.
+    const found = riffConstraintViolations(broken)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain('A#4 sounds over IV')
+  })
+
+  it('refuses constraints that constrain nothing', () => {
+    const empty = RiffConstraintsSchema.safeParse({})
+    expect(empty.success).toBe(false)
+    const noReason = ForbiddenDegreeSchema.safeParse({ chord: 'I', degree: 3, reason: '' })
+    expect(noReason.success).toBe(false)
+  })
+
+  it('says the rules on the page, because a rule a reader cannot see is one they will break', () => {
+    const lines = ruleLines(bladeRunnerBluesLead)
+    expect(lines).toHaveLength(3)
+    expect(lines[0]).toBe(
+      'Over I, never the 3rd — the natural third against the raised one is the turn collapsing.',
+    )
+    expect(lines[2]).toContain('Enter each chord at least 4 steps after it lands')
   })
 })

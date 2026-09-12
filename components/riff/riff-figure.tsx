@@ -11,6 +11,7 @@ import {
   noteRows,
   riffChordSummary,
   riffNoteSummary,
+  ruleLines,
   riffNotesUnresolved,
   spellingLabel,
 } from '@/lib/studio/riff-text'
@@ -76,6 +77,33 @@ function Notes({ resolution }: { resolution: RiffResolution }) {
         ))}
       </ul>
     </>
+  )
+}
+
+/**
+ * §5A/#554. **The rules the figure keeps**, where it states any.
+ *
+ * Shown rather than kept for the build alone: a rule a reader cannot see is one they will break
+ * the first time they take the figure somewhere else. The line about it being checked is there
+ * because it changes how the list reads — these are not four more sentences of advice.
+ */
+function Rules({ riff }: { riff: Riff }) {
+  const rules = ruleLines(riff)
+  if (rules.length === 0) return null
+  return (
+    <section className="panel riff-panel">
+      <header>
+        <h2>The rules</h2>
+      </header>
+      <p className="riff-grid-lead">
+        These are checked, not advice: an edit that breaks one fails the build.
+      </p>
+      <ul className="riff-rules">
+        {rules.map((rule) => (
+          <li key={rule}>{rule}</li>
+        ))}
+      </ul>
+    </section>
   )
 }
 
@@ -160,6 +188,8 @@ export function RiffFigure({ riff, resolution }: { riff: Riff; resolution: RiffR
   return (
     <div className="columns">
       <Chords riff={riff} />
+
+      <Rules riff={riff} />
 
       <section className="panel riff-panel">
         <header>
