@@ -1,4 +1,4 @@
-import type { Device } from '../../core/device'
+import type { Device, SustainClaim } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredEnumParam, AuthoredNumericParam, AuthoredParam, Cite } from '../../core/params'
 import { TR_1000_PANEL } from './panel'
@@ -115,6 +115,23 @@ const CUTOFF_HZ = { min: 8.2, max: 44700 } // 8.2Hz-44.7kHz
  */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `TR-1000 Reference Manual (eng02) v1.13+, p.${page}` }
+}
+
+/**
+ * §3/#506. p.61, under **9X Bass Drum** — the GEN this recipe selects, not the page's other
+ * dozen: `DECAY`, `0.0%–100.0%`, *"Adjusts the length of the decay"*, beside `P. AMOUNT`,
+ * `P. DECAY` and `ATTACK`. No sustain stage appears in that generator's list, and the page spells
+ * out what the shape is elsewhere on it — *"Time taken for the sound to fade to silence"*.
+ *
+ * So a kick tuned down into a sub is still a kick: the level falls to silence on its own whatever
+ * the trigger says. **The recipe's title calls it a sustained sub and that stays true of the
+ * sound** — a 92% decay is a long tail — but a long tail is not a held note, and this is the claim
+ * that lets §8 say so when a direction asks for one.
+ */
+const DECAYS_BD: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['DECAY'] },
+  evidence: { kind: 'manual', source: 'TR-1000 Reference Manual (eng02) v1.13+, p.61' },
 }
 
 /**
@@ -1137,6 +1154,7 @@ export const device: Device = {
     },
     {
       id: 'tr1000-sub-dark',
+      sustain: DECAYS_BD,
       role: 'sub',
       character: 'dark',
       voice: 'bd',

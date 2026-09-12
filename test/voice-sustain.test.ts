@@ -490,6 +490,36 @@ describe('the shipped library (#506)', () => {
     'elektron-octatrack-mkii': {
       unestablished: ['ot-sub-dark', 'ot-texture-soft', 'ot-pad-soft', 'ot-acid-hard'],
     },
+    // **The three TR drum machines, each off its own document.** Roland ships the ranges
+    // separately and names that book differently per product, so these are three readings that
+    // agree rather than one reading reused: TR-8S Reference p.30/p.31, TR-6S Parameter Guide p.7,
+    // TR-1000 Reference p.61.
+    //
+    // Two kinds of instrument, answered in two places. An ACB tone is percussive — `Decay`
+    // *"adjusts the length of the decay"* and the category lists no sustain stage — so the subs,
+    // which are kicks tuned down, decay. A sample tone has `Hold Mode`, and `Whole` is *"the sound
+    // is heard to the end without decaying"*, so the amplitude stage holds. That `Whole` sustains
+    // is a claim about the amplitude stage only: whether the note lasts also needs the file not to
+    // run out, which is `playback`'s question (#518).
+    'roland-tr-8s': {
+      sustains: ['tr8s-texture-soft', 'tr8s-pad-soft'],
+      decays: ['tr8s-sub-dark'],
+    },
+    'roland-tr-6s': {
+      sustains: ['tr6s-texture-soft'],
+      decays: ['tr6s-sub-dark'],
+    },
+    'roland-tr-1000': { decays: ['tr1000-sub-dark'] },
+    // p.77, and it is this file's own trap in miniature: the box has a parameter called `HOLD`
+    // and it is not a hold. The page calls the whole section *"fade-in/fade-out settings"* —
+    // `ATTACK` is the fade-in time, `RELEASE` the fade-out, and `HOLD` *"sets the sample playback
+    // range … a ratio of how much of the sample is played back in respect to its total length"*.
+    // There is no sustain level anywhere in it, so nothing on this box settles whether a note
+    // holds; what continues the sound is the sample and the gate, which `playback` already
+    // carries (#518). Read, and left, because the answer is on the other axis rather than absent.
+    'roland-sp-404mk2': {
+      unestablished: ['sp-sub-dark', 'sp-texture-soft', 'sp-pad-soft', 'sp-acid-hard'],
+    },
     // The box #506 was reported on. p.83's synthesizer table gives every `ENVELOPE 1` stage as
     // *"Default to volume amplitude"*, so `ENV 1 SUSTAIN` above zero holds the note — which is a
     // page, where the Circuit Tracks above has only an inference. The DX7 texture is left: that
@@ -544,12 +574,12 @@ describe('the shipped library (#506)', () => {
       }
     }
     expect(held).toBe(174)
-    expect(claimed).toBe(99)
-    expect(left).toBe(40)
+    expect(claimed).toBe(105)
+    expect(left).toBe(44)
     expect(claimed + left).toBeGreaterThan(held / 2)
   })
 
-  it('counts ninety-eight distinct claims in the library, on twenty-nine manifests read', () => {
+  it('counts a hundred and four distinct claims in the library, on thirty-three manifests read', () => {
     // Per distinct recipe: the XL takes the Live III's by reference and is not counted twice;
     // the One G2 rewrites its citation and is. The figure is the `caps` delta the audit reports.
     const ordered = [...DEVICES].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -563,8 +593,8 @@ describe('the shipped library (#506)', () => {
         if (r.sustain !== undefined) distinct++
       }
     }
-    expect(distinct).toBe(98)
-    expect(Object.keys(READ)).toHaveLength(29)
+    expect(distinct).toBe(104)
+    expect(Object.keys(READ)).toHaveLength(33)
   })
 
   /**
