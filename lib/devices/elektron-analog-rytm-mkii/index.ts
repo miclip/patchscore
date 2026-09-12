@@ -382,7 +382,10 @@ export const MACHINE_PAGES = Object.fromEntries(
 function hold(v: number, amount = -18): AuthoredParam {
   return num('HLD', v, { min: 1, max: 127 }, 79, {
     mood: [{ axis: 'density', amount }],
-    note: 'AUTO, the other setting, hands the hold to how long the pad is held',
+    // §3.1/#547. Both halves of p.79's sentence, because the fixed case is the one in force
+    // here: values in `1-127` *"fix the hold phase ... regardless of how long the pad is
+    // pressed"*, and `AUTO` is the setting that hands it back.
+    note: 'A fixed hold runs regardless of how long the pad is held; AUTO hands it back',
   })
 }
 

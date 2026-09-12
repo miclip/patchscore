@@ -309,7 +309,13 @@ function num(
 const src = (m: (typeof SRC_MACHINES)[number]) => pick('SRC MACHINE', m, SRC_MACHINES, 93)
 const play = (m: (typeof PLAY_MODES)[number]) => pick('PLAY', m, PLAY_MODES, 94)
 const fltr = (m: (typeof FLTR_MACHINES)[number]) => pick('FLTR MACHINE', m, FLTR_MACHINES, 104)
-const ampMode = (m: (typeof AMP_MODES)[number]) => pick('AMP MODE', m, AMP_MODES, 56)
+/**
+ * §3.1/#547. The switch decides which stages the AMP page even has (p.56): `HOLD` exists only
+ * under `AHD`, and `SUS` and `REL` only under `ADSR`. A reader hunting for a sustain on an AHD
+ * track is looking for a control the mode has taken away.
+ */
+const ampMode = (m: (typeof AMP_MODES)[number]) =>
+  pick('AMP MODE', m, AMP_MODES, 56, 'AHD has HOLD and no SUS or REL; ADSR has SUS and REL and no HOLD')
 const lfoMode = (m: (typeof LFO_MODES)[number]) => pick('LFO MODE', m, LFO_MODES, 58)
 const portSlope = (m: (typeof PORT_SLOPES)[number]) =>
   pick(
@@ -321,11 +327,19 @@ const portSlope = (m: (typeof PORT_SLOPES)[number]) =>
   )
 const portStyle = (m: (typeof PORT_STYLES)[number]) => pick('PORT STYLE', m, PORT_STYLES, 38)
 const portLegato = (m: (typeof PORT_LEGATO)[number]) => pick('PORT LEGATO ONLY', m, PORT_LEGATO, 38)
-/** AMP `HOLD`, the one unipolar range the manual prints. Only exists when MODE is AHD (p.56). */
+/**
+ * AMP `HOLD`, the one unipolar range the manual prints. Only exists when MODE is AHD (p.56).
+ *
+ * §3.1/#547. **The note is the fixed hold's own behaviour, which is the surprising half.** p.56:
+ * a fixed value *"specifies the length of the hold phase, and the envelope ignores Note Off
+ * events such as Trig Length, releasing a [TRIG] key or a key on an external controller"*. So a
+ * reader lengthening a trig to lengthen the sound will get nothing — the number here is what
+ * ends the note, and `NOTE` is the setting that hands it back to the key.
+ */
 const hold = (v: number) =>
   num('HOLD', v, { min: 0, max: 126 }, 56, {
     mood: [{ axis: 'density', amount: -24 }],
-    note: 'Only available when AMP MODE is AHD',
+    note: 'A fixed hold ignores Note Off and Trig Length — this value ends the note, not the key. NOTE hands it back',
   })
 /** LFO `FADE`, p.58. Positive fades out, negative fades in. */
 const fade = (v: number) => num('FADE', v, { min: -64, max: 63 }, 58)

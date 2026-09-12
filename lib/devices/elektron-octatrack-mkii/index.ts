@@ -488,7 +488,15 @@ const delayTime = (v: number) =>
     note: 'p.133: 128 is a whole bar, 64 a 1/2, 32 a 1/4, 16 a 1/8, 8 a 1/16',
   })
 
-const ampMode = (m: (typeof AMP_MODES)[number]) => pick('AMP', m, AMP_MODES, cite(59))
+/**
+ * §3.1/#547. **`AMP` is the most mis-readable control on this box's amp page**, because its name
+ * says amplitude and its effect is retriggering. p.59: `ANLG` makes *"the envelope attack start
+ * from the current envelope level when a sample is trigged"* and `RTRG` makes it *"start from
+ * zero every time"*. It chooses where the attack begins; how long the note lasts is `ATCK`,
+ * `HOLD` and `REL` on the same page.
+ */
+const ampMode = (m: (typeof AMP_MODES)[number]) =>
+  pick('AMP', m, AMP_MODES, cite(59), 'Where the attack starts, not how long the note lasts — ANLG from the current level, RTRG from zero')
 const attack = (m: (typeof ATTACK_SHAPES)[number]) => pick('ATCK', m, ATTACK_SHAPES, cite(59))
 
 const lfoTrig = (m: (typeof LFO_TRIG_MODES)[number]) =>
