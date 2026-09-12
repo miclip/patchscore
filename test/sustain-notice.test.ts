@@ -15,7 +15,8 @@ import { poolDevice, recipe, template } from './fixtures'
  * `sustainNotice` decides, once, in `lib/core/pipeline.ts`; the words are each renderer's own,
  * and both copies are asserted here against what a reader sees rather than against the markup.
  * It is a sentence on a rendered line and not a §7.3 shortfall: the allocation stands and the
- * search never hears of it.
+ * search never hears of it — which is why the notice ends with what to do instead. A limit
+ * named and nothing offered is the instruction #506 was filed over, one step removed.
  */
 
 const MANUAL = { kind: 'manual', source: 'fixture manual p.9' } as const
@@ -80,7 +81,7 @@ function views(result: ResolveResult): [string, string] {
 
 const SENTENCE =
   'The longest note here is held for 64 steps (4 bars), and this sound cannot hold it: ' +
-  'its amplitude stage decays instead of holding a level.'
+  'its amplitude stage decays instead of holding a level. Retrigger it, or shorten the figure.'
 
 /** The chord row those hooks print: two lengths, so the neutral verb, and the longer one glossed. */
 const ROW = 'sounds for 64 steps (4 bars) / 4 steps'
@@ -148,7 +149,10 @@ describe('both renderers (§8)', () => {
   it('spell the duration as the row does, whatever the length', () => {
     const [md, web] = views(run(rig(claim('decays')), direction(24)))
     for (const text of [md, web]) {
-      expect(text).toContain('The longest note here is held for 24 steps (1 bar 8 steps), and this sound cannot hold it')
+      expect(text).toContain(
+        'The longest note here is held for 24 steps (1 bar 8 steps), and this sound cannot hold it: ' +
+          'its amplitude stage decays instead of holding a level. Retrigger it, or shorten the figure.',
+      )
     }
   })
 

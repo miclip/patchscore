@@ -549,5 +549,7 @@ describe('CRAVE sustain claims (#506)', () => {
     // the box — a different acid recipe on this same box would not carry it.
     expect(markdown).toContain('held for 22 steps')
     expect(markdown).toContain('its amplitude stage decays instead of holding a level')
+    // And what to do about it, since the allocation stands.
+    expect(markdown).toContain('Retrigger it, or shorten the figure.')
   })
 })

@@ -100,7 +100,8 @@ function SustainBlock({ notice }: { notice: SustainNotice }) {
     <div className="callout">
       <p>
         The longest note here is held for {durationText(notice.longest)}, and this sound cannot
-        hold it: its amplitude stage decays instead of holding a level.
+        hold it: its amplitude stage decays instead of holding a level. Retrigger it, or shorten
+        the figure.
       </p>
     </div>
   )
