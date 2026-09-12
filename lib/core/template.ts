@@ -417,7 +417,31 @@ export const HarmonySchema = z.strictObject({
  * *play* that is §7.1's question and not this field's — §4.1 keeps range and polyphony policy out
  * of this layer, exactly as it keeps MIDI clamping out of `ResolvedNote.midi`.
  */
-export type HookNote = { step: number; degree: number; octave: number; len: number }
+export type HookNote = {
+  step: number
+  degree: number
+  octave: number
+  len: number
+  /**
+   * §4.1. **Semitones away from the diatonic degree, for a line that follows a chord the key does
+   * not contain.** Optional, and absent on every hook written before it existed.
+   *
+   * `degree` alone can only reach the seven notes of the mode, which is enough for a line that
+   * sits inside the key and not enough for one that moves with modal mixture — the thing that
+   * happens the moment a minor progression borrows a major chord. A melody over `i - VI - iv - I`
+   * wants the minor third on the `i` and the major third on the `I`, and those are the same
+   * degree.
+   *
+   * **The degree still decides the letter, so the spelling stays musical.** Raising the third of
+   * F# minor gives `A#` and never `Bb`, because `spell` takes the letter from the degree and then
+   * finds the accidental that lands on the pitch. That is the whole reason this is an offset on a
+   * degree rather than a semitone field replacing one.
+   *
+   * Bounded to a double sharp or flat either way, which is where `spell` already gives up — a
+   * bigger displacement is a different degree, spelt honestly.
+   */
+  alter?: number
+}
 
 export const HookNoteSchema = z.strictObject({
   step: z.int().min(1),
@@ -425,6 +449,7 @@ export const HookNoteSchema = z.strictObject({
   octave: z.int(),
   /** Sixteenth steps of sustain, from this note's own `step`. See above — it is not a gap. */
   len: z.int().min(1),
+  alter: z.int().min(-2).max(2).optional(),
 })
 
 /**

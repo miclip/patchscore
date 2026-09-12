@@ -512,14 +512,26 @@ export function gridFits(hook: ResolvedHook): boolean {
  * Ordinals, not `b7`: these are scale degrees within the key, so whether the 7th is flat is a
  * property of the mode, and this layer does not know the mode. `b7` would be right in A minor
  * and wrong in A major.
+ *
+ * **An `alter` is said out loud, and it is not the `b7` this warns about.** That exclusion is
+ * about the mode's own spelling, which this layer cannot see; an alteration is a displacement
+ * *from* whatever the mode gives, so `raised 3rd` is true in every key. Saying nothing would
+ * print one name for two pitches (§4.1/#548).
  */
-export function degreeName(degree: number): string {
-  if (degree === 1) return 'root'
-  const tens = degree % 100
-  if (tens >= 11 && tens <= 13) return `${num(degree)}th`
-  const ones = degree % 10
-  const suffix = ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'
-  return `${num(degree)}${suffix}`
+export function degreeName(degree: number, alter?: number): string {
+  const ordinal =
+    degree === 1 && (alter ?? 0) === 0
+      ? 'root'
+      : (() => {
+          const tens = degree % 100
+          if (tens >= 11 && tens <= 13) return `${num(degree)}th`
+          const ones = degree % 10
+          const suffix = ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'
+          return `${num(degree)}${suffix}`
+        })()
+  if (alter === undefined || alter === 0) return ordinal
+  const word = alter > 0 ? 'raised' : 'lowered'
+  return `${Math.abs(alter) > 1 ? `double-${word}` : word} ${ordinal}`
 }
 
 export type Chord = { step: number; notes: ResolvedNote[] }

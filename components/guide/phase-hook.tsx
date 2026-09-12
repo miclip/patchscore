@@ -260,7 +260,7 @@ function SampledHook({
               {voicing.notes.map((note, i) => (
                 <Fragment key={note.midi}>
                   {i === 0 ? null : ' '}
-                  <span className="degree">{degreeName(note.degree)}</span>
+                  <span className="degree">{degreeName(note.degree, note.alter)}</span>
                 </Fragment>
               ))}
             </span>
@@ -467,7 +467,7 @@ function StackedHook({
                         <ChordNotes notes={[note]} />
                         <span className="token-sep"> · </span>
                         <span className="degrees">
-                          <span className="degree">{degreeName(note.degree)}</span>
+                          <span className="degree">{degreeName(note.degree, note.alter)}</span>
                         </span>
                         <span className="token-sep"> · </span>
                         <span className="pos">
@@ -662,7 +662,7 @@ function HookBlock({
                     {chord.notes.map((note, i) => (
                       <Fragment key={note.midi}>
                         {i === 0 ? null : ' '}
-                        <span className="degree">{degreeName(note.degree)}</span>
+                        <span className="degree">{degreeName(note.degree, note.alter)}</span>
                       </Fragment>
                     ))}
                   </span>,
