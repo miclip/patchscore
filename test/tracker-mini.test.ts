@@ -2067,7 +2067,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // does not take a part whose notes select slices, so they draw a grid like any other part and
     // are counted here. `hooked` drops by the same six. Hard Techno is the second, 282 -> 330: ten
     // parts this box carries whole, eight of them on the grid.
-    expect(grid.length).toBe(354)
+    expect(grid.length).toBe(360)
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
 
     // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged
@@ -2088,7 +2088,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // The blank arm, counted rather than glossed. Every one of these is a transposed recipe or,
     // since §4.1/#369, the Beat Slice chop — where the silence is `noteAddressing`'s rather than
     // a missing citation's, and means *no note here is a pitch* rather than *we did not read it*.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(138)
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(144)
   })
 
   it('splits the percussion by whether its own recipe transposes the sample', () => {
@@ -2121,7 +2121,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
       ['rim', 24],
       ['snare', 24],
       ['metallic', 18],
-      ['tom', 12],
+      ['tom', 18],
       ['vox-chop', 6],
     ])
   })

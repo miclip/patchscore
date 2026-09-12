@@ -276,11 +276,13 @@ describe('both directions program every part a reader steps in (§4.3)', () => {
     // refuses that outright, so its patterns could never reach a dark tom recipe however many
     // fills it had. Weave was the first request in the library those recipes were candidates
     // for. Hard Techno's `hard` tom came later and sits at √2 from both, so it reaches them too,
-    // and it is the only request that reaches the eight `hard` toms exactly (#538).
+    // and it is the only request that reaches the eight `hard` toms exactly (#538). Breakbeat's
+    // `soft` fill is the same shape from the other pole: √2 from `dark` and `bright` alike, and
+    // the only request that reaches the three `soft` toms exactly (#538).
     const otherToms = TEMPLATES.filter((t) => t.id !== weave.id).flatMap((t) =>
       t.roles.filter((r) => r.role === 'tom').map((r) => `${t.id}:${r.character}`),
     )
-    expect(otherToms).toEqual(['hard-techno:hard', 'major-key-electro:bright'])
+    expect(otherToms).toEqual(['breakbeat:soft', 'hard-techno:hard', 'major-key-electro:bright'])
     expect(weave.roles.find((r) => r.role === 'tom')?.character).toBe('dark')
     expect(characterDistanceSq('dark', 'bright')).toBeGreaterThanOrEqual(MAX_SUBSTITUTION_DISTANCE_SQ)
   })

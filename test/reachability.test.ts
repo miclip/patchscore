@@ -382,8 +382,8 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // `lead / dirty` left when Hard Techno asked for both. A pair leaving this list is progress;
     // a pair joining it is the finding coming back, and the failure names which.
     //
-    // **24 and 57 since #538's noise wash; 25 and 58 after its clap; 26 and 62 before that, and
-    // #541's was a pair joining.** `tom / soft` was reachable only as a substitution on the one
+    // **23 and 54 since #538's tom fill; 24 and 57 after its noise wash; 25 and 58 after its
+    // clap; 26 and 62 before that, and #541's was a pair joining.** `tom / soft` was reachable only as a substitution on the one
     // box whose sole tom was soft; `ct-tom-hard` answers that box's tom requests exactly now, so
     // nothing selects a soft tom anywhere. Worth being plain about: the trade was a real
     // `no-recipe` closed against a pair going dark, and it is the right trade, but it is not
@@ -413,10 +413,15 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'sub / hard',
       'sub / soft',
       'texture / dirty',
-      'tom / soft',
     ])
     expect(authored.size).toBe(86)
-    // **57 since #538 gave Ambient Dub a `noise / soft`.** One recipe left the list, the TR-6S's
+    // **54 since #538 gave Breakbeat a `tom / soft` fill.** The three recipes #541 watched go
+    // dark — the Rytm's, the DFAM's and the Circuit Tracks' — are back off the list by the shape
+    // the list rewards: a direction asking. The Rytm's is selected exactly; the other two boxes
+    // have no voice to spare for an optional part after their four drums, and stay dark by the
+    // rig rather than by the library, which is the honest state for them.
+    //
+    // It was 57 since #538 gave Ambient Dub a `noise / soft`. One recipe left the list, the TR-6S's
     // *Open hat opened out into a wash* — the only soft noise in the library, and the second
     // pair this list has lost to a direction asking rather than a recipe being deleted.
     //
@@ -429,7 +434,7 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // Circuit Tracks). `authored.size` is unchanged at 86, because `tom / hard` was authored on
     // eight boxes already and a ninth adds no pair — which is why recipes-behind is the number
     // worth pinning beside it. A pair can go dark with the pair count saying nothing at all.
-    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(57)
+    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(54)
   })
 
   it('moves three solo rigs from the dark sub to the clean one, and no other', () => {
@@ -561,6 +566,111 @@ describe('#538 Ambient Dub asks for a soft noise, and the one box that wrote it 
       const { shortfalls } = resolve({ devices: [device], template: dub, seed: 1 })
       const noise = shortfalls.find((s) => s.requestId === 'r-noise')
       if (noise !== undefined) expect(noise.reason, device.id).not.toBe('no-recipe')
+    }
+  })
+})
+
+/**
+ * #538, the fourth pair, and the cheapest shape a request can have: `optional`, priority 4,
+ * transient over three sections. Three boxes authored a soft tom and every one of them says
+ * *fill* in its title; no direction had a fill for a tom that was not `dark`, `bright` or `hard`,
+ * and `hard` is the refused opposite. The direction whose drums are the piece asks now.
+ */
+describe('#538 Breakbeat asks for a soft tom fill, and the box with a spare tom voice plays it', () => {
+  const bk = templateById('breakbeat')
+  if (bk === undefined) throw new Error('breakbeat missing from the templates')
+  const request = bk.roles.find((r) => r.id === 'r-tom')
+  if (request === undefined) throw new Error('breakbeat has no r-tom')
+  const rytm = deviceById('elektron-analog-rytm-mkii')
+
+  it('asks for `tom` as `soft`, optional, in the three sections where the full break plays', () => {
+    expect(request.character).toBe('soft')
+    expect(request.priority).toBe(4)
+    expect(request.optional).toBe(true)
+    expect(request.inessential).toBeDefined()
+    expect(request.sections).toEqual(['First Drop', 'Second Drop', 'Rollout'])
+    // Every tom in the library follows the key (#339), and a fill under a bass holding one note
+    // for two bars is the case that rule was written for.
+    expect(request.followsKey).toBe(true)
+    const toms = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'tom').map((r) => `${t.id}:${r.character}`),
+    )
+    expect(toms.filter((n) => n.endsWith(':soft'))).toEqual(['breakbeat:soft'])
+  })
+
+  it('emits `fill` on every band, in the closing beat, which is the slot all three recipes articulate', () => {
+    const variants = bk.patterns.filter((p) => p.forRole === 'tom')
+    expect(variants.map((p) => p.band).sort()).toEqual([0, 1, 2, 3])
+    for (const pattern of variants) {
+      expect(pattern.length, pattern.id).toBe(32)
+      const fills = pattern.hits.filter((h) => h.slot === 'fill')
+      expect(fills.length, pattern.id).toBeGreaterThan(0)
+      // "A 16th run in the closing beat of the variant" — the last four steps and nowhere else.
+      for (const hit of fills) expect(hit.step, `${pattern.id} step ${hit.step}`).toBeGreaterThan(28)
+      // And never the backbeat: the snare owns that slot in this direction.
+      expect(pattern.hits.some((h) => h.slot === 'backbeat'), pattern.id).toBe(false)
+    }
+    for (const [deviceId, recipeId] of [
+      ['elektron-analog-rytm-mkii', 'rytm-tom-soft'],
+      ['moog-dfam', 'dfam-tom-soft'],
+      ['novation-circuit-tracks', 'ct-tom-soft'],
+    ] as const) {
+      const slots = (recipeById(deviceById(deviceId), recipeId).articulation ?? []).map((a) => a.slot)
+      expect(slots, recipeId).toContain('fill')
+    }
+  })
+
+  it('selects `tom / soft` on the Rytm at every seed, and displaces nothing on any box', () => {
+    const { selected } = selectedPairs()
+    expect(selected.has('tom / soft')).toBe(true)
+    for (const seed of [1, 2, 3, 4]) {
+      const { assignments } = resolve({ devices: [rytm], template: bk, seed })
+      const tom = assignments.find((a) => a.requestId === 'r-tom')
+      expect(tom?.recipe.id, `seed ${seed}`).toBe('rytm-tom-soft')
+      // Its own tom voice, after the four drums the direction ranks above it are placed — the
+      // reason priority 4 is enough here where Ambient Dub's wash needed 3.
+      expect(assignments.map((a) => a.requestId).sort()).toEqual([
+        'r-closed-hat',
+        'r-kick',
+        'r-rim',
+        'r-snare',
+        'r-tom',
+      ])
+    }
+    // Eighty fills over 46 boxes x 4 seeds: four exact, the rest `dark` or `bright` at sqrt(2).
+    // The two other boxes that author a soft tom have no voice to spare for an optional part
+    // after their drums, so they stay dark by the rig, not by the library.
+    const picked = new Map<string, number>()
+    for (const device of DEVICES) {
+      for (const seed of [1, 2, 3, 4]) {
+        const { assignments } = resolve({ devices: [device], template: bk, seed })
+        const tom = assignments.find((a) => a.requestId === 'r-tom')
+        if (tom === undefined) continue
+        picked.set(tom.recipe.character, (picked.get(tom.recipe.character) ?? 0) + 1)
+      }
+    }
+    expect([...picked].sort()).toEqual([
+      ['bright', 22],
+      ['dark', 54],
+      ['soft', 4],
+    ])
+  })
+
+  it('costs no other request its part: an optional fill at the bottom of the list moves nothing above it', () => {
+    // Asserted against the direction with the request removed, box by box and seed by seed:
+    // every other assignment is identical. That is what `optional` promises the search and what
+    // priority 4 promises the reader, and it is the difference between this request and the
+    // Ambient Dub wash, which displaced a texture, two sweeps and a riser.
+    const without = { ...bk, roles: bk.roles.filter((r) => r.id !== 'r-tom') }
+    const others = (t: typeof bk, device: Device, seed: number) =>
+      resolve({ devices: [device], template: t, seed })
+        .assignments.filter((a) => a.requestId !== 'r-tom')
+        .map((a) => `${a.requestId}=${a.recipe.id}`)
+        .sort()
+    for (const device of DEVICES) {
+      for (const seed of [1, 2, 3, 4]) {
+        expect(others(bk, device, seed), `${device.id} seed ${seed}`).toEqual(others(without, device, seed))
+      }
     }
   })
 })

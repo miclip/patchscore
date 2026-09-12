@@ -774,9 +774,24 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       306, 679, 306, 534, 685, 309, 306, 528, 312, 309, 306, 559, 306, 312, 310, 307, 528, 1061,
       1146, 675, 693, 1051, 307, 467
     ],
+    // #538. The `tom / soft` fill — optional, priority 4, three sections — is the largest single
+    // move this table has recorded on one row: peak 68,839 -> 277,966, and eighteen of the
+    // twenty-four seeds that sat between 238 and 2,649 now sit between 82,240 and 267,966. This
+    // row is second only to `industrial-techno` now. It is the whole catalogue, and on it every
+    // one of the twenty-five boxes with a dark or bright tom is a candidate at the same sqrt(2)
+    // while one box answers exactly; an optional part is priced above distance, so the search
+    // has to satisfy itself that no placement fills the fill more cheaply before it commits.
+    //
+    // **Neither figure `measure:search` reports moved**: the legal rig is 99,459 on
+    // `ambient-dub` seed 16 before and after, the catalogue benchmark 586,551 on
+    // `industrial-techno` before and after. On this direction's own ten-box fixture rigs the
+    // worst seed went 2,409 -> 8,181 — four digits against a 2,000,000 cap — and on the solo
+    // sweep no other request on any box moved. The catalogue row is the benchmark saying
+    // something a rig does not (#301), and it is recorded here so the next reader does not
+    // re-derive the shock.
     'breakbeat': [
-      717, 68839, 1479, 558, 68387, 238, 241, 561, 241, 561, 241, 560, 1559, 642, 349, 826, 2649,
-      241, 241, 68389, 561, 241, 826, 68388
+      1180, 88782, 267966, 168763, 89894, 652, 256540, 168957, 176299, 169525, 256540, 82240,
+      190330, 169687, 256888, 1782, 3744, 175698, 277, 257945, 82445, 89262, 1782, 265720
     ],
     'drone-study': [
       37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37

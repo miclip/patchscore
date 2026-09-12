@@ -1468,8 +1468,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // move is the relationship, which is that no part ever gets a `trigger`.
     const { grid } = sweep()
 
-    expect(grid.length).toBe(354)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(324)
+    expect(grid.length).toBe(360)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(330)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -1503,10 +1503,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['rim', 24],
       ['snare', 24],
       ['ride', 18],
+      ['tom', 18],
       ['impact', 12],
       ['metallic', 12],
       ['noise', 12],
-      ['tom', 12],
       ['arp', 6],
       ['vox-chop', 6],
     ])

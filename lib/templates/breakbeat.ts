@@ -74,8 +74,9 @@ import { at, on, variant } from '../core/authoring'
  * **No request here has both a hook and band variants**, so #100's contradiction cannot arise
  * and `reArticulatesHook` is not reached for. Three groups:
  *
- *  - **Variants and no hook — `snare`, `kick`, `closed-hat`, `rim`, `ghost-perc`.** The break is
- *    what the reader programs, so the density knob moves all five and phase 5 prints five grids.
+ *  - **Variants and no hook — `snare`, `kick`, `closed-hat`, `rim`, `ghost-perc`, `tom`.** The
+ *    break is what the reader programs, so the density knob moves all six and phase 5 prints six
+ *    grids where a rig carries them all.
  *  - **A hook and no variants — `sub`, `pad`.** Both are held notes with nothing to strike. A
  *    part whose entire rhythmic content is *one event every two bars* has no density curve worth
  *    authoring: four bands of it would be four ways of writing the same sustained note. Phase 5
@@ -240,7 +241,7 @@ import { at, on, variant } from '../core/authoring'
  * The grid, the slots and the meaning of a band are in `../core/authoring`. Bands run skeletal (0)
  * to busiest (3), and every role with any pattern here has all four.
  *
- * The four two-bar roles are 32 steps; `closed-hat` is 16, because the hat is the one part that
+ * The five two-bar roles are 32 steps; `closed-hat` is 16, because the hat is the one part that
  * is the same in both bars and authoring it twice would be saying so twice. Every section length
  * divides by four bars, so nothing is ever chained short and #105's remainder rule prints nothing.
  */
@@ -358,6 +359,30 @@ const PATTERNS: Pattern[] = [
     on('offbeat', 3, 7, 15, 19, 31),
     at('ghost', 44, 6, 10, 22),
     at('accent', 104, 26),
+  ),
+
+  // ---- tom -----------------------------------------------------------------------------
+  // #538. A fill, which is the one thing a tom does in a break, and the `fill` slot is where it
+  // lives: the closing beat of the two bars, steps 29-32, a run into the top of the phrase. Band
+  // 0 is a two-note pickup, band 1 is the whole beat, and the bands above it work backwards into
+  // bar 1 the way the rim does — quiet sixteenths on the *a* of beats 3 and 4, where the snare
+  // has just been and is not. The one accent is the first hit of the run, because a fill leans
+  // on its own entry and then falls forward into the downbeat.
+  //
+  // Every `tom / soft` in the library articulates `fill`, and its authors say so in the titles:
+  // *fill hits at velocity 96*, *for fills, tuned under the snare*. This is the direction whose
+  // drums are the piece, so it is the one where a fill was going to be asked for.
+  variant('bk-tom-b0', 'tom', 0, 32, on('fill', 30, 32)),
+  variant('bk-tom-b1', 'tom', 1, 32, on('fill', 29, 30, 31, 32)),
+  variant('bk-tom-b2', 'tom', 2, 32, at('ghost', 46, 14, 16), on('fill', 29, 30, 31, 32)),
+  variant(
+    'bk-tom-b3',
+    'tom',
+    3,
+    32,
+    at('ghost', 44, 10, 14, 16),
+    at('accent', 104, 29),
+    on('fill', 30, 31, 32),
   ),
 
   // ---- ghost-perc, first half ----------------------------------------------------------
@@ -557,18 +582,19 @@ export const breakbeat: Template = {
   ],
 
   /**
-   * §4.4. Ascending: 1 outranks 5. Eight requests, seven of them `transient` — the mute map in the
+   * §4.4. Ascending: 1 outranks 5. Nine requests, eight of them `transient` — the mute map in the
    * header is carried here, and each section list is annotated with what taking the part away is
    * for.
    *
-   * **One is declared inessential, nothing is `optional`, and that is a claim rather than an
-   * oversight.** It is the fewest of any direction here asking for eight parts: `hip-hop` and
-   * `generative-drift` declare four of eight, `weave` and `lydian-house` three. Those are right
-   * about what they describe — a kit is the clearest case there is of a thing still itself with
-   * fewer voices in it. A break is not. Take the snare, the kick, the hats, the rim, the bass or
-   * either percussion layer out of this and what is left is not a sparser version of the
-   * direction, it is a different one. The one that goes is the chord, and its reason says what
-   * covers the absence.
+   * **Two are declared inessential, one of those is `optional`, and that is a claim rather than
+   * an oversight.** It is the fewest of any direction here asking for this many parts: `hip-hop`
+   * and `generative-drift` declare four of eight, `weave` and `lydian-house` three. Those are
+   * right about what they describe — a kit is the clearest case there is of a thing still itself
+   * with fewer voices in it. A break is not. Take the snare, the kick, the hats, the rim, the bass
+   * or either percussion layer out of this and what is left is not a sparser version of the
+   * direction, it is a different one. The two that go are the chord, whose reason says what
+   * covers the absence, and the tom fill, which is the one part here that is *added to* the
+   * break rather than part of it — and the only one the search is told not to spend a voice on.
    *
    * A second was declared and withdrawn, and `r-ghost-perc-dark` below records why — the reason
    * given for it was false on this direction's own section lists, which is a mistake §4.2 makes
@@ -714,6 +740,46 @@ export const breakbeat: Template = {
       character: 'dark',
       sustain: 'transient',
       sections: ['Second Drop', 'Rollout'],
+    },
+
+    /**
+     * §3.5/#538. **A tom fill, asked for `soft` because the three boxes that authored a soft tom
+     * wrote a fill and no direction had asked for one.** *"fill hits at velocity 96"*, *"Low tom
+     * for fills, tuned under the snare"*, and a triangle tom with the drum-head punch its manual
+     * describes. Three boxes wrote the same part; this is the direction whose drums are the
+     * piece, so it is the one where a fill belongs.
+     *
+     * `soft` and not `dark`, and the distinction is the whole request: the twenty-odd dark toms
+     * in the library are a *part* — a low drum tuned down and let ring — where these three are
+     * played under the snare in the closing beat and then get out of the way. `dark` and
+     * `bright` are both at sqrt(2) and stay reachable as substitutions; `hard` is the refused
+     * opposite, which is right, since a fill hit hard is a second backbeat.
+     *
+     * **`optional` and `inessential`, the only request here that is either**, and priority 4 so
+     * the box with a dedicated tom voice takes it after its four drums are placed. A fill is
+     * added on top of a break that already exists — take it away and the break is the break —
+     * which is what `optional` says to the search and `inessential` says to the reader. Measured
+     * over 46 boxes x 4 seeds: no other request on any box moves, which is the shape an optional
+     * part at the bottom of the list ought to have.
+     *
+     * Scoped to the three sections where the full break plays. A fill in `Drums Alone` would be
+     * a fill before there is anything to fill into, and the collapse sections have no snare to
+     * answer.
+     *
+     * `followsKey`, as every tom in the library does (§4.1/#339): the most pitched thing in a
+     * kit, and a fill in the wrong key is audibly off — under a bass that holds one note for two
+     * bars, more so.
+     */
+    {
+      id: 'r-tom',
+      role: 'tom',
+      priority: 4,
+      character: 'soft',
+      sustain: 'transient',
+      sections: ['First Drop', 'Second Drop', 'Rollout'],
+      followsKey: true,
+      optional: true,
+      inessential: { reason: 'the drums are the piece already; this answers them and gets out' },
     },
 
     /**

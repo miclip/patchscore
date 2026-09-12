@@ -564,8 +564,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { grid } = sweep()
 
     // 240 until #345 authored `rim`, `ride` and `noise`; 270 until Hard Techno.
-    expect(grid.length).toBe(348)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(318)
+    expect(grid.length).toBe(354)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(324)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -599,10 +599,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['rim', 24],
       ['snare', 24],
       ['ride', 18],
+      ['tom', 18],
       ['impact', 12],
       ['metallic', 12],
       ['noise', 12],
-      ['tom', 12],
       ['arp', 6],
     ])
   })
