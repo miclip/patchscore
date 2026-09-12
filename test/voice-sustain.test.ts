@@ -447,6 +447,31 @@ describe('the shipped library (#506)', () => {
       decays: ['tm-acid-dirty-sample', 'tm-acid-dirty-synth'],
       unestablished: ['tm-pad-soft-sample', 'tm-pad-soft-synth'],
     },
+    // **The three Elektrons whose recipes set the envelope's shape and leave its levels.** All
+    // twelve are read and left, and the reason is one reason, which is why they sit together:
+    // each recipe authors the machine and the envelope *mode* and stops there, so the parameter
+    // that would decide sustain is the reader's. It is the Digitakt's own bar (`dt-texture-soft`
+    // above), applied to the boxes that turned out to be entirely on the far side of it.
+    //
+    // Digitakt II p.56 and Digitone II p.61 carry identical wording. `SUS` is *"only available
+    // if MODE is set to ADSR"*, so the `ADSR` recipes could sustain — but none of them authors
+    // `SUS`, and the level could be zero. The `AHD` recipes author a fixed `HOLD`, which *"ignores
+    // Note Off events such as Trig Length"* and so does not follow a hook's hold at all; but the
+    // tip that the sound sustains *"if DEC is set to less than 127"* is what makes `DEC` load-
+    // bearing, and none of them authors `DEC` either.
+    'elektron-digitakt-ii': {
+      unestablished: ['dt2-sub-dark', 'dt2-texture-soft', 'dt2-acid-hard', 'dt2-pad-soft'],
+    },
+    'elektron-digitone-ii': {
+      unestablished: ['dn2-sub-dark', 'dn2-pad-soft', 'dn2-acid-dirty', 'dn2-texture-soft'],
+    },
+    // p.59: `AMP` (`ANLG`/`RTRG`/`R+T`/`TTRG`) sets where the attack *starts* — *"from the current
+    // envelope level"* or *"from zero"* — and says nothing about whether the note holds. That is
+    // the one amp parameter these four author; `HOLD` and `REL`, which would decide it, are left.
+    // A claim read off `AMP` would be a citation off the wrong parameter.
+    'elektron-octatrack-mkii': {
+      unestablished: ['ot-sub-dark', 'ot-texture-soft', 'ot-pad-soft', 'ot-acid-hard'],
+    },
     // The box #506 was reported on. p.83's synthesizer table gives every `ENVELOPE 1` stage as
     // *"Default to volume amplitude"*, so `ENV 1 SUSTAIN` above zero holds the note — which is a
     // page, where the Circuit Tracks above has only an inference. The DX7 texture is left: that
@@ -502,11 +527,11 @@ describe('the shipped library (#506)', () => {
     }
     expect(held).toBe(174)
     expect(claimed).toBe(95)
-    expect(left).toBe(26)
+    expect(left).toBe(38)
     expect(claimed + left).toBeGreaterThan(held / 2)
   })
 
-  it('counts ninety-four distinct claims in the library, on twenty-four manifests read', () => {
+  it('counts ninety-four distinct claims in the library, on twenty-seven manifests read', () => {
     // Per distinct recipe: the XL takes the Live III's by reference and is not counted twice;
     // the One G2 rewrites its citation and is. The figure is the `caps` delta the audit reports.
     const ordered = [...DEVICES].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -521,7 +546,7 @@ describe('the shipped library (#506)', () => {
       }
     }
     expect(distinct).toBe(94)
-    expect(Object.keys(READ)).toHaveLength(24)
+    expect(Object.keys(READ)).toHaveLength(27)
   })
 
   /**
