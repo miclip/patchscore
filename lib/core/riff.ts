@@ -172,6 +172,22 @@ export type Riff = {
    * a direction already prints rather than inventing a second way to say the same thing.
    */
   harmony?: Harmony
+  /**
+   * §5A/§4.1/#552. **Which bar of the cycle the figure starts on**, 1-based, where `harmony` is
+   * longer than the figure.
+   *
+   * Without it a page carries a chord table and a shorter grid and says nothing about how they
+   * line up, so a reader lines the figure up with bar 1 — which is the wrong chord whenever the
+   * figure was written for a later one. That shipped: a four-bar figure written over the `I` and
+   * the `IV` of a twelve-bar cycle, printed against a table starting at `i`, put a raised third
+   * over a minor chord.
+   *
+   * **The alignment is a fact about the music, so it is data and it is checked.** `RiffSchema`
+   * requires `harmony` alongside it, requires the figure to fit inside the cycle, and requires
+   * the figure to start where a chord does — a figure beginning halfway through a chord is
+   * expressible and is a different thing, and nothing has needed it.
+   */
+  figureStartsAtBar?: number
   hook: Hook
   /** Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them. */
   pattern: Pattern
@@ -202,6 +218,7 @@ export const RiffSchema = z
     key: MusicalKeySchema,
     request: RoleRequestSchema,
     harmony: HarmonySchema.optional(),
+    figureStartsAtBar: z.int().min(1).optional(),
     hook: HookSchema,
     pattern: PatternSchema,
   })
@@ -302,6 +319,46 @@ export const RiffSchema = z
           'a riff carries a hook and a grid: it must say the grid re-articulates the hook (§4.3)',
         path: ['request', 'reArticulatesHook'],
       })
+    }
+    /*
+     * §5A/#552. The offset is meaningless without a cycle to be an offset into, has to land on a
+     * chord boundary, and has to leave room for the figure. Each is checked separately so the
+     * message names the one that is wrong.
+     */
+    if (riff.figureStartsAtBar !== undefined) {
+      const { harmony } = riff
+      if (harmony === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'figureStartsAtBar is a bar of `harmony`, so there has to be one (§5A/#552)',
+          path: ['figureStartsAtBar'],
+        })
+      } else {
+        const starts = new Set<number>()
+        let bar = 1
+        for (const step of harmony.progression) {
+          starts.add(bar)
+          bar += step.bars
+        }
+        if (!starts.has(riff.figureStartsAtBar)) {
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              `the figure starts at bar ${String(riff.figureStartsAtBar)}, which is not where a ` +
+              `chord starts — chords begin at ${[...starts].join(', ')} (§5A/#552)`,
+            path: ['figureStartsAtBar'],
+          })
+        }
+        if (riff.figureStartsAtBar + hook.bars - 1 > harmony.cycleBars) {
+          ctx.addIssue({
+            code: 'custom',
+            message:
+              `a ${String(hook.bars)}-bar figure from bar ${String(riff.figureStartsAtBar)} runs ` +
+              `past the ${String(harmony.cycleBars)}-bar cycle (§5A/#552)`,
+            path: ['figureStartsAtBar'],
+          })
+        }
+      }
     }
     // Invariant 5's list, read the other way: a role that is held rather than struck has no grid
     // to be missing, so a riff on one would be authoring a pattern that says nothing.

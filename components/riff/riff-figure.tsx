@@ -2,9 +2,9 @@ import type { Riff, RiffResolution } from '@/lib/core'
 import { num } from '@/lib/core'
 import { SlotList } from '@/components/pattern/slot-list'
 import { StepGrid } from '@/components/pattern/step-grid'
-import { ProgressionTable } from '@/components/guide/song-tables'
 import {
   RIFF_GRID_LEAD,
+  chordRows,
   degreeLabel,
   heldLabel,
   midiLabel,
@@ -82,11 +82,11 @@ function Notes({ resolution }: { resolution: RiffResolution }) {
 /**
  * §5A/§4.1. **The chords, where the figure follows them.**
  *
- * `ProgressionTable` rather than a table written here: a direction's page already draws a
- * `Harmony` as Degree and Bars, and drawing it a second way would be two treatments of one fact
- * for a reader moving between the two pages in one sitting — the thing #528 fixed on the grid.
- * It also brings `.table-scroll` with it, which is §8's phone rule and which a hand-rolled table
- * here did not have.
+ * **Its own table since #552, where it used to borrow `ProgressionTable`.** A direction's chord
+ * table has two columns because a direction's harmony is the whole song; a riff's needs a third,
+ * saying which chords the figure is actually over, and a shared component that grew a riff-only
+ * column would be one page's requirement living in the other's code. `.table-scroll` comes with
+ * it by hand, because §8's phone rule is the reason it was worth borrowing in the first place.
  *
  * Absent on a riff with no `harmony`, which is most of them — and absent rather than empty, so a
  * page for a one-key figure does not carry a heading over nothing.
@@ -100,7 +100,30 @@ function Chords({ riff }: { riff: Riff }) {
         <h2>The chords</h2>
       </header>
       <p className="riff-grid-lead">{summary}</p>
-      <ProgressionTable harmony={riff.harmony} />
+      <div className="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Degree</th>
+              <th scope="col" className="numeric">
+                Bars
+              </th>
+              <th scope="col">Under the figure</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chordRows(riff).map((row) => (
+              <tr key={`${row.degree}-${String(row.from)}`}>
+                <td className="mono">{row.degree}</td>
+                <td className="mono numeric">
+                  {num(row.from)}–{num(row.from + row.bars - 1)}
+                </td>
+                <td className="mono">{row.underFigure ? '●' : ''}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </section>
   )
 }

@@ -41,17 +41,21 @@ export const bladeRunnerBluesLead: Riff = {
   bpm: { min: 56, max: 72, default: 64 },
   key: 'F# minor',
   technique: [
-    'One note per chord, and let the chord change under it rather than moving to meet it. The ' +
-      'part is mostly silence and one held note.',
-    'Come in late. Neither note lands on the downbeat of its own chord — the first arrives half ' +
-      'a bar in, which is what makes it sound played rather than programmed.',
-    'Both notes are the major third of the chord under them, and both are a semitone above what ' +
-      'the key gives you. That semitone is the whole sound. Play the note the key expects and the ' +
-      'turn disappears.',
-    'Hold each one until the next chord is already sounding, then release. The overlap is where ' +
-      'the two chords blur into each other.',
-    'Over the four minor chords either side of this, do the same thing with the plain third or ' +
-      'fifth: one note, late, held. The shape is what repeats; only these two are raised.',
+    'Bars 7 to 10 of the cycle, which is the pair of chords the key does not own. The four minor ' +
+      'chords either side are the setting; these two are the turn.',
+    'Come in late on every chord. Both entries land a beat or more after the pad has already ' +
+      'changed under them, which is what makes the line sound played rather than programmed. ' +
+      'The third note is not an entry — it is the same chord, continued.',
+    'The two entries are the major third of the chord beneath them, each a semitone above what ' +
+      'the key gives you. That semitone is the whole sound. Play the note the key expects and ' +
+      'the turn disappears.',
+    'Never play the key\u2019s own third or sixth while these two chords are sounding. A natural ' +
+      'third against the raised one is the move collapsing, and it is the one mistake this ' +
+      'figure can make.',
+    'Hold each entry until the next chord is already sounding, then release. The overlap is ' +
+      'where the two chords blur into each other.',
+    'Over the four minor chords either side, do the same thing with the plain third or fifth: ' +
+      'one note, late, held. The shape is what repeats; only these two are raised.',
   ],
   request: {
     id: 'blade-runner-blues-lead',
@@ -65,6 +69,7 @@ export const bladeRunnerBluesLead: Riff = {
    * §5A/§4.1. The six-chord cycle the four bars below sit inside. `i VI iv` is ordinary F# minor;
    * `I` and `IV` are the borrowed pair this figure is about, and `v` takes it back.
    */
+  figureStartsAtBar: 7,
   harmony: {
     cycleBars: 12,
     progression: [
@@ -89,8 +94,12 @@ export const bladeRunnerBluesLead: Riff = {
     bars: 4,
     baseOctave: 4,
     notes: [
+      // `I` runs bars 7-8, which is figure steps 1-32. The entry is at step 9, two beats in.
       { step: 9, degree: 3, octave: 0, len: 26, alter: 1 },
-      { step: 33, degree: 6, octave: 0, len: 18, alter: 1 },
+      // `IV` runs bars 9-10, figure steps 33-64. Step 37 is a beat after it arrives — step 33
+      // would be the bar head, which is the thing the second paragraph says this never does.
+      { step: 37, degree: 6, octave: 0, len: 12, alter: 1 },
+      // Not an entry: the same chord, an octave move within it.
       { step: 49, degree: 1, octave: 1, len: 16 },
     ],
   },
@@ -100,6 +109,7 @@ export const bladeRunnerBluesLead: Riff = {
     0,
     64,
     at('accent', 84, 9),
-    on('downbeat', 33, 49),
+    on('offbeat', 37),
+    on('downbeat', 49),
   ),
 }
