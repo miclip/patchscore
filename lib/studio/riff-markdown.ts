@@ -321,6 +321,17 @@ function voiceLines(riff: Riff, voice: RiffVoicing): string[] {
    * its gesture — *one of the ten supertone sounds* is not something a reader can act on without
    * knowing that [SOUND] and [.] are what open the ten.
    */
+  /*
+   * §3/#553. The shortcut, above the settings it makes optional. A riff page shows one device at
+   * a time, so this can name the patch outright where a guide has to keep it beside a block.
+   */
+  if (voice.factoryPatch !== undefined) {
+    const { name, bank } = voice.factoryPatch
+    out.push('')
+    out.push(`Factory patch — **${name}**${bank === undefined ? '' : ` in ${bank}`}`)
+    out.push('')
+    out.push('- Load it and the settings below are already dialled. They build the same sound by hand.')
+  }
   if (voice.soundSetup !== undefined) {
     out.push('')
     out.push(`Sound — ${voice.soundSetup.sound}`)

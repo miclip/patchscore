@@ -3049,6 +3049,17 @@ function soundForPart(
       out.push(...soundSetupLines(a.recipe.soundSetup, device, options))
       out.push('')
     }
+    // §3/#553. Before the routing, because a reader who takes this shortcut still needs the
+    // routing and no longer needs the parameter list under it.
+    if (a.recipe.factoryPatch !== undefined) {
+      const { name, bank } = a.recipe.factoryPatch
+      const where = bank === undefined ? '' : ` in ${bank}`
+      out.push(
+        `Factory patch — the box ships **${name}**${where}, which arrives here already. ` +
+          'The settings below build the same sound from scratch.',
+      )
+      out.push('')
+    }
     if (a.recipe.routing !== undefined) {
       out.push(`Routing — ${a.recipe.routing}`)
       out.push('')

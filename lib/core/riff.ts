@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { Assignable, Device, Recipe, TriggerNote } from './device'
+import type { Assignable, Device, FactoryPatch, Recipe, TriggerNote } from './device'
 import { realisationOf } from './device'
 import { comparePoolMembers, quantiseDistance } from './search'
 import { parseKey, resolveHook, type HookResolution } from './harmony'
@@ -493,6 +493,8 @@ export type RiffVoicing = {
    * sounds"* through a field meaning *go and find a file*.
    */
   soundSetup: ResolvedSoundSetup | undefined
+  /** §3/#553. The authored claim, evidence and all: a riff page shows one device at a time. */
+  factoryPatch: FactoryPatch | undefined
   articulation: readonly BoundArticulation[]
   /** §2.1. The note that plays this voice as it is, on a box addressed by note. */
   triggerNote: TriggerNote | undefined
@@ -695,6 +697,7 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
       patch: resolvePatch(winner.recipe),
       sourceAudio: resolveSourceAudio(winner.recipe),
       soundSetup: resolveSoundSetup(winner.recipe),
+      factoryPatch: winner.recipe.factoryPatch,
       articulation: bindArticulation(winner.recipe, riff.pattern),
       // §2.2/#86. Read off the first voice, which every member of a pool shares — a stack is one
       // pool on one device, so there is one answer rather than one per voice.

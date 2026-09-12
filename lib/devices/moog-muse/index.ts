@@ -446,6 +446,31 @@ function cite(page: number): Cite {
 }
 
 /**
+ * §3/#553. **The box ships 224 factory patches and the manual names none of them.**
+ *
+ * p.12 counts them and `capabilityEvidence.content` already records what they are — *"stored
+ * panel settings rather than audio a recipe could load"* — which is why this is not `soundSetup`
+ * and why the box declares no `content`. What was missing is the other half: a reader who owns
+ * one of the 224 that already sounds like a recipe below should be told, rather than dialling
+ * eighteen parameters to arrive somewhere they could have loaded.
+ *
+ * **`observed`, because there is no page to cite.** The names are on the screen and nowhere in
+ * the manual, so the evidence is the unit and its firmware, and the firmware is load-bearing: a
+ * patch list is a thing a release can renumber or rename.
+ *
+ * **The name is evidence; the pairing is judgement.** That a patch called this exists is a fact
+ * from the box. That it lands near a particular recipe is the library's ear, and it stays uncited
+ * for the same reason a recipe's point values do (§3.2) — three of the 224 are claimed here, and
+ * they are the three whose idiom is unambiguous.
+ */
+function factoryPatch(name: string) {
+  return {
+    name,
+    evidence: { kind: 'observed' as const, source: 'Moog Muse unit, firmware 1.4.0 factory bank' },
+  }
+}
+
+/**
  * §3/#506. **The VCA envelope holds**, on every recipe a shipped hook holds for a bar or more.
  * p.38: the VCA ENVELOPE *"is normalized to control the Voltage-Controlled Amplifier (VCA) level"*
  * and both envelopes are *"classic Attack, Decay, Sustain, Release (ADSR) envelopes"*; p.39,
@@ -1941,6 +1966,7 @@ const recipes: Recipe[] = [
   // ---- pad: the reason an eight-voice box is in the library ---------------
   {
     id: 'muse-pad-soft',
+    factoryPatch: factoryPatch('Moog 55 Strings'),
     sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
@@ -2075,6 +2101,7 @@ const recipes: Recipe[] = [
   // ---- stab: short, and where UNISON earns its place — two of them mono ---
   {
     id: 'muse-stab-hard',
+    factoryPatch: factoryPatch('Polyphonic Power'),
     role: 'stab',
     character: 'hard',
     voice: 'timbre',
@@ -2215,6 +2242,7 @@ const recipes: Recipe[] = [
   // ---- lead: two mono, one that keeps its voices --------------------------
   {
     id: 'muse-lead-bright',
+    factoryPatch: factoryPatch('Muse Runner'),
     role: 'lead',
     character: 'bright',
     voice: 'timbre',

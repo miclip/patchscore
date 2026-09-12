@@ -81,6 +81,17 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
         `resolved-body.tsx` gives about every jog on this page: §8.1's toggle is what fills that
         column and this page has no toggle, so a hint put there would be invisible.
       */}
+      {voice.factoryPatch === undefined ? null : (
+        <>
+          <p className="quiet">
+            Factory patch — <strong>{voice.factoryPatch.name}</strong>
+            {voice.factoryPatch.bank === undefined ? '' : ` in ${voice.factoryPatch.bank}`}
+          </p>
+          <p className="quiet">
+            Load it and the settings below are already dialled. They build the same sound by hand.
+          </p>
+        </>
+      )}
       {voice.soundSetup === undefined ? null : (
         <>
           <p className="quiet">Sound — {voice.soundSetup.sound}</p>

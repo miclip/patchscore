@@ -1140,6 +1140,13 @@ export type ResolvedRecipeRef = {
    * not print. Absent where the recipe made no claim, which is every recipe until it is read.
    */
   sustain?: SustainKind
+  /**
+   * §3/#553. **A factory patch that reaches this sound**, where the box ships one. The name and
+   * where it lives; the `observed` evidence stays behind on the recipe with `sustain`'s, for the
+   * reason that one does — §8 prints no provenance (invariant 4), so a renderer holding a
+   * citation would be holding what it must not print.
+   */
+  factoryPatch?: { name: string; bank?: string }
   routing?: string
 }
 
@@ -2023,6 +2030,18 @@ export function resolve(input: ResolveInput): ResolveResult {
         realisation: realisationOf(a.recipe),
         ...(sourceAudio === undefined ? {} : { sourceAudio }),
         ...(soundSetup === undefined ? {} : { soundSetup }),
+        // §3/#553. Name and bank only — the `observed` cite stays on the recipe, where every
+        // other piece of provenance a renderer must not print already stays.
+        ...(a.recipe.factoryPatch === undefined
+          ? {}
+          : {
+              factoryPatch: {
+                name: a.recipe.factoryPatch.name,
+                ...(a.recipe.factoryPatch.bank === undefined
+                  ? {}
+                  : { bank: a.recipe.factoryPatch.bank }),
+              },
+            }),
         ...(a.recipe.sustain === undefined ? {} : { sustain: a.recipe.sustain.kind }),
         ...(routing === undefined ? {} : { routing }),
       },
