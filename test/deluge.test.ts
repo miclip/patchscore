@@ -707,6 +707,55 @@ describe('Deluge manifest', () => {
    */
   const TONAL: Role[] = ['sub', 'bass-mid', 'pad', 'lead', 'stab', 'arp', 'acid', 'texture', 'sweep']
 
+  /**
+   * §3/#506, the box the issue was reported on. The claim is pinned here — its page, its
+   * parameter and which recipes carry it — because `voice-sustain.test.ts` holds the library
+   * ledger and a ledger entry is not evidence.
+   *
+   * **The DX7 texture is the one left unestablished, and it is the reason this needed reading
+   * rather than deriving.** Every held-role recipe on this box authors `ENV 1 SUSTAIN` above
+   * zero, so a rule over the parameter alone would have claimed all four. `dx_synth.md` says
+   * that engine's shortcut opens `ENV 1` so *"the DX7 envelopes can be heard"* — the amplitude
+   * stage is being got out of the way, and what the note does belongs to a `.syx` this recipe
+   * does not author.
+   */
+  it('rests its sustain claim on the hard connection, and leaves the DX7 to its own envelopes (#506)', () => {
+    const HELD: Role[] = ['pad', 'texture', 'sub', 'acid']
+    const held = device.recipes.filter((r) => HELD.includes(r.role))
+
+    const claimed = held.filter((r) => r.sustain !== undefined).map((r) => r.id)
+    expect(claimed.sort()).toEqual(['deluge-acid-dirty', 'deluge-pad-soft', 'deluge-sub-dark'])
+    expect(held.filter((r) => r.sustain === undefined).map((r) => r.id)).toEqual([
+      'deluge-texture-soft',
+    ])
+
+    for (const recipe of held) {
+      // All four author the parameter, which is why the claim could not be derived from it.
+      const sustain = (recipe.params as AuthoredParam[]).find((p) => p.name === 'ENV 1 SUSTAIN')
+      expect(sustain, recipe.id).toBeDefined()
+      if (sustain?.kind !== 'numeric') throw new Error(`${recipe.id}: ENV 1 SUSTAIN is not numeric`)
+      expect(sustain.value, recipe.id).toBeGreaterThan(0)
+
+      if (recipe.sustain === undefined) continue
+      expect(recipe.sustain.kind, recipe.id).toBe('sustains')
+      expect(recipe.sustain.control, recipe.id).toEqual({
+        kind: 'parameters',
+        params: ['ENV 1 SUSTAIN'],
+      })
+      // p.83 describes the stages and calls the routing a default; p.122's matrix is what makes
+      // it a fact, marking `Overall Volume` x `ENV 1` alone in that column as `Hard Connect`.
+      expect(recipe.sustain.evidence, recipe.id).toEqual({
+        kind: 'manual',
+        source: 'Deluge Official Guidebook OS 4.1 (OLED), p.83 and p.122',
+      })
+    }
+
+    // The one left out is the DX7 engine, and nothing else on this box is.
+    const texture = device.recipes.find((r) => r.id === 'deluge-texture-soft')
+    const osc = (texture?.params as AuthoredParam[]).find((p) => p.name === 'OSC 1 TYPE')
+    expect(osc?.kind === 'enum' ? osc.value : undefined).toBe('DX7')
+  })
+
   it('gives every sustaining part a filter position and an amp envelope (#510)', () => {
     // The floor, and it is a floor rather than a shape: an oscillator, an effect and an EQ is a
     // raw waveform with the filter wherever the last patch left it and the amplitude unshaped,

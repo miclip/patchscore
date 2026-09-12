@@ -447,6 +447,15 @@ describe('the shipped library (#506)', () => {
       decays: ['tm-acid-dirty-sample', 'tm-acid-dirty-synth'],
       unestablished: ['tm-pad-soft-sample', 'tm-pad-soft-synth'],
     },
+    // The box #506 was reported on. p.83's synthesizer table gives every `ENVELOPE 1` stage as
+    // *"Default to volume amplitude"*, so `ENV 1 SUSTAIN` above zero holds the note — which is a
+    // page, where the Circuit Tracks above has only an inference. The DX7 texture is left: that
+    // engine's shortcut opens `ENV 1` so the patch's own operator envelopes can be heard, and the
+    // `.syx` this recipe does not author is what decides.
+    'synthstrom-deluge': {
+      sustains: ['deluge-sub-dark', 'deluge-pad-soft', 'deluge-acid-dirty'],
+      unestablished: ['deluge-texture-soft'],
+    },
   }
 
   it('declares exactly what the read record says, per device, and nothing on a device not read', () => {
@@ -492,12 +501,12 @@ describe('the shipped library (#506)', () => {
       }
     }
     expect(held).toBe(174)
-    expect(claimed).toBe(92)
-    expect(left).toBe(25)
+    expect(claimed).toBe(95)
+    expect(left).toBe(26)
     expect(claimed + left).toBeGreaterThan(held / 2)
   })
 
-  it('counts ninety-one distinct claims in the library, on twenty-three manifests read', () => {
+  it('counts ninety-four distinct claims in the library, on twenty-four manifests read', () => {
     // Per distinct recipe: the XL takes the Live III's by reference and is not counted twice;
     // the One G2 rewrites its citation and is. The figure is the `caps` delta the audit reports.
     const ordered = [...DEVICES].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -511,8 +520,8 @@ describe('the shipped library (#506)', () => {
         if (r.sustain !== undefined) distinct++
       }
     }
-    expect(distinct).toBe(91)
-    expect(Object.keys(READ)).toHaveLength(23)
+    expect(distinct).toBe(94)
+    expect(Object.keys(READ)).toHaveLength(24)
   })
 
   /**

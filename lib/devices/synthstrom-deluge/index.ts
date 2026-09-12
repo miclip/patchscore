@@ -1,4 +1,5 @@
 import type { Device, Recipe } from '../../core/device'
+import type { SustainClaim } from '../../core/device'
 import type {
   AuthoredEnumParam,
   AuthoredModulationParam,
@@ -477,6 +478,42 @@ const DX7_OPTIONS_CITE: Cite = {
     'Deluge Official Guidebook OS 4.1 (OLED), p.81 + community firmware release_1_2_1, dx_synth.md',
 }
 
+/**
+ * §3/#506. **`ENV 1` is this box's amplitude stage, and the reader sets its sustain level here.**
+ * Two pages, because one of them alone would be the weaker claim. p.83's synthesizer table gives
+ * all four `ENVELOPE 1` stages as *"Default to volume amplitude plus an additional optional patch
+ * destination"* — but a *default* is a routing somebody could move, and a claim resting on it
+ * would be a claim about the init patch. p.122's modulation matrix settles it: `Overall Volume`
+ * against `ENV 1` is the one cell in that column marked **Hard Connect**, where every other source
+ * is an ordinary tick. The connection is not a default, it is wired.
+ *
+ * `envelope/sustain.md` @ `release_1_2_1` gives the two poles: *"0 causes the envelope to decay to
+ * 0, 50 means the envelope does not decay"*. So a recipe authoring `ENV 1 SUSTAIN` above zero
+ * settles above silence and stays there while the note is held, which is what `sustains` claims.
+ *
+ * The claim names only `ENV 1 SUSTAIN` because that one parameter decides it. `ATTACK`, `DECAY`
+ * and `RELEASE` shape how the level is reached and left; none of them can take a non-zero sustain
+ * to silence during the hold.
+ *
+ * **`deluge-texture-soft` is left unestablished on purpose**, and it is the interesting one. It is
+ * the DX7 engine, whose amplitude is shaped by the loaded patch's own operator envelopes — and
+ * `dx_synth.md` says the engine's own shortcut opens `ENV 1` precisely so *"the DX7 envelopes can
+ * be heard"*. So on that recipe `ENV 1 SUSTAIN 50` is the amplitude stage getting out of the way
+ * rather than holding the note, and what the note does is a property of a `.syx` file this recipe
+ * does not author and no page describes. A `sustains` there would be this citation read off the
+ * wrong engine.
+ */
+const SUSTAINS: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['ENV 1 SUSTAIN'] },
+  // Spelled out rather than built by `cite()`, which returns the wider `Cite` — a sustain claim
+  // takes a page or a unit and nothing else — and because the claim rests on both pages.
+  evidence: {
+    kind: 'manual',
+    source: 'Deluge Official Guidebook OS 4.1 (OLED), p.83 and p.122',
+  },
+}
+
 /** `community_features.md`, `FILTER ROUTE`, SOUND menu only — community-added. */
 const FILTER_ROUTES = ['HPF TO LPF', 'LPF TO HPF', 'PARALLEL']
 
@@ -717,6 +754,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'deluge-sub-dark',
+    sustain: SUSTAINS,
     role: 'sub',
     character: 'dark',
     voice: 'track',
@@ -896,6 +934,7 @@ const RECIPES: Recipe[] = [
   // ---- tonal ----------------------------------------------------------------------
   {
     id: 'deluge-pad-soft',
+    sustain: SUSTAINS,
     role: 'pad',
     character: 'soft',
     voice: 'track',
@@ -1045,6 +1084,7 @@ const RECIPES: Recipe[] = [
   },
   {
     id: 'deluge-acid-dirty',
+    sustain: SUSTAINS,
     role: 'acid',
     character: 'dirty',
     voice: 'track',
