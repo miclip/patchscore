@@ -549,8 +549,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 288 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(342)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(312)
+    expect(grid.length).toBe(348)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(318)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -572,7 +572,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 306, blank: 306 }],
+      ['drum-pad', { grid: 312, blank: 312 }],
       ['tone-track', { grid: 36, blank: 6 }],
     ])
   })
@@ -610,6 +610,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['impact', 12],
       ['tom', 12],
       ['arp', 6],
+      ['noise', 6],
     ])
   })
 
@@ -644,7 +645,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
     // classify — which is what would make the 288 above an undercount rather than a measurement.
     expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
-    expect(assignments).toBe(498)
+    expect(assignments).toBe(504)
 
     // The parts this four-track box cannot take are §7.3 gaps, not blank grids: they never reach
     // phase 5, so none of them is among the 288. The MC-707 takes 48 more parts over this sweep.

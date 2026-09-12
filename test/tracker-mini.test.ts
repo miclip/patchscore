@@ -1296,8 +1296,12 @@ describe('Tracker Mini manifest', () => {
     expect(tracks).toBeGreaterThan(SYNTH_SLOTS)
 
     // Nothing was refused for the resource, which is the other half: the budget was not merely
-    // unspent, it was enough.
-    expect(result.shortfalls.filter((g) => g.reason === 'no-room')).toEqual([])
+    // unspent, it was enough. `because` is what makes that the claim: since #538 gave this
+    // direction a tenth request, the optional ghost-perc is crowded out of the comfortable
+    // voices, and a crowding gap says nothing about the slots.
+    expect(
+      result.shortfalls.filter((g) => g.reason === 'no-room' && g.because === 'resource'),
+    ).toEqual([])
   })
 
   it('loads three of four synth patches and says which slot ran out, on free tracks', () => {
@@ -2101,13 +2105,13 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // Untransposed one-shots and loops: the note is what plays them as recorded.
     expect(counts('trigger')).toEqual([
       ['closed-hat', 48],
-      ['ghost-perc', 48],
+      ['ghost-perc', 42],
       ['clap', 24],
       ['open-hat', 24],
       ['ride', 18],
       ['impact', 12],
+      ['noise', 12],
       ['arp', 6],
-      ['noise', 6],
     ])
 
     // And the parts whose recipe sets `TUNE` off zero, which still say nothing: `tm-kick-hard` at

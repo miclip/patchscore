@@ -890,8 +890,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // 186 until #345 authored the six roles the pool declared and no recipe served; 222 until Hard
     // Techno, which this box carries nine parts of — its only lead is `clean`, the opposite of
     // the `dirty` one asked for, so that part is an honest gap rather than a grid.
-    expect(grid.length).toBe(312)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(282)
+    expect(grid.length).toBe(318)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(288)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -929,6 +929,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['metallic', 12],
       ['open-hat', 12],
       ['arp', 6],
+      ['noise', 6],
       ['vox-chop', 6],
     ])
   })
@@ -939,9 +940,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
     expect(hooked.length).toBe(150)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(30)
+    // #538. Ambient Dub's `noise` at priority 3 takes the track its `sweep` (p4) had on this
+    // box, so the sweep leaves this list as a part the box no longer carries.
     expect([...new Set(noPattern)].sort()).toEqual([
-      'ambient-dub/sweep',
       'ambient-dub/texture',
       'hard-techno/riser',
       'hip-hop/texture',

@@ -382,11 +382,12 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // `lead / dirty` left when Hard Techno asked for both. A pair leaving this list is progress;
     // a pair joining it is the finding coming back, and the failure names which.
     //
-    // **25 and 58 since #538's clap; 26 and 62 before it, and #541's was a pair joining.** `tom / soft` was reachable only as a
-    // substitution on the one box whose sole tom was soft; `ct-tom-hard` answers that box's tom
-    // requests exactly now, so nothing selects a soft tom anywhere. Worth being plain about: the
-    // trade was a real `no-recipe` closed against a pair going dark, and it is the right trade,
-    // but it is not this list getting shorter.
+    // **24 and 57 since #538's noise wash; 25 and 58 after its clap; 26 and 62 before that, and
+    // #541's was a pair joining.** `tom / soft` was reachable only as a substitution on the one
+    // box whose sole tom was soft; `ct-tom-hard` answers that box's tom requests exactly now, so
+    // nothing selects a soft tom anywhere. Worth being plain about: the trade was a real
+    // `no-recipe` closed against a pair going dark, and it is the right trade, but it is not
+    // this list getting shorter.
     const never = [...authored.keys()].filter((pair) => !selected.has(pair)).sort()
     expect(never).toEqual([
       'arp / dark',
@@ -400,7 +401,6 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'noise / bright',
       'noise / dark',
       'noise / hard',
-      'noise / soft',
       'pad / bright',
       'pad / dark',
       'pad / dirty',
@@ -416,16 +416,20 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'tom / soft',
     ])
     expect(authored.size).toBe(86)
-    // **58 since #538 gave Hip-Hop a `clap / soft`.** Four recipes left the list — the RD-8's,
-    // the RD-9's, the TR-1000's and the TR-8S's, which all describe the same part in the same
-    // words and which no direction had asked for. A pair leaving because a direction now wants
-    // it is the shape this list exists to reward.
+    // **57 since #538 gave Ambient Dub a `noise / soft`.** One recipe left the list, the TR-6S's
+    // *Open hat opened out into a wash* — the only soft noise in the library, and the second
+    // pair this list has lost to a direction asking rather than a recipe being deleted.
+    //
+    // It was 58 since #538 gave Hip-Hop a `clap / soft`: four recipes left the list — the
+    // RD-8's, the RD-9's, the TR-1000's and the TR-8S's, which all describe the same part in the
+    // same words and which no direction had asked for. A pair leaving because a direction now
+    // wants it is the shape this list exists to reward.
     //
     // It was 62 since #541: `tom / soft` joined carrying its three recipes (the Rytm, the DFAM and the
     // Circuit Tracks). `authored.size` is unchanged at 86, because `tom / hard` was authored on
     // eight boxes already and a ninth adds no pair — which is why recipes-behind is the number
     // worth pinning beside it. A pair can go dark with the pair count saying nothing at all.
-    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(58)
+    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(57)
   })
 
   it('moves three solo rigs from the dark sub to the clean one, and no other', () => {
@@ -460,6 +464,103 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       const { shortfalls } = resolve({ devices: [device], template: acid, seed: 1 })
       const sub = shortfalls.find((s) => s.requestId === 'r-sub')
       if (sub !== undefined) expect(sub.reason, device.id).not.toBe('no-recipe')
+    }
+  })
+})
+
+/**
+ * #538, the third pair. **A request whose priority was measured rather than felt**, and the
+ * measurement is what this block pins: the one box that authors a soft noise has six fixed
+ * voices, and the one that takes `noise` also takes `texture` and `ride`, both asked for at 3.
+ * At 3 the wash wins the voice on the box's own role order (§7.1's role-fit key); at 4 it loses
+ * to the texture; as an `optional` request it loses the same tie, because an optional miss ranks
+ * below a required one. Two of those three shapes reach nothing, and a direction asking for a
+ * pair nothing can select is the finding this file exists to make.
+ */
+describe('#538 Ambient Dub asks for a soft noise, and the one box that wrote it plays it', () => {
+  const dub = templateById('ambient-dub')
+  if (dub === undefined) throw new Error('ambient-dub missing from the templates')
+  const request = dub.roles.find((r) => r.id === 'r-noise')
+  if (request === undefined) throw new Error('ambient-dub has no r-noise')
+  const tr6s = deviceById('roland-tr-6s')
+
+  /** The same request at another priority, or another shape, for the measurement. */
+  const shaped = (over: Partial<typeof request>) => ({
+    ...dub,
+    roles: dub.roles.map((r) => (r.id === 'r-noise' ? { ...r, ...over } : r)),
+  })
+
+  it('asks for `noise` as `soft`, at priority 3, and is the only direction that asks for it soft', () => {
+    expect(request.priority).toBe(3)
+    expect(request.character).toBe('soft')
+    expect(request.optional).toBeUndefined()
+    const noises = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'noise').map((r) => `${t.id}:${r.character}`),
+    )
+    expect(noises.filter((n) => n.endsWith(':soft'))).toEqual(['ambient-dub:soft'])
+  })
+
+  it('selects `noise / soft` in the solo sweep, and only on the box that authored it', () => {
+    const { selected } = selectedPairs()
+    expect(selected.has('noise / soft')).toBe(true)
+    // Ninety-six fills over 46 boxes x 4 seeds: four exact, the rest `dirty` at sqrt(2). Pinned
+    // by character rather than by box, because a second soft noise landing anywhere is the
+    // number that should move first.
+    const picked = new Map<string, number>()
+    for (const device of DEVICES) {
+      for (const seed of [1, 2, 3, 4]) {
+        const { assignments } = resolve({ devices: [device], template: dub, seed })
+        const noise = assignments.find((a) => a.requestId === 'r-noise')
+        if (noise === undefined) continue
+        picked.set(noise.recipe.character, (picked.get(noise.recipe.character) ?? 0) + 1)
+      }
+    }
+    expect([...picked].sort()).toEqual([
+      ['dirty', 92],
+      ['soft', 4],
+    ])
+    for (const seed of [1, 2, 3, 4]) {
+      const { assignments } = resolve({ devices: [tr6s], template: dub, seed })
+      expect(assignments.find((a) => a.requestId === 'r-noise')?.recipe.id, `seed ${seed}`).toBe(
+        'tr6s-noise-soft',
+      )
+    }
+  })
+
+  it('takes that voice from the texture at 3, and would lose it at 4 or as an optional part', () => {
+    // The cost, stated: the wash and the loop texture want the same voice on this box, and the
+    // wash wins because the box's author listed `noise` ahead of `texture` on it. That is the
+    // objective's role-fit key deciding a tie at equal priority and equal distance (§7.1).
+    const at3 = resolve({ devices: [tr6s], template: dub, seed: 1 })
+    expect(at3.shortfalls.find((s) => s.requestId === 'r-texture')?.reason).toBe('no-room')
+    expect(at3.shortfalls.find((s) => s.requestId === 'r-ride')?.reason).toBe('no-room')
+
+    // At 4 the texture outranks it and the pair goes dark again on the only box that has it.
+    const at4 = resolve({ devices: [tr6s], template: shaped({ priority: 4 }), seed: 1 })
+    expect(at4.assignments.find((a) => a.requestId === 'r-noise')).toBeUndefined()
+    expect(at4.assignments.find((a) => a.requestId === 'r-texture')?.recipe.id).toBe('tr6s-texture-soft')
+
+    // And `optional` at 3 loses the same tie, because an optional miss ranks below a required
+    // one — which is why the request is `inessential` and not `optional`.
+    const optional = resolve({
+      devices: [tr6s],
+      template: shaped({ optional: true, inessential: { reason: 'measured, not authored' } }),
+      seed: 1,
+    })
+    expect(optional.assignments.find((a) => a.requestId === 'r-noise')).toBeUndefined()
+    expect(optional.assignments.find((a) => a.requestId === 'r-texture')?.recipe.id).toBe(
+      'tr6s-texture-soft',
+    )
+  })
+
+  it('drops no noise for want of a recipe: `hard` is the one refused opposite, and it sits beside a dirty one', () => {
+    // The MicroFreak's `hard` noise is the only opposite in the library, and that box authors a
+    // dirty one too — so no box lost its only candidate to §3.5's refusal. The reasons left are
+    // the rig's: a voice that went to a part ranked above, or no voice that plays a noise.
+    for (const device of DEVICES) {
+      const { shortfalls } = resolve({ devices: [device], template: dub, seed: 1 })
+      const noise = shortfalls.find((s) => s.requestId === 'r-noise')
+      if (noise !== undefined) expect(noise.reason, device.id).not.toBe('no-recipe')
     }
   })
 })

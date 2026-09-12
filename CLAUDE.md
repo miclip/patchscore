@@ -134,25 +134,33 @@ Layers with a strict contract between them. Roles are the join.
 
 ## Rigs are capped at ten devices, so search cost is settled (#301)
 
-**`MAX_RIG_DEVICES` is 10.** `withDevice` refuses the eleventh tick and `checkGuideInputs` rejects
-a permalink that names more, so a rig larger than ten cannot be reached through the picker or
-through a hand-edited URL. There is no "select all" and there must not be one.
+**`MAX_RIG_DEVICES` is 10.** `withDevice` refuses the eleventh tick, so a rig larger than ten
+cannot be assembled in the picker. It is a picker rule and deliberately not a format rule:
+`checkGuideInputs` does not enforce it, and a permalink or remembered rig from before the cap
+still names the rig it named and still resolves. There is no "select all" and there must not be
+one.
 
 **Measured on the worst rig the product can build, with `npm run measure:search`:**
 
 ```
 rig limit      10 devices  (MAX_RIG_DEVICES)
-worst rig      68,253 nodes   (hard-techno seed 15)
+worst rig      99,459 nodes   (ambient-dub seed 16)
 cap         2,000,000
-headroom             29x  —  3.41% of the cap
+headroom             20x  —  4.97% of the cap
 ```
 
 It got *cheaper* at #25, from 83,874 nodes, and the direction of that is worth keeping: a
 feasibility constraint prunes the tree rather than complicating it. An infeasible partial
-assignment is cut, where an expensive one still has to be explored. It moved up once since, from
-47,284 on `weave`, when Hard Techno arrived asking for seven drum parts on one rig — the same
-mechanism as `weave`, more roles contending for the same voices — and the catalogue figure did
-not move at all.
+assignment is cut, where an expensive one still has to be explored. It has moved up twice since.
+From 47,284 on `weave` to 68,253 on `hard-techno`, when that direction arrived asking for seven
+drum parts on one rig — the same mechanism as `weave`, more roles contending for the same voices.
+Then to 99,459 on `ambient-dub`, when #538 gave it a `noise / soft` request at priority 3 that
+one box in the library answers exactly and thirty-two others answer only with a `dirty` one, by
+substitution: on a ten-box rig without that one box every candidate costs the same sqrt(2), so
+the floor is loose and the seed has more to permute among. That is a different mechanism from crowding, and it is worth
+naming, because it is the shape of every request added to reach a pair one box authored. The
+catalogue figure did not move either time — the full catalogue *contains* the exact answer, and
+commits early on it, which is one more way the benchmark says nothing about a rig.
 
 **This section used to be an argument. It is now a fact, and the difference is the point.** The
 argument kept losing: the whole-catalogue sweep reports a worst case near the cap, and that figure

@@ -258,9 +258,9 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
   it('leaves 300 grid parts blank, and pins where they are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(354)
+    expect(grid.length).toBe(360)
     const blank = grid.filter((g) => g.kind === 'none')
-    expect(blank.length).toBe(324)
+    expect(blank.length).toBe(330)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -272,7 +272,7 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
     for (const g of blank) byPool.set(g.pool, (byPool.get(g.pool) ?? 0) + 1)
     expect([...byPool].sort()).toEqual([
       ['mono-track', 204],
-      ['pad', 114],
+      ['pad', 120],
       ['poly-track', 6],
     ])
   })
@@ -308,8 +308,8 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
       ['ride', 18],
       ['tom', 18],
       ['impact', 12],
+      ['noise', 12],
       ['arp', 6],
-      ['noise', 6],
       ['vox-chop', 6],
     ])
   })

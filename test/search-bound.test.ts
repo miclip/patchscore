@@ -757,9 +757,22 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     // three or four digits against a 2,000,000 cap. The legal-rig figure `measure:search` gates
     // on did not move — 47,284 before and after — and neither did the catalogue benchmark,
     // 586,551.
+    //
+    // #538. The `noise / soft` request at priority 3 lifts every seed by 30-140 nodes — peak
+    // 1,047 -> 1,146, floor 272 -> 306 — which on the full catalogue is one more candidate the
+    // search prices at every tie, and cheaply, because the one box that authors a soft noise is
+    // in the rig and answers exactly, so `liveFloor` is tight from the first branch.
+    //
+    // **The legal rig is where this request costs, and it moved the figure `measure:search`
+    // gates on**: 68,253 on `hard-techno` seed 15 -> 99,459 on `ambient-dub` seed 16, 29x
+    // headroom to 20x, 3.41% of the cap to 4.97%. On a ten-box rig *without* that one box every
+    // candidate is a `dirty` substitution at the same sqrt(2), so the floor is loose and the seed
+    // has more to permute among. The catalogue benchmark did not move — 586,551 before and
+    // after — which is the same lesson as `hip-hop` below, seen from the other side: the
+    // catalogue can be cheaper than a rig somebody owns, and neither number is the other.
     'ambient-dub': [
-      272, 611, 272, 466, 617, 274, 272, 460, 277, 274, 272, 492, 272, 277, 275, 272, 460, 925,
-      1047, 609, 590, 919, 272, 397
+      306, 679, 306, 534, 685, 309, 306, 528, 312, 309, 306, 559, 306, 312, 310, 307, 528, 1061,
+      1146, 675, 693, 1051, 307, 467
     ],
     'breakbeat': [
       717, 68839, 1479, 558, 68387, 238, 241, 561, 241, 561, 241, 560, 1559, 642, 349, 826, 2649,

@@ -861,8 +861,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 264 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(318)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(288)
+    expect(grid.length).toBe(324)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(294)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -900,6 +900,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['tom', 12],
       ['arp', 6],
       ['impact', 6],
+      ['noise', 6],
       ['vox-chop', 6],
     ])
   })
@@ -910,10 +911,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
     expect(hooked.length).toBe(156)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(24)
+    // #538. Ambient Dub's `noise` at priority 3 takes the track its `sweep` (p4) and `riser`
+    // (p5) used to share on this box, so both leave this list as parts the box no longer carries.
     expect([...new Set(noPattern)].sort()).toEqual([
-      'ambient-dub/riser',
-      'ambient-dub/sweep',
       'ambient-dub/texture',
       'hip-hop/texture',
       'industrial-techno/riser',
