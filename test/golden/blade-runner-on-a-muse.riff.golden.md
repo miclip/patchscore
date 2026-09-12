@@ -4,35 +4,37 @@
 
 ## The technique
 
-One note per chord, and let the chord change under it rather than moving to meet it. The part is mostly silence and one held note.
+Bars 7 to 10 of the cycle, which is the pair of chords the key does not own. The four minor chords either side are the setting; these two are the turn.
 
-Come in late. Neither note lands on the downbeat of its own chord — the first arrives half a bar in, which is what makes it sound played rather than programmed.
+Come in late on every chord. Both entries land a beat or more after the pad has already changed under them, which is what makes the line sound played rather than programmed. The third note is not an entry — it is the same chord, continued.
 
-Both notes are the major third of the chord under them, and both are a semitone above what the key gives you. That semitone is the whole sound. Play the note the key expects and the turn disappears.
+The two entries are the major third of the chord beneath them, each a semitone above what the key gives you. That semitone is the whole sound. Play the note the key expects and the turn disappears.
 
-Hold each one until the next chord is already sounding, then release. The overlap is where the two chords blur into each other.
+Never play the key’s own third or sixth while these two chords are sounding. A natural third against the raised one is the move collapsing, and it is the one mistake this figure can make.
 
-Over the four minor chords either side of this, do the same thing with the plain third or fifth: one note, late, held. The shape is what repeats; only these two are raised.
+Hold each entry until the next chord is already sounding, then release. The overlap is where the two chords blur into each other.
+
+Over the four minor chords either side, do the same thing with the plain third or fifth: one note, late, held. The shape is what repeats; only these two are raised.
 
 ## The chords
 
-6 chords over 12 bars, in F# minor.
+6 chords over 12 bars, in F# minor. The figure is bars 7–10.
 
-| Degree | Bars |
-| --- | ---: |
-| i | 2 |
-| VI | 2 |
-| iv | 2 |
-| I | 2 |
-| IV | 2 |
-| v | 2 |
+| Degree | Bars | Under the figure |
+| --- | ---: | :---: |
+| i | 1–2 |  |
+| VI | 3–4 |  |
+| iv | 5–6 |  |
+| I | 7–8 | ● |
+| IV | 9–10 | ● |
+| v | 11–12 |  |
 
 ## The notes
 
 4 bars in F# minor.
 
 - step 9 · `A#4` · degree #3 · MIDI 70 · in force 26 steps
-- step 33 · `D#5` · degree #6 · MIDI 75 · in force 18 steps
+- step 37 · `D#5` · degree #6 · MIDI 75 · in force 12 steps
 - step 49 · `F#5` · degree 1 · MIDI 78 · in force 16 steps
 
 ## The grid
@@ -42,11 +44,12 @@ Every step below strikes the note in force at that point. The grid is where the 
 ```
  1 ···· ···· x··· ····
 17 ···· ···· ···· ····
-33 x··· ···· ···· ····
+33 ···· x··· ···· ····
 49 x··· ···· ···· ····
 ```
 - `accent` · 9
-- `downbeat` · 33, 49
+- `offbeat` · 37
+- `downbeat` · 49
 
 ## Where it plays
 

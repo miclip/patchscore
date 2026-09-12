@@ -138,9 +138,13 @@ function chordLines(riff: Riff): string[] {
     '',
     summary,
     '',
-    '| Degree | Bars |',
-    '| --- | ---: |',
-    ...chordRows(riff).map((row) => `| ${row.degree} | ${num(row.bars)} |`),
+    '| Degree | Bars | Under the figure |',
+    '| --- | ---: | :---: |',
+    ...chordRows(riff).map(
+      (row) =>
+        `| ${row.degree} | ${num(row.from)}\u2013${num(row.from + row.bars - 1)} |` +
+        ` ${row.underFigure ? '●' : ''} |`,
+    ),
   ]
 }
 

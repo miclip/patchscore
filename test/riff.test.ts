@@ -330,18 +330,103 @@ describe('the Blade Runner Blues lead (§5A/§4.1)', () => {
     expect(resolved.hook.notes.map((n) => n.note)).toEqual(['A#4', 'D#5', 'F#5'])
   })
 
-  it('holds each note past the chord it starts on, which the technique says in words', () => {
-    const [first, second] = bladeRunnerBluesLead.hook.notes
-    // Bars 1-2 are the `I`, so step 33 is where the `IV` arrives. The first note starts at 9 and
-    // runs to 34, overlapping it; the second starts at 33 and is still sounding at 49.
-    expect((first?.step ?? 0) + (first?.len ?? 0)).toBeGreaterThan(33)
-    expect((second?.step ?? 0) + (second?.len ?? 0)).toBeGreaterThan(49)
-  })
-
   it('strikes every note once and nothing else, so the grid does not re-articulate a hold', () => {
     // `RIFF_GRID_LEAD` promises every step strikes the note in force at that point, so a hit the
     // hook has no onset for would re-strike a note this technique holds through.
     const onsets = bladeRunnerBluesLead.hook.notes.map((n) => n.step)
     expect(bladeRunnerBluesLead.pattern.hits.map((h) => h.step)).toEqual(onsets)
+  })
+})
+
+/**
+ * §5A/#552. **The figure checked against the chords it is actually over**, which is the class of
+ * defect that shipped: a four-bar figure printed under a twelve-bar table with nothing saying
+ * where it starts, so the raised third read as sitting over the minor chord.
+ *
+ * These are alignment tests rather than content tests. They would each have failed the first
+ * published version, and they fail again the moment `figureStartsAtBar`, the note steps or the
+ * progression move apart.
+ */
+describe('the Blade Runner Blues lead lines up with its chords (#552)', () => {
+  const riff = bladeRunnerBluesLead
+  const { harmony } = riff
+  if (harmony === undefined) throw new Error('the entry carries no harmony')
+  const cycle = harmony
+  const STEPS_PER_BAR = 16
+
+  /** The degree sounding at a figure step, resolved through the offset. */
+  function chordAt(step: number): string {
+    const cycleBar = (riff.figureStartsAtBar ?? 1) + Math.floor((step - 1) / STEPS_PER_BAR)
+    let bar = 1
+    for (const chord of cycle.progression) {
+      if (cycleBar >= bar && cycleBar < bar + chord.bars) return chord.degree
+      bar += chord.bars
+    }
+    throw new Error(`step ${String(step)} falls outside the cycle`)
+  }
+
+  const resolved = resolveHook(riff.hook, riff.key)
+  if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+  const notes = resolved.hook.notes
+
+  it('puts every note over the chord it was written for', () => {
+    // The two raised notes are the major thirds of the two borrowed chords. Over anything else
+    // they are the wrong note, and over the `i` a raised third is the collision this figure is
+    // about avoiding.
+    expect(notes.map((n) => [n.note, chordAt(n.step)])).toEqual([
+      ['A#4', 'I'],
+      ['D#5', 'IV'],
+      ['F#5', 'IV'],
+    ])
+  })
+
+  it('never sounds the key’s own third under the I, or its sixth under the IV', () => {
+    // Checked across each note's whole span rather than at its onset: a note that holds into the
+    // next chord is sounding over it, and the natural third against the raised one is the same
+    // collision arriving a beat later.
+    const FORBIDDEN: Record<string, string> = { I: 'A', IV: 'D' }
+    for (const note of notes) {
+      const pitchClass = note.note.replace(/[0-9-]/g, '')
+      for (let step = note.step; step < note.step + note.len; step += 1) {
+        if (step > riff.hook.bars * STEPS_PER_BAR) break
+        expect(
+          FORBIDDEN[chordAt(step)],
+          `${note.note} sounding at step ${String(step)} over ${chordAt(step)}`,
+        ).not.toBe(pitchClass)
+      }
+    }
+  })
+
+  it('enters every chord late, and never on the bar the chord starts', () => {
+    // The technique's second paragraph, as an assertion. A note that is not the first of its
+    // chord is a continuation and is exempt — it is not an entry.
+    const seen = new Set<string>()
+    for (const note of riff.hook.notes) {
+      const degree = chordAt(note.step)
+      if (seen.has(degree)) continue
+      seen.add(degree)
+      const offsetInBar = (note.step - 1) % STEPS_PER_BAR
+      const barsIntoChord = Math.floor((note.step - 1) / STEPS_PER_BAR) % 2
+      expect(
+        barsIntoChord * STEPS_PER_BAR + offsetInBar,
+        `${degree} is entered at step ${String(note.step)}`,
+      ).toBeGreaterThanOrEqual(4)
+    }
+  })
+
+  it('reconciles the bar arithmetic, so the table and the figure cannot drift apart', () => {
+    const summed = cycle.progression.reduce((n, chord) => n + chord.bars, 0)
+    expect(summed).toBe(cycle.cycleBars)
+    const start = riff.figureStartsAtBar ?? 1
+    expect(start + riff.hook.bars - 1).toBeLessThanOrEqual(cycle.cycleBars)
+  })
+
+  it('says two entries in prose and emits two entries plus one continuation', () => {
+    // The published version said "both notes" over a list of three. The prose now distinguishes
+    // an entry from a continuation, so the count it claims is a count this can check.
+    const entries = new Set(riff.hook.notes.map((n) => chordAt(n.step)))
+    expect(entries.size).toBe(2)
+    expect(riff.hook.notes).toHaveLength(3)
+    expect(riff.technique.some((p) => p.includes('The third note is not an entry'))).toBe(true)
   })
 })

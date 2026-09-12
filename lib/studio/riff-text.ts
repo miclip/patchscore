@@ -87,20 +87,48 @@ export function riffLength(riff: Riff): string {
  * (invariant 3); spelling them out as chord names would be a second harmony implementation living
  * on the riff surface, and #33's rule is that a surface renders, it does not decide.
  */
-export type ChordRow = { degree: string; bars: number }
+/**
+ * A row of the chord table: the degree, how long it lasts, the bar it starts on, and whether the
+ * figure is playing over it.
+ *
+ * `from` and `underFigure` exist because a table without them is a table a reader has to align by
+ * guessing (#552). A four-bar figure printed against a twelve-bar cycle reads as starting at bar
+ * one, and that is the wrong chord whenever it does not.
+ */
+export type ChordRow = { degree: string; bars: number; from: number; underFigure: boolean }
 
 export function chordRows(riff: Riff): readonly ChordRow[] {
-  return riff.harmony === undefined ? [] : riff.harmony.progression.map((step) => ({ ...step }))
+  const { harmony } = riff
+  if (harmony === undefined) return []
+  const start = riff.figureStartsAtBar ?? 1
+  const end = start + riff.hook.bars - 1
+  const rows: ChordRow[] = []
+  let from = 1
+  for (const step of harmony.progression) {
+    const last = from + step.bars - 1
+    rows.push({ ...step, from, underFigure: from <= end && last >= start })
+    from += step.bars
+  }
+  return rows
 }
 
-/** `Six chords over 12 bars, in F# minor.` — the line above the rows. */
+/**
+ * `6 chords over 12 bars, in F# minor. The figure is bars 7-10.` — the line above the rows.
+ *
+ * The second sentence appears only where the figure is shorter than the cycle. Where the two are
+ * the same length there is nothing to align and saying so would be noise.
+ */
 export function riffChordSummary(riff: Riff): string | undefined {
   const { harmony } = riff
   if (harmony === undefined) return undefined
-  return (
+  const head =
     `${count(harmony.progression.length, 'chord')} over ` +
     `${count(harmony.cycleBars, 'bar')}, in ${riff.key}.`
-  )
+  if (riff.hook.bars >= harmony.cycleBars) return head
+  const start = riff.figureStartsAtBar ?? 1
+  const end = start + riff.hook.bars - 1
+  const span = start === end ? `bar ${num(start)}` : `bars ${num(start)}\u2013${num(end)}`
+  return `${head} The figure is ${span}.`
 }
 
 /**
