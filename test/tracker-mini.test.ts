@@ -2063,7 +2063,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // does not take a part whose notes select slices, so they draw a grid like any other part and
     // are counted here. `hooked` drops by the same six. Hard Techno is the second, 282 -> 330: ten
     // parts this box carries whole, eight of them on the grid.
-    expect(grid.length).toBe(348)
+    expect(grid.length).toBe(354)
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
 
     // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged
@@ -2076,7 +2076,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
 
     // The device's arm, back on the parts p.90's sentence is true of and on no others.
     const triggered = grid.filter((g) => g.kind === 'trigger')
-    expect(triggered).toHaveLength(180)
+    expect(triggered).toHaveLength(186)
     expect([...new Set(triggered.map((g) => `${String(g.note)}/${String(g.midi)}`))]).toEqual([
       'C5/60',
     ])
@@ -2102,8 +2102,8 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     expect(counts('trigger')).toEqual([
       ['closed-hat', 48],
       ['ghost-perc', 48],
+      ['clap', 24],
       ['open-hat', 24],
-      ['clap', 18],
       ['ride', 18],
       ['impact', 12],
       ['arp', 6],

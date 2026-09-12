@@ -620,9 +620,9 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
   it('leaves only the sliced parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(360)
+    expect(grid.length).toBe(366)
     expect(grid.filter((g) => g.kind === 'none').length).toBe(6)
-    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(324)
+    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(330)
 
     // Named rather than left to the count: all three arms are now in play on this box.
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
@@ -659,10 +659,10 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
       ['closed-hat', 54],
       ['kick', 54],
       ['ghost-perc', 48],
+      ['clap', 24],
       ['open-hat', 24],
       ['rim', 24],
       ['snare', 24],
-      ['clap', 18],
       ['metallic', 18],
       ['ride', 18],
       ['tom', 18],
@@ -735,8 +735,8 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
         }
       }
     }
-    expect(seen).toBe(564)
-    expect(carrying).toBe(552)
+    expect(seen).toBe(570)
+    expect(carrying).toBe(558)
   })
 
   /**

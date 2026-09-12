@@ -195,11 +195,11 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['closed-hat', 54],
       ['kick', 54],
-      ['ghost-perc', 42],
+      ['ghost-perc', 36],
+      ['clap', 24],
       ['open-hat', 24],
       ['rim', 24],
       ['snare', 24],
-      ['clap', 18],
       ['ride', 18],
       ['metallic', 12],
       ['tom', 12],

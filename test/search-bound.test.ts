@@ -799,9 +799,18 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     // The `industrial-techno` figures are 1-3 nodes above what #383 measured alone, because
     // #345's seven Digitakt recipes landed first and cost this direction one node per seed. Two
     // changes, and the second dwarfs the first by five orders of magnitude.
+    // #538. The `clap / soft` request roughly doubles this row — peak 2,214 -> 5,000, and every
+    // seed up. A ninth request on an eight-request direction is the one change that moves a row,
+    // and this one lands on `clap`, which 30 boxes author: the search has a new decision to make
+    // at nearly every node it already had. Four digits against a 2,000,000 cap.
+    //
+    // **The legal rig did not move** — `npm run measure:search` reports 68,253 on `hard-techno`
+    // seed 15 before and after, and the catalogue benchmark 586,551 before and after. This
+    // direction is not the worst either figure is measured on, which is the whole reason the two
+    // are reported separately (#301).
     'hip-hop': [
-      883, 230, 1755, 268, 917, 234, 2214, 234, 732, 1291, 766, 1560, 1965, 1257, 885, 1594, 233,
-      885, 234, 732, 233, 919, 230, 732
+      1829, 289, 3851, 294, 1829, 260, 5000, 294, 1448, 2697, 1448, 3460, 3527, 2697, 1831, 3460,
+      293, 1831, 294, 1448, 293, 1831, 289, 1448
     ],
     // #443. Four rows moved and **two of them fell**, which is the standing point that cost is
     // not monotonic in content: the TR-6S's three new drum characters take `industrial-techno`

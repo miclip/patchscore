@@ -890,8 +890,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // 186 until #345 authored the six roles the pool declared and no recipe served; 222 until Hard
     // Techno, which this box carries nine parts of — its only lead is `clean`, the opposite of
     // the `dirty` one asked for, so that part is an honest gap rather than a grid.
-    expect(grid.length).toBe(306)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(276)
+    expect(grid.length).toBe(312)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(282)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -919,10 +919,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['kick', 54],
       ['closed-hat', 48],
+      ['clap', 24],
       ['ghost-perc', 24],
       ['rim', 24],
       ['snare', 24],
-      ['clap', 18],
       ['ride', 18],
       ['tom', 18],
       ['impact', 12],

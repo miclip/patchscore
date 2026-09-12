@@ -627,8 +627,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
 
     // 276 until #345 authored `ride` and `sweep`, the pool's last two unserved roles; 282 until
     // Hard Techno.
-    expect(grid.length).toBe(348)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(318)
+    expect(grid.length).toBe(354)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(324)
 
     // The claim, named rather than left to the count: the `trigger` arm is empty and the only
     // notes this box ever prints are the direction's own.
@@ -658,10 +658,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['closed-hat', 54],
       ['kick', 54],
       ['ghost-perc', 48],
+      ['clap', 24],
       ['open-hat', 24],
       ['rim', 24],
       ['snare', 24],
-      ['clap', 18],
       ['ride', 18],
       ['impact', 12],
       ['metallic', 12],
