@@ -1008,13 +1008,13 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     // and a pitched part is hooked (#100) rather than drawn as a grid — and 246 until Hard Techno,
     // of which this box carries eight parts. The decline does not move it: what changes is which
     // arm a part lands in, not whether it is counted.
-    expect(grid.length).toBe(306)
+    expect(grid.length).toBe(312)
 
     // **Two arms, and `trigger` is not one of them.**
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
 
     // The blank arm, counted rather than glossed: every one of these printed `C5` before.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(276)
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(282)
   })
 
   it('leaves the direction’s own pitch untouched where there is one', () => {
@@ -1075,9 +1075,9 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
       ['closed-hat', 48],
       ['kick', 48],
       ['ghost-perc', 36],
+      ['clap', 24],
       ['rim', 24],
       ['snare', 24],
-      ['clap', 18],
       ['open-hat', 18],
       ['ride', 18],
       ['metallic', 12],

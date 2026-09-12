@@ -861,8 +861,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 264 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(312)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(282)
+    expect(grid.length).toBe(318)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(288)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -891,9 +891,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['closed-hat', 54],
       ['kick', 54],
       ['ghost-perc', 36],
+      ['clap', 24],
       ['rim', 24],
       ['snare', 24],
-      ['clap', 18],
       ['ride', 18],
       ['metallic', 12],
       ['open-hat', 12],

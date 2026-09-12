@@ -293,6 +293,36 @@ const PATTERNS: Pattern[] = [
   // Two bars. The backbeat slot belongs to whatever *states* the backbeat, which here is this and
   // nothing else. Band 0 states beat 4 alone; band 1 is the full two-and-four; everything above
   // is ghost sixteenths around it, which is the part of this drum sound that is a performance.
+  /**
+   * §4.3/#538. **The clap is the snare's shadow**, so every hit it has is a hit the snare
+   * already has and nothing else. A clap that landed where the snare did not would be a second
+   * backbeat, which is a different arrangement and not what any of the four authored recipes
+   * describe — all four say *behind*, *under* or *tucked*.
+   *
+   * Velocities well under the snare's for the same reason, and they do not climb with the band:
+   * a layer that gets louder as the track fills stops being a layer.
+   */
+  variant('hip-clap-b0', 'clap', 0, 32, at('backbeat', 78, 13, 29)),
+  variant('hip-clap-b1', 'clap', 1, 32, at('backbeat', 80, 5, 13, 21, 29)),
+  variant(
+    'hip-clap-b2',
+    'clap',
+    2,
+    32,
+    at('backbeat', 80, 5, 13, 21, 29),
+    // The snare's own ghosts at this band, shadowed. Each band has to be busier than the one
+    // below it (§6.3), and the shadow rule says where the extra hits are allowed to be: on the
+    // snare's, or nowhere.
+    at('ghost', 56, 12, 20),
+  ),
+  variant(
+    'hip-clap-b3',
+    'clap',
+    3,
+    32,
+    at('backbeat', 82, 5, 13, 21, 29),
+    at('ghost', 58, 12, 20, 32),
+  ),
   variant('hip-snare-b0', 'snare', 0, 32, on('backbeat', 13, 29)),
   variant('hip-snare-b1', 'snare', 1, 32, on('backbeat', 5, 13, 21, 29)),
   variant(
@@ -664,6 +694,30 @@ export const hipHop: Template = {
      * could only sound three of them would be playing a different chord under a guide that says
      * otherwise. A number, not a device name.
      */
+    {
+      id: 'r-clap',
+      role: 'clap',
+      priority: 4,
+      character: 'soft',
+      sustain: 'continuous',
+      /**
+       * §4.4/#538. **A clap layered behind the snare rather than beside it**, which is what all
+       * four authored `clap / soft` recipes are: *"tucked under the snare"*, *"tucked behind the
+       * snare"*, *"layered behind, not in front"*, *"spread long and tucked under"*. Four boxes
+       * wrote the same part and no direction asked for it.
+       *
+       * `soft` and not `bright`, and the distinction is the whole request. Every other clap in
+       * the library is `bright` — a clap that *is* the backbeat, in front. This one thickens a
+       * backbeat the snare already carries, which is why it is `inessential`: the part it
+       * doubles is at priority 2 and does the work on its own.
+       *
+       * Not `optional`. A layer the objective stops trying for is a layer that mostly does not
+       * appear, and these four recipes live on drum machines with voices to spare — the boxes
+       * that have a clap at all have room for it.
+       */
+      inessential: { reason: 'the snare lands the backbeat by itself; this thickens it' },
+    },
+
     {
       id: 'r-stab',
       role: 'stab',

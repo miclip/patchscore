@@ -382,7 +382,7 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // `lead / dirty` left when Hard Techno asked for both. A pair leaving this list is progress;
     // a pair joining it is the finding coming back, and the failure names which.
     //
-    // **26 and 62 since #541, and that is a pair joining.** `tom / soft` was reachable only as a
+    // **25 and 58 since #538's clap; 26 and 62 before it, and #541's was a pair joining.** `tom / soft` was reachable only as a
     // substitution on the one box whose sole tom was soft; `ct-tom-hard` answers that box's tom
     // requests exactly now, so nothing selects a soft tom anywhere. Worth being plain about: the
     // trade was a real `no-recipe` closed against a pair going dark, and it is the right trade,
@@ -394,7 +394,6 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'bass-mid / clean',
       'bass-mid / hard',
       'bass-mid / soft',
-      'clap / soft',
       'lead / hard',
       'lead / soft',
       'metallic / hard',
@@ -414,18 +413,19 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'sub / hard',
       'sub / soft',
       'texture / dirty',
-      // #541. Joined when `ct-tom-hard` was authored to close Hard Techno's `no-recipe` on the
-      // Circuit Tracks. No direction asks for a soft tom, so this pair was only ever reached by
-      // §3.5 substitution — and that box, whose only tom was soft, was the last place it won one.
-      // The Rytm's and the DFAM's soft toms lose their tie-breaks to an exact answer elsewhere.
       'tom / soft',
     ])
     expect(authored.size).toBe(86)
-    // 62 since #541: `tom / soft` joined carrying its three recipes (the Rytm, the DFAM and the
+    // **58 since #538 gave Hip-Hop a `clap / soft`.** Four recipes left the list — the RD-8's,
+    // the RD-9's, the TR-1000's and the TR-8S's, which all describe the same part in the same
+    // words and which no direction had asked for. A pair leaving because a direction now wants
+    // it is the shape this list exists to reward.
+    //
+    // It was 62 since #541: `tom / soft` joined carrying its three recipes (the Rytm, the DFAM and the
     // Circuit Tracks). `authored.size` is unchanged at 86, because `tom / hard` was authored on
     // eight boxes already and a ninth adds no pair — which is why recipes-behind is the number
     // worth pinning beside it. A pair can go dark with the pair count saying nothing at all.
-    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(62)
+    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(58)
   })
 
   it('moves three solo rigs from the dark sub to the clean one, and no other', () => {
