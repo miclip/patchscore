@@ -351,7 +351,12 @@ function num(
  */
 const syn = (m: (typeof SYN_MACHINES)[number]) => pick('SYN MACHINE', m, SYN_MACHINES, 89)
 const fltr = (m: (typeof FLTR_MACHINES)[number]) => pick('FLTR MACHINE', m, FLTR_MACHINES, 101)
-const ampMode = (m: (typeof AMP_MODES)[number]) => pick('AMP MODE', m, AMP_MODES, 61)
+/**
+ * §3.1/#547. The switch decides which stages the AMP page has (p.61): `HOLD` exists only under
+ * `AHD`, and `SUS` and `REL` only under `ADSR`.
+ */
+const ampMode = (m: (typeof AMP_MODES)[number]) =>
+  pick('AMP MODE', m, AMP_MODES, 61, 'AHD has HOLD and no SUS or REL; ADSR has SUS and REL and no HOLD')
 const lfoMode = (m: (typeof LFO_MODES)[number]) => pick('LFO MODE', m, LFO_MODES, 63)
 const lfoWave = (w: (typeof LFO_WAVES)[number]) => pick('LFO WAVE', w, LFO_WAVES, 64)
 const playMode = (m: (typeof PLAY_MODES)[number]) => pick('PLAY MODE', m, PLAY_MODES, 37)
@@ -383,11 +388,18 @@ const mix = (v: number) =>
     note: 'Crossfades the X and Y carrier outputs the selected ALGO puts there',
   })
 
-/** AMP `HOLD`, p.61. Only exists when MODE is AHD, which is why it never appears without it. */
+/**
+ * AMP `HOLD`, p.61. Only exists when MODE is AHD, which is why it never appears without it — and
+ * the mode's own note now says so, so this one carries the fact that is not obvious instead.
+ *
+ * §3.1/#547. p.61, word for word with the Digitakt II's p.56: a fixed value *"specifies the
+ * length of the hold phase, and the envelope ignores Note Off events such as Trig Length"*. A
+ * reader lengthening a trig to lengthen the sound gets nothing; this number ends the note.
+ */
 const hold = (v: number) =>
   num('AMP HOLD', v, { min: 0, max: 126 }, 61, {
     mood: [{ axis: 'density', amount: -24 }],
-    note: 'Only available when AMP MODE is AHD',
+    note: 'A fixed hold ignores Note Off and Trig Length — this value ends the note, not the key. NOTE hands it back',
   })
 
 /** WAVETONE noise-envelope `HOLD`, p.97 — its own parameter on SYN page 3, not the AMP page's. */

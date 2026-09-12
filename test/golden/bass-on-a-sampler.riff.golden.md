@@ -51,6 +51,7 @@ Source — A short bass note with harmonics above the fundamental; a filtered si
 - **PLAY** `FORWARD`
 - **FLTR MACHINE** `MULTI-MODE`
 - **AMP MODE** `ADSR`
+  - ↳ note: AHD has HOLD and no SUS or REL; ADSR has SUS and REL and no HOLD
 - **LFO MODE** `TRG`
 - **FADE** `-20` (-64…63)
 
