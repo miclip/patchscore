@@ -4,6 +4,7 @@ import type {
   JackSignalKind,
   PatchEntry,
   Recipe,
+  SustainClaim,
 } from '../../core/device'
 import { jackFact } from '../../core/device'
 import type { AuthoredParam, Cite } from '../../core/params'
@@ -389,6 +390,42 @@ function core(
   ]
 }
 
+/**
+ * §3/#506. **Two switches decide whether a note on this box holds, and every held-role recipe
+ * sets both.** p.20's control list, the Output (VCA) and Envelope sections:
+ *
+ *  - **(15) `VCA MODE`** — *"select envelope, and the VCA is modulated by the envelope. In the ON
+ *    position, the VCA output is the last key played, and is independent of envelope."*
+ *  - **(19) `SUSTAIN ON/OFF`** — *"in the OFF position, the level will start to decay after the
+ *    attack time is over. In the ON position, the sustain level will be held for as long as the
+ *    key is held."*
+ *
+ * So three shapes, two of which hold. Under `VCA MODE: envelope` the envelope is the amplitude
+ * stage and the sustain switch carries the claim. Under `VCA MODE: on` the envelope is not in the
+ * path at all — the VCA is open and the note is the last key played — so the switch alone carries
+ * it, which is why the texture names one control where the others name two.
+ *
+ * **This is the Mother-32's reading on a box built to the same plan** (`moog-mother-32`, p.16),
+ * and the two agreeing is worth something: the wording is different and the mechanism is not.
+ * The sustain *level* is not in either claim. It sets how loud the held part is, not whether
+ * there is one, and a claim naming it would fail on a recipe that holds at a low level.
+ */
+const SUSTAINS_UNDER_EG: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['SUSTAIN SWITCH', 'VCA MODE'] },
+  evidence: { kind: 'manual', source: `${GUIDE}, p.20` },
+}
+const DECAYS_UNDER_EG: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['SUSTAIN SWITCH', 'VCA MODE'] },
+  evidence: { kind: 'manual', source: `${GUIDE}, p.20` },
+}
+const SUSTAINS_VCA_OPEN: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['VCA MODE'] },
+  evidence: { kind: 'manual', source: `${GUIDE}, p.20` },
+}
+
 /** ADS, and there is no release stage on this box — p.70 lists the envelope as `ADS`. */
 function env(attack: number, decay: number, sustain: number, held: 'on' | 'off'): AuthoredParam[] {
   return [
@@ -473,6 +510,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'crave-sub-dark',
+    sustain: SUSTAINS_UNDER_EG,
     role: 'sub',
     character: 'dark',
     voice: 'voice',
@@ -521,6 +559,7 @@ const recipes: Recipe[] = [
   // ---- Acid, lead, stab --------------------------------------------------
   {
     id: 'crave-acid-dirty',
+    sustain: DECAYS_UNDER_EG,
     role: 'acid',
     character: 'dirty',
     voice: 'voice',
@@ -546,6 +585,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'crave-acid-bright',
+    sustain: DECAYS_UNDER_EG,
     role: 'acid',
     character: 'bright',
     voice: 'voice',
@@ -699,6 +739,7 @@ const recipes: Recipe[] = [
   // ---- Long parts --------------------------------------------------------
   {
     id: 'crave-texture-soft',
+    sustain: SUSTAINS_VCA_OPEN,
     role: 'texture',
     character: 'soft',
     voice: 'voice',

@@ -479,3 +479,75 @@ describe('CRAVE manifest', () => {
     expect(device.features).toBeUndefined()
   })
 })
+
+/**
+ * §3/#506. The claim's own page and parameters, pinned here — `voice-sustain.test.ts` holds the
+ * library ledger, and a ledger entry is not evidence.
+ *
+ * **This is the box where the reading changed a rendered guide.** Two of its four held-role
+ * recipes decay, `acid-lineage` asks an acid to hold 22 steps, and the notice §8 prints for that
+ * pairing is the whole point of #506: an instruction the reader cannot carry out, replaced by the
+ * limit stated plainly.
+ */
+describe('CRAVE sustain claims (#506)', () => {
+  const HELD = ['pad', 'texture', 'sub', 'acid']
+  const held = device.recipes.filter((r) => HELD.includes(r.role))
+
+  it('rests every claim on the two switches p.20 describes, and on nothing else', () => {
+    // All four are declared: unlike the Elektrons, this box authors the deciding switches on
+    // every recipe, so there is nothing left to the reader for the page to be silent about.
+    expect(held.every((r) => r.sustain !== undefined)).toBe(true)
+
+    for (const recipe of held) {
+      const names = (recipe.params as AuthoredParam[]).map((p) => p.name)
+      expect(recipe.sustain?.evidence, recipe.id).toEqual({
+        kind: 'manual',
+        source: 'CRAVE Quick Start Guide BE_0718-AAJ_WW, p.20',
+      })
+      // Every named control is one this recipe actually sets — the schema enforces it, and this
+      // says so at the point a reader would check.
+      const control = recipe.sustain?.control
+      if (control?.kind !== 'parameters') throw new Error(`${recipe.id}: not a parameter claim`)
+      for (const name of control.params) expect(names, recipe.id).toContain(name)
+    }
+  })
+
+  it('reads the sustain switch under the envelope, and the VCA switch when it is open', () => {
+    const byId = new Map(held.map((r) => [r.id, r]))
+    const claim = (id: string) => byId.get(id)?.sustain
+
+    // `VCA MODE: envelope` puts the envelope in the path, so the sustain switch decides.
+    expect(claim('crave-sub-dark')?.kind).toBe('sustains')
+    expect(claim('crave-acid-dirty')?.kind).toBe('decays')
+    expect(claim('crave-acid-bright')?.kind).toBe('decays')
+    for (const id of ['crave-sub-dark', 'crave-acid-dirty', 'crave-acid-bright']) {
+      expect(claim(id)?.control, id).toEqual({
+        kind: 'parameters',
+        params: ['SUSTAIN SWITCH', 'VCA MODE'],
+      })
+    }
+
+    // `VCA MODE: on` takes the envelope out of the path entirely — p.20 calls the output "the
+    // last key played, and is independent of envelope" — so the switch alone carries it, and
+    // naming the sustain switch here would name a control that is not deciding anything.
+    expect(claim('crave-texture-soft')?.kind).toBe('sustains')
+    expect(claim('crave-texture-soft')?.control).toEqual({
+      kind: 'parameters',
+      params: ['VCA MODE'],
+    })
+  })
+
+  it('tells an acid-lineage reader the 22-step hold will not hold, in the rendered guide', () => {
+    const template = TEMPLATES.find((t) => t.id === 'acid-lineage')
+    if (template === undefined) throw new Error('acid-lineage missing from the templates')
+
+    const markdown = renderGuide(
+      resolve({ devices: [device], template, mood: NEUTRAL_MOOD, seed: 1 }),
+    )
+    expect(markdown).toContain('this sound cannot hold it')
+    // The number is the hook's, not a rounded one, and the reason names the stage rather than
+    // the box — a different acid recipe on this same box would not carry it.
+    expect(markdown).toContain('held for 22 steps')
+    expect(markdown).toContain('its amplitude stage decays instead of holding a level')
+  })
+})

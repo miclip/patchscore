@@ -447,6 +447,24 @@ describe('the shipped library (#506)', () => {
       decays: ['tm-acid-dirty-sample', 'tm-acid-dirty-synth'],
       unestablished: ['tm-pad-soft-sample', 'tm-pad-soft-synth'],
     },
+    // p.20's control list: `VCA MODE` *"select envelope, and the VCA is modulated by the envelope.
+    // In the ON position, the VCA output is the last key played, and is independent of envelope"*,
+    // and `SUSTAIN ON/OFF` *"in the OFF position, the level will start to decay after the attack
+    // time is over. In the ON position, the sustain level will be held for as long as the key is
+    // held"*. The Mother-32's reading (p.16) on a box built to the same plan, and the two agreeing
+    // on different wording is part of why this one is declarable.
+    'behringer-crave': {
+      sustains: ['crave-sub-dark', 'crave-texture-soft'],
+      decays: ['crave-acid-dirty', 'crave-acid-bright'],
+    },
+    // p.79: the AMP page has no sustain stage at all, and a fixed `HLD` (1-127) runs *"regardless
+    // of how long the pad is pressed"* — so neither recipe follows a hook's hold. What stops that
+    // being a `decays` is that the same page prints `HLD`'s range and **not** the amp `DEC`'s, and
+    // neither recipe authors `DEC`: a decay that never reaches silence is not the other claim
+    // either, it is a third thing this vocabulary does not carry. Read, and left.
+    'elektron-analog-rytm-mkii': {
+      unestablished: ['rytm-sub-dark', 'rytm-texture-soft'],
+    },
     // **The three Elektrons whose recipes set the envelope's shape and leave its levels.** All
     // twelve are read and left, and the reason is one reason, which is why they sit together:
     // each recipe authors the machine and the envelope *mode* and stops there, so the parameter
@@ -526,12 +544,12 @@ describe('the shipped library (#506)', () => {
       }
     }
     expect(held).toBe(174)
-    expect(claimed).toBe(95)
-    expect(left).toBe(38)
+    expect(claimed).toBe(99)
+    expect(left).toBe(40)
     expect(claimed + left).toBeGreaterThan(held / 2)
   })
 
-  it('counts ninety-four distinct claims in the library, on twenty-seven manifests read', () => {
+  it('counts ninety-eight distinct claims in the library, on twenty-nine manifests read', () => {
     // Per distinct recipe: the XL takes the Live III's by reference and is not counted twice;
     // the One G2 rewrites its citation and is. The figure is the `caps` delta the audit reports.
     const ordered = [...DEVICES].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -545,8 +563,8 @@ describe('the shipped library (#506)', () => {
         if (r.sustain !== undefined) distinct++
       }
     }
-    expect(distinct).toBe(94)
-    expect(Object.keys(READ)).toHaveLength(27)
+    expect(distinct).toBe(98)
+    expect(Object.keys(READ)).toHaveLength(29)
   })
 
   /**
