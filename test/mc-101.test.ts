@@ -549,8 +549,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 288 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(318)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(288)
+    expect(grid.length).toBe(336)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(306)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -572,7 +572,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 282, blank: 282 }],
+      ['drum-pad', { grid: 300, blank: 300 }],
       ['tone-track', { grid: 36, blank: 6 }],
     ])
   })
@@ -600,14 +600,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['kick', 54],
       ['closed-hat', 48],
-      ['ghost-perc', 42],
+      ['ghost-perc', 48],
       ['open-hat', 24],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
       ['metallic', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['impact', 12],
-      ['ride', 12],
       ['tom', 12],
       ['arp', 6],
     ])
@@ -625,7 +625,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    */
   it('accounts for every part that draws no grid, by which reason', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(126)
+    expect(hooked.length).toBe(144)
     expect(sustained).toEqual([])
     expect(noPattern).toEqual([
       ...Array(6).fill('hard-techno/riser'),
@@ -644,13 +644,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
     // classify — which is what would make the 288 above an undercount rather than a measurement.
     expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
-    expect(assignments).toBe(456)
+    expect(assignments).toBe(492)
 
     // The parts this four-track box cannot take are §7.3 gaps, not blank grids: they never reach
     // phase 5, so none of them is among the 288. The MC-707 takes 48 more parts over this sweep.
     // 96 until #345 closed both pools' four unserved roles, which turned 18 shortfalls into parts;
     // Hard Techno added none, because this box carries all ten of its parts.
-    expect(shortfalls).toBe(78)
+    expect(shortfalls).toBe(84)
   })
 
   /**

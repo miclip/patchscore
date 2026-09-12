@@ -861,8 +861,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 264 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(294)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(264)
+    expect(grid.length).toBe(312)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(282)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -890,13 +890,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['closed-hat', 54],
       ['kick', 54],
-      ['ghost-perc', 30],
+      ['ghost-perc', 36],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['metallic', 12],
       ['open-hat', 12],
-      ['ride', 12],
       ['tom', 12],
       ['arp', 6],
       ['impact', 6],
@@ -908,15 +908,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(138)
+    expect(hooked.length).toBe(156)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/riser',
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not

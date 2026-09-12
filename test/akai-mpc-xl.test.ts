@@ -165,9 +165,9 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
   it('leaves 300 grid parts blank, and pins where they are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(330)
+    expect(grid.length).toBe(348)
     const blank = grid.filter((g) => g.kind === 'none')
-    expect(blank.length).toBe(300)
+    expect(blank.length).toBe(318)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -178,8 +178,8 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
     const byPool = new Map<string, number>()
     for (const g of blank) byPool.set(g.pool, (byPool.get(g.pool) ?? 0) + 1)
     expect([...byPool].sort()).toEqual([
-      ['mono-track', 192],
-      ['pad', 102],
+      ['mono-track', 198],
+      ['pad', 114],
       ['poly-track', 6],
     ])
   })
@@ -205,16 +205,16 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
       ['closed-hat', 48],
+      ['ghost-perc', 48],
       ['kick', 48],
-      ['ghost-perc', 42],
       ['open-hat', 24],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
       ['metallic', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['tom', 18],
       ['impact', 12],
-      ['ride', 12],
       ['arp', 6],
       ['noise', 6],
       ['vox-chop', 6],
@@ -226,9 +226,9 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(144)
+    expect(hooked.length).toBe(162)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(42)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
@@ -236,6 +236,7 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
   })
 

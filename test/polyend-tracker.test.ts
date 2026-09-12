@@ -1008,13 +1008,13 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     // and a pitched part is hooked (#100) rather than drawn as a grid — and 246 until Hard Techno,
     // of which this box carries eight parts. The decline does not move it: what changes is which
     // arm a part lands in, not whether it is counted.
-    expect(grid.length).toBe(288)
+    expect(grid.length).toBe(306)
 
     // **Two arms, and `trigger` is not one of them.**
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
 
     // The blank arm, counted rather than glossed: every one of these printed `C5` before.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(258)
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(276)
   })
 
   it('leaves the direction’s own pitch untouched where there is one', () => {
@@ -1074,13 +1074,13 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     ).toEqual([
       ['closed-hat', 48],
       ['kick', 48],
-      ['ghost-perc', 30],
+      ['ghost-perc', 36],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
       ['open-hat', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['metallic', 12],
-      ['ride', 12],
       ['tom', 12],
       ['arp', 6],
       ['impact', 6],
@@ -1094,15 +1094,16 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     // program. Asserted rather than assumed — this box produces no sustained part at all here.
     const { hooked, sustained, noPattern } = sweep()
     // 78 until #345: four of its five roles are pitched, so they hook rather than draw a grid.
-    expect(hooked.length).toBe(138)
+    expect(hooked.length).toBe(156)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/riser',
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
   })
   it('says which step to put the swing on, because this box has no swing setting', () => {

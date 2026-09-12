@@ -73,6 +73,7 @@ describe('the registry carries twelve directions (§4)', () => {
       'lydian-house',
       'major-key-electro',
       'relay',
+      'slow-noir',
       'weave',
     ])
     expect(templateById('ambient-dub')).toBe(ambientDub)

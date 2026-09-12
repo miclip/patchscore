@@ -890,8 +890,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // 186 until #345 authored the six roles the pool declared and no recipe served; 222 until Hard
     // Techno, which this box carries nine parts of — its only lead is `clean`, the opposite of
     // the `dirty` one asked for, so that part is an honest gap rather than a grid.
-    expect(grid.length).toBe(294)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(264)
+    expect(grid.length).toBe(306)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(276)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -920,14 +920,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['kick', 54],
       ['closed-hat', 48],
       ['ghost-perc', 24],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['tom', 18],
       ['impact', 12],
       ['metallic', 12],
       ['open-hat', 12],
-      ['ride', 12],
       ['arp', 6],
       ['vox-chop', 6],
     ])
@@ -937,15 +937,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(150)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not

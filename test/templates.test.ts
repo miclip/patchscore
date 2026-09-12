@@ -142,8 +142,28 @@ const SHARED_VOCABULARY = new Set(
  * prints `ramp up` as the name of the thing that climbs, so the parameter is called `RAMP UP`;
  * two directions say a hat is *"up there"*. A preposition names no box, and the alternative was
  * to rename a control after the manual had already named it.
+ *
+ * **`in`, `on` and `out` are the seventh, eighth and ninth, and they are `up`'s own argument
+ * applied to the rest of its part of speech.** They reach the forbidden set off parameter names —
+ * jacks and switches are full of `AUDIO IN`, `VCA MODE: on`, `OUT` — and there is no sentence
+ * about music that avoids all three. A direction saying a note is *held in force*, that a hit
+ * lands *on the beat*, or that a part *fades out* is using English, and none of those three words
+ * can identify a box: no device is named a bare preposition and none could be.
+ *
+ * The line this list draws is the same every time: a word that appears on a panel **and** names
+ * nothing on its own is English, and the guard is for words that identify hardware.
  */
-const NON_IDENTIFYING_ENGLISH = new Set(['bars', 'hand', 'key', 'one', 'transient', 'up'])
+const NON_IDENTIFYING_ENGLISH = new Set([
+  'bars',
+  'hand',
+  'in',
+  'key',
+  'on',
+  'one',
+  'out',
+  'transient',
+  'up',
+])
 
 function tokens(text: string): string[] {
   return text
@@ -197,6 +217,32 @@ function strings(value: unknown, path = '$'): { path: string; text: string }[] {
   return []
 }
 
+/**
+ * **Every file under `lib/templates/` is a registered direction**, and this exists because one was
+ * not: an unfinished `slow-noir.ts` was swept into a commit by `git add -A`, sat in `main` across
+ * three releases importing nothing and imported by nothing, and no gate noticed.
+ *
+ * Nothing could have. The registry is hand-written on purpose (§4, and `lib/templates/index.ts`
+ * says why), so a template only exists if somebody adds a line — which means a file that never got
+ * that line is invisible rather than broken. `lib/devices` has the mirror of this already: its
+ * generator has *"no ignore list — every directory is a device directory"*, and this is the same
+ * rule for a registry that is written by hand instead of generated.
+ *
+ * A file that should not be registered has nowhere to live here, which is the point: put it
+ * somewhere that is not the directory reserved for directions.
+ */
+describe('the templates directory holds directions and nothing else (§4)', () => {
+  it('registers every file in it, so an unfinished one cannot sit unnoticed', () => {
+    const files = readdirSync(TEMPLATE_DIR)
+      .filter((f) => f.endsWith('.ts') && f !== 'index.ts')
+      .map((f) => f.replace(/\.ts$/, ''))
+      .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
+    expect(files).toEqual(
+      [...TEMPLATES].map((t) => t.id).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
+    )
+  })
+})
+
 describe('invariant 3 — a template never names a device', () => {
   const forbidden = deviceVocabulary(DEVICES)
 
@@ -233,12 +279,19 @@ describe('invariant 3 — a template never names a device', () => {
    * substrings which no token exemption can reach. Every word here is one that identifies nothing
    * on its own, which is why exempting it opens no hole.
    */
-  it('exempts exactly six English words, and adding a seventh is a decision', () => {
+  it('exempts exactly nine English words, and adding a tenth is a decision', () => {
+    // Three arrived together with Slow Noir, and the standard three paragraphs up is what they
+    // were held to: `in`, `on` and `out` reach the forbidden set off parameter names, and none of
+    // them can identify a box on its own. They are `up`'s argument applied to the rest of its
+    // part of speech — see the note on the set itself.
     expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual([
       'bars',
       'hand',
+      'in',
       'key',
+      'on',
       'one',
+      'out',
       'transient',
       'up',
     ])

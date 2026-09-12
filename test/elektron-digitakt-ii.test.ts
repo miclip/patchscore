@@ -620,9 +620,9 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
   it('leaves only the sliced parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(342)
+    expect(grid.length).toBe(360)
     expect(grid.filter((g) => g.kind === 'none').length).toBe(6)
-    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(306)
+    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(324)
 
     // Named rather than left to the count: all three arms are now in play on this box.
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
@@ -658,15 +658,15 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
     ).toEqual([
       ['closed-hat', 54],
       ['kick', 54],
-      ['ghost-perc', 42],
+      ['ghost-perc', 48],
       ['open-hat', 24],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
       ['metallic', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['tom', 18],
       ['impact', 12],
-      ['ride', 12],
       ['arp', 6],
       ['noise', 6],
     ])
@@ -676,9 +676,9 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(144)
+    expect(hooked.length).toBe(162)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(42)
     // `sweep` joins the list rather than the grid, and that is the recipe working as authored: no
     // direction writes a step variant for the role, so there is nothing to program and
     // `dt2-sweep-soft` articulates nothing. See its comment, and `lib/core/reachability.ts`.
@@ -689,6 +689,7 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
@@ -734,8 +735,8 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
         }
       }
     }
-    expect(seen).toBe(522)
-    expect(carrying).toBe(510)
+    expect(seen).toBe(564)
+    expect(carrying).toBe(552)
   })
 
   /**

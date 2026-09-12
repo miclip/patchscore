@@ -11,6 +11,7 @@ import { industrialTechno } from './industrial-techno'
 import { lydianHouse } from './lydian-house'
 import { majorKeyElectro } from './major-key-electro'
 import { relay } from './relay'
+import { slowNoir } from './slow-noir'
 import { weave } from './weave'
 
 /**
@@ -39,6 +40,7 @@ export const TEMPLATES: readonly Template[] = [
   lydianHouse,
   majorKeyElectro,
   relay,
+  slowNoir,
   weave,
 ]
 
@@ -54,6 +56,7 @@ export {
   lydianHouse,
   majorKeyElectro,
   relay,
+  slowNoir,
   weave,
 }
 
