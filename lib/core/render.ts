@@ -1238,14 +1238,31 @@ function gridFits(hook: ResolvedHook): boolean {
  *
  * Ordinals, not `b7`: the degrees here are scale degrees within the key, so whether the 7th is
  * flat is a property of the mode, and this layer does not know the mode. Calling it `b7`
- * would be right in A minor and wrong in A major.
+ * would be right in A minor and wrong in A major. *
+ * **An `alter` is said out loud, and it is not the `b7` this warns about.** That exclusion is
+ * about the mode's own spelling, which this layer cannot see; an alteration is a displacement
+ * *from* whatever the mode gives, so `raised 3rd` is true in every key. Saying nothing would
+ * print one name for two pitches (§4.1/#548).
  */
-function degreeName(degree: number): string {
-  if (degree === 1) return 'root'
-  const tens = degree % 100
-  if (tens >= 11 && tens <= 13) return `${num(degree)}th`
-  const suffix = degree % 10 === 1 ? 'st' : degree % 10 === 2 ? 'nd' : degree % 10 === 3 ? 'rd' : 'th'
-  return `${num(degree)}${suffix}`
+function degreeName(degree: number, alter?: number): string {
+  const ordinal =
+    degree === 1 && (alter ?? 0) === 0
+      ? 'root'
+      : (() => {
+          const tens = degree % 100
+          if (tens >= 11 && tens <= 13) return `${num(degree)}th`
+          const ones = degree % 10
+          const suffix = ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'
+          return `${num(degree)}${suffix}`
+        })()
+  return alterPrefix(alter) + ordinal
+}
+
+/** `raised` / `lowered`, doubled where the alteration is. Empty for an unaltered degree. */
+function alterPrefix(alter: number | undefined): string {
+  if (alter === undefined || alter === 0) return ''
+  const word = alter > 0 ? 'raised' : 'lowered'
+  return Math.abs(alter) > 1 ? `double-${word} ` : `${word} `
 }
 
 /**
@@ -1527,7 +1544,7 @@ function sampledHookLines(
     out.push(
       `- sample ${voicing.label} · ` +
         `${voicing.notes.map(spelling).join(' ')} · ` +
-        `${voicing.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
+        `${voicing.notes.map((n) => degreeName(n.degree, n.alter)).join(' ')} · ` +
         `MIDI ${voicing.notes.map((n) => num(n.midi)).join(' ')} · ` +
         `shape ${voicing.shape.map(num).join('-')}`,
     )
@@ -1651,7 +1668,7 @@ function stackedHookLines(
       line:
         `- ${whereOf(step, framed)}` +
         (printsNoteDuration(notice) ? ` · ${durationPhrase(note.len)}` : '') +
-        ` · ${spelling(note)} · ${degreeName(note.degree)} · MIDI ${num(note.midi)}`,
+        ` · ${spelling(note)} · ${degreeName(note.degree, note.alter)} · MIDI ${num(note.midi)}`,
     }))
     // #142. Note-offs are computed **per voice**, from that voice's own notes: on a stack it is
     // the next note *on this track* that ends this one, and asking the whole hook would place an
@@ -1776,7 +1793,7 @@ function hookLines(
       `- ${whereOf(chord.step, framed)}` +
       (printsNoteDuration(notice) ? ` · ${durationsPhrase(chord.notes)}` : '') +
       ` · ${chord.notes.map(spelling).join(' ')} · ` +
-      `${chord.notes.map((n) => degreeName(n.degree)).join(' ')} · ` +
+      `${chord.notes.map((n) => degreeName(n.degree, n.alter)).join(' ')} · ` +
       `MIDI ${chord.notes.map((n) => num(n.midi)).join(' ')}`,
   }))
   for (const row of merged(rows, noteOffRows(notice, hook.notes, hook, framed))) out.push(row)

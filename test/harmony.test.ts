@@ -9,8 +9,11 @@ import {
   resolveHooksForRole,
   sharpSpelling,
   type Hook,
+  HookNoteSchema,
 } from '../lib/core/index'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
+import { degreeName } from '../components/guide/format'
+import { degreeLabel } from '../lib/studio/riff-text'
 
 /**
  * §4.1. Scale degrees against a key produce concrete notes, in scientific pitch notation with
@@ -203,6 +206,97 @@ describe('resolveHook (§4.1)', () => {
 // The real template
 // ---------------------------------------------------------------------------
 
+/**
+ * §4.1. **A line that follows a chord the key does not contain.** `degree` reaches the seven notes
+ * of the mode and no more, which is enough until a minor progression borrows a major chord — and
+ * then the melody wants the major third over the `I` and the minor third over the `i`, which are
+ * the same degree.
+ */
+describe('an altered degree (§4.1)', () => {
+  const one = (degree: number, alter: number | undefined, key: string) =>
+    notesOf(hook({ notes: [{ step: 1, degree, octave: 0, len: 1, ...(alter === undefined ? {} : { alter }) }] }), key)
+
+  it('raises and lowers a degree without moving its letter', () => {
+    // The point of an offset on a degree rather than a semitone field: the letter still comes
+    // from the degree, so the third of F# minor raised is `A#` — the spelling the F# major chord
+    // it belongs to uses — and never `Bb`.
+    expect(one(3, undefined, 'F# minor')).toEqual(['A4'])
+    expect(one(3, 1, 'F# minor')).toEqual(['A#4'])
+    expect(one(6, undefined, 'F# minor')).toEqual(['D5'])
+    expect(one(6, 1, 'F# minor')).toEqual(['D#5'])
+    expect(one(7, -1, 'C major')).toEqual(['Bb4'])
+  })
+
+  it('is absent by default and identical to omitting it when zero', () => {
+    expect(one(3, undefined, 'F# minor')).toEqual(one(3, 0, 'F# minor'))
+    const plain = resolveHook(hook(), 'F minor')
+    if (plain.outcome !== 'resolved') throw new Error('unresolved')
+    // Not merely undefined — absent, so an unaltered note serialises exactly as it always did.
+    expect('alter' in plain.hook.notes[0]!).toBe(false)
+  })
+
+  it('carries the alteration onto the resolved note, so a surface can say which degree it is', () => {
+    const r = resolveHook(
+      hook({ notes: [{ step: 1, degree: 3, octave: 0, len: 1, alter: 1 }] }),
+      'F# minor',
+    )
+    if (r.outcome !== 'resolved') throw new Error('unresolved')
+    expect(r.hook.notes[0]?.degree).toBe(3)
+    expect(r.hook.notes[0]?.alter).toBe(1)
+  })
+
+  it('spells a double alteration, and refuses one the letter cannot carry', () => {
+    // Two is spellable and is spelt, because `spell`'s guard is about what a note *name* can
+    // say rather than about how far the alteration went: C major's third doubly lowered is a
+    // kind of E, so it is `Ebb`.
+    expect(one(3, -2, 'C major')).toEqual(['Ebb4'])
+    expect(one(3, 2, 'C major')).toEqual(['E##4'])
+
+    // Past that the guard still fires, and an alteration reaches it from a key that already
+    // spends its accidentals: Cb major's root doubly lowered is a C needing three flats.
+    const r = resolveHook(
+      hook({ notes: [{ step: 1, degree: 1, octave: 0, len: 1, alter: -2 }] }),
+      'Cb major',
+    )
+    expect(r.outcome).toBe('unresolved')
+    expect(r.outcome === 'unresolved' ? r.reason : undefined).toBe('unspellable-note')
+  })
+
+  it('is bounded by the schema at a double accidental, where the spelling runs out', () => {
+    const parse = (alter: number) =>
+      HookNoteSchema.safeParse({ step: 1, degree: 3, octave: 0, len: 1, alter }).success
+    expect(parse(-2)).toBe(true)
+    expect(parse(2)).toBe(true)
+    expect(parse(-3)).toBe(false)
+    expect(parse(3)).toBe(false)
+  })
+
+  it('resolves the whole of a six-chord minor line that borrows two major chords', () => {
+    // F#m D Bm F# B C#m: the melody takes the minor third over the i and the major third over
+    // the I, and the natural sixth over the iv and the raised one over the IV. Eight pitch
+    // classes, which is one more than any mode has — the case `alter` exists for.
+    const notes = notesOf(
+      hook({
+        bars: 6,
+        baseOctave: 4,
+        notes: [
+          { step: 1, degree: 5, octave: 0, len: 8 },
+          { step: 9, degree: 3, octave: 0, len: 4 },
+          { step: 17, degree: 1, octave: 1, len: 8 },
+          { step: 25, degree: 7, octave: 0, len: 4 },
+          { step: 29, degree: 6, octave: 0, len: 4 },
+          { step: 33, degree: 3, octave: 0, len: 4, alter: 1 },
+          { step: 41, degree: 6, octave: 0, len: 4, alter: 1 },
+          { step: 49, degree: 2, octave: 0, len: 4 },
+          { step: 57, degree: 7, octave: -1, len: 4 },
+        ],
+      }),
+      'F# minor',
+    )
+    expect(notes).toEqual(['C#5', 'A4', 'F#5', 'E5', 'D5', 'A#4', 'D#5', 'G#4', 'E4'])
+  })
+})
+
 describe('industrial-techno hooks resolve (§4.1)', () => {
   it('turns the bass hook into notes a reader can play in F minor', () => {
     const bass = industrialTechno.hooks.find((h) => h.id === 'it-hook-bass-1') as Hook
@@ -347,5 +441,47 @@ describe('seeded key and hook choice (§4.1)', () => {
         chooseHook(reversed, 'lead', 'F minor', seed)?.chosenId,
       )
     }
+  })
+})
+
+/**
+ * §4.1/#548. **An altered degree has to be said out loud on both surfaces**, or a raised third
+ * and a plain third print as one label over two different pitches — the defect #548 refused in a
+ * manifest, which a renderer can reintroduce just as easily.
+ *
+ * Both renderers are checked because #33 keeps them hand-written and sharing no ink: `degreeName`
+ * exists twice on purpose, so a fix applied to one is not applied to the other.
+ */
+describe('naming an altered degree on both surfaces (§4.1/#548)', () => {
+  it('names the alteration in the React surface, and leaves an unaltered degree alone', () => {
+    expect(degreeName(3)).toBe('3rd')
+    expect(degreeName(3, 0)).toBe('3rd')
+    expect(degreeName(3, 1)).toBe('raised 3rd')
+    expect(degreeName(6, -1)).toBe('lowered 6th')
+    expect(degreeName(3, 2)).toBe('double-raised 3rd')
+    // `root` survives, but only unaltered: a raised root is not the root.
+    expect(degreeName(1)).toBe('root')
+    expect(degreeName(1, 1)).toBe('raised 1st')
+  })
+
+  it('marks the alteration in the riff surface, where the label is the number', () => {
+    const row = (alter?: number) => ({
+      step: 1,
+      notes: [
+        {
+          step: 1,
+          len: 4,
+          note: 'A#4',
+          midi: 70,
+          degree: 3,
+          octave: 0,
+          ...(alter === undefined ? {} : { alter }),
+        },
+      ],
+    })
+    expect(degreeLabel(row())).toBe('degree 3')
+    expect(degreeLabel(row(1))).toBe('degree #3')
+    expect(degreeLabel(row(-1))).toBe('degree b3')
+    expect(degreeLabel(row(2))).toBe('degree ##3')
   })
 })

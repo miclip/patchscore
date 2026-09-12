@@ -114,6 +114,12 @@ export type ResolvedNote = {
   midi: number
   /** The authored degree this came from, 1-based and unwrapped: a ninth is still 9. */
   degree: number
+  /**
+   * §4.1. The authored `HookNote.alter`, carried so a surface can say which degree this is.
+   * Without it a raised third and a plain third are both `degree 3` on the page, which is one
+   * name for two pitches — the thing #548 refused in a manifest, reappearing in a renderer.
+   */
+  alter?: number
   /** The authored offset from the hook's `baseOctave`. */
   octave: number
 }
@@ -199,7 +205,12 @@ function spell(
   const octavesUp = Math.floor(stepsAboveTonic / 7)
 
   const tonic = absoluteSemitone(tonicLetterIndex, key.accidental, baseOctave + note.octave)
-  const semitone = tonic + (steps[withinOctave] as number) + 12 * octavesUp
+  // §4.1. `alter` displaces the pitch and deliberately not the letter: the letter is still the
+  // degree's, so the accidental computed below is the one that spells this degree raised or
+  // lowered. A raised third of F# minor comes out `A#`, which is what the chord it belongs to
+  // is spelt with, where a semitone-first model would offer `Bb`.
+  const semitone =
+    tonic + (steps[withinOctave] as number) + 12 * octavesUp + (note.alter ?? 0)
 
   const letterIndex = mod(tonicLetterIndex + stepsAboveTonic, 7)
   const letter = LETTERS[letterIndex] as string
@@ -291,6 +302,7 @@ export function resolveHook(hook: Hook, key: string): HookResolution {
       note: spelt.note,
       midi: spelt.midi,
       degree: note.degree,
+      ...(note.alter === undefined || note.alter === 0 ? {} : { alter: note.alter }),
       octave: note.octave,
     })
   }

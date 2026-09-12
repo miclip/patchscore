@@ -123,7 +123,19 @@ export function riffNotesUnresolved(resolution: RiffResolution): string | undefi
 
 /** `degree 1` / `degrees 1 3 5`, and the MIDI numbers beside them (#32). */
 export function degreeLabel(row: NoteRow): string {
-  return `${row.notes.length === 1 ? 'degree' : 'degrees'} ${row.notes.map((n) => num(n.degree)).join(' ')}`
+  const word = row.notes.length === 1 ? 'degree' : 'degrees'
+  return `${word} ${row.notes.map(degreeText).join(' ')}`
+}
+
+/**
+ * §4.1. `3`, or `#3` where the note is altered away from the mode's own third. The number alone
+ * would be one label for two pitches on a line that follows modal mixture — a raised third and a
+ * plain third are both `degree 3`, and the reader is looking at `A#4` and `A4`.
+ */
+function degreeText(note: ResolvedNote): string {
+  const alter = note.alter ?? 0
+  if (alter === 0) return num(note.degree)
+  return `${alter > 0 ? '#'.repeat(alter) : 'b'.repeat(-alter)}${num(note.degree)}`
 }
 
 export function midiLabel(row: NoteRow): string {
