@@ -490,6 +490,58 @@ describe('the shipped library (#506)', () => {
     'elektron-octatrack-mkii': {
       unestablished: ['ot-sub-dark', 'ot-texture-soft', 'ot-pad-soft', 'ot-acid-hard'],
     },
+    // **The last six, and all read-and-left — for three different reasons, which is why they are
+    // not one entry.** With these the ledger is exhaustive: every held-role recipe in the library
+    // now either carries a claim or has been read and left with a page behind the leaving.
+    //
+    // 1. **The two samplers whose envelope has no sustain stage.** `/ep-133/modes 8.2.3` and the
+    //    EP-40's own copy: the envelope *"helps adjust the playback of your sample, so that it
+    //    fades in and out"* — attack fades in, release *"will continue playing the sample after
+    //    you let go of the pad or will cut it off immediately"*, and there is nothing between
+    //    them. `PLAY MODE` (oneshot / key / legato / loop), the one parameter these recipes do
+    //    author, is about polyphony and retrigger: *"oneshot is monophonic, and plays the whole
+    //    sample"*, *"key is polyphonic"*. None of it is an amplitude claim. Same shape as the
+    //    SP-404MK2 above, and the same conclusion for the same reason.
+    'te-ep-133': {
+      unestablished: ['ep133-sub-dark', 'ep133-acid-dirty', 'ep133-pad-soft', 'ep133-texture-soft'],
+    },
+    'te-ep-40': {
+      unestablished: [
+        'ep40-sub-dark', 'ep40-pad-soft', 'ep40-texture-soft', 'ep40-acid-dirty', 'ep40-pad-clean',
+      ],
+    },
+    // 2. **The box that has the stage and whose recipes do not set it.** p.43: the OP-XY's
+    //    envelopes *"allow you to shape your sound, how it fades in, sustains and fades out"* —
+    //    a real sustain stage, unlike the two above. What these five author is `ENGINE` and
+    //    `PLAY MODE` and no envelope at all, so the level is the preset's and the reader's. The
+    //    distinction is worth keeping: this one is a recipe that could say more, where the EP
+    //    pair is a box that has nothing to say.
+    'teenage-engineering-op-xy': {
+      unestablished: [
+        'opxy-sub-dark', 'opxy-pad-soft', 'opxy-pad-dark', 'opxy-acid-dirty', 'opxy-texture-soft',
+      ],
+    },
+    // 4. **The box that splits, the way the TRs do.** p.97's amplifier envelope is a full ADSR
+    //    and `pp-acid-dirty` authors its `SUSTAIN` at `0` — the level falls to silence after the
+    //    decay whatever the trigger says. Its two audio-sample recipes are left: `SAMPLE ATTACK`
+    //    and `SAMPLE DECAY` (p.69) are a fade-in and a fade-out over the file, *"sample start
+    //    attack, fade-in time and the end of sample fade-out time"*, with no sustain between them.
+    'polyend-play-plus': {
+      decays: ['pp-acid-dirty'],
+      unestablished: ['pp-sub-dark', 'pp-texture-soft'],
+    },
+    // 3. **The two grooveboxes whose part layer only offsets.** MC-101 Reference p.45, the Part
+    //    Parameter (KNOB CTRL) table: `Attack (Attack Time Offset)`, `Decay (Decay Time Offset)`
+    //    and `Release (Release Time Offset)`, all `-64-+63` and all offsets over whatever tone is
+    //    loaded — and **there is no sustain among them**. No recipe here names a tone either, so
+    //    the amplitude stage belongs to a preset the reader picks and an offset cannot turn a
+    //    decaying tone into a holding one. The MC-707 is the same table on its own document.
+    'roland-mc-101': {
+      unestablished: ['mc101-sub-dark', 'mc101-acid-dirty', 'mc101-pad-soft', 'mc101-texture-soft'],
+    },
+    'roland-mc-707': {
+      unestablished: ['mc707-sub-dark', 'mc707-acid-dirty', 'mc707-pad-soft', 'mc707-texture-soft'],
+    },
     // **The three TR drum machines, each off its own document.** Roland ships the ranges
     // separately and names that book differently per product, so these are three readings that
     // agree rather than one reading reused: TR-8S Reference p.30/p.31, TR-6S Parameter Guide p.7,
@@ -559,27 +611,42 @@ describe('the shipped library (#506)', () => {
   /**
    * #506's exposure figure, kept honest: of every recipe on a role some shipped hook holds for a
    * bar or more, how many carry a claim, how many were read and left, and how many nobody has
-   * opened a page for. The first two are the modelled set; the third is the debt.
+   * opened a page for. The first two are the modelled set; the third was the debt.
+   *
+   * **The debt is nil, and that is what this now asserts.** It used to say *"has modelled more
+   * than half … and names the rest as unread"*, which was the right shape while a third of the
+   * library had never been opened. Every held-role recipe now either carries a claim or sits in
+   * the table above behind a page, so the honest pin is the stronger one: **a device added with a
+   * held-role recipe and no reading fails here**, naming itself, rather than quietly enlarging a
+   * number somebody has to notice.
+   *
+   * The split between the two is not a target. 106 declared and 68 read-and-left says the library
+   * is full of boxes whose recipes set the envelope's shape and leave its levels, which is a fact
+   * about how recipes are written rather than a gap in the reading.
    */
-  it('has modelled more than half of the held-role recipes, and names the rest as unread', () => {
+  it('has read every held-role recipe in the library, leaving no unread debt', () => {
     let held = 0
     let claimed = 0
     let left = 0
+    const unread: string[] = []
     for (const d of DEVICES) {
       for (const r of d.recipes) {
         if (!HELD_ROLES.has(r.role)) continue
         held++
         if (r.sustain !== undefined) claimed++
         else if (READ[d.id] !== undefined) left++
+        else unread.push(`${d.id}/${r.id}`)
       }
     }
+    // Named rather than counted: a failure here should say which box to open.
+    expect(unread).toEqual([])
     expect(held).toBe(174)
-    expect(claimed).toBe(105)
-    expect(left).toBe(44)
-    expect(claimed + left).toBeGreaterThan(held / 2)
+    expect(claimed).toBe(106)
+    expect(left).toBe(68)
+    expect(claimed + left).toBe(held)
   })
 
-  it('counts a hundred and four distinct claims in the library, on thirty-three manifests read', () => {
+  it('counts a hundred and five distinct claims in the library, on thirty-nine manifests read', () => {
     // Per distinct recipe: the XL takes the Live III's by reference and is not counted twice;
     // the One G2 rewrites its citation and is. The figure is the `caps` delta the audit reports.
     const ordered = [...DEVICES].sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
@@ -593,8 +660,8 @@ describe('the shipped library (#506)', () => {
         if (r.sustain !== undefined) distinct++
       }
     }
-    expect(distinct).toBe(104)
-    expect(Object.keys(READ)).toHaveLength(33)
+    expect(distinct).toBe(105)
+    expect(Object.keys(READ)).toHaveLength(39)
   })
 
   /**

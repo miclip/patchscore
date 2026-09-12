@@ -1,4 +1,4 @@
-import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe, SustainClaim } from '../../core/device'
 import { clockSourceSetupFact, jackFact } from '../../core/device'
 import type {
   AuthoredEnumParam,
@@ -217,6 +217,23 @@ const FM_RATIO = { min: 0.25, max: 12 } //           0.25 - 12
 const UNITLESS_100 = { min: 0, max: 100 } //         0-100, no unit printed
 
 /** A citation. The page is the one carrying that parameter's own printed bound or option list. */
+/**
+ * §3/#506. **The one recipe on this box that answers, because it is the one on the synth.** p.97's
+ * amplifier envelope is a full ADSR, and `pp-acid-dirty` authors its `SUSTAIN` at `0`: the level
+ * falls to silence after the decay whatever the trigger says, which is `decays`.
+ *
+ * The two audio-sample recipes are left. Their `SAMPLE ATTACK` and `SAMPLE DECAY` (p.69) are a
+ * fade-in and a fade-out over the file — the manual's own summary is *"sample start attack,
+ * fade-in time and the end of sample fade-out time"* — with no sustain between them, so nothing
+ * there settles whether a note holds. Same split the TR drum machines have, for the same reason:
+ * one box, two kinds of instrument, and the answer lives in a different place for each.
+ */
+const DECAYS_AT_ZERO: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['AMPLIFIER · SUSTAIN'] },
+  evidence: { kind: 'manual', source: 'Polyend Play+ Manual Rev 2, p.97' },
+}
+
 function cite(page: number): Cite {
   return { kind: 'manual', source: `Polyend Play+ Manual Rev 2, p.${page}` }
 }
@@ -731,6 +748,7 @@ const SYNTH_RECIPES: Recipe[] = [
    */
   {
     id: 'pp-acid-dirty',
+    sustain: DECAYS_AT_ZERO,
     role: 'acid',
     character: 'dirty',
     voice: 'track-synth',
