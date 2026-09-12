@@ -75,6 +75,35 @@ export function riffLength(riff: Riff): string {
 }
 
 /**
+ * §5A/§4.1. **The chords the figure is played over**, as one sentence and a row per chord.
+ *
+ * Only where the entry carries a `harmony`. Most riffs are one part in one key and need nothing
+ * here; this exists for a figure whose melody *follows* the chords, where the notes print altered
+ * degrees that say nothing on their own — `raised 3rd` beside `A#4` is a fact, and the chord is
+ * the reason for it.
+ *
+ * The rows are the degrees exactly as authored, which is the same thing a direction's harmony
+ * table prints. Roman numerals resolve against `key` in the reader's head and name no device
+ * (invariant 3); spelling them out as chord names would be a second harmony implementation living
+ * on the riff surface, and #33's rule is that a surface renders, it does not decide.
+ */
+export type ChordRow = { degree: string; bars: number }
+
+export function chordRows(riff: Riff): readonly ChordRow[] {
+  return riff.harmony === undefined ? [] : riff.harmony.progression.map((step) => ({ ...step }))
+}
+
+/** `Six chords over 12 bars, in F# minor.` — the line above the rows. */
+export function riffChordSummary(riff: Riff): string | undefined {
+  const { harmony } = riff
+  if (harmony === undefined) return undefined
+  return (
+    `${count(harmony.progression.length, 'chord')} over ` +
+    `${count(harmony.cycleBars, 'bar')}, in ${riff.key}.`
+  )
+}
+
+/**
  * §5A.5. **There is no reference line, and its absence is the decision.**
  *
  * A subtitle reading *The technique from Blue Monday. The figure below is ours, not a

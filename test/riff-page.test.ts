@@ -87,8 +87,14 @@ function text(markup: string): string {
  *    separate two blocks, where the page has a list and a heading.
  *  - The **step-count line**, `step 1 · F2 · degree 1 …`, keeps every one of its facts; only the
  *    separators differ, and those are ink.
+ *  - A **table row**'s pipes. `| i | 2 |` is one renderer drawing two cells; the page draws the
+ *    same two in a `<td>` pair, and tag-stripping leaves `i 2`. The cells are compared, the
+ *    pipes are not, and the `| --- | ---: |` rule is dropped because it is alignment and nothing
+ *    else. Arrived with the chord table (§5A/§4.1) — the first thing either riff surface tabulates.
  */
 const SLOT_ROW = /^- `([a-z-]+)` · (.+)$/
+const TABLE_RULE = /^\|[\s:|-]+\|$/
+const TABLE_ROW = /^\|(.+)\|$/
 
 function markdownFacts(md: string): string[] {
   const fence = /^[ ]*\d+ [x·]/
@@ -96,8 +102,21 @@ function markdownFacts(md: string): string[] {
     .split('\n')
     .filter(
       (line) =>
-        line.trim() !== '' && line !== '```' && !fence.test(line) && !SLOT_ROW.test(line),
+        line.trim() !== '' &&
+        line !== '```' &&
+        !fence.test(line) &&
+        !SLOT_ROW.test(line) &&
+        !TABLE_RULE.test(line.trim()),
     )
+    .map((line) => {
+      const row = TABLE_ROW.exec(line.trim())
+      return row === null
+        ? line
+        : (row[1] as string)
+            .split('|')
+            .map((cell) => cell.trim())
+            .join(' ')
+    })
     .map((line) =>
       line
         .replace(/^#+ /, '')

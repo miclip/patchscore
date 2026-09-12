@@ -2,12 +2,14 @@ import type { Riff, RiffResolution } from '@/lib/core'
 import { num } from '@/lib/core'
 import { SlotList } from '@/components/pattern/slot-list'
 import { StepGrid } from '@/components/pattern/step-grid'
+import { ProgressionTable } from '@/components/guide/song-tables'
 import {
   RIFF_GRID_LEAD,
   degreeLabel,
   heldLabel,
   midiLabel,
   noteRows,
+  riffChordSummary,
   riffNoteSummary,
   riffNotesUnresolved,
   spellingLabel,
@@ -78,6 +80,32 @@ function Notes({ resolution }: { resolution: RiffResolution }) {
 }
 
 /**
+ * §5A/§4.1. **The chords, where the figure follows them.**
+ *
+ * `ProgressionTable` rather than a table written here: a direction's page already draws a
+ * `Harmony` as Degree and Bars, and drawing it a second way would be two treatments of one fact
+ * for a reader moving between the two pages in one sitting — the thing #528 fixed on the grid.
+ * It also brings `.table-scroll` with it, which is §8's phone rule and which a hand-rolled table
+ * here did not have.
+ *
+ * Absent on a riff with no `harmony`, which is most of them — and absent rather than empty, so a
+ * page for a one-key figure does not carry a heading over nothing.
+ */
+function Chords({ riff }: { riff: Riff }) {
+  const summary = riffChordSummary(riff)
+  if (riff.harmony === undefined || summary === undefined) return null
+  return (
+    <section className="panel riff-panel">
+      <header>
+        <h2>The chords</h2>
+      </header>
+      <p className="riff-grid-lead">{summary}</p>
+      <ProgressionTable harmony={riff.harmony} />
+    </section>
+  )
+}
+
+/**
  * §4.3's grid, and it is **the figure a guide draws, not a picture of the export** (#528).
  *
  * This was `gridRows` in a `<pre>`, which is the Markdown's ink on a surface that can draw boxes:
@@ -108,6 +136,8 @@ function Grid({ riff }: { riff: Riff }) {
 export function RiffFigure({ riff, resolution }: { riff: Riff; resolution: RiffResolution }) {
   return (
     <div className="columns">
+      <Chords riff={riff} />
+
       <section className="panel riff-panel">
         <header>
           <h2>The notes</h2>

@@ -1,6 +1,7 @@
 import type { RiffId } from '../core/ids'
 import type { Riff } from '../core/riff'
 import { acidTracksLine } from './acid-tracks-line'
+import { bladeRunnerBluesLead } from './blade-runner-blues-lead'
 import { blueMondayBass } from './blue-monday-bass'
 import { showMeLoveOrganStab } from './show-me-love-organ-stab'
 import { thrillerSynthRiff } from './thriller-synth-riff'
@@ -33,15 +34,29 @@ import { thrillerSynthRiff } from './thriller-synth-riff'
  * having written down. `show-me-love-organ-stab` is the only one that asks for a chord, and its
  * `polyphony: 3` is what gives §7.3's `no-capable-voice` something to report on a rig of mono
  * boxes — and what gives §12.4's stacking something to spread across a pool of them.
+ *
+ * **`blade-runner-blues-lead` is the fifth and the only one with chords of its own.** The other
+ * four are a figure in a key; this one is a figure over a *progression*, and it is the entry
+ * `Riff.harmony` and `HookNote.alter` exist for — a melody whose thirds are raised because the
+ * chord under them is borrowed, where printing the degree alone would say `3rd` over two
+ * different pitches. It is also the slowest by a distance and the sparsest: three notes in four
+ * bars, which is the technique rather than a gap in it.
  */
 export const RIFFS: readonly Riff[] = [
   acidTracksLine,
+  bladeRunnerBluesLead,
   blueMondayBass,
   showMeLoveOrganStab,
   thrillerSynthRiff,
 ]
 
-export { acidTracksLine, blueMondayBass, showMeLoveOrganStab, thrillerSynthRiff }
+export {
+  acidTracksLine,
+  bladeRunnerBluesLead,
+  blueMondayBass,
+  showMeLoveOrganStab,
+  thrillerSynthRiff,
+}
 
 const BY_ID: ReadonlyMap<RiffId, Riff> = new Map(RIFFS.map((r) => [r.id, r]))
 

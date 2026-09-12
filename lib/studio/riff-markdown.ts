@@ -22,7 +22,9 @@ import {
   gridRows,
   heldLabel,
   midiLabel,
+  chordRows,
   noteRows,
+  riffChordSummary,
   riffCitation,
   riffGap,
   riffLength,
@@ -120,6 +122,25 @@ function noteLines(resolution: RiffResolution): string[] {
         `- step ${num(row.step)} · \`${spellingLabel(row)}\`` +
         ` · ${degreeLabel(row)} · ${midiLabel(row)} · ${heldLabel(row)}`,
     ),
+  ]
+}
+
+// ---------------------------------------------------------------------------
+// The chords
+// ---------------------------------------------------------------------------
+
+/** Empty for a riff with no `harmony`, which is most of them — see `chordRows`. */
+function chordLines(riff: Riff): string[] {
+  const summary = riffChordSummary(riff)
+  if (summary === undefined) return []
+  return [
+    '## The chords',
+    '',
+    summary,
+    '',
+    '| Degree | Bars |',
+    '| --- | ---: |',
+    ...chordRows(riff).map((row) => `| ${row.degree} | ${num(row.bars)} |`),
   ]
 }
 
@@ -375,6 +396,11 @@ export function renderRiff(resolution: RiffResolution): string {
     out.push(paragraph)
   })
   out.push('')
+  const chords = chordLines(riff)
+  if (chords.length > 0) {
+    out.push(...chords)
+    out.push('')
+  }
   out.push(...noteLines(resolution))
   out.push('')
   out.push(...gridLines(riff))
