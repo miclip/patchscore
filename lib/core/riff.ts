@@ -25,11 +25,13 @@ import {
 } from './resolver'
 import {
   BpmSpecSchema,
+  HarmonySchema,
   HookSchema,
   MusicalKeySchema,
   PatternSchema,
   RoleRequestSchema,
   type BpmSpec,
+  type Harmony,
   type Hook,
   type Pattern,
   type RoleRequest,
@@ -154,6 +156,22 @@ export type Riff = {
    */
   request: RoleRequest
   /** The notes. Original, always — never a transcription of the recording an entry references. */
+  /**
+   * §5A/§4.1. **The chords the figure is played over**, where the figure only makes sense against
+   * them. Optional, and absent on every riff that is one part in one key.
+   *
+   * A riff is a technique rather than an arrangement, so most entries need nothing here: `key` and
+   * the notes are the whole of the harmony a reader has to know. It earns its place when the
+   * melody **follows** a progression — a line whose thirds and sixths change with the chord under
+   * them prints altered degrees (`HookNote.alter`) that say nothing on their own. `raised 3rd`
+   * beside `A#4` is a fact; *why* it is raised is the chord, and without the chords a reader is
+   * handed an accidental and no reason for it.
+   *
+   * The same `Harmony` a template carries, deliberately: degrees are roman numerals against the
+   * key and name no device (invariant 3), and reusing it means the riff page can print the table
+   * a direction already prints rather than inventing a second way to say the same thing.
+   */
+  harmony?: Harmony
   hook: Hook
   /** Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them. */
   pattern: Pattern
@@ -183,6 +201,7 @@ export const RiffSchema = z
     bpm: BpmSpecSchema,
     key: MusicalKeySchema,
     request: RoleRequestSchema,
+    harmony: HarmonySchema.optional(),
     hook: HookSchema,
     pattern: PatternSchema,
   })

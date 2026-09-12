@@ -4,7 +4,12 @@ import { fileURLToPath } from 'node:url'
 import type { Device } from '@/lib/core'
 import { resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { acidTracksLine, blueMondayBass, showMeLoveOrganStab } from '@/lib/riffs'
+import {
+  acidTracksLine,
+  bladeRunnerBluesLead,
+  blueMondayBass,
+  showMeLoveOrganStab,
+} from '@/lib/riffs'
 import { renderRiff } from '@/lib/studio/riff-markdown'
 import type { Riff } from '@/lib/core'
 
@@ -41,6 +46,7 @@ export const RIFF_NAMES = [
   'organ-stab-mono',
   'organ-stab-stacked',
   'acid-on-a-mother-32',
+  'blade-runner-on-a-muse',
 ] as const
 export type RiffName = (typeof RIFF_NAMES)[number]
 
@@ -87,6 +93,20 @@ const FIXTURES: Record<RiffName, () => Fixture> = {
   'acid-on-a-mother-32': () => ({
     riff: acidTracksLine,
     devices: rig('moog-mother-32'),
+  }),
+  /*
+   * §5A/§4.1. **The one riff fixture with chords and with altered degrees**, and the two go
+   * together: the notes print `degree #3` and `degree #6`, and the chord table is the only thing
+   * on the page that says why they are raised. Neither shape existed in committed bytes before
+   * this entry, so both were a renderer change away from being lost silently.
+   *
+   * The Muse because it authors `lead` at `bright` exactly — the figure lands rather than
+   * substituting, which keeps the fixture about the chords and the spelling rather than about
+   * §3.5. It is also the sparsest page here by a distance: three notes in four bars.
+   */
+  'blade-runner-on-a-muse': () => ({
+    riff: bladeRunnerBluesLead,
+    devices: rig('moog-muse'),
   }),
 }
 

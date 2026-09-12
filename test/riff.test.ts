@@ -1,8 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { RiffSchema, trackSlug, type Riff } from '@/lib/core'
+import { RiffSchema, resolveHook, trackSlug, type Riff } from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { RIFFS, blueMondayBass, riffById, thrillerSynthRiff } from '@/lib/riffs'
+import {
+  RIFFS,
+  bladeRunnerBluesLead,
+  blueMondayBass,
+  riffById,
+  thrillerSynthRiff,
+} from '@/lib/riffs'
 
 /**
  * §5A. The schema, and the library the schema exists to hold honest.
@@ -164,9 +170,9 @@ describe('RiffSchema (§5A)', () => {
 })
 
 describe('the riff library (§5A)', () => {
-  it('has three to four entries', () => {
+  it('has three to five entries', () => {
     expect(RIFFS.length).toBeGreaterThanOrEqual(3)
-    expect(RIFFS.length).toBeLessThanOrEqual(4)
+    expect(RIFFS.length).toBeLessThanOrEqual(5)
   })
 
   it('every entry parses', () => {
@@ -225,9 +231,26 @@ describe('the riff library (§5A)', () => {
     expect(new Set(tracks).size).toBe(tracks.length)
   })
 
-  it('spans different roles — one per entry, none repeated', () => {
+  /**
+   * **This asked for one role per entry, and it now allows a single deliberate pair.** The
+   * original rule was a proxy for variety written when there were four entries and 23 roles: a
+   * library of four bass lines would be four of the same page, and "no role twice" was the
+   * cheapest thing that would catch it.
+   *
+   * `blade-runner-blues-lead` is a second `lead` and is not that. Thriller's lead is a figure
+   * whose identity is *where it lands* — four pitches, all rhythm. This one is a figure whose
+   * identity is *what is under it* — three notes in four bars, over a progression, with two of
+   * them raised because the chord is borrowed. They are opposite lessons on one role, and a rule
+   * that forbade the second would be the proxy outliving what it stood for.
+   *
+   * So the intent is asserted instead of the proxy: the library still has to spread across roles,
+   * and **one** repeat is a comparison where three would be a rut.
+   */
+  it('spans roles, allowing at most one deliberate pair on the same role', () => {
     const roles = RIFFS.map((r) => r.request.role)
-    expect(new Set(roles).size).toBe(roles.length)
+    const distinct = new Set(roles)
+    expect(distinct.size).toBeGreaterThanOrEqual(4)
+    expect(roles.length - distinct.size).toBeLessThanOrEqual(1)
   })
 
   /**
@@ -271,5 +294,54 @@ describe('the riff library (§5A)', () => {
         expect(paragraph.split(' ').length, `${entry.id}`).toBeGreaterThan(8)
       }
     }
+  })
+})
+
+/**
+ * §5A/§4.1. **The one entry with chords of its own**, and the two things that make it that are
+ * the same thing: a melody that follows a progression prints altered degrees, and an altered
+ * degree is unreadable without the chord it belongs to.
+ */
+describe('the Blade Runner Blues lead (§5A/§4.1)', () => {
+  it('teaches the two borrowed chords out of a six-chord cycle', () => {
+    const harmony = bladeRunnerBluesLead.harmony
+    if (harmony === undefined) throw new Error('the entry carries no harmony')
+    expect(harmony.cycleBars).toBe(12)
+    expect(harmony.progression.map((p) => p.degree)).toEqual(['i', 'VI', 'iv', 'I', 'IV', 'v'])
+    // Four bars of figure inside a twelve-bar cycle, which is the point of carrying both: the
+    // grid caps at 64 steps, so a riff cannot span this progression and does not pretend to.
+    expect(bladeRunnerBluesLead.hook.bars).toBe(4)
+    expect(harmony.progression.every((p) => p.bars === 2)).toBe(true)
+  })
+
+  it('raises both thirds, and only those', () => {
+    const notes = bladeRunnerBluesLead.hook.notes
+    expect(notes.map((n) => n.alter)).toEqual([1, 1, undefined])
+    // Degrees 3 and 6 of F# minor are A and D; raised they are the major thirds of the `I` and
+    // the `IV` those two bars sit on. The third note is unaltered and is the tonic.
+    expect(notes.map((n) => n.degree)).toEqual([3, 6, 1])
+  })
+
+  it('spells them as chord tones, which is what says they are not passing notes', () => {
+    const resolved = resolveHook(bladeRunnerBluesLead.hook, bladeRunnerBluesLead.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    // `A#` is the third of F# major and `D#` the third of B. A reader shown `Bb` and `Eb` would
+    // be being taught chromaticism instead — the reason `alter` displaces a degree (§4.1).
+    expect(resolved.hook.notes.map((n) => n.note)).toEqual(['A#4', 'D#5', 'F#5'])
+  })
+
+  it('holds each note past the chord it starts on, which the technique says in words', () => {
+    const [first, second] = bladeRunnerBluesLead.hook.notes
+    // Bars 1-2 are the `I`, so step 33 is where the `IV` arrives. The first note starts at 9 and
+    // runs to 34, overlapping it; the second starts at 33 and is still sounding at 49.
+    expect((first?.step ?? 0) + (first?.len ?? 0)).toBeGreaterThan(33)
+    expect((second?.step ?? 0) + (second?.len ?? 0)).toBeGreaterThan(49)
+  })
+
+  it('strikes every note once and nothing else, so the grid does not re-articulate a hold', () => {
+    // `RIFF_GRID_LEAD` promises every step strikes the note in force at that point, so a hit the
+    // hook has no onset for would re-strike a note this technique holds through.
+    const onsets = bladeRunnerBluesLead.hook.notes.map((n) => n.step)
+    expect(bladeRunnerBluesLead.pattern.hits.map((h) => h.step)).toEqual(onsets)
   })
 })
