@@ -70,6 +70,35 @@ export const bladeRunnerBluesLead: Riff = {
    * `I` and `IV` are the borrowed pair this figure is about, and `v` takes it back.
    */
   figureStartsAtBar: 7,
+
+  /**
+   * §5A/#554. The two rules this figure keeps, as data. Both were prose until now, and prose is
+   * what let the first published version drift: the paragraph forbidding the collision stayed
+   * true while the notes stopped keeping it.
+   *
+   * The forbidden pair is the same rule twice — over a borrowed major chord, the key's own third
+   * or sixth is the move collapsing. Written as degrees so it holds in any key this is played in,
+   * and with `alter` absent because it is the *natural* spelling that is wrong; the raised one is
+   * the whole point.
+   */
+  constraints: {
+    forbiddenDegrees: [
+      {
+        chord: 'I',
+        degree: 3,
+        reason: 'the natural third against the raised one is the turn collapsing',
+      },
+      {
+        chord: 'IV',
+        degree: 6,
+        reason: 'the same move one chord later, and the natural sixth cancels the chord',
+      },
+    ],
+    onsetOffset: {
+      minSteps: 4,
+      reason: 'the lead floats free of the harmonic grid; entering on the bar head pins it to one',
+    },
+  },
   harmony: {
     cycleBars: 12,
     progression: [

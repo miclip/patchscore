@@ -34,6 +34,7 @@ import {
   riffSubstitution,
   riffTempo,
   riffTitle,
+  ruleLines,
   slotRows,
   spellingLabel,
   stepList,
@@ -411,6 +412,15 @@ export function renderRiff(resolution: RiffResolution): string {
     out.push(paragraph)
   })
   out.push('')
+  const rules = ruleLines(riff)
+  if (rules.length > 0) {
+    out.push('## The rules')
+    out.push('')
+    out.push('These are checked, not advice: an edit that breaks one fails the build.')
+    out.push('')
+    for (const rule of rules) out.push(`- ${rule}`)
+    out.push('')
+  }
   const chords = chordLines(riff)
   if (chords.length > 0) {
     out.push(...chords)

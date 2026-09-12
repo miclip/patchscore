@@ -26,6 +26,7 @@ import {
 import {
   BpmSpecSchema,
   HarmonySchema,
+  STEPS_PER_BAR,
   HookSchema,
   MusicalKeySchema,
   PatternSchema,
@@ -188,6 +189,11 @@ export type Riff = {
    * expressible and is a different thing, and nothing has needed it.
    */
   figureStartsAtBar?: number
+  /**
+   * §5A/#554. **Rules the figure keeps, checked rather than described.** See `RiffConstraints`.
+   * Absent on an entry with nothing mechanical to say, which is most of them.
+   */
+  constraints?: RiffConstraints
   hook: Hook
   /** Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them. */
   pattern: Pattern
@@ -208,6 +214,145 @@ export function trackSlug(track: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+/**
+ * §5A/#554. **The rules a figure has to keep, as data rather than as prose.**
+ *
+ * A riff's `technique` says what makes the part that part, and nothing reads it. That is right for
+ * *"the gaps belong to the drums"* and wrong for *"never play the natural third over this chord"*
+ * — the second is mechanically checkable, and a rule nobody checks is a rule the next edit breaks.
+ * One did: #552 found a figure whose prose forbade a collision while its notes had stopped keeping
+ * it, and the checks that caught it were written by hand for that one entry.
+ *
+ * **Degrees, not pitch classes.** *"Never A over F#"* is right in one key and silent in every
+ * other; `{ chord: 'I', degree: 3 }` is the same rule wherever the riff is played, and it is the
+ * vocabulary the hook is already written in. `alter` distinguishes the two thirds — forbidding the
+ * natural one is the point, and the raised one is what such a figure is usually for.
+ *
+ * **Checked across a note's whole span, not at its onset.** A note held into the next chord is
+ * sounding over it, which is how the same collision arrives a beat late.
+ */
+export type ForbiddenDegree = {
+  /** The chord it applies during, as the degree string the progression uses. */
+  chord: string
+  /** 1-based scale degree, as `HookNote.degree`. */
+  degree: number
+  /** Which spelling of that degree is forbidden. Absent means the unaltered one. */
+  alter?: number
+  /** Why, in the words somebody would say it. Rendered — a rule with no reason cannot be weighed. */
+  reason: string
+}
+
+export type RiffConstraints = {
+  forbiddenDegrees?: ForbiddenDegree[]
+  /**
+   * How long after a chord arrives its first note may enter, in sixteenth steps. A figure that
+   * floats free of the harmonic grid is keeping a rule, and this is the rule.
+   *
+   * Applies to an **entry** — the first note over a chord — and not to a continuation, which is
+   * not entering anything.
+   */
+  onsetOffset?: { minSteps: number; reason: string }
+}
+
+export const ForbiddenDegreeSchema = z.strictObject({
+  chord: z.string().min(1),
+  degree: z.int().min(1),
+  alter: z.int().min(-2).max(2).optional(),
+  reason: z.string().min(1, 'a rule with no reason is a rule nobody can weigh'),
+})
+
+export const RiffConstraintsSchema = z
+  .strictObject({
+    forbiddenDegrees: z.array(ForbiddenDegreeSchema).min(1).optional(),
+    onsetOffset: z
+      .strictObject({
+        minSteps: z.int().min(1),
+        reason: z.string().min(1, 'a rule with no reason is a rule nobody can weigh'),
+      })
+      .optional(),
+  })
+  .refine((c) => c.forbiddenDegrees !== undefined || c.onsetOffset !== undefined, {
+    message: 'constraints that constrain nothing are an author writing something that does nothing',
+  })
+
+/**
+ * §5A/#554. Which chord of the cycle is sounding at a figure step, or `undefined` where the riff
+ * carries no harmony to answer with. Exported because both the schema and the surfaces need it and
+ * neither should re-derive the arithmetic.
+ */
+export function chordAtStep(riff: Riff, step: number): string | undefined {
+  const { harmony } = riff
+  if (harmony === undefined) return undefined
+  const cycleBar = (riff.figureStartsAtBar ?? 1) + Math.floor((step - 1) / STEPS_PER_BAR)
+  let bar = 1
+  for (const chord of harmony.progression) {
+    if (cycleBar >= bar && cycleBar < bar + chord.bars) return chord.degree
+    bar += chord.bars
+  }
+  return undefined
+}
+
+/**
+ * §5A/#554. Every rule this riff breaks, as sentences naming the note and the chord. Empty for a
+ * riff that keeps them, and for one that states none.
+ *
+ * Pure and exported so the schema can fail the build on it *and* a test can print it. The schema
+ * is the gate — a manifest that breaks its own stated rule should not parse — and the sentences
+ * are what makes the failure actionable rather than a boolean.
+ */
+export function riffConstraintViolations(riff: Riff): string[] {
+  const rules = riff.constraints
+  if (rules === undefined) return []
+  const out: string[] = []
+  const resolved = resolveHook(riff.hook, riff.key)
+  if (resolved.outcome !== 'resolved') return out
+  const lastStep = riff.hook.bars * STEPS_PER_BAR
+
+  for (const rule of rules.forbiddenDegrees ?? []) {
+    for (const note of resolved.hook.notes) {
+      if (note.degree !== rule.degree) continue
+      if ((note.alter ?? 0) !== (rule.alter ?? 0)) continue
+      for (let step = note.step; step < note.step + note.len && step <= lastStep; step += 1) {
+        if (chordAtStep(riff, step) !== rule.chord) continue
+        out.push(
+          `${note.note} sounds over ${rule.chord} at step ${String(step)}, which this riff ` +
+            `forbids: ${rule.reason}`,
+        )
+        break
+      }
+    }
+  }
+
+  const offset = rules.onsetOffset
+  if (offset !== undefined) {
+    const entered = new Set<string>()
+    for (const note of riff.hook.notes) {
+      const chord = chordAtStep(riff, note.step)
+      if (chord === undefined || entered.has(chord)) continue
+      entered.add(chord)
+      // Where in its own chord the entry falls, which needs the chord's start rather than the
+      // bar's: a chord two bars long is entered late at step 20 and on the nose at step 17.
+      let barsBefore = 0
+      const cycleBar = (riff.figureStartsAtBar ?? 1) + Math.floor((note.step - 1) / STEPS_PER_BAR)
+      let bar = 1
+      for (const chordStep of riff.harmony?.progression ?? []) {
+        if (cycleBar >= bar && cycleBar < bar + chordStep.bars) {
+          barsBefore = cycleBar - bar
+          break
+        }
+        bar += chordStep.bars
+      }
+      const into = barsBefore * STEPS_PER_BAR + ((note.step - 1) % STEPS_PER_BAR)
+      if (into >= offset.minSteps) continue
+      out.push(
+        `${chord} is entered at step ${String(note.step)}, ${String(into)} steps in, where this ` +
+          `riff asks for ${String(offset.minSteps)}: ${offset.reason}`,
+      )
+    }
+  }
+  return out
+}
+
 export const RiffSchema = z
   .strictObject({
     id: z.string().min(1),
@@ -219,6 +364,7 @@ export const RiffSchema = z
     request: RoleRequestSchema,
     harmony: HarmonySchema.optional(),
     figureStartsAtBar: z.int().min(1).optional(),
+    constraints: RiffConstraintsSchema.optional(),
     hook: HookSchema,
     pattern: PatternSchema,
   })
@@ -359,6 +505,18 @@ export const RiffSchema = z
           })
         }
       }
+    }
+    /*
+     * §5A/#554. **A riff that breaks its own stated rule does not parse.** The rules are the
+     * author's, so this is not the schema having an opinion about music — it is the schema
+     * holding an entry to what it says about itself, which is the one thing prose could not do.
+     *
+     * Each violation is its own issue so a manifest with three names three, and the reason the
+     * author wrote is carried into the message: a failure that says which rule and why is one
+     * somebody can act on without opening this file.
+     */
+    for (const violation of riffConstraintViolations(riff as Riff)) {
+      ctx.addIssue({ code: 'custom', message: violation, path: ['constraints'] })
     }
     // Invariant 5's list, read the other way: a role that is held rather than struck has no grid
     // to be missing, so a riff on one would be authoring a pattern that says nothing.
