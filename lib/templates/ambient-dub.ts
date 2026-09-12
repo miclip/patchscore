@@ -36,8 +36,8 @@ import { at, on, variant } from '../core/authoring'
  * and every role with any pattern here has all four — §6.3's fallback exists for templates with
  * holes, and it is reported to the reader when it fires.
  *
- * `pad`, `texture` and `sweep` have no patterns, which is three quarters of what this genre is
- * and none of it on a step grid. A pad holds, a texture breathes, a sweep is one long gesture
+ * `pad`, `texture` and `sweep` have no patterns, which is most of what this genre is and none
+ * of it on a step grid. A pad holds, a texture breathes, a sweep is one long gesture
  * across a section boundary; four bands of invented 16ths for any of them would be the guide
  * lying about what the part does. The guide omits their pattern block and says so (invariant 5
  * applied to rhythm, §6.3).
@@ -129,6 +129,32 @@ const PATTERNS: Pattern[] = [
     on('downbeat', 1, 9),
     on('offbeat', 3, 7, 11, 15),
     at('accent', 102, 5),
+  ),
+
+  // ---- noise --------------------------------------------------------------------------
+  // #538. A wash, and one that rings for most of a bar, so the grid is where it *arrives* and
+  // not where it sounds. The house rule the ride and the sub already follow: offbeats first,
+  // the beat itself only at band 3. Two bars, because the gesture is the phrase's — band 0 is
+  // one wash in eight beats, on the "and" of 4 at the end of the phrase, so it spills over the
+  // bar line into the next downbeat rather than sitting on this one. Pressure arriving out of
+  // the reverb, which is the dub half of the name.
+  //
+  // The accent at step 31 from band 2 up is the phrase-end wash the variant leans on, and it is
+  // the one hit a device may subdivide into a roll: the only `noise / soft` in the library
+  // articulates `accent` and nothing else, so a direction asking for it and never emitting the
+  // slot would leave that recipe's one gesture dead (#108). Bloom and Crest sit at bands 2 and
+  // 3 at the neutral detent, so it is reached without a knob.
+  variant('dub-noise-b0', 'noise', 0, 32, on('offbeat', 31)),
+  variant('dub-noise-b1', 'noise', 1, 32, on('offbeat', 15, 31)),
+  variant('dub-noise-b2', 'noise', 2, 32, on('offbeat', 7, 15, 23), at('accent', 104, 31)),
+  variant(
+    'dub-noise-b3',
+    'noise',
+    3,
+    32,
+    on('downbeat', 1, 17),
+    on('offbeat', 7, 15, 23),
+    at('accent', 104, 31),
   ),
 
   // ---- ghost-perc ---------------------------------------------------------------------
@@ -250,7 +276,7 @@ export const ambientDub: Template = {
   ],
 
   /**
-   * §4.4. Ascending: 1 outranks 5. Nine requests, and the top of the list is the part of the
+   * §4.4. Ascending: 1 outranks 5. Ten requests, and the top of the list is the part of the
    * shape techno puts last — the pad and the sub are the track, and the kick is a texture that
    * happens to be low.
    */
@@ -275,6 +301,41 @@ export const ambientDub: Template = {
 
     { id: 'r-texture', role: 'texture', priority: 3, character: 'soft', sustain: 'continuous' },
     { id: 'r-ride', role: 'ride', priority: 3, character: 'bright', sustain: 'continuous' },
+
+    /**
+     * §3.5/#538. **A noise wash, asked for `soft` because the one box that authored a soft
+     * noise wrote this part and no direction had asked for it.** *"Open hat opened out into a
+     * wash"* — a hat tuned down and let ring for most of a bar behind a low-pass, with the
+     * sends turned well up. That is a dub gesture before it is anything else, and this is the
+     * one direction that was going to want it.
+     *
+     * Nearly every other noise in the library is `dirty` — thirty-four recipes on thirty-two
+     * boxes, beside one `bright`, one `dark` and one `hard` — and `dirty` is at sqrt(2) from
+     * `soft` (§3.4): a rig with only a crushed or driven noise gets that one, as a substitution
+     * the guide names, and many of those recipes are washes too — held, high-passed, reversed.
+     * What §3.5 refuses is `hard`, which is the right refusal here.
+     *
+     * **Priority 3, and the number was measured rather than felt.** The box that authors the
+     * soft one has six fixed voices and one of them takes `noise`; that voice also takes
+     * `texture` and `ride`, which this direction asks for at 3. At 3 the wash wins the voice,
+     * because the box's own author listed `noise` ahead of `texture` on it and the objective's
+     * role-fit key reads that order (§7.1); at 4 it loses to the texture and the part is never
+     * played anywhere. `inessential` and not `optional`, for the same reason: an optional miss
+     * ranks below a required one, so an optional wash loses that same tie and the request would
+     * reach nothing.
+     *
+     * The cost is real and is stated: on that box the wash displaces the loop texture, and on a
+     * box with one voice to spare after the top five it displaces the sweep. A wash the reader
+     * can dial on the hat is a fair trade for a texture that needs a sample loaded first.
+     */
+    {
+      id: 'r-noise',
+      role: 'noise',
+      priority: 3,
+      character: 'soft',
+      sustain: 'continuous',
+      inessential: { reason: 'dub is mostly space; the wash is one more thing arriving late into it' },
+    },
 
     // §4.2. Transient, and scoped to the two sections that are *moving* — one sweep lifting
     // into the crest, one falling away from it. A sweep that ran the whole track would be a

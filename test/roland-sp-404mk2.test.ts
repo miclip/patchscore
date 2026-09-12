@@ -569,8 +569,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
 
     // 246 until #345 authored the six roles the pool declared and no recipe served; 264 until
     // Hard Techno.
-    expect(grid.length).toBe(360)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(330)
+    expect(grid.length).toBe(372)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(342)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -605,10 +605,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['snare', 24],
       ['metallic', 18],
       ['ride', 18],
+      ['tom', 18],
       ['impact', 12],
-      ['tom', 12],
+      ['noise', 12],
       ['arp', 6],
-      ['noise', 6],
       ['vox-chop', 6],
     ])
   })

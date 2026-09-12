@@ -166,8 +166,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { grid } = sweep()
 
     // 264 until #345 authored the pool's last five unserved roles; 270 until Hard Techno.
-    expect(grid.length).toBe(330)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(300)
+    expect(grid.length).toBe(342)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(312)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -201,10 +201,11 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       ['rim', 24],
       ['snare', 24],
       ['ride', 18],
+      ['tom', 18],
       ['metallic', 12],
-      ['tom', 12],
       ['arp', 6],
       ['impact', 6],
+      ['noise', 6],
       ['vox-chop', 6],
     ])
   })
@@ -218,9 +219,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(sustained).toEqual([])
     // 12 until #345: `sweep` and `riser` gain entries, and no direction authors a step variant
     // for either of them.
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(30)
+    // #538. Ambient Dub's `noise` at priority 3 takes the voice its `sweep` (p4) had on this
+    // box, so the sweep leaves this list as a part the box no longer carries.
     expect([...new Set(noPattern)].sort()).toEqual([
-      'ambient-dub/sweep',
       'ambient-dub/texture',
       'generative-drift/sweep',
       'hip-hop/texture',
