@@ -84,8 +84,11 @@ function Notes({ resolution }: { resolution: RiffResolution }) {
  * §5A/#554. **The rules the figure keeps**, where it states any.
  *
  * Shown rather than kept for the build alone: a rule a reader cannot see is one they will break
- * the first time they take the figure somewhere else. The line about it being checked is there
- * because it changes how the list reads — these are not four more sentences of advice.
+ * the first time they take the figure somewhere else.
+ *
+ * **No line saying they are enforced.** One was here, and it told the reader about our build,
+ * which is nothing to somebody standing at a machine — the same rule that keeps our backlog off
+ * the page. A heading and the rules under it is the whole of what a reader needs.
  */
 function Rules({ riff }: { riff: Riff }) {
   const rules = ruleLines(riff)
@@ -95,9 +98,6 @@ function Rules({ riff }: { riff: Riff }) {
       <header>
         <h2>The rules</h2>
       </header>
-      <p className="riff-grid-lead">
-        These are checked, not advice: an edit that breaks one fails the build.
-      </p>
       <ul className="riff-rules">
         {rules.map((rule) => (
           <li key={rule}>{rule}</li>
