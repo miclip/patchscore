@@ -702,3 +702,59 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(device.voices.some((v) => v.triggerNote !== undefined)).toBe(false)
   })
 })
+
+/**
+ * §8/#548. This box prints `RSET` on two pages and `HOLD` on two more, so four of its parameter
+ * names are page-qualified. `DeviceSchema` refuses the collision library-wide; what this file adds
+ * is that the qualifiers are **this manual's own page names** rather than a scheme somebody
+ * invented, which is the constraint `behringer-crave` states for the same repair.
+ */
+describe('Digitone II page-qualified names (#548)', () => {
+  const byId = (id: string) => device.recipes.find((r) => r.id === id)
+  const names = (id: string) => (byId(id)?.params as AuthoredParam[]).map((p) => p.name)
+
+  it('qualifies both resets and both holds, and keeps no bare one', () => {
+    const all = device.recipes.flatMap((r) => (r.params as AuthoredParam[]).map((p) => p.name))
+    // The bare names are gone everywhere, not only where two met on one recipe: the same control
+    // should be the same word on every part a reader compares.
+    expect(all).not.toContain('RSET')
+    expect(all).not.toContain('HOLD')
+    expect(new Set(all.filter((n) => n.endsWith('RSET')))).toEqual(
+      new Set(['FLTR RSET', 'SYN RSET']),
+    )
+    expect(new Set(all.filter((n) => n.endsWith('HOLD')))).toEqual(
+      new Set(['AMP HOLD', 'SYN HOLD']),
+    )
+  })
+
+  it('carries the page each qualified name came off, so the qualifier is checkable', () => {
+    // p.60 "Filter Envelope Reset … FLTR page 1"; p.97 "Oscillator Phase Reset" on WaveTone 2/3;
+    // p.61 is §11.7 AMP PAGE; p.97 again for the noise envelope on WaveTone 3/3.
+    const pageOf = (recipeId: string, name: string) => {
+      const param = (byId(recipeId)?.params as AuthoredParam[]).find((p) => p.name === name)
+      if (param === undefined) throw new Error(`${recipeId} has no ${name}`)
+      const cite =
+        param.kind === 'enum'
+          ? param.options.verified
+          : param.kind === 'numeric'
+            ? param.range.verified
+            : undefined
+      return cite === false || cite === undefined ? undefined : cite.source
+    }
+    expect(pageOf('dn2-riser-bright', 'FLTR RSET')).toContain('p.60')
+    expect(pageOf('dn2-riser-bright', 'SYN RSET')).toContain('p.97')
+    expect(pageOf('dn2-clap-bright', 'AMP HOLD')).toContain('p.61')
+    expect(pageOf('dn2-clap-bright', 'SYN HOLD')).toContain('p.97')
+  })
+
+  it('still puts both of each on the recipes that carry two, rather than dropping one', () => {
+    // The repair was a rename, not a deletion. `dn2-riser-bright` is the part that read
+    // `RSET ON` / `RSET OFF`; both values survive, now distinguishable.
+    expect(names('dn2-riser-bright')).toContain('FLTR RSET')
+    expect(names('dn2-riser-bright')).toContain('SYN RSET')
+    for (const id of ['dn2-clap-bright', 'dn2-ride-bright', 'dn2-noise-dirty']) {
+      expect(names(id), id).toContain('AMP HOLD')
+      expect(names(id), id).toContain('SYN HOLD')
+    }
+  })
+})

@@ -2656,6 +2656,37 @@ export const RecipeSchema = z
       })
     })
   })
+  /*
+   * §8/#548. **Two parameters in one scope may not share a name.** A guide's parameter list is
+   * flat rows of `name` and `value`, so a repeated name inside one scope is two rows a reader
+   * cannot tell apart — the Digitone II printed `RSET ON` and `RSET OFF` on one part, with
+   * position as the only clue, which is no clue at §8's viewing distance.
+   *
+   * **Scoped separately is fine and is why this keys on the pair.** The same silkscreen word can
+   * be a per-part control and a pattern-wide one — the Digitone's `FDBK` is the SYN1 feedback on
+   * the part and the DELAY page's feedback at `pattern` — and those render in different sections,
+   * so a reader never sees them together.
+   *
+   * The repair is to qualify the name with the box's own page or section, never to lean on a
+   * `note`: invariant 4 makes names ink and notes the layer a reader skips. `behringer-crave`
+   * states the constraint on the qualifier — it has to come off the page too.
+   */
+  .superRefine((r, ctx) => {
+    const seen = new Map<string, number>()
+    r.params.forEach((param, i) => {
+      const key = `${param.name}\u0000${param.scope ?? ''}`
+      const first = seen.get(key)
+      if (first === undefined) {
+        seen.set(key, i)
+        return
+      }
+      ctx.addIssue({
+        code: 'custom',
+        message: `two parameters are named '${param.name}' in the same scope — a guide prints them as two rows a reader cannot tell apart, so qualify the name with the page it is on (§8/#548)`,
+        path: ['params', i, 'name'],
+      })
+    })
+  })
   // §3.7/#496. A preamble is one half of a routing line, so the other half has to exist. Without
   // this a folder could put its whole routing in the shared field, where the kit page would hoist
   // it into the header and the sound itself would say nothing at all.

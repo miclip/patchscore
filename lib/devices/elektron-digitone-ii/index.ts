@@ -324,6 +324,31 @@ function num(
   }
 }
 
+/**
+ * §8/#548. **Four of these names are page-qualified, because this box prints two of each.**
+ *
+ * The silkscreen is not unique and the guide's rows are flat, so `RSET` and `HOLD` unqualified put
+ * two rows in one part carrying one name and different values — on `dn2-riser-bright` they read
+ * `RSET ON` and `RSET OFF` with position as the only clue, which is not a clue at §8's viewing
+ * distance. Invariant 4 is the rule being kept here: **names are ink**, and a note is the layer a
+ * reader skips.
+ *
+ * **Every qualifier is the box's own page name**, which is the constraint `behringer-crave` states
+ * for the same repair — *"the qualifier is the specification table's own section heading, so both
+ * halves still come off the page"*. `SYN`, `FLTR` and `AMP` are the panel's buttons and this
+ * manifest's existing vocabulary (`SYN MACHINE`, `FLTR MACHINE`, `AMP MODE`), so nothing is
+ * invented:
+ *
+ *  - **`FLTR RSET`** — p.60, *"Filter Envelope Reset … only affects the selected filter machine on
+ *    FLTR page 1"*.
+ *  - **`SYN RSET`** — p.97, *"Oscillator Phase Reset"*, on the `WaveTone (2/3)` page.
+ *  - **`AMP HOLD`** — p.61, §11.7 `AMP PAGE`.
+ *  - **`SYN HOLD`** — p.97, the noise envelope on `WaveTone (3/3)`.
+ *
+ * Qualified at the helper rather than only where a collision happens, so the same control is the
+ * same word on every recipe. A reader comparing two parts should not find `HOLD` on one and
+ * `AMP HOLD` on another for the same knob.
+ */
 const syn = (m: (typeof SYN_MACHINES)[number]) => pick('SYN MACHINE', m, SYN_MACHINES, 89)
 const fltr = (m: (typeof FLTR_MACHINES)[number]) => pick('FLTR MACHINE', m, FLTR_MACHINES, 101)
 const ampMode = (m: (typeof AMP_MODES)[number]) => pick('AMP MODE', m, AMP_MODES, 61)
@@ -331,9 +356,10 @@ const lfoMode = (m: (typeof LFO_MODES)[number]) => pick('LFO MODE', m, LFO_MODES
 const lfoWave = (w: (typeof LFO_WAVES)[number]) => pick('LFO WAVE', w, LFO_WAVES, 64)
 const playMode = (m: (typeof PLAY_MODES)[number]) => pick('PLAY MODE', m, PLAY_MODES, 37)
 const phaseReset = (v: (typeof PHASE_RESETS)[number]) => pick('PHRT', v, PHASE_RESETS, 92)
-const envReset = (v: (typeof ENV_RESETS)[number]) => pick('RSET', v, ENV_RESETS, 60)
+const envReset = (v: (typeof ENV_RESETS)[number]) => pick('FLTR RSET', v, ENV_RESETS, 60)
 const oscMod = (v: (typeof OSC_MODS)[number]) => pick('MOD', v, OSC_MODS, 97)
-const oscPhase = (v: (typeof OSC_PHASE_RESETS)[number]) => pick('RSET', v, OSC_PHASE_RESETS, 97)
+const oscPhase = (v: (typeof OSC_PHASE_RESETS)[number]) =>
+  pick('SYN RSET', v, OSC_PHASE_RESETS, 97)
 const table = (name: 'TBL1' | 'TBL2', v: (typeof WAVETABLES)[number]) =>
   pick(name, v, WAVETABLES, 97)
 const noiseType = (v: (typeof NOISE_TYPES)[number]) => pick('TYPE', v, NOISE_TYPES, 98)
@@ -359,16 +385,16 @@ const mix = (v: number) =>
 
 /** AMP `HOLD`, p.61. Only exists when MODE is AHD, which is why it never appears without it. */
 const hold = (v: number) =>
-  num('HOLD', v, { min: 0, max: 126 }, 61, {
+  num('AMP HOLD', v, { min: 0, max: 126 }, 61, {
     mood: [{ axis: 'density', amount: -24 }],
     note: 'Only available when AMP MODE is AHD',
   })
 
 /** WAVETONE noise-envelope `HOLD`, p.97 — its own parameter on SYN page 3, not the AMP page's. */
 const noiseHold = (v: number) =>
-  num('HOLD', v, { min: 0, max: 126 }, 97, {
+  num('SYN HOLD', v, { min: 0, max: 126 }, 97, {
     mood: [{ axis: 'density', amount: -18 }],
-    note: 'The noise amp envelope on SYN page 3, not the AMP page',
+    note: 'The noise envelope on WaveTone page 3, not the amplitude envelope',
   })
 
 /** LFO `FADE`, p.63. Positive fades out, negative fades in. */

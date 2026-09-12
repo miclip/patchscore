@@ -176,6 +176,69 @@ describe('malformed manifests fail the build, not a request (§9)', () => {
     expect(r.stderr).toContain('inside its own declared range')
   })
 
+  /**
+   * §8/#548. Two rows, one name, in the same scope — what the Digitone II shipped as `RSET ON`
+   * and `RSET OFF` on one part. The build refuses it rather than a reviewer catching it, because
+   * nothing downstream can: the guide renders both rows happily and neither is wrong on its own.
+   */
+  it('rejects two parameters sharing a name in one scope', () => {
+    const root = tempRoot()
+    writeManifest(root, 'aa-device', {
+      recipes: [
+        {
+          id: 'r1',
+          role: 'kick',
+          character: 'hard',
+          voice: 'bd',
+          title: 'Two rows a reader cannot tell apart',
+          params: [
+            { kind: 'enum', name: 'RSET', value: 'ON', options: { values: ['ON', 'OFF'] } },
+            { kind: 'enum', name: 'RSET', value: 'OFF', options: { values: ['ON', 'OFF'] } },
+          ],
+        },
+      ],
+    })
+
+    const r = runGen(['--root', root])
+    expect(r.status).toBe(1)
+    expect(r.stderr).toContain('aa-device')
+    expect(r.stderr).toContain('recipes.0.params.1.name')
+    expect(r.stderr).toContain("two parameters are named 'RSET' in the same scope")
+  })
+
+  /**
+   * The other half of the rule, and the reason it keys on the pair rather than on the name: the
+   * Digitone's `FDBK` is the SYN1 feedback on the part and the DELAY page's feedback at `pattern`.
+   * Those render in different sections, so a reader never sees them together — and a rule that
+   * refused them would force a rename that made both names worse.
+   */
+  it('allows one name twice when the two sit in different scopes', () => {
+    const root = tempRoot()
+    writeManifest(root, 'aa-device', {
+      recipes: [
+        {
+          id: 'r1',
+          role: 'kick',
+          character: 'hard',
+          voice: 'bd',
+          title: 'Same word, two sections',
+          params: [
+            { kind: 'numeric', name: 'FDBK', value: 44, range: { min: 0, max: 127 } },
+            {
+              kind: 'numeric',
+              name: 'FDBK',
+              value: 84,
+              range: { min: 0, max: 127 },
+              scope: 'pattern',
+            },
+          ],
+        },
+      ],
+    })
+
+    expect(runGen(['--root', root]).status).toBe(0)
+  })
+
   it('rejects a recipe addressing a voice the device does not declare', () => {
     const root = tempRoot()
     writeManifest(root, 'aa-device', {
