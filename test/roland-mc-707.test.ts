@@ -150,8 +150,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 294 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(324)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(294)
+    expect(grid.length).toBe(342)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(312)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -178,7 +178,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.pool, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 288, blank: 288 }],
+      ['drum-pad', { grid: 306, blank: 306 }],
       ['tone-track', { grid: 36, blank: 6 }],
     ])
   })
@@ -206,14 +206,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['kick', 54],
       ['closed-hat', 48],
-      ['ghost-perc', 42],
+      ['ghost-perc', 48],
       ['open-hat', 24],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
       ['metallic', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['impact', 12],
-      ['ride', 12],
       ['tom', 12],
       ['arp', 6],
       ['noise', 6],
@@ -225,9 +225,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(144)
+    expect(hooked.length).toBe(162)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(42)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
@@ -235,6 +235,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
   })
 

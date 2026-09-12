@@ -974,7 +974,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // two arms are empty here, which is itself the successor's shape and not this box's — four
     // tracks take fewer parts, and every one they take resolves a variant somewhere.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(78)
+    expect(hooked.length).toBe(90)
     expect(sustained).toEqual([])
     expect(noPattern).toEqual([])
 

@@ -875,8 +875,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   it('leaves 282 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(312)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(282)
+    expect(grid.length).toBe(330)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(300)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -899,8 +899,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['track-sample', { grid: 114, blank: 84 }],
-      ['track-synth', { grid: 198, blank: 198 }],
+      ['track-sample', { grid: 120, blank: 90 }],
+      ['track-synth', { grid: 210, blank: 210 }],
     ])
   })
 
@@ -926,15 +926,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
       ['closed-hat', 48],
+      ['ghost-perc', 48],
       ['kick', 48],
-      ['ghost-perc', 42],
       ['open-hat', 24],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['impact', 12],
       ['metallic', 12],
-      ['ride', 12],
       ['tom', 12],
       ['arp', 6],
       ['noise', 6],
@@ -952,9 +952,9 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // 90 until Hard Techno, the third direction to ask for one, whose six lead parts land on the
     // same recipe by substitution and hook the same way.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(96)
+    expect(hooked.length).toBe(108)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(42)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
@@ -962,6 +962,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not

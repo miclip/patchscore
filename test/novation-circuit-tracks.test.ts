@@ -863,8 +863,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // placed 24 parts that were being dropped; 204 until Hard Techno, of which this box carries
     // six parts — its only tom is `soft`, the opposite of the `hard` one asked for, and that part
     // is an honest gap rather than a grid.
-    expect(grid.length).toBe(258)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(228)
+    expect(grid.length).toBe(276)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -891,18 +891,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['kick', 54],
       ['closed-hat', 48],
-      ['ghost-perc', 24],
+      ['ghost-perc', 30],
       ['snare', 24],
       ['clap', 18],
-      // #541: `tom` and `open-hat` traded places rather than one of them growing. Hard Techno
-      // ranks `tom / hard` above `open-hat / dirty`, so `ct-tom-hard` landing took the track the
-      // open hat had been getting on this box. The total is unchanged, which is the point of
-      // pinning by role: a count alone would have read this swap as no change at all.
+      ['rim', 18],
       ['tom', 18],
       ['metallic', 12],
-      ['rim', 12],
+      ['ride', 12],
       ['open-hat', 6],
-      ['ride', 6],
       ['vox-chop', 6],
     ])
   })
@@ -911,7 +907,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook. Six assignables is a
     // tight rig, and every part it takes resolves a variant somewhere — so two arms are empty.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(102)
+    expect(hooked.length).toBe(114)
     expect(sustained).toEqual([])
     expect(noPattern).toEqual([])
 

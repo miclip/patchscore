@@ -2063,7 +2063,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // does not take a part whose notes select slices, so they draw a grid like any other part and
     // are counted here. `hooked` drops by the same six. Hard Techno is the second, 282 -> 330: ten
     // parts this box carries whole, eight of them on the grid.
-    expect(grid.length).toBe(330)
+    expect(grid.length).toBe(348)
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
 
     // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged
@@ -2076,7 +2076,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
 
     // The device's arm, back on the parts p.90's sentence is true of and on no others.
     const triggered = grid.filter((g) => g.kind === 'trigger')
-    expect(triggered).toHaveLength(168)
+    expect(triggered).toHaveLength(180)
     expect([...new Set(triggered.map((g) => `${String(g.note)}/${String(g.midi)}`))]).toEqual([
       'C5/60',
     ])
@@ -2084,7 +2084,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // The blank arm, counted rather than glossed. Every one of these is a transposed recipe or,
     // since §4.1/#369, the Beat Slice chop — where the silence is `noteAddressing`'s rather than
     // a missing citation's, and means *no note here is a pitch* rather than *we did not read it*.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(132)
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(138)
   })
 
   it('splits the percussion by whether its own recipe transposes the sample', () => {
@@ -2101,11 +2101,11 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // Untransposed one-shots and loops: the note is what plays them as recorded.
     expect(counts('trigger')).toEqual([
       ['closed-hat', 48],
-      ['ghost-perc', 42],
+      ['ghost-perc', 48],
       ['open-hat', 24],
       ['clap', 18],
+      ['ride', 18],
       ['impact', 12],
-      ['ride', 12],
       ['arp', 6],
       ['noise', 6],
     ])
@@ -2114,9 +2114,9 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // -3 and `tm-kick-dark` at -7 are the whole of the kick column.
     expect(counts('none')).toEqual([
       ['kick', 54],
+      ['rim', 24],
       ['snare', 24],
       ['metallic', 18],
-      ['rim', 18],
       ['tom', 12],
       ['vox-chop', 6],
     ])
@@ -2131,13 +2131,13 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // 80 until §4.1/#369 took the six Beat Slice `vox-chop` parts out: a hook is not this part's
     // rhythm when the reader cannot enter its notes, so they draw their own grid instead and are
     // counted in `grid` above.
-    expect(hooked.length).toBe(74)
+    expect(hooked.length).toBe(86)
     expect(hooked.some((h) => h.endsWith('/vox-chop'))).toBe(false)
     expect(sustained).toEqual([])
     // 12 until #345. The three new entries are `riser` and `sweep`, which no direction authors a
     // step variant for — both say so in their own `PATTERNS` note, and it is why neither recipe
     // articulates anything. 30 until Hard Techno's riser, a single trig with no grid (#473).
-    expect(noPattern.length).toBe(36)
+    expect(noPattern.length).toBe(42)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
@@ -2145,6 +2145,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
   })
 

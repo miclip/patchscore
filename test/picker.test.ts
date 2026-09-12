@@ -306,8 +306,17 @@ describe('direction search matches name and authored keys only', () => {
       'hard-techno',
       'hip-hop',
       'industrial-techno',
+      'slow-noir',
     ])
-    expect(shown('f minor')).toEqual(['hard-techno', 'hip-hop', 'industrial-techno'])
+    // The same reading, and a second instance of it: `f` is satisfied by the `F#` in Slow Noir's
+    // keys, so a direction that offers no F minor comes back for 'f minor'. Substring-of-term is
+    // what this search is; a tonic-aware one would be a different feature with a different test.
+    expect(shown('f minor')).toEqual([
+      'hard-techno',
+      'hip-hop',
+      'industrial-techno',
+      'slow-noir',
+    ])
     // 'major' is in both a name and a key set; it still returns exactly the one direction.
     expect(shown('major')).toEqual(['major-key-electro'])
 

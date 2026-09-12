@@ -117,7 +117,7 @@ export const slowNoir: Template = {
   mood: { darkness: 68, space: 74, density: 12 },
 
   /**
-   * Five sections, 96 bars, **every one a multiple of the twelve-bar cycle**. At 64 BPM that is
+   * Five sections, 96 bars, **every one a multiple of the six-bar cycle**. At 64 BPM that is
    * six minutes, and the cycle lands whole in every section rather than being cut mid-progression
    * — which matters more here than in a four-bar direction, because a reader who loses the `I`
    * loses the point of the piece.
@@ -133,22 +133,22 @@ export const slowNoir: Template = {
     { name: 'Dark', bars: 24, energy: 0.14 },
   ],
 
-  /** §4.1. Twelve bars, six chords, two of them borrowed. See the head note. */
+  /** §4.1. Six bars, six chords, two of them borrowed — one bar each. See the head note. */
   harmony: {
-    cycleBars: 12,
+    cycleBars: 6,
     progression: [
-      { degree: 'i', bars: 2 },
-      { degree: 'VI', bars: 2 },
-      { degree: 'iv', bars: 2 },
-      { degree: 'I', bars: 2 },
-      { degree: 'IV', bars: 2 },
-      { degree: 'v', bars: 2 },
+      { degree: 'i', bars: 1 },
+      { degree: 'VI', bars: 1 },
+      { degree: 'iv', bars: 1 },
+      { degree: 'I', bars: 1 },
+      { degree: 'IV', bars: 1 },
+      { degree: 'v', bars: 1 },
     ],
   },
 
   hooks: [
     /**
-     * §4.1. **The lead, and the whole reason this direction exists.** Thirteen notes over twelve
+     * §4.1. **The lead, and the whole reason this direction exists.** Thirteen notes over six
      * bars: one gesture per chord, most of them arriving after the chord has already changed
      * under them.
      *
@@ -161,28 +161,28 @@ export const slowNoir: Template = {
     {
       id: 'noir-hook-lead-1',
       forRole: 'lead',
-      bars: 12,
+      bars: 6,
       baseOctave: 4,
       notes: [
         // i — hold, and drop late.
-        { step: 1, degree: 5, octave: 0, len: 24 },
-        { step: 25, degree: 3, octave: 0, len: 8 },
+        { step: 5, degree: 5, octave: 0, len: 8 },
+        { step: 13, degree: 3, octave: 0, len: 4 },
         // VI — step down.
-        { step: 33, degree: 1, octave: 1, len: 16 },
-        { step: 49, degree: 7, octave: 0, len: 8 },
-        { step: 57, degree: 6, octave: 0, len: 8 },
+        { step: 21, degree: 1, octave: 1, len: 4 },
+        { step: 25, degree: 7, octave: 0, len: 4 },
+        { step: 29, degree: 6, octave: 0, len: 4 },
         // iv — hold, a neighbour, and back.
-        { step: 65, degree: 6, octave: 0, len: 16 },
-        { step: 81, degree: 5, octave: 0, len: 8 },
-        { step: 89, degree: 6, octave: 0, len: 8 },
-        // I — one note, arriving half a bar late and hanging over the change.
-        { step: 105, degree: 3, octave: 0, len: 24, alter: 1 },
+        { step: 37, degree: 6, octave: 0, len: 6 },
+        { step: 43, degree: 5, octave: 0, len: 3 },
+        { step: 46, degree: 6, octave: 0, len: 3 },
+        // I — one note, arriving late and hanging over the change.
+        { step: 55, degree: 3, octave: 0, len: 12, alter: 1 },
         // IV — up.
-        { step: 129, degree: 6, octave: 0, len: 16, alter: 1 },
-        { step: 145, degree: 1, octave: 1, len: 16 },
+        { step: 69, degree: 6, octave: 0, len: 6, alter: 1 },
+        { step: 75, degree: 1, octave: 1, len: 6 },
         // v — down, and it does not resolve to the tonic.
-        { step: 161, degree: 2, octave: 0, len: 16 },
-        { step: 177, degree: 7, octave: -1, len: 16 },
+        { step: 85, degree: 2, octave: 0, len: 6 },
+        { step: 91, degree: 7, octave: -1, len: 6 },
       ],
     },
 
@@ -198,27 +198,27 @@ export const slowNoir: Template = {
     {
       id: 'noir-hook-pad-1',
       forRole: 'pad',
-      bars: 12,
+      bars: 6,
       baseOctave: 3,
       notes: [
-        { step: 1, degree: 1, octave: 0, len: 32 },
-        { step: 1, degree: 3, octave: 0, len: 32 },
-        { step: 1, degree: 5, octave: 0, len: 32 },
-        { step: 33, degree: 1, octave: 0, len: 32 },
-        { step: 33, degree: 3, octave: 0, len: 32 },
-        { step: 33, degree: 6, octave: 0, len: 32 },
-        { step: 65, degree: 1, octave: 0, len: 32 },
-        { step: 65, degree: 4, octave: 0, len: 32 },
-        { step: 65, degree: 6, octave: 0, len: 32 },
-        { step: 97, degree: 1, octave: 0, len: 32 },
-        { step: 97, degree: 3, octave: 0, len: 32, alter: 1 },
-        { step: 97, degree: 5, octave: 0, len: 32 },
-        { step: 129, degree: 1, octave: 0, len: 32 },
-        { step: 129, degree: 4, octave: 0, len: 32 },
-        { step: 129, degree: 6, octave: 0, len: 32, alter: 1 },
-        { step: 161, degree: 5, octave: 0, len: 32 },
-        { step: 161, degree: 7, octave: 0, len: 32 },
-        { step: 161, degree: 2, octave: 1, len: 32 },
+        { step: 1, degree: 1, octave: 0, len: 16 },
+        { step: 1, degree: 3, octave: 0, len: 16 },
+        { step: 1, degree: 5, octave: 0, len: 16 },
+        { step: 17, degree: 1, octave: 0, len: 16 },
+        { step: 17, degree: 3, octave: 0, len: 16 },
+        { step: 17, degree: 6, octave: 0, len: 16 },
+        { step: 33, degree: 1, octave: 0, len: 16 },
+        { step: 33, degree: 4, octave: 0, len: 16 },
+        { step: 33, degree: 6, octave: 0, len: 16 },
+        { step: 49, degree: 1, octave: 0, len: 16 },
+        { step: 49, degree: 3, octave: 0, len: 16, alter: 1 },
+        { step: 49, degree: 5, octave: 0, len: 16 },
+        { step: 65, degree: 1, octave: 0, len: 16 },
+        { step: 65, degree: 4, octave: 0, len: 16 },
+        { step: 65, degree: 6, octave: 0, len: 16, alter: 1 },
+        { step: 81, degree: 5, octave: 0, len: 16 },
+        { step: 81, degree: 7, octave: 0, len: 16 },
+        { step: 81, degree: 2, octave: 1, len: 16 },
       ],
     },
 
@@ -231,15 +231,15 @@ export const slowNoir: Template = {
     {
       id: 'noir-hook-sub-1',
       forRole: 'sub',
-      bars: 12,
+      bars: 6,
       baseOctave: 1,
       notes: [
-        { step: 1, degree: 1, octave: 0, len: 32 },
-        { step: 33, degree: 6, octave: 0, len: 32 },
-        { step: 65, degree: 4, octave: 0, len: 32 },
-        { step: 97, degree: 1, octave: 0, len: 32 },
-        { step: 129, degree: 4, octave: 0, len: 32 },
-        { step: 161, degree: 5, octave: 0, len: 32 },
+        { step: 1, degree: 1, octave: 0, len: 16 },
+        { step: 17, degree: 6, octave: 0, len: 16 },
+        { step: 33, degree: 4, octave: 0, len: 16 },
+        { step: 49, degree: 1, octave: 0, len: 16 },
+        { step: 65, degree: 4, octave: 0, len: 16 },
+        { step: 81, degree: 5, octave: 0, len: 16 },
       ],
     },
   ],

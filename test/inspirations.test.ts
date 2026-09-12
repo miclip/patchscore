@@ -128,8 +128,9 @@ function claimedSlots(inspiration: Inspiration): Set<string> {
 // ---------------------------------------------------------------------------
 
 describe('the inspiration registry (§5)', () => {
-  it('holds five, in id order, each parsing and reachable by id', () => {
+  it('holds six, in id order, each parsing and reachable by id', () => {
     expect(INSPIRATIONS.map((i) => i.id)).toEqual([
+      'brushes',
       'dancehall',
       'echo',
       'ladder',
@@ -151,6 +152,14 @@ describe('the inspiration registry (§5)', () => {
     // and Dancehall and Reggae still refuse over the kick. Everything else composes.
     const name = (pair: Inspiration[]) => pair.map((i) => i.id).join(' + ')
     expect(LEGAL_PAIRS.map(name)).toEqual([
+      // `brushes` claims `ride`, which nothing else claims, so it composes with every one of the
+      // five and the refusing pairs stay at four. It is the first influence added since `shuffle`
+      // that costs the composition table nothing.
+      'brushes + dancehall',
+      'brushes + echo',
+      'brushes + ladder',
+      'brushes + reggae',
+      'brushes + shuffle',
       'dancehall + echo',
       'dancehall + ladder',
       'dancehall + shuffle',

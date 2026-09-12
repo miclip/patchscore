@@ -166,8 +166,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { grid } = sweep()
 
     // 264 until #345 authored the pool's last five unserved roles; 270 until Hard Techno.
-    expect(grid.length).toBe(312)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(282)
+    expect(grid.length).toBe(330)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(300)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -195,13 +195,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ).toEqual([
       ['closed-hat', 54],
       ['kick', 54],
-      ['ghost-perc', 36],
+      ['ghost-perc', 42],
       ['open-hat', 24],
+      ['rim', 24],
       ['snare', 24],
       ['clap', 18],
-      ['rim', 18],
+      ['ride', 18],
       ['metallic', 12],
-      ['ride', 12],
       ['tom', 12],
       ['arp', 6],
       ['impact', 6],
@@ -214,17 +214,18 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(132)
+    expect(hooked.length).toBe(150)
     expect(sustained).toEqual([])
     // 12 until #345: `sweep` and `riser` gain entries, and no direction authors a step variant
     // for either of them.
-    expect(noPattern.length).toBe(30)
+    expect(noPattern.length).toBe(36)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'generative-drift/sweep',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'slow-noir/texture',
     ])
   })
 

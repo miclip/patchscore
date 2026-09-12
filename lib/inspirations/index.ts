@@ -1,5 +1,6 @@
 import type { InspirationId } from '../core/ids'
 import type { Inspiration } from '../core/inspiration'
+import { brushes } from './brushes'
 import { dancehall } from './dancehall'
 import { echo } from './echo'
 import { ladder } from './ladder'
@@ -37,10 +38,22 @@ import { shuffle } from './shuffle'
  * That is §5 working — the bass is where all three make their strongest claim, and picking a
  * winner by id order is exactly the alphabetical musical decision the refusal exists to prevent.
  * Both new influences compose freely with `dancehall` and with `shuffle`.
+ *
+ * **`brushes` is the sixth, and it costs the composition table nothing.** It claims `ride` alone,
+ * which no other influence claims, so the four refusing pairs stay four. It exists for the shape
+ * the five could not reach: a slow direction whose only percussion is a cymbal and a rim, where
+ * `kick`, `closed-hat`, `bass-mid`, `texture` and `lead` are all beside the point.
  */
-export const INSPIRATIONS: readonly Inspiration[] = [dancehall, echo, ladder, reggae, shuffle]
+export const INSPIRATIONS: readonly Inspiration[] = [
+  brushes,
+  dancehall,
+  echo,
+  ladder,
+  reggae,
+  shuffle,
+]
 
-export { dancehall, echo, ladder, reggae, shuffle }
+export { brushes, dancehall, echo, ladder, reggae, shuffle }
 
 const BY_ID: ReadonlyMap<InspirationId, Inspiration> = new Map(INSPIRATIONS.map((i) => [i.id, i]))
 

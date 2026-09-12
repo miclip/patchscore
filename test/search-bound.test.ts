@@ -826,6 +826,25 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
       73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73, 73,
       73
     ],
+    // The thirteenth direction, and the cheapest row in the table by an order of magnitude:
+    // 211-301 nodes over the twenty-four seeds, where the next quietest is `drone-study` at a
+    // flat 37 and everything else is four digits or more.
+    //
+    // It is cheap for the reason `acid-lineage` is, taken further. Six requests, and five of them
+    // are answered *exactly* on most boxes that answer them at all — `lead` at `bright`, `pad` at
+    // `soft`, `sub` at `dark`, `texture` at `soft`, `rim` at `clean` — so `liveFloor` is tight
+    // from the first branch and there is almost nothing for the seed to permute among. The four
+    // seeds that reach 297-301 are the ones where `ride / bright` and `ghost-perc / soft` tie.
+    //
+    // No other row moved: a direction is added rather than merged, and the twelve above reproduce
+    // to the node. `npm run measure:search` is unchanged at 68,253 on `hard-techno` seed 15 —
+    // this direction asks for six parts where that one asks for ten, and none of its six collides
+    // on the roles that crowd.
+    'slow-noir': [
+      215, 215, 214, 297, 215, 215, 214, 297,
+      214, 212, 215, 301, 214, 212, 215, 215,
+      298, 213, 298, 214, 211, 213, 212, 213
+    ],
     'weave': [
       342, 296, 736, 384, 511, 296, 736, 348, 254, 689, 7606, 296, 256, 689, 259, 292, 296,
       6584, 15726, 415, 450, 409, 259, 259

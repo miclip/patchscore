@@ -106,6 +106,7 @@ describe('both directions are registered and parse (§4)', () => {
       'lydian-house',
       'major-key-electro',
       'relay',
+      'slow-noir',
       'weave',
     ])
     expect(templateById('lydian-house')).toBe(lydianHouse)

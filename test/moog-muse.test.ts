@@ -1213,7 +1213,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // not hooked, is not sustained, and draws no grid because no section selected a variant. It
     // is named rather than counted, because *which* part it is is the whole information.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(90)
+    expect(hooked.length).toBe(102)
     expect(sustained).toEqual([])
     expect([...new Set(noPattern)]).toEqual(['hip-hop/texture'])
     expect(noPattern.length).toBe(6)
