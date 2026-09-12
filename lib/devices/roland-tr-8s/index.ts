@@ -1,4 +1,4 @@
-import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, ParamScope } from '../../core/params'
 import { TR_8S_PANEL } from './panel'
 
@@ -86,6 +86,37 @@ function cite(page: number): Cite {
 /** §3/#518. The same citation, narrowed to the two kinds a `playback` claim takes. */
 function citePlayback(page: number): PlaybackEvidence {
   return { kind: 'manual', source: `TR-8S Reference Manual eng01, p.${page}` }
+}
+
+/**
+ * §3/#506. **A drum machine answers this in two different places, because it has two kinds of
+ * instrument**, and reading one off the other is how a citation ends up on the wrong parameter.
+ *
+ *  - **An ACB tone is percussive.** p.30 gives `Decay` as *"Adjusts the length of the decay"*,
+ *    `0–255`, and the BD category's parameter list has no sustain stage anywhere in it. The
+ *    level falls to silence on its own whatever the trigger says, which is `decays`.
+ *  - **A sample tone is not.** p.31's `Hold Mode` *"Selects how the sound decays"* with three
+ *    settings, and `Whole` is *"The sound is heard to the end without decaying"*. The amplitude
+ *    stage does not fall, so it `sustains`.
+ *
+ * `Whole` sustaining is a claim about the amplitude stage only. Whether the note actually lasts
+ * also needs the file not to run out, and that is `playback`'s question (#518) rather than this
+ * one — the two are separate axes on purpose, and a `Whole` sample that ends early ends because
+ * of its length, not because anything decayed it.
+ *
+ * The other two `Hold Mode` settings would both be `decays` — p.31 says decay *begins* after a
+ * length of time or a number of steps — but no held-role recipe here uses them, so neither is
+ * declared rather than written speculatively.
+ */
+const DECAYS_ACB: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['DECAY'] },
+  evidence: { kind: 'manual', source: 'TR-8S Reference Manual eng01, p.30' },
+}
+const SUSTAINS_WHOLE: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['HOLD MODE'] },
+  evidence: { kind: 'manual', source: 'TR-8S Reference Manual eng01, p.31' },
 }
 
 /** `-128–0–+127`, the box's standard bipolar control (Tune, Color, LFO Depth) — p.30, p.31. */
@@ -425,6 +456,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'tr8s-sub-dark',
+    sustain: DECAYS_ACB,
     role: 'sub',
     character: 'dark',
     voice: 'bd',
@@ -1128,6 +1160,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'tr8s-texture-soft',
+    sustain: SUSTAINS_WHOLE,
     role: 'texture',
     character: 'soft',
     voice: 'rc',
@@ -1181,6 +1214,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'tr8s-pad-soft',
+    sustain: SUSTAINS_WHOLE,
     role: 'pad',
     character: 'soft',
     voice: 'rc',

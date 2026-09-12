@@ -793,3 +793,55 @@ describe('the LFO is a whole chain or is not there at all (§3.2/#452)', () => {
     }
   })
 })
+
+/**
+ * §3/#506. Two kinds of instrument answered in two places, pinned here with their pages —
+ * `voice-sustain.test.ts` holds the library ledger, and a ledger entry is not evidence.
+ *
+ * **The split is the point.** Reading the sample tones' answer off the ACB page, or the other way
+ * round, would give three recipes one claim and two of them would be wrong.
+ */
+describe('TR-8S sustain claims (#506)', () => {
+  const byId = (id: string) => device.recipes.find((r) => r.id === id)
+
+  it('decays the ACB kick tuned into a sub, on the Decay the page gives it', () => {
+    const sub = byId('tr8s-sub-dark')
+    expect(sub?.sustain?.kind).toBe('decays')
+    expect(sub?.sustain?.control).toEqual({ kind: 'parameters', params: ['DECAY'] })
+    expect(sub?.sustain?.evidence).toEqual({
+      kind: 'manual',
+      source: 'TR-8S Reference Manual eng01, p.30',
+    })
+    // The claim rests on a parameter this recipe sets, and on the tone it is legal for.
+    const names = (sub?.params as AuthoredParam[]).map((p) => p.name)
+    expect(names).toContain('DECAY')
+    expect(names).toContain('TONE')
+  })
+
+  it('sustains the two sample tones, on Hold Mode rather than on the ACB Decay', () => {
+    for (const id of ['tr8s-texture-soft', 'tr8s-pad-soft']) {
+      const recipe = byId(id)
+      expect(recipe?.sustain?.kind, id).toBe('sustains')
+      expect(recipe?.sustain?.control, id).toEqual({
+        kind: 'parameters',
+        params: ['HOLD MODE'],
+      })
+      expect(recipe?.sustain?.evidence, id).toEqual({
+        kind: 'manual',
+        source: 'TR-8S Reference Manual eng01, p.31',
+      })
+      // `Whole` is the setting the claim is true of; the other two begin a decay.
+      const mode = (recipe?.params as AuthoredParam[]).find((p) => p.name === 'HOLD MODE')
+      expect(mode?.kind === 'enum' ? mode.value : undefined, id).toBe('Whole')
+    }
+  })
+
+  it('claims the amplitude stage only, and leaves the file length to the source spec', () => {
+    // A `Whole` sample still ends when the file does. That is `playback`'s axis (#518), not this
+    // one — and here it is the `sourceAudio.need` that tells the reader, which is why a
+    // `sustains` on a sample recipe is not the guide promising an endless note.
+    for (const id of ['tr8s-texture-soft', 'tr8s-pad-soft']) {
+      expect(byId(id)?.sourceAudio?.need, id).toContain('HOLD MODE Whole')
+    }
+  })
+})

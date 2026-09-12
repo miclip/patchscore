@@ -795,3 +795,26 @@ describe('TR-1000 content is enumerable, and that renders nothing (§2.6/#111)',
     expect(doc).not.toContain('Ships ')
   })
 })
+
+/**
+ * §3/#506. p.61, under the `9X Bass Drum` generator this recipe selects — not the page's other
+ * dozen, which is the distinction that makes the citation worth pinning.
+ */
+describe('TR-1000 sustain claim (#506)', () => {
+  it('decays the kick tuned down into a sub, however long its tail', () => {
+    const sub = device.recipes.find((r) => r.id === 'tr1000-sub-dark')
+    expect(sub?.sustain?.kind).toBe('decays')
+    expect(sub?.sustain?.control).toEqual({ kind: 'parameters', params: ['DECAY'] })
+    expect(sub?.sustain?.evidence).toEqual({
+      kind: 'manual',
+      source: 'TR-1000 Reference Manual (eng02) v1.13+, p.61',
+    })
+
+    // The recipe's own title says "sustained", and the claim says `decays`. Both are right: a 92%
+    // decay is a long tail, and a long tail is not a held note. Pinned so the pair is deliberate
+    // rather than something a later reader quietly "fixes" in one direction.
+    expect(sub?.title).toContain('sustained')
+    const decay = (sub?.params as AuthoredParam[]).find((p) => p.name === 'DECAY')
+    expect(decay?.kind === 'numeric' ? decay.value : undefined).toBe(92)
+  })
+})

@@ -1,4 +1,4 @@
-import type { Device, PlaybackEvidence, Recipe } from '../../core/device'
+import type { Device, PlaybackEvidence, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, ParamScope } from '../../core/params'
 import { TR_6S_PANEL } from './panel'
 
@@ -131,6 +131,29 @@ import { TR_6S_PANEL } from './panel'
 /** The Parameter Guide, which is where every number below comes from. */
 function cite(page: number): Cite {
   return { kind: 'manual', source: `TR-6S Parameter Guide eng02, p.${page}` }
+}
+
+/**
+ * §3/#506. The TR-8S's reading on the smaller box, **off this box's own document**. Roland ships
+ * the ranges separately and names that book differently per product, so the pages are not the
+ * TR-8S's with a different cover: both of these facts are on Parameter Guide p.7, where the
+ * TR-8S carries them across its p.30 and p.31.
+ *
+ *  - `Decay`, *"Adjusts the length of the decay"*, on an ACB tone whose category lists no sustain
+ *    stage — the level falls to silence whatever the trigger says.
+ *  - `Hold Mode: Whole`, *"the sound is heard to the end without decaying"* — the amplitude stage
+ *    does not fall. Whether the note lasts also needs the file not to run out, which is
+ *    `playback`'s question (#518) and not this one.
+ */
+const DECAYS_ACB: SustainClaim = {
+  kind: 'decays',
+  control: { kind: 'parameters', params: ['DECAY'] },
+  evidence: { kind: 'manual', source: 'TR-6S Parameter Guide eng02, p.7' },
+}
+const SUSTAINS_WHOLE: SustainClaim = {
+  kind: 'sustains',
+  control: { kind: 'parameters', params: ['HOLD MODE'] },
+  evidence: { kind: 'manual', source: 'TR-6S Parameter Guide eng02, p.7' },
 }
 
 /** The Owner's Manual, for the few facts the Parameter Guide does not carry. */
@@ -354,6 +377,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'tr6s-sub-dark',
+    sustain: DECAYS_ACB,
     role: 'sub',
     character: 'dark',
     voice: 'bd',
@@ -894,6 +918,7 @@ const recipes: Recipe[] = [
   },
   {
     id: 'tr6s-texture-soft',
+    sustain: SUSTAINS_WHOLE,
     role: 'texture',
     character: 'soft',
     voice: 'oh',
