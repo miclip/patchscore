@@ -239,6 +239,64 @@ describe('malformed manifests fail the build, not a request (§9)', () => {
     expect(runGen(['--root', root]).status).toBe(0)
   })
 
+  /**
+   * §3/#553. `observed` only, and the build says so. Every maker in this library omits its
+   * factory patch names from the manual, so a `manual` cite on one would be a page that does not
+   * exist — and the whole point of the field is that the claim comes from somebody holding the box.
+   */
+  it('rejects a factory patch cited to a manual rather than observed', () => {
+    const root = tempRoot()
+    writeManifest(root, 'aa-device', {
+      recipes: [
+        {
+          id: 'r1',
+          role: 'kick',
+          character: 'hard',
+          voice: 'bd',
+          title: 'A patch no page names',
+          factoryPatch: {
+            name: 'Big Kick',
+            evidence: { kind: 'manual', source: 'AA Device Manual, p.4' },
+          },
+          params: [{ kind: 'numeric', name: 'TUNE', value: 50, range: { min: 0, max: 100 } }],
+        },
+      ],
+    })
+
+    const r = runGen(['--root', root])
+    expect(r.status).toBe(1)
+    expect(r.stderr).toContain('aa-device')
+    expect(r.stderr).toContain('recipes.0.factoryPatch.evidence')
+  })
+
+  it('rejects a recipe that both selects a built-in sound and names a factory patch', () => {
+    const root = tempRoot()
+    writeManifest(root, 'aa-device', {
+      recipes: [
+        {
+          id: 'r1',
+          role: 'kick',
+          character: 'hard',
+          voice: 'bd',
+          title: 'Both at once',
+          soundSetup: {
+            sound: 'One of the ten',
+            prep: { text: 'Hold SOUND', verified: { kind: 'manual', source: 'p.4' } },
+          },
+          factoryPatch: {
+            name: 'Big Kick',
+            evidence: { kind: 'observed', source: 'unit, firmware 1.0' },
+          },
+          params: [{ kind: 'numeric', name: 'TUNE', value: 50, range: { min: 0, max: 100 } }],
+        },
+      ],
+    })
+
+    const r = runGen(['--root', root])
+    expect(r.status).toBe(1)
+    expect(r.stderr).toContain('not both')
+  })
+
   it('rejects a recipe addressing a voice the device does not declare', () => {
     const root = tempRoot()
     writeManifest(root, 'aa-device', {

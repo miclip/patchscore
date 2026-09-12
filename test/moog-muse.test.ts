@@ -1965,3 +1965,42 @@ describe('sustain claims (§3/#506)', () => {
     }
   })
 })
+
+/**
+ * §3/#553. **The box ships 224 factory patches and the manual names none**, so a reader who owns
+ * one that already sounds like a recipe here has to be told by somebody who has the box.
+ *
+ * The split these pin is the one that makes the field honest: **the name is evidence and the
+ * pairing is judgement.** That a patch exists is a fact off the unit, carried as `observed` with
+ * the firmware in it. That it lands near a particular recipe is the library's ear and is uncited,
+ * exactly as a recipe's point values are (§3.2).
+ */
+describe('Moog Muse factory patches (#553)', () => {
+  const claimed = device.recipes.filter((r) => r.factoryPatch !== undefined)
+
+  it('names three, and each one on the recipe whose idiom it is', () => {
+    expect(claimed.map((r) => [r.id, r.factoryPatch?.name])).toEqual([
+      ['muse-pad-soft', 'Moog 55 Strings'],
+      ['muse-stab-hard', 'Polyphonic Power'],
+      ['muse-lead-bright', 'Muse Runner'],
+    ])
+  })
+
+  it('cites the unit and its firmware, because no page carries the names', () => {
+    // The firmware is load-bearing rather than decoration: a release can rename or renumber the
+    // factory bank, and a claim with no version behind it could not be checked afterwards.
+    for (const recipe of claimed) {
+      expect(recipe.factoryPatch?.evidence.kind, recipe.id).toBe('observed')
+      expect(recipe.factoryPatch?.evidence.source, recipe.id).toContain('firmware 1.4.0')
+    }
+  })
+
+  it('declares no content and no soundSetup, which is what makes this a different field', () => {
+    // `content` and `soundSetup` are about audio a recipe loads or a voice a reader picks. This
+    // box's own evidence already says its patches are "stored panel settings rather than audio a
+    // recipe could load", so neither field applies and the recipes still build the sound in full.
+    expect(device.content).toBeUndefined()
+    expect(device.recipes.every((r) => r.soundSetup === undefined)).toBe(true)
+    for (const recipe of claimed) expect(recipe.params.length, recipe.id).toBeGreaterThan(5)
+  })
+})

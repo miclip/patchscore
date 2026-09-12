@@ -514,6 +514,13 @@ export function SoundForPart({
         <SoundSetup setup={a.recipe.soundSetup} owner={owner} />
       )}
 
+      {a.recipe.factoryPatch === undefined ? null : (
+        <p className="quiet">
+          Factory patch — the box ships <strong>{a.recipe.factoryPatch.name}</strong>
+          {a.recipe.factoryPatch.bank === undefined ? '' : ` in ${a.recipe.factoryPatch.bank}`},
+          which arrives here already. The settings below build the same sound from scratch.
+        </p>
+      )}
       {a.recipe.routing === undefined ? null : (
         <p className="quiet">Routing — {a.recipe.routing}</p>
       )}

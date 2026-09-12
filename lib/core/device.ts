@@ -2175,6 +2175,30 @@ export type SoundSetup = {
   hint?: string
 }
 
+/**
+ * §3/#553. A factory patch this recipe's sound is available as. See `Recipe.factoryPatch`.
+ */
+export type FactoryPatch = {
+  /** As it reads on the box's own screen. */
+  name: string
+  /**
+   * Where it lives, in the words the box uses — a bank or a category, never a slot number.
+   * Optional, because some boxes present one flat list and there is nothing to say.
+   */
+  bank?: string
+  /** `observed` only: no manual in this library names a factory patch. */
+  evidence: { kind: 'observed'; source: string }
+}
+
+export const FactoryPatchSchema = z.strictObject({
+  name: z.string().min(1),
+  bank: z.string().min(1).optional(),
+  evidence: z.strictObject({
+    kind: z.literal('observed'),
+    source: z.string().min(1, 'name the unit and its firmware — a patch list moves between them'),
+  }),
+})
+
 export const SoundSetupSchema = z.strictObject({
   sound: z.string().min(1),
   prep: z.strictObject({ text: z.string().min(1), verified: VerifiedSchema }),
@@ -2498,6 +2522,31 @@ export type Recipe = {
    */
   soundSetup?: SoundSetup
   /**
+   * §3/#553. **A factory patch on this box that arrives at this sound already**, for a reader who
+   * would rather load it than dial it.
+   *
+   * **Not `soundSetup`, and the difference is what each is for.** `soundSetup` is how a reader
+   * *gets a sound at all* on a box whose voice is chosen rather than built — the EP-40's supertone
+   * engine, where the recipe carries one parameter because there is nothing else to set. This is
+   * the opposite case: the recipe below builds the sound in full from cited values, and this says
+   * the box also ships one like it. Delete it and the recipe still works; delete a `soundSetup`
+   * and the recipe says nothing.
+   *
+   * **By name, never by bank and slot.** Slots move across firmware and across any owner who has
+   * reordered their banks, so a number would be wrong for most readers and unfalsifiable for the
+   * rest. A name is searchable on the box.
+   *
+   * **`observed` only, and the schema enforces it.** No maker in this library prints its factory
+   * patch names: the Muse's manual counts 224 on p.12 and names none, and the Subsequent 37's
+   * omits them entirely. So the only honest evidence is somebody with the box in front of them,
+   * and the firmware goes in the source string the way every other `observed` cite carries it —
+   * a patch list is a thing that changes between releases.
+   *
+   * The *match* is the library's judgement and stays uncited, which is the same split `verified`
+   * already draws: what exists is evidence, which one to reach for is taste.
+   */
+  factoryPatch?: FactoryPatch
+  /**
    * §3/#506. **Whether the amplitude stage holds a note for as long as it is held** — see
    * `SustainClaim`. Beside both of the above rather than inside either: a voice has an amplitude
    * stage whether it loads a file or makes its own sound, and the claim is about that stage, not
@@ -2570,6 +2619,7 @@ export const RecipeSchema = z
     realisation: RealisationSchema.optional(),
     sourceAudio: SourceAudioSchema.optional(),
     soundSetup: SoundSetupSchema.optional(),
+    factoryPatch: FactoryPatchSchema.optional(),
     sustain: SustainClaimSchema.optional(),
     patchPolyphony: z.int().min(1).optional(),
     consumes: z.array(ResourceUseSchema).min(1).optional(),
@@ -2635,6 +2685,17 @@ export const RecipeSchema = z
         })
       })
     }
+  })
+  /*
+   * §3/#553. **`factoryPatch` and `soundSetup` answer opposite questions and cannot both apply.**
+   * `soundSetup` says the voice is *chosen* rather than built, so the recipe sets almost nothing;
+   * `factoryPatch` says the recipe builds the sound in full and the box happens to ship one like
+   * it. A recipe claiming both is claiming its parameters are and are not the sound.
+   */
+  .refine((r) => !(r.factoryPatch !== undefined && r.soundSetup !== undefined), {
+    message:
+      'a recipe either selects a built-in sound (`soundSetup`) or builds one a factory patch also reaches (`factoryPatch`) — not both (§3/#553)',
+    path: ['factoryPatch'],
   })
   /*
    * §3/#506. **Every parameter a sustain claim names is one this recipe authors.** The claim is

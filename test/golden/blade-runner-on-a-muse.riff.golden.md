@@ -57,6 +57,10 @@ Every step below strikes the note in force at that point. The grid is where the 
 
 Mono sawtooth with the filter tracking the keyboard one to one
 
+Factory patch — **Muse Runner**
+
+- Load it and the settings below are already dialled. They build the same sound by hand.
+
 **Settings**
 
 - **● VOICE CONTROL**
