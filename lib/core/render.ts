@@ -1433,11 +1433,17 @@ function noteDurationLines(notice: NoteDurationNotice): Line[] {
  * `components/guide/phase-hook.tsx` restates them word for word under the same test discipline
  * as `noteDurationText`. The duration is spelled exactly as the row below spells it, so the two
  * numbers are recognisably one number.
+ *
+ * The second sentence is the instruction the reader can carry out. Naming the limit alone left a
+ * reader at the box knowing why the hold fails and not what to enter instead; the allocation
+ * stands (#506 chose to assign and say so, not to re-allocate), so the two moves open to them
+ * are the sound's and the figure's, and both fit in eight words.
  */
 function sustainText(notice: SustainNotice): string {
   return (
     `The longest note here is held for ${durationText(notice.longest)}, and this sound cannot ` +
-    'hold it: its amplitude stage decays instead of holding a level.'
+    'hold it: its amplitude stage decays instead of holding a level. Retrigger it, or shorten ' +
+    'the figure.'
   )
 }
 

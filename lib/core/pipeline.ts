@@ -1563,8 +1563,8 @@ export function sustainNotice(
  * step 9 hands the renderer the kind on `ResolvedRecipeRef.sustain`. Where a resolved hook holds
  * any note for a bar or more and the recipe says `decays`, phase 4 prints one sentence under the
  * note-duration line — *The longest note here is held for 64 steps (4 bars), and this sound
- * cannot hold it: its amplitude stage decays instead of holding a level* — and the rows below are
- * untouched.
+ * cannot hold it: its amplitude stage decays instead of holding a level. Retrigger it, or shorten
+ * the figure* — and the rows below are untouched.
  *
  * Entry 14's reading, a third time. `Score` is untouched, no candidate is added or excluded, the
  * same recipes land on the same voices, and `measure:search` is identical, because the claim is
