@@ -10,7 +10,8 @@ import type { Riff } from '../core/riff'
  * chords: one note per chord, arriving late, held until the chord changes under it.
  *
  * **Names no device** (invariant 3). `lead`, `bright`, a grid, and a progression in roman
- * numerals.
+ * numerals. It does name a factory patch its sound aligns with (§5A.5, #585), which implies a
+ * box without naming one, and is the whole of the exception.
  *
  * ## Why it teaches two chords out of six
  *
@@ -38,6 +39,18 @@ export const bladeRunnerBluesLead: Riff = {
   id: 'blade-runner-blues-lead',
   name: 'The Blade Runner Blues lead',
   reference: { kind: 'record', name: 'Blade Runner Blues' },
+  /**
+   * §5A.5/#585. The one patch this line is heard on when the rig has the box that ships it. The
+   * record is a CS-80 piece and the patch is a wide-vibrato CS-80 lead: the sounds align, and
+   * that is the judgement this field carries, since role and character cannot.
+   */
+  patchAffinities: [
+    {
+      name: 'Muse Runner',
+      reason:
+        'a wide-vibrato lead with the slow arrival the record is known for; the patch is built to that line',
+    },
+  ],
   bpm: { min: 56, max: 72, default: 64 },
   key: 'F# minor',
   technique: [

@@ -17,8 +17,18 @@ updates:
     open-pull-requests-limit: 5
     # One PR for a framework and its ecosystem rather than six. Next, React and the types move
     # together often enough that separate PRs would each fail CI until the last one landed.
+    #
+    # **Minor and patch only, and a major always arrives alone.** The first run of this file
+    # grouped `@types/node` 20 to 26, TypeScript 5.9 to 7.0 and vitest 3 to 5 into one red pull
+    # request. TypeScript 7 is the Go rewrite — a compiler change rather than a dependency bump —
+    # and bundled with two other majors there was no way to tell which of the three broke the
+    # build, or to take the two that were fine. Grouping is for the updates nobody reads
+    # individually; a major is exactly the update somebody has to.
     groups:
       next:
+        update-types:
+          - minor
+          - patch
         patterns:
           - next
           - '@next/*'
@@ -28,6 +38,9 @@ updates:
           - '@types/react-dom'
       dev-tooling:
         dependency-type: development
+        update-types:
+          - minor
+          - patch
         patterns:
           - vitest
           - '@vitest/*'
