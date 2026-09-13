@@ -1617,8 +1617,22 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
    * percent on a rig nobody can select.
    *
    * Twenty-seven consecutive zeroes, across twenty-three devices and seventeen content changes.
+   *
+   * **A request rather than a recipe takes it up 27 nodes and the gap stays at zero — a
+   * twenty-eighth time.** 505,759 -> 505,786 unrepaired and the same repaired. #57 gave
+   * `industrial-techno` a thirteenth request, `sweep / dark` at priority 5, transient on the
+   * Intro and Outro, which is the first entry in this ledger to change the direction rather than
+   * the library it walks.
+   *
+   * Cheaper than the Digitone's single clap, for a whole new request, and the shape says why: it
+   * is the last request in the miss objective, so the search reaches it with everything above it
+   * committed, and eleven boxes author the pair exactly, so the first candidate it tries is the
+   * one it keeps. The legal-rig figure `measure:search` gates on did not move — 68,253 on
+   * `hard-techno` seed 15 before and after — and the catalogue benchmark went 586,551 -> 586,606.
+   *
+   * Twenty-eight consecutive zeroes, across twenty-three devices and eighteen content changes.
    */
-  it('walks the recorded 505,759 nodes on industrial-techno seed 9', () => {
+  it('walks the recorded 505,786 nodes on industrial-techno seed 9', () => {
     const input = {
       devices: [...DEVICES],
       template: industrialTechno,
@@ -1626,7 +1640,7 @@ describe('the baseline path really is the floor as it stood (§7.1/#78)', () => 
       seed: 9,
       nodeCap: 20_000_000,
     }
-    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(505_759)
+    expect(measureAssignWithoutMatchingRepair(input).search.nodes).toBe(505_786)
     // The ceiling is loosened rather than re-tightened onto the last measurement, per the
     // standing note: it was 20,000, then 25,000, then 35,000, then 70,000, and each time a device
     // pushed the repaired walk past it. A ceiling sitting one node above the last measurement

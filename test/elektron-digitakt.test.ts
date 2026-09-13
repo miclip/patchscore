@@ -911,13 +911,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
     expect(hooked.length).toBe(156)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(24)
+    // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other,
+    // and this box carries it on the voice its riser and impact already take turns on.
+    expect(noPattern.length).toBe(30)
     // #538. Ambient Dub's `noise` at priority 3 takes the track its `sweep` (p4) and `riser`
     // (p5) used to share on this box, so both leave this list as parts the box no longer carries.
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/texture',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'industrial-techno/sweep',
       'slow-noir/texture',
     ])
 

@@ -118,12 +118,15 @@ describe('the registry carries twelve directions (§4)', () => {
 // ---------------------------------------------------------------------------
 
 describe('the new directions reach roles Industrial Techno never asks for (§1)', () => {
-  /** The vocabulary the first template left untouched, and which of the two now covers it. */
+  /**
+   * The vocabulary the first template left untouched, and which of the two now covers it.
+   * `sweep` was on this list until #57 gave Industrial Techno one of its own; Ambient Dub still
+   * asks for it, but it is no longer a role the first template never reaches.
+   */
   const NEWLY_REQUESTED: Record<string, Template> = {
     rim: ambientDub,
     ride: ambientDub,
     texture: ambientDub,
-    sweep: ambientDub,
     'ghost-perc': ambientDub,
     snare: majorKeyElectro,
     tom: majorKeyElectro,
@@ -132,7 +135,7 @@ describe('the new directions reach roles Industrial Techno never asks for (§1)'
     'vox-chop': majorKeyElectro,
   }
 
-  it('asks for ten roles the first template does not, and asks each somewhere', () => {
+  it('asks for nine roles the first template does not, and asks each somewhere', () => {
     const techno = rolesOf(industrialTechno)
     for (const [role, template] of Object.entries(NEWLY_REQUESTED)) {
       expect(techno.has(role as Role), `industrial-techno already requests '${role}'`).toBe(false)

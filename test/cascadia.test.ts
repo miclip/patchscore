@@ -728,9 +728,18 @@ describe('Cascadia manifest', () => {
     const tr8s = DEVICES.find((d) => d.id === 'roland-tr-8s')
     if (crave === undefined || tr8s === undefined) throw new Error('rig devices should exist')
 
+    // The direction without the `sweep` #57 added. That request is transient on the Intro and
+    // Outro, disjoint from the riser's and the impact's sections, so the Crave now chains all
+    // three gestures on its one voice, the TR-8S's crash is free, and the drum machine's own
+    // noise beats this box's on every rig with a drum machine in it. The recipe under test still
+    // resolves on the twelve-role direction, and what is under test is what it renders.
+    const template = {
+      ...industrialTechno,
+      roles: industrialTechno.roles.filter((r) => r.role !== 'sweep'),
+    }
     const result = resolve({
       devices: [device, crave, tr8s],
-      template: industrialTechno,
+      template,
       mood: NEUTRAL_MOOD,
       seed: 0,
     })

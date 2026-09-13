@@ -228,7 +228,8 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
     const { hooked, sustained, noPattern } = sweep()
     expect(hooked.length).toBe(162)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(42)
+    // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
+    expect(noPattern.length).toBe(48)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
@@ -236,6 +237,7 @@ describe('trigger notes: read on the shared manual, and declined (§2.1/#334)', 
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'industrial-techno/sweep',
       'slow-noir/texture',
     ])
   })

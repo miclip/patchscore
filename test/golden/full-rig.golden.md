@@ -35,6 +35,7 @@ impact      ······ ······ ██████████████
 pad         ██████ ██████ ██████████████ █████████ ██████████████ ██████
 riser       ······ ██████ ·············· █████████ ·············· ······
 noise       ██████ ██████ ██████████████ █████████ ██████████████ ██████
+sweep       ██████ ······ ·············· ········· ·············· ██████
 ```
 
 ## 2. Voice assignment
@@ -63,6 +64,8 @@ noise       ██████ ██████ ██████████
   - p4 · exact `bright` · Build, Breakdown
 - **`noise`** → RD-9 · OPEN — *Open hat held long and high-passed into a noise wash*
   - p5, optional · exact `dirty` · every section
+- **`sweep`** → CRAVE · Voice — *Long filter sweep, drawn by hand rather than played*
+  - p5 · exact `dark` · Intro, Outro
 
 ### Gaps
 
@@ -88,10 +91,12 @@ None.
 - On the Seq, set `Tempo knob + track button > MIDI Out` to `Out1+Clk`
   - ↳ note: Out2+Clk sends it out MIDI Out 2 instead; set it on the track whose cable is in the port. The plain Out1 and Out2 options send notes with no clock.
 
-**Voice control** — Metropolix sends the notes, 2 cables in all. Patch each pair before you play anything:
+**Voice control** — Metropolix sends the notes, 4 cables in all. Patch each pair before you play anything:
 
-- pitch: Metropolix `TRK 1 · PITCH` → Minitaur `CONTROLLER INPUTS · PITCH CV`
-- gate: Metropolix `TRK 1 · GATE` → Minitaur `CONTROLLER INPUTS · GATE`
+- pitch: Metropolix `TRK 1 · PITCH` → CRAVE `IN · OSC CV`
+- gate: Metropolix `TRK 1 · GATE` → CRAVE `IN · ENV GATE`
+- pitch: Metropolix `TRK 2 · PITCH` → Minitaur `CONTROLLER INPUTS · PITCH CV`
+- gate: Metropolix `TRK 2 · GATE` → Minitaur `CONTROLLER INPUTS · GATE`
 
 - Why this box sends them — 3 boxes here claim that job, so the names settled it
 
@@ -115,10 +120,10 @@ None.
   - MIDI · Out: 1/8" TRS with the same included adapter. There is no MIDI Thru socket; Utility > MIDI > Thru echoes In to Out in software instead (p.89)
   - audio: mono main out · audio in
   - mixer: 1 part, no individual outs: one mono channel for all
-- **CRAVE** — semi-modular · 0 parts
+- **CRAVE** — semi-modular · 1 part
   - clock: receives clock only · midi-din/usb
   - audio: mono main out · audio in
-  - mixer: no parts assigned; nothing to patch
+  - mixer: 1 part, no individual outs: one mono channel for all
 - **MODEL D** — semi-modular · 1 part
   - clock: no clock in or out
   - audio: mono main out · audio in
@@ -397,7 +402,7 @@ A step is one note long and nothing here sets a length: `Tie/Rest` joins a note 
 
 **Note** — `F1` · MIDI 29
 
-**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Metropolix, which drives it through `TRK 1 · PITCH` and `TRK 1 · GATE`.
+**Not programmed here** — it has no sequencer, keyboard or arpeggiator, so every note arrives over MIDI or as a gate and a pitch voltage. Enter this figure on the Metropolix, which drives it through `TRK 2 · PITCH` and `TRK 2 · GATE`.
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -638,6 +643,15 @@ A step is one note long and nothing here sets a length: `Tie/Rest` joins a note 
 - `offbeat` — 7, 15, 23
 - `accent` — 31 (vel 104)
 
+### `sweep` — CRAVE · Voice
+
+**Long filter sweep, drawn by hand rather than played** — settings in Sound design
+
+**One trig, not a figure** — the direction authors no grid for this part.
+
+- **Intro** — Place its single trig so the gesture arrives at the change.
+- **Outro** — Place its single trig wherever the gesture should be heard; nothing follows this section for it to lead into.
+
 ## 6. Sound design
 
 ### MicroFreak
@@ -692,6 +706,43 @@ Chord voicing — 3 notes sounding at once on this one voice. It needs a genuine
   - ↳ hint: Utility > Preset > Glide mode
 - **Glide** `0` ms (0…10000 ms)
   - ↳ note: p.63: "The glide time is variable from \"off\" to about 10 seconds" — the manual hedges the upper end and prints no other figure
+
+### CRAVE
+
+*This block draws on the CRAVE Quick Start Guide BE_0718-AAJ_WW, p.70; its values are starting points.*
+
+#### Voice — `sweep`: Long filter sweep, drawn by hand rather than played
+
+- **FREQUENCY** `-2` (-5…5)
+- **PULSE WIDTH** `50` % (5…95 %)
+- **OSC MOD** `0` (0…10)
+- **MIX** `-5` (-5…5)
+  - ↳ note: Negative is oscillator, positive is noise or external audio
+- **CUTOFF** `1` (0…10)
+  - ↳ note: 20 Hz to 20 kHz across the travel
+- **RESONANCE** `7` (0…10)
+- **VCF MOD** `9` (0…10)
+- **VOLUME** `7` (0…10)
+- **VCO SHAPE** `reverse saw`
+- **VCO MOD SOURCE** `env/osc mod`
+- **VCO MOD DEST** `width`
+- **VCF MODE** `low pass`
+- **VCF MOD SOURCE** `env`
+- **VCF MOD POLARITY** `positive`
+- **VCA MODE** `on`
+  - ↳ note: On: the VCA stays open so the sweep is the whole gesture
+- **ATTACK** `9` (0…10)
+  - ↳ note: 2 ms to 3 s across the travel
+- **DECAY** `9` (0…10)
+  - ↳ note: 2 ms to 5 s across the travel
+- **SUSTAIN** `9` (0…10)
+  - ↳ note: 0 to 8 V across the travel
+- **SUSTAIN SWITCH** `on`
+
+**Patch**
+
+- `OUT · ENV` → `IN · VCF CUTOFF`
+  - ↳ note: The sweep itself, over the switch
 
 ### MODEL D
 
@@ -1273,6 +1324,6 @@ Sections that program identically, part for part — build one and copy it:
 - **band 1** — Build, Breakdown · 9 parts, 27 strikes
 - **band 3** — Drop, Peak · 10 parts, 73 strikes
 
-`riser` has no pattern authored at any band, so nothing here varies for it.
+`riser` and `sweep` have no pattern authored at any band, so nothing here varies for them.
 
 `pad` is held rather than struck, so there is no grid here to vary.

@@ -1097,13 +1097,16 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     // 78 until #345: four of its five roles are pitched, so they hook rather than draw a grid.
     expect(hooked.length).toBe(156)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(36)
+    // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other,
+    // and this box carries it on the voice its riser and impact already take turns on.
+    expect(noPattern.length).toBe(42)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/riser',
       'ambient-dub/sweep',
       'ambient-dub/texture',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'industrial-techno/sweep',
       'slow-noir/texture',
     ])
   })

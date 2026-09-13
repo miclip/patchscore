@@ -37,10 +37,11 @@ import { at, on, variant } from '../core/authoring'
  * keep it, and it is reported to the user when it fires. Reporting "no band-3 kick authored"
  * on the flagship template would be a content bug wearing a feature's clothes.
  *
- * `pad` and `riser` have no patterns and that is deliberate, not an omission. Both are sustained
- * gestures — a pad holds through a section, a riser is one long sweep — and a step grid is the
- * wrong shape for either. The guide omits their pattern block and says so (invariant 5 applied
- * to rhythm, §6.3), which is the honest answer rather than four bands of invented hits.
+ * `pad`, `riser` and `sweep` have no patterns and that is deliberate, not an omission. All three
+ * are sustained gestures — a pad holds through a section, a riser is one long lift, a sweep is
+ * one long filter movement — and a step grid is the wrong shape for any of them. The guide omits their
+ * pattern block and says so (invariant 5 applied to rhythm, §6.3), which is the honest answer
+ * rather than four bands of invented hits.
  */
 const PATTERNS: Pattern[] = [
   // ---- kick ---------------------------------------------------------------------------
@@ -349,11 +350,12 @@ export const industrialTechno: Template = {
 
   /**
    * §4.4. Ascending: 1 outranks 5, and one miss at priority 1 is worse than any number at 2.
-   * Twelve requests, which is the size the search was measured against (#27/#28) and the size
-   * a small rig actually has to answer.
+   * Thirteen requests: the twelve the search was measured against (#27/#28), which is the size
+   * a small rig actually has to answer, and the closing sweep #57 added.
    *
    * Priority reads as: the two that make it techno; the three that make it move; the three that
-   * make it industrial; the two that give it a top and a transition; and one that is a bonus.
+   * make it industrial; the three that give it a top and its transitions; and two at the back —
+   * the bookends and a bonus.
    *
    * Ids spell the role out rather than abbreviating it. `r-ch` and `r-oh` read fine until you
    * notice that two-letter abbreviations are also how drum voices are conventionally labelled,
@@ -448,6 +450,43 @@ export const industrialTechno: Template = {
       character: 'hard',
       sustain: 'transient',
       sections: ['Drop', 'Peak'],
+    },
+
+    /*
+     * §4.2/#57. **The way in and the way out.** A dark filter sweep is how this genre opens a
+     * track and how it leaves one: the Intro is the sound arriving under a closed filter that
+     * opens into the Build, and the Outro is the same gesture run the other way until nothing is
+     * left. Phase 5 reads the direction of travel from the arrangement rather than from the role
+     * (§8/#488) and says *arrives at the change* for the Intro and *nothing follows* for the
+     * Outro; both are what this part is doing.
+     *
+     * Intro and Outro, and not the Breakdown, for three reasons that were all measured. The
+     * Breakdown leads up into the Peak, so a sweep there reads as a second lift beside the riser
+     * that already has the job. The Intro and Outro are the one band pair with no transient on
+     * it, so this keeps every transient in the direction on its own pair — riser on Build and
+     * Breakdown, impact on Drop and Peak, sweep here — and the six sections still program as
+     * three; a sweep on the Breakdown split two of those lines. And three disjoint pairs can take
+     * turns on one voice (§4.2), which is how an eight-track box carries all three of them on the
+     * track it had spare for one.
+     *
+     * `dark` because a bright sweep is a lift, and this is not one; and because eleven boxes
+     * authored the dark one against no direction that asked (#57). No pattern: a sweep is one
+     * long movement, and the gap in phase 5 is the honest answer (§6.3).
+     *
+     * Priority 5, the back of the list, and measured rather than felt: on every solo rig in the
+     * library the same boxes answer it with the same recipes at 4, at 5 and as an optional
+     * request, and nothing above it moves in any of the three. So the number says only what the
+     * part is, a bookend, and not `optional`, because that would say the direction would rather
+     * not spend a voice on it, and where one is free it would.
+     */
+    {
+      id: 'r-sweep',
+      role: 'sweep',
+      priority: 5,
+      character: 'dark',
+      sustain: 'transient',
+      sections: ['Intro', 'Outro'],
+      inessential: { reason: 'the way in and the way out can happen by hand across a part already sounding' },
     },
 
     // §4.4. `optional` removes this from the miss objective entirely: filled if it fits,
