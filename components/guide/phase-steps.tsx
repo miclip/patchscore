@@ -295,6 +295,12 @@ function NoteLine({ a }: { a: ResolvedAssignment }) {
           read off the box supports.
         */}
         <span className="quiet"> · MIDI {num(note.midi)}</span>
+        {/* §4.1/#571. The one condition the box puts on the pair, where middle C is a setting. */}
+        {note.withMiddleC === undefined ? null : (
+          <span className="quiet">
+            {' '}· with middle C set to <span className="mono">{note.withMiddleC}</span>
+          </span>
+        )}
       </p>
     </>
   )

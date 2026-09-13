@@ -1,6 +1,6 @@
 import type { DeviceId, RequestId, SectionName } from './ids'
 import type { ResolveResult, ResolvedAssignment } from './pipeline'
-import type { Cite } from './params'
+import type { TriggerNote } from './device'
 import type { DensityBand, Section } from './template'
 import { STEPS_PER_BAR } from './template'
 import { bearsPattern, type Role } from './vocabulary'
@@ -293,7 +293,7 @@ export function singleTrigPlacements(
 export type NoteInstruction =
   | { kind: 'none' }
   | { kind: 'pitch'; note: string; midi: number }
-  | { kind: 'trigger'; note: string; midi: number; verified: Cite }
+  | ({ kind: 'trigger' } & TriggerNote)
 
 const NO_NOTE: NoteInstruction = { kind: 'none' }
 

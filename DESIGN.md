@@ -143,7 +143,7 @@ and a smaller one could not. Whether the box is *happy* at a given load is a sep
 belongs to `comfortableVoices` (§12.4) — the crowding key, not the capacity one.
 
 ```ts
-type TriggerNote = { note: string; midi: number; verified: Verified }
+type TriggerNote = { note: string; midi: number; withMiddleC?: string; verified: Cite }
 
 type VoiceSpec =
   | { kind: 'fixed'; id: string; label: string; roles: Role[]; polyphony: number;
@@ -176,6 +176,19 @@ none — its manual does not say what a written step note does under either slic
 and `midi` are two spellings of one mapping, `Device.middleC` is a third citation about the same
 mapping, and §4.1 says how the schema compares them. A folder may carry a trigger note and no
 `middleC`, and then the pair stands on its own citation as it always has.
+
+**On a box where middle C is a setting, the pair is true under one option and `withMiddleC` names
+it, as the menu prints it.** The Tracker Mini's screen calls the note that plays a sample as
+recorded `C5` whatever the setting says (p.90); what the setting moves is the MIDI number that
+screen note sends — 60 with Middle C at `C-5`, 72 at `C-4`. So `C5 · MIDI 60` with no condition
+on it reads as unconditional, and the device block beside it tells the reader to choose `C-4`,
+which is how the two lines came to contradict each other. `withMiddleC` is required on every
+trigger note of a `setting` box and refused on a `fixed` or undeclared one; the schema checks that
+the option exists on the menu and that its octave is the one the pair implies. Every surface that
+prints the line — §8's, the riff page's and the sample page's, in both renderers — prints the
+condition after the MIDI number: `C5 · MIDI 60 · with middle C set to C-5`. Authored rather than
+derived, because a derived condition is a guess about which option a manifest's author read the
+number under, and the whole point is that the citation says.
 
 **It models the whole-sample case only, and that boundary is settled rather than provisional
 (#369).** A *sliced* instrument is addressed by note as well, and that is not the same fact: under
@@ -3827,8 +3840,10 @@ hook's pitch. What it *is* compared against is the box's own mapping: `note` and
 spellings of one fact, `middleC` is a third citation about the same mapping, and three individually
 cited claims can disagree with every one of them well-formed. So `DeviceSchema` derives the octave
 the pair implies — `C5` beside `60` implies 5, `B4` beside `59` implies 5 too, `Cb4` beside `59`
-implies 4 — and refuses a `fixed` declaration it contradicts, or a `setting` whose menu does not
-offer it. Before #571 a `C5 · 60` beside a manifest that said C3 was two pages read and one of
+implies 4 — and refuses a `fixed` declaration it contradicts. On a `setting` box the note names
+the option it is true under (`withMiddleC`, §2.1) and the schema checks that option's octave
+against the implied one, so the trigger-note line can print its condition and the block's *choose
+C-4* above it cannot make `C5 · MIDI 60` read as unconditional. Before #571 a `C5 · 60` beside a manifest that said C3 was two pages read and one of
 them wrong, silently. Where no `middleC` is declared there is nothing to compare against and the
 pair stands on its own citation, which is what the citation rule below has always required — a
 `midi` written beside a note name read off a manual page cites the box's own mapping, not

@@ -402,7 +402,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Half-open hat, gated short** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -476,7 +476,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **One trig, not a figure** — the direction authors no grid for this part. Place its single trig so the gesture arrives at the change.
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 ### `noise` — TR-1000 · OH
 
@@ -522,7 +522,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 - **Intro** — Place its single trig so the gesture arrives at the change.
 - **Outro** — Place its single trig wherever the gesture should be heard; nothing follows this section for it to lead into.
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 ## 6. Sound design
 

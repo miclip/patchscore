@@ -362,8 +362,14 @@ function voiceLines(riff: Riff, voice: RiffVoicing): string[] {
    */
   if (voice.triggerNote !== undefined) {
     out.push('')
+    // §4.1/#571. Where middle C is a setting on the box, the MIDI half holds under one option
+    // and the line names it, exactly as §8's line does.
+    const condition =
+      voice.triggerNote.withMiddleC === undefined
+        ? ''
+        : ` · with middle C set to \`${voice.triggerNote.withMiddleC}\``
     out.push(
-      `**Trigger note** — \`${voice.triggerNote.note}\` · MIDI ${num(voice.triggerNote.midi)}`,
+      `**Trigger note** — \`${voice.triggerNote.note}\` · MIDI ${num(voice.triggerNote.midi)}${condition}`,
     )
   }
   const routing = recipeRouting(recipe)

@@ -2396,7 +2396,11 @@ function phaseSteps(
       // Bare, and that is the accurate form. `C5` is where the sample plays as recorded, not the
       // only note it answers to — every other note plays it transposed — so a gloss saying "the
       // note this voice answers to" claims more than what was read off the box supports.
-      out.push(`**Trigger note** — \`${note.note}\` · MIDI ${num(note.midi)}`)
+      //
+      // §4.1/#571. Except for the one condition the box itself puts on the pair: where middle
+      // C is a setting, the MIDI half is true under one option, and the line names it so the
+      // device block's *choose C-4* above cannot make `C5 · MIDI 60` read as unconditional.
+      out.push(`**Trigger note** — \`${note.note}\` · MIDI ${num(note.midi)}${withMiddleC(note)}`)
     }
 
     if (!replacesGrid) {
@@ -2874,6 +2878,16 @@ function octavesAway(away: number): string {
 
 function middleCLines(notice: MiddleCNotice): Line[] {
   return ['', '**Note names**', '', `- ${middleCText(notice)}`]
+}
+
+/**
+ * §4.1/#571. The condition a trigger note carries on a box where middle C is a setting, as a
+ * tail on its line: `· with middle C set to \`C-5\``. Empty for every other box. Restated in
+ * `components/guide/phase-steps.tsx`, `lib/studio/riff-markdown.ts`, `lib/studio/sample-markdown.ts`
+ * and their web siblings, because the six trigger-note lines are six hand-written copies (#33).
+ */
+function withMiddleC(note: { withMiddleC?: string }): string {
+  return note.withMiddleC === undefined ? '' : ` · with middle C set to \`${note.withMiddleC}\``
 }
 
 /**

@@ -114,6 +114,12 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
           <span className="riff-trigger-label">Trigger note</span>
           <span className="mono">{voice.triggerNote.note}</span>
           <span className="riff-note-fact mono">MIDI {num(voice.triggerNote.midi)}</span>
+          {/* §4.1/#571. The one condition the box puts on the pair, where middle C is a setting. */}
+          {voice.triggerNote.withMiddleC === undefined ? null : (
+            <span className="riff-note-fact">
+              with middle C set to <span className="mono">{voice.triggerNote.withMiddleC}</span>
+            </span>
+          )}
         </p>
       )}
       {routing === undefined ? null : <p className="quiet">Routing — {routing}</p>}

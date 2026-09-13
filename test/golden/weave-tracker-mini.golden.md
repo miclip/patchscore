@@ -209,7 +209,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 **Short closed hat, nudged off the grid** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 **Thread, Unwind** — 16 steps, band 0
 
@@ -267,7 +267,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 **Quiet shaker filling the gaps** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 **Thread, Unwind** — 32 steps, band 0
 
@@ -395,7 +395,7 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 **Half-open hat, gated short** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 **Thread, Unwind** — 32 steps, band 0
 

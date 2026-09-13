@@ -2680,7 +2680,7 @@ export const device: Device = {
            */
           id: 'whole-sample',
           label: '1-Shot / Forward, Backward, Pingpong loop',
-          triggerNote: { note: 'C5', midi: 60, verified: TRIGGER_NOTE_CITE },
+          triggerNote: { note: 'C5', midi: 60, withMiddleC: 'C-5', verified: TRIGGER_NOTE_CITE },
           selectedBy: { param: 'PLAY MODE', values: WHOLE_SAMPLE_PLAY_MODES },
         },
         {

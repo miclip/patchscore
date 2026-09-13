@@ -15,6 +15,7 @@ import {
 } from '../lib/core/index'
 import type { Device, GuideLayout, MiddleC, ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { weave } from '../lib/templates/index'
 import { Guide } from '../components/guide/guide'
 import { device as fixtureDevice, recipe, template as fixtureTemplate } from './fixtures'
 
@@ -190,7 +191,7 @@ describe('a trigger note implies where its box puts middle C', () => {
 })
 
 /** A pool voice carrying the note, in the shape the two shipped devices author it. */
-function poolWith(note: { note: string; midi: number }) {
+function poolWith(note: { note: string; midi: number; withMiddleC?: string }) {
   return {
     kind: 'pool',
     id: 'track',
@@ -259,26 +260,65 @@ describe('an authored trigger note is checked against the declared mapping', () 
     expect(issues(parsed)).toContain('"voices",0,"modes",0,"triggerNote"')
   })
 
-  it('on a setting box, checks that the menu offers the octave the pair implies', () => {
-    const offered = DeviceSchema.safeParse(
-      withMiddleC({
+  /**
+   * On a setting box the pair is true under one option, and the note says which. The check is
+   * then exact rather than membership: the named option's octave is the one the pair implies.
+   */
+  describe('on a setting box', () => {
+    function settingBox(note: { note: string; midi: number; withMiddleC?: string }): Device {
+      return withMiddleC({
         middleC: SETTING,
-        voices: [poolWith({ note: 'C5', midi: 60 })],
+        voices: [poolWith(note)],
+        recipes: [recipe({ voice: 'track' })],
+        capabilityEvidence: { ...evidence, [MIDDLE_C_FACT]: CITE },
+      })
+    }
+
+    it('accepts a note naming the option its pair is true under', () => {
+      expect(issues(DeviceSchema.safeParse(settingBox({ note: 'C5', midi: 60, withMiddleC: 'C-5' })))).toBe('[]')
+      // The same screen note sends 72 with the menu at C-4, and that pair names that option.
+      expect(issues(DeviceSchema.safeParse(settingBox({ note: 'C5', midi: 72, withMiddleC: 'C-4' })))).toBe('[]')
+    })
+
+    it('requires the option, because a pair with no condition reads as unconditional', () => {
+      const parsed = DeviceSchema.safeParse(settingBox({ note: 'C5', midi: 60 }))
+      expect(parsed.success).toBe(false)
+      expect(issues(parsed)).toContain('does not say which')
+      expect(issues(parsed)).toContain('"withMiddleC"')
+    })
+
+    it('refuses an option the menu does not print', () => {
+      const parsed = DeviceSchema.safeParse(settingBox({ note: 'C5', midi: 60, withMiddleC: 'C5' }))
+      expect(parsed.success).toBe(false)
+      expect(issues(parsed)).toContain("does not print ('C-3', 'C-4', 'C-5', 'C-6')")
+    })
+
+    it('refuses an option whose octave is not the one the pair implies', () => {
+      const parsed = DeviceSchema.safeParse(settingBox({ note: 'C5', midi: 60, withMiddleC: 'C-4' }))
+      expect(parsed.success).toBe(false)
+      expect(issues(parsed)).toContain("'C-4', puts it at C4")
+    })
+  })
+
+  it('refuses the condition on a fixed box and on one that declares nothing', () => {
+    const fixed = DeviceSchema.safeParse(
+      withMiddleC({
+        middleC: FIXED_HIGH,
+        voices: [poolWith({ note: 'C5', midi: 60, withMiddleC: 'C-5' })],
         recipes: [recipe({ voice: 'track' })],
         capabilityEvidence: { ...evidence, [MIDDLE_C_FACT]: CITE },
       }),
     )
-    expect(issues(offered)).toBe('[]')
-    const notOffered = DeviceSchema.safeParse(
+    expect(fixed.success).toBe(false)
+    expect(issues(fixed)).toContain('declares middle C fixed')
+    const undeclared = DeviceSchema.safeParse(
       withMiddleC({
-        middleC: SETTING,
-        voices: [poolWith({ note: 'C2', midi: 60 })],
+        voices: [poolWith({ note: 'C5', midi: 60, withMiddleC: 'C-5' })],
         recipes: [recipe({ voice: 'track' })],
-        capabilityEvidence: { ...evidence, [MIDDLE_C_FACT]: CITE },
       }),
     )
-    expect(notOffered.success).toBe(false)
-    expect(issues(notOffered)).toContain('does not offer')
+    expect(undeclared.success).toBe(false)
+    expect(issues(undeclared)).toContain('declares no middleC')
   })
 
   it('refuses a pair that is not the same note, and a spelling it cannot read', () => {
@@ -425,6 +465,26 @@ describe('the catalogue', () => {
     expect(mini?.middleC?.kind).toBe('setting')
     if (mini?.middleC?.kind !== 'setting') throw new Error('expected a setting')
     expect(mini.middleC.options.map((o) => o.octave)).toEqual([3, 4, 5, 6])
+    // And its one trigger note says which option it is true under.
+    const sample = mini.voices.find((v) => v.id === 'track-sample')
+    const whole = sample?.kind === 'pool' ? sample.modes?.find((m) => m.triggerNote) : undefined
+    expect(whole?.triggerNote?.withMiddleC).toBe('C-5')
+  })
+
+  /**
+   * The contradiction #571 found, closed in both renderers: the Tracker Mini's device block says
+   * *choose C-4* and its trigger note says `C5 · MIDI 60`, and the second is true only with the
+   * menu at C-5. The line now says so, so the two cannot be read as disagreeing.
+   */
+  it('prints the Tracker Mini trigger note with its condition, in both renderers', () => {
+    const mini = DEVICES.find((d) => d.id === 'polyend-tracker-mini')
+    if (mini === undefined) throw new Error('no tracker mini')
+    const result = resolve({ devices: [mini], template: weave, mood: moodState(), seed: 3 })
+    const md = renderGuide(result)
+    expect(md).toContain('**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`')
+    expect(md).toContain('Choose C-4 and every note printed here reads the same')
+    const html = renderToStaticMarkup(createElement(Guide, { result, seed: 3, layout: 'phase' }))
+    expect(html).toContain('with middle C set to <span class="mono">C-5</span>')
   })
 
   it('has no device whose declaration the schema refuses', () => {

@@ -84,6 +84,21 @@ export type TriggerNote = {
   note: string
   /** The MIDI note number that note sends **on this box**, under its own default octave mapping. */
   midi: number
+  /**
+   * §4.1/#571. **The middle-C option this pair is true under, on a box where middle C is a
+   * setting** — as the menu prints it, `'C-5'` on a Polyend. Required there and refused
+   * everywhere else, by `DeviceSchema`.
+   *
+   * On such a box `note` is fixed and `midi` is not: the Tracker Mini's screen calls the note
+   * that plays a sample as recorded `C5` whatever the setting says (p.90), and what the setting
+   * moves is the MIDI number that note sends. So `C5 · MIDI 60` is true with Middle C at `C-5`
+   * and false with it at `C-4`, where the same screen note sends 72. A line printing the pair
+   * with no condition on it reads as unconditional, and the device block beside it tells the
+   * reader to choose `C-4` — which is how #571 found the two lines contradicting each other.
+   * The condition is authored rather than derived, so the schema can check it: the option has
+   * to exist on the menu and its octave has to be the one the pair implies.
+   */
+  withMiddleC?: string
   /** A citation, never `false`: an uncited trigger note is not authorable (see above). */
   verified: Cite
 }
@@ -91,6 +106,7 @@ export type TriggerNote = {
 export const TriggerNoteSchema = z.strictObject({
   note: z.string().min(1),
   midi: z.int().min(0).max(127),
+  withMiddleC: z.string().min(1, 'name the option as the menu prints it').optional(),
   verified: CiteSchema,
 })
 
@@ -4539,13 +4555,26 @@ export const DeviceSchema = z
      * individually well-formed. `C5` beside `60` on a box declared `fixed` at 3 is that: two
      * pages read, two facts recorded, and one of them wrong. Before #571 nothing compared them.
      *
-     * On a `setting` box the note is true under one option, so the check is membership: the
-     * octave the pair implies must be one the menu offers. Where no `middleC` is declared there
-     * is nothing to compare against, and the pair stands on its own citation as it always has.
+     * On a `setting` box the pair is true under one option and the note has to say which:
+     * `withMiddleC` is required there, names an option the menu prints, and that option's
+     * octave has to be the one the pair implies. On a `fixed` box, and on one that declares
+     * nothing, `withMiddleC` is refused — a condition on a mapping that does not move is a
+     * claim the box does not make. Where no `middleC` is declared there is otherwise nothing
+     * to compare against, and the pair stands on its own citation as it always has.
      */
     const declaredMiddleC = device.middleC
-    if (declaredMiddleC !== undefined) {
+    {
       const checkTriggerNote = (note: TriggerNote, path: (string | number)[]) => {
+        if (declaredMiddleC?.kind !== 'setting') {
+          if (note.withMiddleC !== undefined) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `triggerNote '${note.note}' says it holds with middle C set to '${note.withMiddleC}', but this box ${declaredMiddleC === undefined ? 'declares no middleC' : 'declares middle C fixed'}; the condition belongs only on a box where middle C is a setting (§4.1/#571)`,
+              path: [...path, 'withMiddleC'],
+            })
+          }
+          if (declaredMiddleC === undefined) return
+        }
         const parsed = parseTriggerNoteName(note.note)
         if (parsed === undefined) {
           ctx.addIssue({
@@ -4572,12 +4601,31 @@ export const DeviceSchema = z
               path,
             })
           }
-        } else if (!declaredMiddleC.options.some((o) => o.octave === implied)) {
-          const offered = declaredMiddleC.options.map((o) => `C${o.octave}`).join(', ')
+          return
+        }
+        if (note.withMiddleC === undefined) {
           ctx.addIssue({
             code: 'custom',
-            message: `triggerNote '${note.note}' = MIDI ${note.midi} puts middle C at C${implied}, which ${declaredMiddleC.control} does not offer (${offered}); one of the two citations is wrong (§4.1/#571)`,
-            path,
+            message: `triggerNote '${note.note}' = MIDI ${note.midi} is true under one setting of ${declaredMiddleC.control} and does not say which; name the option in withMiddleC as the menu prints it (§4.1/#571)`,
+            path: [...path, 'withMiddleC'],
+          })
+          return
+        }
+        const option = declaredMiddleC.options.find((o) => o.label === note.withMiddleC)
+        if (option === undefined) {
+          const offered = declaredMiddleC.options.map((o) => `'${o.label}'`).join(', ')
+          ctx.addIssue({
+            code: 'custom',
+            message: `triggerNote names middle-C option '${note.withMiddleC}', which ${declaredMiddleC.control} does not print (${offered}) (§4.1/#571)`,
+            path: [...path, 'withMiddleC'],
+          })
+          return
+        }
+        if (option.octave !== implied) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `triggerNote '${note.note}' = MIDI ${note.midi} puts middle C at C${implied}, but the option it names, '${option.label}', puts it at C${option.octave}; one of the two citations is wrong (§4.1/#571)`,
+            path: [...path, 'withMiddleC'],
           })
         }
       }

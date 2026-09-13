@@ -1876,6 +1876,9 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
             expect(a.triggerNote, where).toEqual({
               note: 'C5',
               midi: 60,
+              // §4.1/#571. The option the pair is true under, on a box where middle C is a
+              // setting, carried through with the rest of it.
+              withMiddleC: 'C-5',
               verified: modes[0]?.triggerNote?.verified,
             })
           } else {
@@ -1915,7 +1918,11 @@ describe('the trigger note, by track mode (§2.1/§2.2/#86)', () => {
         const guide = renderGuide(result)
         const lines = guide.split('\n').filter((l) => l.startsWith('**Trigger note**'))
         expect(lines.length, `${template.id} seed ${String(seed)}`).toBe(expected)
-        for (const line of lines) expect(line).toBe('**Trigger note** — `C5` · MIDI 60')
+        // §4.1/#571. With the one condition the box puts on the pair: middle C is a setting
+        // here, and `C5 · MIDI 60` is the reading with it at `C-5`.
+        for (const line of lines) {
+          expect(line).toBe('**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`')
+        }
         printed += lines.length
       }
     }

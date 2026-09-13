@@ -51,6 +51,12 @@ export function SampleVoice({
           <span className="sample-trigger-label">Trigger note</span>
           <span className="mono">{voice.triggerNote.note}</span>
           <span className="sample-note-fact mono">MIDI {num(voice.triggerNote.midi)}</span>
+          {/* §4.1/#571. The one condition the box puts on the pair, where middle C is a setting. */}
+          {voice.triggerNote.withMiddleC === undefined ? null : (
+            <span className="sample-note-fact">
+              with middle C set to <span className="mono">{voice.triggerNote.withMiddleC}</span>
+            </span>
+          )}
         </p>
       )}
       {/*
