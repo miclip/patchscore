@@ -867,19 +867,25 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
     rules: [
       ['i', 2, 1],
       ['II', 2, 1],
-      ['vii', 2, 1],
     ],
     onset: 4,
     breaks: [
       { note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 }, says: 'E5 sounds over i' },
       // The `II` is bars 3-4 and the figure ships over bars 5-8, so the figure is moved to bar
-      // 3 for this one: the rule holds wherever the figure sits.
+      // 3 for this one: the rule holds wherever the figure sits. Moving it also puts the legal
+      // E over the `VII` onto the `i`, so that note is dropped first and the one violation left
+      // is the one this case adds.
       {
         note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 },
         says: 'E5 sounds over II',
-        over: { figureStartsAtBar: 3 },
+        over: {
+          figureStartsAtBar: 3,
+          hook: {
+            ...aegeanOrganPhrygianFigure.hook,
+            notes: aegeanOrganPhrygianFigure.hook.notes.filter((n) => n.alter === undefined),
+          },
+        },
       },
-      { note: { step: 41, degree: 2, octave: 1, len: 4, alter: 1 }, says: 'E5 sounds over vii' },
     ],
     early: { step: 9, says: 'i is entered at step 1, 0 steps in' },
   },
@@ -913,7 +919,8 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
 
 /** The entry with one more note in its hook, and otherwise the same. */
 function withNote(riff: Riff, note: HookNote, over: Partial<Riff> = {}): Riff {
-  return { ...riff, ...over, hook: { ...riff.hook, notes: [...riff.hook.notes, note] } }
+  const base = { ...riff, ...over }
+  return { ...base, hook: { ...base.hook, notes: [...base.hook.notes, note] } }
 }
 
 describe('the eleven factory-patch entries keep their rules as data (#569, #554)', () => {
@@ -1077,14 +1084,17 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     for (const step of [3, 19, 35, 51]) expect(sounding(riff, step)).toHaveLength(3)
   })
 
-  it('the Phrygian figure is in a mode the engine reads, and never sounds E', () => {
+  it('the Phrygian figure is in a mode the engine reads, and sounds E only over the C major', () => {
     const riff = aegeanOrganPhrygianFigure
     expect(riff.key).toBe('D phrygian')
     const resolved = resolveHook(riff.hook, riff.key)
     if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
-    expect(resolved.hook.notes.map((n) => n.note)).toEqual(['D5', 'Eb5', 'D5', 'Eb5', 'D5'])
+    expect(resolved.hook.notes.map((n) => n.note)).toEqual(['D5', 'Eb5', 'D5', 'E5', 'D5'])
     expect(riff.figureStartsAtBar).toBe(5)
-    expect(riff.harmony?.progression.map((p) => p.degree)).toEqual(['i', 'II', 'i', 'vii'])
+    expect(riff.harmony?.progression.map((p) => p.degree)).toEqual(['i', 'II', 'i', 'VII'])
+    // The one E is over the `VII`, the chord whose third it is, and it is the raised second.
+    const e = resolved.hook.notes.filter((n) => n.note === 'E5')
+    expect(e.map((n) => [chordAtStep(riff, n.step), n.alter])).toEqual([['VII', 1]])
   })
 
   it('the glide lead never sounds two notes at once', () => {

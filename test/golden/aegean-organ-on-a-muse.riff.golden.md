@@ -4,23 +4,22 @@
 
 ## The technique
 
-Bars 5 to 8 of the cycle, over the return to the D minor chord and the C minor after it. The first half of the cycle is the same mode with less motion.
+Bars 5 to 8 of the cycle, over the return to the D minor chord and the C major after it. The first half of the cycle is the same mode with less motion.
 
-One forbidden pitch class across the whole piece, which makes this the easiest of the set to internalise: never play E natural. The Eb is the mode, on every chord, and one E collapses it into ordinary D minor.
+One pitch class to watch across the whole piece: E natural. Never play it while the D minor or the Eb major is sounding. The Eb is the mode, and one E over either of those chords collapses it into ordinary D minor.
 
 Over the D minor chord, touch the Eb and come back: D, up a semitone, down again. That neighbour is the sound of the mode, and it is the only ornament the line has.
 
-Over the C minor chord, fall from Eb to D, a semitone again. The Eb is the chord’s third and the D is its ninth, so the fall lands on a tension and stays there.
+The C major chord is the exception, and the only one. It has E as its third, so over it the line opens on E and falls to D, the chord’s ninth. The same note that breaks the mode over the other chords is the chord tone here; the harmony decides which it is.
 
 Enter late, a beat or more into each chord. The organ has no attack to speak of, so the entry is heard as the note arriving, and it should arrive after the chord has.
 
-Over the first half of the cycle, do the same kind of thing with the same notes: F falling to Eb over the opening D minor, then a held G over the Eb major. Every move is a step or a semitone.
+Over the first half of the cycle, do the same kind of thing with the same rule: F falling to Eb over the opening D minor, then a held G over the Eb major. Every move is a step or a semitone, and no E until the C major.
 
 ## The rules
 
 - Over i, never the raised 2nd — the raised second destroys the flat second the mode rests on.
 - Over II, never the raised 2nd — the same pitch class, a direct semitone against the chord’s root.
-- Over vii, never the raised 2nd — the mode has no E, and the chord on its seventh degree is minor for that reason.
 - Enter each chord at least 4 steps after it lands — the organ has no attack and the note should arrive after the chord has.
 
 ## The chords
@@ -32,7 +31,7 @@ Over the first half of the cycle, do the same kind of thing with the same notes:
 | i | 1–2 |  |
 | II | 3–4 |  |
 | i | 5–6 | ● |
-| vii | 7–8 | ● |
+| VII | 7–8 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 
@@ -43,7 +42,7 @@ The figure is played over these chords; supply them separately if your rig allow
 - step 9 · `D5` · degree 1 · MIDI 74 · in force 8 steps
 - step 17 · `Eb5` · degree 2 · MIDI 75 · in force 8 steps
 - step 25 · `D5` · degree 1 · MIDI 74 · in force 16 steps
-- step 41 · `Eb5` · degree 2 · MIDI 75 · in force 12 steps
+- step 41 · `E5` · degree #2 · MIDI 76 · in force 12 steps
 - step 53 · `D5` · degree 1 · MIDI 74 · in force 12 steps
 
 ## The grid

@@ -149,9 +149,10 @@ const FIXTURES: Record<RiffName, () => Fixture> = {
   }),
   /*
    * §5A.5/#569. **The one riff in a mode that is neither major nor minor.** `D phrygian` reaches
-   * the page in the lead line, the notes sentence and the chord summary, and the figure's three
-   * rules print `raised 2nd` over three chords, one of them `II`. No other fixture carries a
-   * modal key or a rule that repeats across the whole progression.
+   * the page in the lead line, the notes sentence and the chord summary, the two rules print
+   * `raised 2nd` over `i` and `II`, and the notes print `degree #2` over the one chord the rule
+   * leaves alone. No other fixture carries a modal key or a forbidden degree the figure also
+   * plays, legally, over another chord.
    *
    * On the Muse because it authors `lead / bright` exactly, so the page is about the mode and
    * not about §3.5. That recipe names `Muse Runner` as its factory patch, so this page too
