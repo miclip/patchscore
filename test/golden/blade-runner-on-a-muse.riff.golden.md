@@ -35,6 +35,8 @@ Over the four minor chords either side, do the same thing with the plain third o
 | IV | 9–10 | ● |
 | v | 11–12 |  |
 
+The figure is played over these chords; supply them separately if your rig allows.
+
 ## The notes
 
 4 bars in F# minor.
