@@ -3,9 +3,12 @@ import {
   ForbiddenDegreeSchema,
   RiffConstraintsSchema,
   RiffSchema,
+  STEPS_PER_BAR,
+  chordAtStep,
   resolveHook,
   riffConstraintViolations,
   referenceSlug,
+  type HookNote,
   type Riff,
 } from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
@@ -13,11 +16,22 @@ import { ruleLines } from '@/lib/studio/riff-text'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import {
   RIFFS,
+  aegeanOrganPhrygianFigure,
+  bellbounceSparseBellPattern,
   bladeRunnerBluesLead,
   blueMondayBass,
+  detroitFunkAeolianMachineLoop,
+  hamamatsuTinesBalladFigure,
+  moog55StringsSuspensionWriting,
+  moogProSoloGlideLead,
   museRunnerFloatingArrivalLead,
+  polyphonicPowerBrassStabCycle,
   riffById,
+  seventiesElectroPnoRhodesTurnaround,
+  softOrchestraSlowChanges,
+  threeOscBassLoveRootOctaveFigure,
   thrillerSynthRiff,
+  voxHumanaRigidColdPopLine,
 } from '@/lib/riffs'
 
 /**
@@ -231,9 +245,16 @@ describe('RiffSchema (§5A)', () => {
 })
 
 describe('the riff library (§5A)', () => {
-  it('has three to six entries', () => {
-    expect(RIFFS.length).toBeGreaterThanOrEqual(3)
-    expect(RIFFS.length).toBeLessThanOrEqual(6)
+  /**
+   * An exact pin, where this used to be a range. Six entries was the library's own headcount and
+   * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
+   * hold seventeen would hold anything. The number is content: five records and the twelve
+   * factory-patch definitions, and an entry added or dropped moves it and has to say so here.
+   */
+  it('has exactly seventeen entries: five records and twelve factory patches (#566, #569)', () => {
+    expect(RIFFS.length).toBe(17)
+    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(5)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(12)
   })
 
   it('every entry parses', () => {
@@ -583,16 +604,20 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566)', () => {
     expect(riff.hook.notes.map((n) => n.alter)).toEqual([undefined, 1, undefined])
   })
 
-  it('keeps the pitch range the original definition asked for, which no field carries', () => {
-    // The definition wrote `range: [58, 78]`: MIDI, Bb3 to F#5, and not a tempo. There is no
-    // field for a pitch bound (§4.1 puts range policy outside the hook), so the figure keeps it
-    // by construction and this is where that is checked.
+  /**
+   * **`range` is the tempo window, and this entry read it as a pitch range** (#566, corrected in
+   * #569). Every one of the twelve definitions brackets its own `bpm` with it, so the reading was
+   * checkable against eleven other rows and was not checked. This one shipped a span of 58 to 74,
+   * Blade Runner's width moved to 66, where the operator wrote 58 to 78.
+   *
+   * The old assertion passed on a coincidence: the figure's three notes are MIDI 71, 72 and 76,
+   * which sit inside 58 and 78 read as pitches. A test that would have passed on the wrong reading
+   * is not evidence of the right one, so the pitches are pinned as themselves below and the tempo
+   * is pinned as the definition wrote it.
+   */
+  it('carries the definition\u2019s own tempo window, and its three pitches', () => {
     expect(notes.map((n) => n.midi)).toEqual([76, 71, 72])
-    for (const note of notes) {
-      expect(note.midi, note.note).toBeGreaterThanOrEqual(58)
-      expect(note.midi, note.note).toBeLessThanOrEqual(78)
-    }
-    expect(riff.bpm).toEqual({ min: 58, max: 74, default: 66 })
+    expect(riff.bpm).toEqual({ min: 58, max: 78, default: 66 })
   })
 
   it('puts the E over the VI and the B and C over the III', () => {
@@ -768,4 +793,555 @@ describe('riff constraints are checked, not described (#554)', () => {
     )
     expect(lines[2]).toContain('Enter each chord at least 4 steps after it lands')
   })
+})
+
+/**
+ * §5A.5/#569. **The eleven entries that followed Muse Runner**, translated from one set of
+ * definitions, and the two things a table can hold about every one of them.
+ *
+ * The first is the rules. Each entry declares its constraints as data (#554), and the table
+ * below says, per entry, which rules it declares, that the shipped notes keep them, and that
+ * one note in the wrong place is caught and refused. The negative case is built by *adding* a
+ * note that sounds the forbidden degree over its chord, so the entry's own notes are untouched
+ * and the one violation reported is the one the table expected. The onset case moves the
+ * entry's first note onto the chord's first step.
+ *
+ * The second is what the translation had to decide, listed per entry below the table: which
+ * shapes the schema has no field for and the figure keeps by construction.
+ */
+type ConstraintCase = {
+  riff: Riff
+  /** `[chord, degree, alter]` for every `forbiddenDegrees` rule, in authored order. */
+  rules: readonly (readonly [string, number, number | undefined])[]
+  /** `onsetOffset.minSteps`, where the entry states one. */
+  onset?: number
+  /**
+   * One added note per rule, in the same order, and the opening of the sentence it produces.
+   * `over` moves the figure where a rule's chord is not under it as shipped.
+   */
+  breaks: readonly { note: HookNote; says: string; over?: Partial<Riff> }[]
+  /** The first entry's step and the sentence moving it onto the chord's first step produces. */
+  early?: { step: number; says: string }
+}
+
+const MUSE_ELEVEN: readonly ConstraintCase[] = [
+  {
+    riff: voxHumanaRigidColdPopLine,
+    rules: [['V', 7, undefined]],
+    breaks: [{ note: { step: 49, degree: 7, octave: -1, len: 8 }, says: 'G4 sounds over V' }],
+  },
+  {
+    riff: hamamatsuTinesBalladFigure,
+    rules: [['I', 4, undefined]],
+    onset: 4,
+    breaks: [{ note: { step: 5, degree: 4, octave: 1, len: 4 }, says: 'Ab5 sounds over I' }],
+    early: { step: 5, says: 'I is entered at step 1, 0 steps in' },
+  },
+  {
+    riff: seventiesElectroPnoRhodesTurnaround,
+    rules: [['I', 4, undefined]],
+    onset: 4,
+    breaks: [{ note: { step: 5, degree: 4, octave: 1, len: 4 }, says: 'Bb5 sounds over I' }],
+    early: { step: 5, says: 'I is entered at step 1, 0 steps in' },
+  },
+  // No forbidden degree: the definition's rule is *not until the suspension resolves*, which a
+  // `ForbiddenDegree` cannot say without refusing the resolution. The entry's own suite below
+  // checks the timing instead.
+  {
+    riff: moog55StringsSuspensionWriting,
+    rules: [],
+    onset: 8,
+    breaks: [],
+    early: { step: 9, says: 'I is entered at step 1, 0 steps in' },
+  },
+  {
+    riff: detroitFunkAeolianMachineLoop,
+    rules: [['i', 6, 1]],
+    onset: 2,
+    breaks: [
+      { note: { step: 3, degree: 6, octave: 0, len: 4, alter: 1 }, says: 'A4 sounds over i' },
+    ],
+    early: { step: 3, says: 'i is entered at step 1, 0 steps in' },
+  },
+  {
+    riff: aegeanOrganPhrygianFigure,
+    rules: [
+      ['i', 2, 1],
+      ['II', 2, 1],
+    ],
+    onset: 4,
+    breaks: [
+      { note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 }, says: 'E5 sounds over i' },
+      // The `II` is bars 3-4 and the figure ships over bars 5-8, so the figure is moved to bar
+      // 3 for this one: the rule holds wherever the figure sits. Moving it also puts the legal
+      // E over the `VII` onto the `i`, so that note is dropped first and the one violation left
+      // is the one this case adds.
+      {
+        note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 },
+        says: 'E5 sounds over II',
+        over: {
+          figureStartsAtBar: 3,
+          hook: {
+            ...aegeanOrganPhrygianFigure.hook,
+            notes: aegeanOrganPhrygianFigure.hook.notes.filter((n) => n.alter === undefined),
+          },
+        },
+      },
+    ],
+    early: { step: 9, says: 'i is entered at step 1, 0 steps in' },
+  },
+  {
+    riff: threeOscBassLoveRootOctaveFigure,
+    rules: [['VI', 5, undefined]],
+    breaks: [{ note: { step: 17, degree: 5, octave: -1, len: 4 }, says: 'E1 sounds over VI' }],
+  },
+  {
+    riff: bellbounceSparseBellPattern,
+    rules: [['I', 4, undefined]],
+    onset: 8,
+    breaks: [{ note: { step: 9, degree: 4, octave: 0, len: 4 }, says: 'D6 sounds over I' }],
+    early: { step: 9, says: 'I is entered at step 1, 0 steps in' },
+  },
+  {
+    riff: softOrchestraSlowChanges,
+    rules: [['V', 7, undefined]],
+    breaks: [{ note: { step: 41, degree: 7, octave: -1, len: 4 }, says: 'F4 sounds over V' }],
+  },
+  {
+    riff: polyphonicPowerBrassStabCycle,
+    rules: [['IV', 3, 1]],
+    breaks: [
+      { note: { step: 19, degree: 3, octave: 1, len: 4, alter: 1 }, says: 'A5 sounds over IV' },
+    ],
+  },
+]
+
+/** The entry with one more note in its hook, and otherwise the same. */
+function withNote(riff: Riff, note: HookNote, over: Partial<Riff> = {}): Riff {
+  const base = { ...riff, ...over }
+  return { ...base, hook: { ...base.hook, notes: [...base.hook.notes, note] } }
+}
+
+describe('the eleven factory-patch entries keep their rules as data (#569, #554)', () => {
+  it('covers every patch entry but Muse Runner, which has its own suite', () => {
+    const covered = new Set(MUSE_ELEVEN.map((c) => c.riff.id))
+    covered.add(moogProSoloGlideLead.id)
+    covered.add(museRunnerFloatingArrivalLead.id)
+    const patches = RIFFS.filter((r) => r.reference.kind === 'patch').map((r) => r.id)
+    expect([...covered].sort()).toEqual([...patches].sort())
+  })
+
+  it('the glide lead states no rule, so it carries no constraints at all', () => {
+    // A `constraints` that constrains nothing is refused by the schema; absence is the honest
+    // shape for an entry whose definition forbade no pitch and asked for no offset.
+    expect(moogProSoloGlideLead.constraints).toBeUndefined()
+  })
+
+  for (const c of MUSE_ELEVEN) {
+    describe(c.riff.id, () => {
+      it('declares exactly the rules the table lists, and the page prints each one', () => {
+        const declared = c.riff.constraints?.forbiddenDegrees?.map((f) => [f.chord, f.degree, f.alter])
+        expect(declared ?? []).toEqual(c.rules.map((r) => [...r]))
+        expect(c.riff.constraints?.onsetOffset?.minSteps).toBe(c.onset)
+        expect(ruleLines(c.riff)).toHaveLength(c.rules.length + (c.onset === undefined ? 0 : 1))
+      })
+
+      it('keeps every rule as shipped, and parses', () => {
+        expect(riffConstraintViolations(c.riff)).toEqual([])
+        const parsed = RiffSchema.safeParse(c.riff)
+        expect(parsed.success, parsed.success ? '' : parsed.error.message).toBe(true)
+      })
+
+      it('every rule names a chord that is in the progression', () => {
+        const chords = new Set(c.riff.harmony?.progression.map((p) => p.degree))
+        for (const [chord] of c.rules) expect(chords.has(chord), chord).toBe(true)
+      })
+
+      for (const [i, b] of c.breaks.entries()) {
+        it(`catches the forbidden ${c.rules[i]?.[0] ?? ''} note, and refuses to parse it`, () => {
+          const broken = withNote(c.riff, b.note, b.over)
+          const found = riffConstraintViolations(broken)
+          expect(found).toHaveLength(1)
+          expect(found[0]).toContain(b.says)
+          // The author's reason is carried into the message (#554).
+          expect(found[0]).toContain(c.riff.constraints?.forbiddenDegrees?.[i]?.reason ?? 'x')
+          expect(RiffSchema.safeParse(broken).success).toBe(false)
+        })
+      }
+
+      if (c.early !== undefined) {
+        const early = c.early
+        it('catches an entry on the chord change, which the offset forbids', () => {
+          const broken: Riff = {
+            ...c.riff,
+            hook: {
+              ...c.riff.hook,
+              notes: c.riff.hook.notes.map((n) => (n.step === early.step ? { ...n, step: 1 } : n)),
+            },
+          }
+          const found = riffConstraintViolations(broken)
+          expect(found).toHaveLength(1)
+          expect(found[0]).toContain(early.says)
+          expect(RiffSchema.safeParse(broken).success).toBe(false)
+        })
+      }
+    })
+  }
+})
+
+/**
+ * §5A.5/#569. **What the definitions asked for that no field carries**, kept by construction
+ * and checked here: a register ceiling, a note count per bar, a never-on-a-beat grid, a line
+ * with no overlaps, a sustain across a change. Each is the entry's technique in one assertion,
+ * and each would let the prose drift from the notes if it were not written down.
+ */
+describe('the eleven keep what the schema cannot state (#569)', () => {
+  /** The note in force at each step of the hook, or nothing. */
+  function sounding(riff: Riff, step: number): HookNote[] {
+    return riff.hook.notes.filter((n) => step >= n.step && step < n.step + n.len)
+  }
+
+  it('every entry asks for exactly as many simultaneous notes as its widest voicing', () => {
+    for (const entry of RIFFS) {
+      const atStep = new Map<number, number>()
+      for (const n of entry.hook.notes) atStep.set(n.step, (atStep.get(n.step) ?? 0) + 1)
+      const widest = Math.max(...atStep.values())
+      expect(entry.request.polyphony ?? 1, entry.id).toBe(widest)
+    }
+  })
+
+  it('every grid hit strikes a note that is in force at that step (RIFF_GRID_LEAD)', () => {
+    for (const entry of RIFFS) {
+      for (const hit of entry.pattern.hits) {
+        expect(sounding(entry, hit.step).length, `${entry.id} step ${String(hit.step)}`).toBeGreaterThan(0)
+      }
+    }
+  })
+
+  it('the held lines strike each note once, at its onset, and nothing else', () => {
+    for (const entry of [
+      voxHumanaRigidColdPopLine,
+      hamamatsuTinesBalladFigure,
+      seventiesElectroPnoRhodesTurnaround,
+      moog55StringsSuspensionWriting,
+      aegeanOrganPhrygianFigure,
+      moogProSoloGlideLead,
+      softOrchestraSlowChanges,
+    ]) {
+      const onsets = [...new Set(entry.hook.notes.map((n) => n.step))]
+      expect(entry.pattern.hits.map((h) => h.step), entry.id).toEqual(onsets)
+    }
+  })
+
+  it('the cold-pop line lands every note on a beat and none across a bar line', () => {
+    for (const n of voxHumanaRigidColdPopLine.hook.notes) {
+      expect((n.step - 1) % 4, `step ${String(n.step)}`).toBe(0)
+      const startsIn = Math.floor((n.step - 1) / STEPS_PER_BAR)
+      const endsIn = Math.floor((n.step + n.len - 2) / STEPS_PER_BAR)
+      expect(endsIn, `step ${String(n.step)} crosses a bar line`).toBe(startsIn)
+    }
+  })
+
+  it('the ballad figure ends on a suspension held across the bar line', () => {
+    const last = hamamatsuTinesBalladFigure.hook.notes.at(-1)
+    if (last === undefined) throw new Error('no notes')
+    expect(chordAtStep(hamamatsuTinesBalladFigure, last.step)).toBe('V')
+    expect(last.step + last.len).toBeGreaterThan(64)
+    // And the resolution is prose, because it lands on the next pass's first step: see the entry.
+    expect(hamamatsuTinesBalladFigure.technique.some((p) => p.includes('after the bar line'))).toBe(true)
+  })
+
+  it('the turnaround lands the flat ninth late and resolves it down', () => {
+    const resolved = resolveHook(seventiesElectroPnoRhodesTurnaround.hook, 'F major')
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const overDominant = resolved.hook.notes.filter(
+      (n) => chordAtStep(seventiesElectroPnoRhodesTurnaround, n.step) === 'VI',
+    )
+    expect(overDominant.map((n) => [n.note, n.step])).toEqual([
+      ['Eb5', 57],
+      ['D5', 61],
+    ])
+  })
+
+  it('the suspension writing withholds each third for a bar and resolves in the second', () => {
+    // The rule *not until the suspension resolves* is prose, because a `ForbiddenDegree` over
+    // the chord would refuse the resolution itself. This is that rule, checked by timing: the
+    // third of each chord (E over the `I`, A over the `IV`) first sounds in the chord's second
+    // bar, and the suspension before it is a step below.
+    const riff = moog55StringsSuspensionWriting
+    expect(riff.constraints?.forbiddenDegrees).toBeUndefined()
+    expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([
+      ['I', 2],
+      ['IV', 2],
+      ['vi', 2],
+      ['V', 2],
+    ])
+    const [d, e, g, a] = riff.hook.notes
+    if (d === undefined || e === undefined || g === undefined || a === undefined) {
+      throw new Error('four notes expected')
+    }
+    expect([e.degree, a.degree]).toEqual([3, 6])
+    expect([e.degree, a.degree]).toEqual([d.degree + 1, g.degree + 1])
+    for (const third of [e, a]) {
+      const barIntoChord = Math.floor((third.step - 1) / STEPS_PER_BAR) % 2
+      expect(barIntoChord, `step ${String(third.step)}`).toBe(1)
+    }
+    // And nothing sounds either third before its resolution.
+    for (const n of riff.hook.notes) {
+      if (n.step < e.step) expect(n.degree, `step ${String(n.step)}`).not.toBe(3)
+      if (n.step >= e.step && n.step < a.step) expect(n.degree, `step ${String(n.step)}`).not.toBe(6)
+    }
+  })
+
+  it('the machine loop never strikes on a beat, and enters every bar on the "and" of one', () => {
+    const riff = detroitFunkAeolianMachineLoop
+    for (const hit of riff.pattern.hits) {
+      expect((hit.step - 1) % 4, `step ${String(hit.step)} is on a beat`).not.toBe(0)
+    }
+    expect([...new Set(riff.hook.notes.map((n) => n.step))]).toEqual([3, 19, 35, 51])
+    // Three notes at every entry, and the ninth of the key's tonic on top of the first.
+    for (const step of [3, 19, 35, 51]) expect(sounding(riff, step)).toHaveLength(3)
+  })
+
+  it('the Phrygian figure is in a mode the engine reads, and sounds E only over the C major', () => {
+    const riff = aegeanOrganPhrygianFigure
+    expect(riff.key).toBe('D phrygian')
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    expect(resolved.hook.notes.map((n) => n.note)).toEqual(['D5', 'Eb5', 'D5', 'E5', 'D5'])
+    expect(riff.figureStartsAtBar).toBe(5)
+    expect(riff.harmony?.progression.map((p) => p.degree)).toEqual(['i', 'II', 'i', 'VII'])
+    // The one E is over the `VII`, the chord whose third it is, and it is the raised second.
+    const e = resolved.hook.notes.filter((n) => n.note === 'E5')
+    expect(e.map((n) => [chordAtStep(riff, n.step), n.alter])).toEqual([['VII', 1]])
+  })
+
+  it('the glide lead never sounds two notes at once', () => {
+    const notes = [...moogProSoloGlideLead.hook.notes].sort((a, b) => a.step - b.step)
+    for (let i = 1; i < notes.length; i += 1) {
+      const prev = notes[i - 1]
+      const next = notes[i]
+      if (prev === undefined || next === undefined) throw new Error('unreachable')
+      expect(prev.step + prev.len, `step ${String(prev.step)} overlaps ${String(next.step)}`).toBeLessThanOrEqual(next.step)
+    }
+    // The passing flat five is the short one.
+    const passing = moogProSoloGlideLead.hook.notes.find((n) => n.alter === -1)
+    expect(passing?.len).toBe(2)
+  })
+
+  it('the bass figure stays below C3 and pumps every eighth', () => {
+    const riff = threeOscBassLoveRootOctaveFigure
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    for (const n of resolved.hook.notes) expect(n.midi, n.note).toBeLessThanOrEqual(48)
+    expect(Math.max(...resolved.hook.notes.map((n) => n.midi))).toBe(45)
+    expect(riff.pattern.hits.map((h) => h.step)).toEqual(
+      Array.from({ length: 32 }, (_, i) => 2 * i + 1),
+    )
+    // Roots and octaves for three bars: every note in bars 1-3 is a root or its octave, except
+    // the fifth in bar 3, and the walk-up is bar 4.
+    const walk = riff.hook.notes.filter((n) => n.step > 48)
+    expect(walk.map((n) => n.degree)).toEqual([7, 1, 2])
+  })
+
+  it('the bell pattern strikes at most twice a bar', () => {
+    const riff = bellbounceSparseBellPattern
+    for (let bar = 0; bar < riff.hook.bars; bar += 1) {
+      const inBar = riff.pattern.hits.filter(
+        (h) => h.step > bar * STEPS_PER_BAR && h.step <= (bar + 1) * STEPS_PER_BAR,
+      )
+      expect(inBar.length, `bar ${String(bar + 1)}`).toBeLessThanOrEqual(2)
+      expect(inBar.length, `bar ${String(bar + 1)}`).toBeGreaterThan(0)
+    }
+    expect(riff.request.role).toBe('arp')
+  })
+
+  it('the slow changes sustain every note past the chord change under it', () => {
+    const riff = softOrchestraSlowChanges
+    expect(riff.figureStartsAtBar).toBe(5)
+    const [d, c, g, fSharp] = riff.hook.notes
+    if (d === undefined || c === undefined || g === undefined || fSharp === undefined) {
+      throw new Error('four notes expected')
+    }
+    // The D opens the figure, tied from the chord before.
+    expect(d.step).toBe(1)
+    // The C is still sounding when the suspended dominant arrives at step 33.
+    expect(c.step + c.len).toBeGreaterThan(33)
+    // The F# is the raised seventh and runs past the figure.
+    expect(fSharp.alter).toBe(1)
+    expect(fSharp.step + fSharp.len).toBeGreaterThan(64)
+    expect(chordAtStep(riff, g.step)).toBe('V')
+  })
+
+  it('the brass cycle stabs off the beat for three bars and lands the fourth on the downbeat', () => {
+    const riff = polyphonicPowerBrassStabCycle
+    const early = riff.pattern.hits.filter((h) => h.step <= 48)
+    for (const hit of early) expect((hit.step - 1) % 4, `step ${String(hit.step)}`).not.toBe(0)
+    expect(riff.pattern.hits.filter((h) => h.step > 48).map((h) => h.step)).toEqual([49])
+    // Two notes per stab for three bars, one held note in the fourth.
+    for (const step of [3, 19, 35]) expect(sounding(riff, step)).toHaveLength(2)
+    expect(sounding(riff, 49)).toHaveLength(1)
+    expect(sounding(riff, 64)).toHaveLength(1)
+  })
+
+  it('the two top-voice lines are leads, because a pad has no grid to riff on', () => {
+    for (const entry of [moog55StringsSuspensionWriting, softOrchestraSlowChanges]) {
+      expect(entry.request.role).toBe('lead')
+      expect(entry.request.character).toBe('soft')
+    }
+  })
+})
+
+/**
+ * §5A.5/#569. **The translated notes are the operator's notes.** The definitions arrived as
+ * absolute pitches (`E5`, `G#4`, `Bb4`) over absolute chords; the entries carry degrees over
+ * numerals. Nothing above proves the round trip, so this table does: for every entry, the key,
+ * the tempo it is written at, the root-only progression with its bar counts, and the complete
+ * pitch sequence the hook resolves to, typed from the definitions and not from the code.
+ *
+ * Simultaneous notes are joined with `+`, bottom to top, so a voicing reads as one entry. Where
+ * the definition's top note sits on a voicing this library added under it, the row says so;
+ * where an eight-bar cycle is longer than the grid and the figure is four bars of it, the row
+ * says which four and the pitches are those four bars' alone.
+ */
+type FidelityRow = {
+  riff: Riff
+  key: string
+  bpm: number
+  progression: readonly (readonly [string, number])[]
+  /** Step order; `+` joins notes at one step, bottom to top. */
+  pitches: readonly string[]
+}
+
+const FIDELITY: readonly FidelityRow[] = [
+  {
+    riff: voxHumanaRigidColdPopLine,
+    key: 'A minor',
+    bpm: 116,
+    progression: [['i', 1], ['VI', 1], ['iv', 1], ['V', 1]],
+    pitches: ['E5', 'E5', 'D5', 'D5', 'G#4', 'A4', 'G#4'],
+  },
+  {
+    riff: hamamatsuTinesBalladFigure,
+    key: 'Eb major',
+    bpm: 72,
+    progression: [['I', 1], ['vi', 1], ['ii', 1], ['V', 1]],
+    // The definition's last gesture is Eb5 resolving to D5 after the bar line; the D lands on
+    // the next pass and is prose, so the hook ends on the Eb.
+    pitches: ['F5', 'Eb5', 'D5', 'C5', 'D5', 'Eb5'],
+  },
+  {
+    riff: seventiesElectroPnoRhodesTurnaround,
+    key: 'F major',
+    bpm: 88,
+    progression: [['I', 1], ['ii', 1], ['iii', 1], ['VI', 1]],
+    pitches: ['G5', 'G5', 'F5', 'Eb5', 'E5', 'Eb5', 'D5'],
+  },
+  {
+    riff: moog55StringsSuspensionWriting,
+    key: 'C major',
+    bpm: 60,
+    progression: [['I', 2], ['IV', 2], ['vi', 2], ['V', 2]],
+    // Bars 1-4 of eight: the two suspensions. The B4 over the `vi` and the C5 over the `V` are
+    // the definition's second half, and are prose.
+    pitches: ['D5', 'E5', 'G5', 'A5'],
+  },
+  {
+    riff: detroitFunkAeolianMachineLoop,
+    key: 'C minor',
+    bpm: 128,
+    progression: [['i', 1], ['VI', 1], ['III', 1], ['iv', 1]],
+    // The definition gave one note per chord: D5, C5, F5, Eb5. Each is the top of a three-note
+    // voicing this library wrote under it.
+    pitches: ['G4+Bb4+D5', 'G4+Bb4+C5', 'Bb4+D5+F5', 'G4+Bb4+Eb5'],
+  },
+  {
+    riff: aegeanOrganPhrygianFigure,
+    key: 'D phrygian',
+    bpm: 76,
+    progression: [['i', 2], ['II', 2], ['i', 2], ['VII', 2]],
+    // Bars 5-8 of eight: the neighbour figure and the C major line. The F5 Eb5 over the opening
+    // `i` and the G5 over the `II` are the definition's first half, and are prose.
+    pitches: ['D5', 'Eb5', 'D5', 'E5', 'D5'],
+  },
+  {
+    riff: moogProSoloGlideLead,
+    key: 'E minor',
+    bpm: 104,
+    progression: [['i', 1], ['VI', 1], ['VII', 1], ['i', 1]],
+    pitches: ['E4', 'G4', 'A4', 'Bb4', 'B4', 'D5', 'C5', 'B4'],
+  },
+  {
+    riff: threeOscBassLoveRootOctaveFigure,
+    key: 'A minor',
+    bpm: 112,
+    progression: [['i', 1], ['VI', 1], ['III', 1], ['VII', 1]],
+    pitches: ['A1', 'A2', 'F1', 'F2', 'C2', 'G2', 'G1', 'A1', 'B1'],
+  },
+  {
+    riff: bellbounceSparseBellPattern,
+    key: 'A major',
+    bpm: 96,
+    progression: [['I', 2], ['vi', 2], ['IV', 2], ['V', 2]],
+    // Bars 1-4 of eight: the definition's held B5 and held C#6, each struck twice a bar. The
+    // C#6 B5 over the `IV` and the A5 over the `V` are its second half, and are prose.
+    pitches: ['B5', 'B5', 'B5', 'B5', 'C#6', 'C#6', 'C#6', 'C#6'],
+  },
+  {
+    riff: softOrchestraSlowChanges,
+    key: 'G minor',
+    bpm: 64,
+    progression: [['i', 2], ['VI', 2], ['iv', 2], ['V', 2]],
+    // Bars 5-8 of eight. The definition's first half is the one D5 held across the `i` and the
+    // `VI`; the figure opens on that D, still sounding, and carries the two moves.
+    pitches: ['D5', 'C5', 'G4', 'F#4'],
+  },
+  {
+    riff: polyphonicPowerBrassStabCycle,
+    key: 'F minor',
+    bpm: 108,
+    progression: [['i', 1], ['IV', 1], ['VII', 1], ['v', 1]],
+    // The definition's pairs, bottom to top: it wrote the third as `G5, D5`, the same two notes.
+    pitches: ['Ab4+C5', 'D5+Ab5', 'D5+G5', 'Eb5'],
+  },
+]
+
+describe('the eleven resolve to the pitches the definitions asked for (#569)', () => {
+  it('covers every entry but the six that were here before', () => {
+    const covered = FIDELITY.map((r) => r.riff.id).sort()
+    const eleven = RIFFS.filter(
+      (r) => r.reference.kind === 'patch' && r.id !== museRunnerFloatingArrivalLead.id,
+    )
+      .map((r) => r.id)
+      .sort()
+    expect(covered).toEqual(eleven)
+  })
+
+  for (const row of FIDELITY) {
+    it(`${row.riff.id}: ${row.key} at ${String(row.bpm)}, ${row.pitches.join(' ')}`, () => {
+      expect(row.riff.key).toBe(row.key)
+      expect(row.riff.bpm.default).toBe(row.bpm)
+      expect(row.riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual(
+        row.progression.map((p) => [...p]),
+      )
+      const resolved = resolveHook(row.riff.hook, row.riff.key)
+      if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+      // Group by step in authored order, which is bottom to top for every voicing here.
+      const byStep = new Map<number, string[]>()
+      for (const n of resolved.hook.notes) {
+        const at = byStep.get(n.step)
+        if (at === undefined) byStep.set(n.step, [n.note])
+        else at.push(n.note)
+      }
+      const sequence = [...byStep.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([, notes]) => notes.join('+'))
+      expect(sequence).toEqual([...row.pitches])
+      // Bottom to top is a claim about pitch, so it is checked as one.
+      for (const notes of byStep.values()) {
+        const midi = notes.map((name) => resolved.hook.notes.find((n) => n.note === name)?.midi ?? 0)
+        expect([...midi].sort((a, b) => a - b)).toEqual(midi)
+      }
+    })
+  }
 })

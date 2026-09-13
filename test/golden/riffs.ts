@@ -6,9 +6,11 @@ import { resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import {
   acidTracksLine,
+  aegeanOrganPhrygianFigure,
   bladeRunnerBluesLead,
   blueMondayBass,
   museRunnerFloatingArrivalLead,
+  polyphonicPowerBrassStabCycle,
   showMeLoveOrganStab,
 } from '@/lib/riffs'
 import { renderRiff } from '@/lib/studio/riff-markdown'
@@ -49,6 +51,8 @@ export const RIFF_NAMES = [
   'acid-on-a-mother-32',
   'blade-runner-on-a-muse',
   'muse-runner-on-a-muse',
+  'brass-stab-cycle-on-a-muse',
+  'aegean-organ-on-a-muse',
 ] as const
 export type RiffName = (typeof RIFF_NAMES)[number]
 
@@ -122,6 +126,41 @@ const FIXTURES: Record<RiffName, () => Fixture> = {
    */
   'muse-runner-on-a-muse': () => ({
     riff: museRunnerFloatingArrivalLead,
+    devices: rig('moog-muse'),
+  }),
+  /*
+   * §5A.5/#569. **A chord riff that also carries a chord table**, on one polyphonic voice. The
+   * two chord fixtures above spread a chord across a pool or report a gap; neither lands a
+   * two-note voicing on a single voice that can sound it, and neither prints a chord table
+   * beside notes that share a step. This page does both, and it is the fixture where the
+   * `RIFF_CHORDS_SUPPLIED` sentence sits under a table whose chords the stab plays the top of.
+   *
+   * On the Muse because it is the box that ships the patch, and the page does *not* land on
+   * it: the `stab / hard` recipe that names `Polyphonic Power` is a unison stack the box plays
+   * one note at a time (#383, `patchPolyphony: 1`), so a two-note stab cannot take it and §3.5
+   * substitutes the polyphonic `bright` one. The bytes therefore pin three things at once: the
+   * substitution sentence, a settings block naming a *different* factory patch from the one in
+   * the title, and both read beside each other without contradiction, because the title is the
+   * idiom and the settings are the sound.
+   */
+  'brass-stab-cycle-on-a-muse': () => ({
+    riff: polyphonicPowerBrassStabCycle,
+    devices: rig('moog-muse'),
+  }),
+  /*
+   * §5A.5/#569. **The one riff in a mode that is neither major nor minor.** `D phrygian` reaches
+   * the page in the lead line, the notes sentence and the chord summary, the two rules print
+   * `raised 2nd` over `i` and `II`, and the notes print `degree #2` over the one chord the rule
+   * leaves alone. No other fixture carries a modal key or a forbidden degree the figure also
+   * plays, legally, over another chord.
+   *
+   * On the Muse because it authors `lead / bright` exactly, so the page is about the mode and
+   * not about §3.5. That recipe names `Muse Runner` as its factory patch, so this page too
+   * carries one patch in its title and another on its settings, which is the shape
+   * `muse-runner-on-a-muse` pins from the other side: there the two are the same name.
+   */
+  'aegean-organ-on-a-muse': () => ({
+    riff: aegeanOrganPhrygianFigure,
     devices: rig('moog-muse'),
   }),
 }
