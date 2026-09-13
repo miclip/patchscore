@@ -17,6 +17,7 @@ import {
   sourceLengthLine,
 } from '@/lib/core'
 import {
+  RIFF_CHORDS_SUPPLIED,
   RIFF_GRID_LEAD,
   degreeLabel,
   gridRows,
@@ -146,6 +147,8 @@ function chordLines(riff: Riff): string[] {
         `| ${row.degree} | ${num(row.from)}\u2013${num(row.from + row.bars - 1)} |` +
         ` ${row.underFigure ? '●' : ''} |`,
     ),
+    '',
+    RIFF_CHORDS_SUPPLIED,
   ]
 }
 

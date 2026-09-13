@@ -3,6 +3,7 @@ import { num } from '@/lib/core'
 import { SlotList } from '@/components/pattern/slot-list'
 import { StepGrid } from '@/components/pattern/step-grid'
 import {
+  RIFF_CHORDS_SUPPLIED,
   RIFF_GRID_LEAD,
   chordRows,
   degreeLabel,
@@ -152,6 +153,7 @@ function Chords({ riff }: { riff: Riff }) {
           </tbody>
         </table>
       </div>
+      <p className="riff-grid-lead">{RIFF_CHORDS_SUPPLIED}</p>
     </section>
   )
 }

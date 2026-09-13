@@ -222,6 +222,41 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
   })
 })
 
+/**
+ * §5A/§4.1. **The chord table says where the chords come from**, on both surfaces and once.
+ *
+ * A `harmony` on a riff means the figure is played *over* chords the page does not set up: the
+ * voice block claims one part. That is a fact of the shape — a figure that *is* the chords has
+ * no `harmony` and carries its voicing in its notes — so it is one sentence of copy under the
+ * table and not a field on the entry. Pinned as a string on both renderers rather than left to
+ * the parity test above, because parity would pass just as happily on the sentence being absent
+ * from both.
+ */
+describe('the chord table says the chords are supplied separately', () => {
+  const blade = RIFFS.find((r) => r.id === 'blade-runner-blues-lead') as (typeof RIFFS)[number]
+  const SENTENCE =
+    'The figure is played over these chords; supply them separately if your rig allows.'
+
+  it('prints the sentence once under the table, in both renderers', async () => {
+    const md = renderRiff(resolveRiff(blade, []))
+    const page = text(await markupFor('blade-runner-blues-lead'))
+    for (const doc of [md, page]) {
+      expect(doc).toContain(SENTENCE)
+      expect(doc.split(SENTENCE).length - 1).toBe(1)
+    }
+    // Under the table, not above it: the rows come first, then where they come from.
+    const chords = md.slice(md.indexOf('## The chords'), md.indexOf('## The notes'))
+    expect(chords.indexOf('| v | 11')).toBeLessThan(chords.indexOf(SENTENCE))
+  })
+
+  it('says nothing on a riff with no harmony, which is most of them', () => {
+    expect(blueMondayBass.harmony).toBeUndefined()
+    expect(BLUE_MD).not.toContain(SENTENCE)
+    expect(BLUE_TEXT).not.toContain(SENTENCE)
+    expect(BLUE_TEXT).not.toContain('The chords')
+  })
+})
+
 describe('the riff page exists exactly where an entry does', () => {
   it('is prerendered for every entry, and for no others', () => {
     expect(generateStaticParams().map((p) => p.id)).toEqual(RIFFS.map((riff) => riff.id))

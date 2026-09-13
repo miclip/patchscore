@@ -132,6 +132,27 @@ export function riffChordSummary(riff: Riff): string | undefined {
 }
 
 /**
+ * §5A/§4.1. **Where the chords come from**, said once under the table.
+ *
+ * A `harmony` on a riff means the figure is played *over* chords that something else supplies:
+ * the entry authors one part, the voice block sets up one sound, and the table above is what
+ * that sound is heard against. A reader who has just been handed a chord table on a page about
+ * a lead line will otherwise look for the chords in the settings, and they are not there.
+ *
+ * This is copy rather than a field on the entry. The riff shape already carries the distinction:
+ * a figure that *is* the chords has no `harmony` and says so through its polyphony — the notes
+ * sharing a step are the voicing (`noteRows`) — and a figure that follows chords carries a
+ * `harmony` and no chord in its notes. A `harmonySource` beside `harmony` would be a second
+ * place saying what the presence of the first already says, and the two could disagree.
+ *
+ * *If your rig allows* because a riff names no device (invariant 3), and whether the reader's
+ * rig has a second voice free is a question this page does not resolve — the voice block claims
+ * one part and one part only.
+ */
+export const RIFF_CHORDS_SUPPLIED =
+  'The figure is played over these chords; supply them separately if your rig allows.'
+
+/**
  * §5A/#554. **The rules, in the reader's words**, where the entry states any.
  *
  * Rendered rather than kept for the build alone: a rule a reader cannot see is a rule they will
