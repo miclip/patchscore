@@ -1187,3 +1187,157 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     }
   })
 })
+
+/**
+ * §5A.5/#569. **The translated notes are the operator's notes.** The definitions arrived as
+ * absolute pitches (`E5`, `G#4`, `Bb4`) over absolute chords; the entries carry degrees over
+ * numerals. Nothing above proves the round trip, so this table does: for every entry, the key,
+ * the tempo it is written at, the root-only progression with its bar counts, and the complete
+ * pitch sequence the hook resolves to, typed from the definitions and not from the code.
+ *
+ * Simultaneous notes are joined with `+`, bottom to top, so a voicing reads as one entry. Where
+ * the definition's top note sits on a voicing this library added under it, the row says so;
+ * where an eight-bar cycle is longer than the grid and the figure is four bars of it, the row
+ * says which four and the pitches are those four bars' alone.
+ */
+type FidelityRow = {
+  riff: Riff
+  key: string
+  bpm: number
+  progression: readonly (readonly [string, number])[]
+  /** Step order; `+` joins notes at one step, bottom to top. */
+  pitches: readonly string[]
+}
+
+const FIDELITY: readonly FidelityRow[] = [
+  {
+    riff: voxHumanaRigidColdPopLine,
+    key: 'A minor',
+    bpm: 116,
+    progression: [['i', 1], ['VI', 1], ['iv', 1], ['V', 1]],
+    pitches: ['E5', 'E5', 'D5', 'D5', 'G#4', 'A4', 'G#4'],
+  },
+  {
+    riff: hamamatsuTinesBalladFigure,
+    key: 'Eb major',
+    bpm: 72,
+    progression: [['I', 1], ['vi', 1], ['ii', 1], ['V', 1]],
+    // The definition's last gesture is Eb5 resolving to D5 after the bar line; the D lands on
+    // the next pass and is prose, so the hook ends on the Eb.
+    pitches: ['F5', 'Eb5', 'D5', 'C5', 'D5', 'Eb5'],
+  },
+  {
+    riff: seventiesElectroPnoRhodesTurnaround,
+    key: 'F major',
+    bpm: 88,
+    progression: [['I', 1], ['ii', 1], ['iii', 1], ['VI', 1]],
+    pitches: ['G5', 'G5', 'F5', 'Eb5', 'E5', 'Eb5', 'D5'],
+  },
+  {
+    riff: moog55StringsSuspensionWriting,
+    key: 'C major',
+    bpm: 60,
+    progression: [['I', 2], ['IV', 2], ['vi', 2], ['V', 2]],
+    // Bars 1-4 of eight: the two suspensions. The B4 over the `vi` and the C5 over the `V` are
+    // the definition's second half, and are prose.
+    pitches: ['D5', 'E5', 'G5', 'A5'],
+  },
+  {
+    riff: detroitFunkAeolianMachineLoop,
+    key: 'C minor',
+    bpm: 128,
+    progression: [['i', 1], ['VI', 1], ['III', 1], ['iv', 1]],
+    // The definition gave one note per chord: D5, C5, F5, Eb5. Each is the top of a three-note
+    // voicing this library wrote under it.
+    pitches: ['G4+Bb4+D5', 'G4+Bb4+C5', 'Bb4+D5+F5', 'G4+Bb4+Eb5'],
+  },
+  {
+    riff: aegeanOrganPhrygianFigure,
+    key: 'D phrygian',
+    bpm: 76,
+    progression: [['i', 2], ['II', 2], ['i', 2], ['VII', 2]],
+    // Bars 5-8 of eight: the neighbour figure and the C major line. The F5 Eb5 over the opening
+    // `i` and the G5 over the `II` are the definition's first half, and are prose.
+    pitches: ['D5', 'Eb5', 'D5', 'E5', 'D5'],
+  },
+  {
+    riff: moogProSoloGlideLead,
+    key: 'E minor',
+    bpm: 104,
+    progression: [['i', 1], ['VI', 1], ['VII', 1], ['i', 1]],
+    pitches: ['E4', 'G4', 'A4', 'Bb4', 'B4', 'D5', 'C5', 'B4'],
+  },
+  {
+    riff: threeOscBassLoveRootOctaveFigure,
+    key: 'A minor',
+    bpm: 112,
+    progression: [['i', 1], ['VI', 1], ['III', 1], ['VII', 1]],
+    pitches: ['A1', 'A2', 'F1', 'F2', 'C2', 'G2', 'G1', 'A1', 'B1'],
+  },
+  {
+    riff: bellbounceSparseBellPattern,
+    key: 'A major',
+    bpm: 96,
+    progression: [['I', 2], ['vi', 2], ['IV', 2], ['V', 2]],
+    // Bars 1-4 of eight: the definition's held B5 and held C#6, each struck twice a bar. The
+    // C#6 B5 over the `IV` and the A5 over the `V` are its second half, and are prose.
+    pitches: ['B5', 'B5', 'B5', 'B5', 'C#6', 'C#6', 'C#6', 'C#6'],
+  },
+  {
+    riff: softOrchestraSlowChanges,
+    key: 'G minor',
+    bpm: 64,
+    progression: [['i', 2], ['VI', 2], ['iv', 2], ['V', 2]],
+    // Bars 5-8 of eight. The definition's first half is the one D5 held across the `i` and the
+    // `VI`; the figure opens on that D, still sounding, and carries the two moves.
+    pitches: ['D5', 'C5', 'G4', 'F#4'],
+  },
+  {
+    riff: polyphonicPowerBrassStabCycle,
+    key: 'F minor',
+    bpm: 108,
+    progression: [['i', 1], ['IV', 1], ['VII', 1], ['v', 1]],
+    // The definition's pairs, bottom to top: it wrote the third as `G5, D5`, the same two notes.
+    pitches: ['Ab4+C5', 'D5+Ab5', 'D5+G5', 'Eb5'],
+  },
+]
+
+describe('the eleven resolve to the pitches the definitions asked for (#569)', () => {
+  it('covers every entry but the six that were here before', () => {
+    const covered = FIDELITY.map((r) => r.riff.id).sort()
+    const eleven = RIFFS.filter(
+      (r) => r.reference.kind === 'patch' && r.id !== museRunnerFloatingArrivalLead.id,
+    )
+      .map((r) => r.id)
+      .sort()
+    expect(covered).toEqual(eleven)
+  })
+
+  for (const row of FIDELITY) {
+    it(`${row.riff.id}: ${row.key} at ${String(row.bpm)}, ${row.pitches.join(' ')}`, () => {
+      expect(row.riff.key).toBe(row.key)
+      expect(row.riff.bpm.default).toBe(row.bpm)
+      expect(row.riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual(
+        row.progression.map((p) => [...p]),
+      )
+      const resolved = resolveHook(row.riff.hook, row.riff.key)
+      if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+      // Group by step in authored order, which is bottom to top for every voicing here.
+      const byStep = new Map<number, string[]>()
+      for (const n of resolved.hook.notes) {
+        const at = byStep.get(n.step)
+        if (at === undefined) byStep.set(n.step, [n.note])
+        else at.push(n.note)
+      }
+      const sequence = [...byStep.entries()]
+        .sort((a, b) => a[0] - b[0])
+        .map(([, notes]) => notes.join('+'))
+      expect(sequence).toEqual([...row.pitches])
+      // Bottom to top is a claim about pitch, so it is checked as one.
+      for (const notes of byStep.values()) {
+        const midi = notes.map((name) => resolved.hook.notes.find((n) => n.note === name)?.midi ?? 0)
+        expect([...midi].sort((a, b) => a - b)).toEqual(midi)
+      }
+    })
+  }
+})
