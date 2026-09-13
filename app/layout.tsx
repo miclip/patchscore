@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { Analytics } from '@vercel/analytics/next'
 import { SITE_DESCRIPTION, SITE_NAME, SITE_ORIGIN } from '@/lib/studio/site'
 import type { ReactNode } from 'react'
 import { SiteNav } from '@/components/site-nav'
@@ -61,6 +62,17 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <SiteNav />
         {children}
+        {/*
+          Vercel Web Analytics. Renders nothing and ships no markup off Vercel: the component
+          injects `/_vercel/insights/script.js`, which only exists on a Vercel deployment, so a
+          local `next dev` and a static export both no-op rather than reaching a third party.
+
+          Last, after `children`, because it is not content: a reader with a slow connection gets
+          the guide painted before a measurement script is asked for. It is cookieless and stores
+          nothing on the device, which is why it needs no consent gate and why there is no banner
+          to put in front of §8.
+        */}
+        <Analytics />
       </body>
     </html>
   )
