@@ -67,6 +67,18 @@ import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
  * and two lines that are the top voice of a pad, filed as `lead` because a pad has no grid to
  * riff on (`moog-55-strings-suspension-writing`, `soft-orchestra-slow-changes`).
  *
+ * ## Two entries name the patch their sound is (§5A.5, #585)
+ *
+ * A riff reaches a recipe by role and character, and a recipe may name a factory patch. That
+ * pairing is not the riff's: `thriller-synth-riff` and `blade-runner-blues-lead` reach the same
+ * `lead / bright` recipe on one box, and only one of them is that patch's sound. So the page
+ * prints a patch only where the riff authors `patchAffinities` naming it, and exactly two do:
+ * `blade-runner-blues-lead` names *Muse Runner*, a CS-80 line on a CS-80 lead, and
+ * `muse-runner-floating-arrival-lead` names the patch it is named after. No other entry carries
+ * one, a patch-named reference included: being named after a patch is how a reader finds the
+ * technique (§5A.5) and is not a judgement that the figure is that sound, so it earns no
+ * affinity by itself. `test/riff.test.ts` pins the set at those two ids.
+ *
  * Seven of the seventeen are `lead`, which is under the strict majority `test/riff.test.ts`
  * allows one role, and they are seven different lessons: a line that floats late, a line that
  * marches on the grid, a line in a mode, a line with no overlaps because the patch glides, and
