@@ -1,0 +1,53 @@
+name: codeql
+
+# Static analysis, added because the repo had a critical advisory open and nothing to report it:
+# secret scanning and push protection were on, and Dependabot alerts and code scanning were off.
+# Free on a public repository.
+#
+# This is the half that finds bugs in code we wrote. `.github/dependabot.yml` is the half that
+# finds them in code we depend on, and the two do not overlap — the Next.js RCE that prompted
+# both came from a dependency and CodeQL would never have seen it.
+#
+# The scan is deliberately not part of `verify`. That workflow is the gate, it runs six jobs on
+# every push, and a security scan that can block a merge on a finding nobody has triaged is how
+# a team learns to click past it. This reports; `verify` gates.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # A weekly run is the point of the schedule rather than a belt-and-braces repeat: CodeQL's
+  # queries are updated continuously, so the interesting result is the one that appears on code
+  # that has not changed.
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  analyze:
+    name: analyze javascript-typescript
+    runs-on: ubuntu-latest
+    permissions:
+      # `security-events: write` is what lets the run publish to the Security tab. Without it the
+      # scan passes and reports nowhere, which is the failure this whole file exists to end.
+      security-events: write
+      contents: read
+      actions: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: github/codeql-action/init@v3
+        with:
+          languages: javascript-typescript
+          # `security-and-quality` over the default `security-extended`: this is a small codebase
+          # whose risk is mostly correctness, and the quality queries are the ones with something
+          # to say about it.
+          queries: security-and-quality
+
+      # No build step. `javascript-typescript` is an interpreted-language analysis and CodeQL
+      # reads the source directly; `npm ci` here would add four minutes and change nothing.
+      - uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:javascript-typescript'
