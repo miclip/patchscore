@@ -14,7 +14,7 @@ import type { Riff } from '../core/riff'
  * ## Why two notes are lowered, and why only one of them is the point
  *
  * F major has no `Eb`. The figure plays one twice, both as `alter: -1` on degree 7. Over the
- * `ii` it is a passing tone on the way down from G, and over the `VI7` it is the flat ninth of
+ * `ii` it is a passing tone on the way down from G, and over the `VI` it is the flat ninth of
  * D7, which is the whole reason the turnaround sounds like one. The chord table is what says
  * which is which: the same lowered degree is a colour on one chord and a chord tone on the
  * other.
@@ -75,7 +75,7 @@ export const seventiesElectroPnoRhodesTurnaround: Riff = {
       { degree: 'I', bars: 1 },
       { degree: 'ii', bars: 1 },
       { degree: 'iii', bars: 1 },
-      { degree: 'VI7', bars: 1 },
+      { degree: 'VI', bars: 1 },
     ],
   },
   /**
@@ -97,7 +97,7 @@ export const seventiesElectroPnoRhodesTurnaround: Riff = {
       { step: 29, degree: 7, octave: 0, len: 4, alter: -1 },
       // `iii`: the fifth of the chord, E5, on beat two.
       { step: 37, degree: 7, octave: 0, len: 12 },
-      // `VI7`: the flat ninth, Eb5, on beat three, resolving down to D5 on beat four.
+      // `VI`: the flat ninth, Eb5, on beat three, resolving down to D5 on beat four.
       { step: 57, degree: 7, octave: 0, len: 4, alter: -1 },
       { step: 61, degree: 6, octave: 0, len: 8 },
     ],

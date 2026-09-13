@@ -77,7 +77,7 @@ export const hamamatsuTinesBalladFigure: Riff = {
       { degree: 'I', bars: 1 },
       { degree: 'vi', bars: 1 },
       { degree: 'ii', bars: 1 },
-      { degree: 'Vsus4', bars: 1 },
+      { degree: 'V', bars: 1 },
     ],
   },
   /**
@@ -101,7 +101,7 @@ export const hamamatsuTinesBalladFigure: Riff = {
       // `ii`: C5 on beat two, lifting to D5 on beat four.
       { step: 37, degree: 6, octave: 0, len: 8 },
       { step: 45, degree: 7, octave: 0, len: 4 },
-      // `Vsus4`: the suspended fourth, Eb5, on beat three, held across the bar line.
+      // `V`, suspended: the fourth, Eb5, on beat three, held across the bar line.
       { step: 57, degree: 1, octave: 1, len: 12 },
     ],
   },

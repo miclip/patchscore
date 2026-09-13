@@ -17,14 +17,19 @@ import type { Riff } from '../core/riff'
  * line with entries and resolutions, and that is a `lead` at `soft`. The pad it sits on is the
  * chord table.
  *
- * ## Why the suspensions resolve in the harmony
+ * ## The rule that stays prose, and why
  *
- * The rule the definition wrote was *the third must not appear until the suspension resolves*,
- * and it resolves in the second bar of each two-bar chord. A rule with a *until* in it is not
- * a `ForbiddenDegree`, which holds for the whole of a chord. So the chord is split where the
- * rule changes: `Isus2` for a bar, then `I`; `IVsus2` for a bar, then `IV`. The third is
- * forbidden over the suspended bar as data, and legal over the resolved one, which is exactly
- * what the sentence said. The pad player reads the same split off the table.
+ * The definition's rule was *the third must not appear until the suspension resolves*, and it
+ * resolves in the second bar of each two-bar chord. That is a rule with an *until* in it, and
+ * a `ForbiddenDegree` holds for the whole of a chord: written as data over the `I`, it would
+ * refuse the E that resolves the suspension, which is the note the figure exists to land. A
+ * first version split each chord into a suspended bar and a resolved bar so the rule could be
+ * data over one and not the other; that put labels in the progression the definition did not
+ * write, and #569 keeps progressions to root-only numerals with the extensions in prose, as
+ * Muse Runner does. So the progression is the definition's `I IV vi V` at two bars each, the
+ * withheld third is the technique's fifth paragraph, and the one rule in `constraints` is the
+ * two-beat entry. What the data cannot say, `test/riff.test.ts` asserts on this entry instead:
+ * each resolution lands in the second bar of its chord.
  */
 export const moog55StringsSuspensionWriting: Riff = {
   id: 'moog-55-strings-suspension-writing',
@@ -61,44 +66,30 @@ export const moog55StringsSuspensionWriting: Riff = {
   },
   figureStartsAtBar: 1,
   /**
-   * §5A/#554. The withheld third over each suspended bar, and the two-beat entry, as data.
+   * §5A/#554. The two-beat entry as data. The withheld third is prose, and the header says why.
    */
   constraints: {
-    forbiddenDegrees: [
-      {
-        chord: 'Isus2',
-        degree: 3,
-        reason: 'the third must not sound until the suspension resolves, and it resolves in the second bar',
-      },
-      {
-        chord: 'IVsus2',
-        degree: 6,
-        reason: 'the same rule one chord later: the third of the chord waits for the resolution',
-      },
-    ],
     onsetOffset: {
       minSteps: 8,
       reason: 'the pad moves first and the line arrives after it',
     },
   },
   /**
-   * §5A/§4.1. Each suspended chord is written as its suspended bar and then its resolved bar,
-   * so the rule above can hold for one and not the other. See the header.
+   * §5A/§4.1. The definition's four chords at two bars each. The suspensions and the sixth on
+   * the dominant are extensions, and extensions are prose (#569).
    */
   harmony: {
     cycleBars: 8,
     progression: [
-      { degree: 'Isus2', bars: 1 },
-      { degree: 'I', bars: 1 },
-      { degree: 'IVsus2', bars: 1 },
-      { degree: 'IV', bars: 1 },
+      { degree: 'I', bars: 2 },
+      { degree: 'IV', bars: 2 },
       { degree: 'vi', bars: 2 },
-      { degree: 'V6sus4', bars: 2 },
+      { degree: 'V', bars: 2 },
     ],
   },
   /**
    * Four bars over the two suspensions. `baseOctave: 4` puts `C4` at degree 1, so the line is
-   * the octave above middle C. Each resolution lands on beat three of the resolved bar and
+   * the octave above middle C. Each resolution lands on beat three of its chord's second bar and
    * runs into the next chord, which is the seventh paragraph as data.
    */
   hook: {
@@ -107,13 +98,13 @@ export const moog55StringsSuspensionWriting: Riff = {
     bars: 4,
     baseOctave: 4,
     notes: [
-      // `Isus2`: D5, the suspended second, two beats in.
+      // `I`, suspended: D5, the second, two beats in. E5, the resolution, on beat three of the
+      // second bar, held into the next chord.
       { step: 9, degree: 2, octave: 1, len: 16 },
-      // `I`: E5, the resolution, on beat three of the second bar, held into the next chord.
       { step: 25, degree: 3, octave: 1, len: 16 },
-      // `IVsus2`: G5, the suspended second of the chord, two beats in.
+      // `IV`, suspended: G5, its second, two beats in. A5, the resolution, on beat three of the
+      // second bar, held past the figure into the `vi`.
       { step: 41, degree: 5, octave: 1, len: 16 },
-      // `IV`: A5, the resolution, on beat three, held past the figure into the `vi`.
       { step: 57, degree: 6, octave: 1, len: 12 },
     ],
   },

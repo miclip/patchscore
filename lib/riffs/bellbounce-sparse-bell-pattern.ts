@@ -82,7 +82,7 @@ export const bellbounceSparseBellPattern: Riff = {
       { degree: 'I', bars: 2 },
       { degree: 'vi', bars: 2 },
       { degree: 'IV', bars: 2 },
-      { degree: 'V6sus4', bars: 2 },
+      { degree: 'V', bars: 2 },
     ],
   },
   /**

@@ -840,18 +840,15 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
     breaks: [{ note: { step: 5, degree: 4, octave: 1, len: 4 }, says: 'Bb5 sounds over I' }],
     early: { step: 5, says: 'I is entered at step 1, 0 steps in' },
   },
+  // No forbidden degree: the definition's rule is *not until the suspension resolves*, which a
+  // `ForbiddenDegree` cannot say without refusing the resolution. The entry's own suite below
+  // checks the timing instead.
   {
     riff: moog55StringsSuspensionWriting,
-    rules: [
-      ['Isus2', 3, undefined],
-      ['IVsus2', 6, undefined],
-    ],
+    rules: [],
     onset: 8,
-    breaks: [
-      { note: { step: 9, degree: 3, octave: 1, len: 4 }, says: 'E5 sounds over Isus2' },
-      { note: { step: 41, degree: 6, octave: 1, len: 4 }, says: 'A5 sounds over IVsus2' },
-    ],
-    early: { step: 9, says: 'Isus2 is entered at step 1, 0 steps in' },
+    breaks: [],
+    early: { step: 9, says: 'I is entered at step 1, 0 steps in' },
   },
   {
     riff: detroitFunkAeolianMachineLoop,
@@ -903,16 +900,14 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
   },
   {
     riff: softOrchestraSlowChanges,
-    rules: [['V7sus4', 7, undefined]],
-    breaks: [
-      { note: { step: 41, degree: 7, octave: -1, len: 4 }, says: 'F4 sounds over V7sus4' },
-    ],
+    rules: [['V', 7, undefined]],
+    breaks: [{ note: { step: 41, degree: 7, octave: -1, len: 4 }, says: 'F4 sounds over V' }],
   },
   {
     riff: polyphonicPowerBrassStabCycle,
-    rules: [['IV7', 3, 1]],
+    rules: [['IV', 3, 1]],
     breaks: [
-      { note: { step: 19, degree: 3, octave: 1, len: 4, alter: 1 }, says: 'A5 sounds over IV7' },
+      { note: { step: 19, degree: 3, octave: 1, len: 4, alter: 1 }, says: 'A5 sounds over IV' },
     ],
   },
 ]
@@ -942,7 +937,7 @@ describe('the eleven factory-patch entries keep their rules as data (#569, #554)
     describe(c.riff.id, () => {
       it('declares exactly the rules the table lists, and the page prints each one', () => {
         const declared = c.riff.constraints?.forbiddenDegrees?.map((f) => [f.chord, f.degree, f.alter])
-        expect(declared).toEqual(c.rules.map((r) => [...r]))
+        expect(declared ?? []).toEqual(c.rules.map((r) => [...r]))
         expect(c.riff.constraints?.onsetOffset?.minSteps).toBe(c.onset)
         expect(ruleLines(c.riff)).toHaveLength(c.rules.length + (c.onset === undefined ? 0 : 1))
       })
@@ -1046,7 +1041,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
   it('the ballad figure ends on a suspension held across the bar line', () => {
     const last = hamamatsuTinesBalladFigure.hook.notes.at(-1)
     if (last === undefined) throw new Error('no notes')
-    expect(chordAtStep(hamamatsuTinesBalladFigure, last.step)).toBe('Vsus4')
+    expect(chordAtStep(hamamatsuTinesBalladFigure, last.step)).toBe('V')
     expect(last.step + last.len).toBeGreaterThan(64)
     // And the resolution is prose, because it lands on the next pass's first step: see the entry.
     expect(hamamatsuTinesBalladFigure.technique.some((p) => p.includes('after the bar line'))).toBe(true)
@@ -1056,7 +1051,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     const resolved = resolveHook(seventiesElectroPnoRhodesTurnaround.hook, 'F major')
     if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
     const overDominant = resolved.hook.notes.filter(
-      (n) => chordAtStep(seventiesElectroPnoRhodesTurnaround, n.step) === 'VI7',
+      (n) => chordAtStep(seventiesElectroPnoRhodesTurnaround, n.step) === 'VI',
     )
     expect(overDominant.map((n) => [n.note, n.step])).toEqual([
       ['Eb5', 57],
@@ -1064,14 +1059,34 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     ])
   })
 
-  it('the suspension writing resolves each suspension in the second bar of its chord', () => {
+  it('the suspension writing withholds each third for a bar and resolves in the second', () => {
+    // The rule *not until the suspension resolves* is prose, because a `ForbiddenDegree` over
+    // the chord would refuse the resolution itself. This is that rule, checked by timing: the
+    // third of each chord (E over the `I`, A over the `IV`) first sounds in the chord's second
+    // bar, and the suspension before it is a step below.
     const riff = moog55StringsSuspensionWriting
-    // The resolved chords are bars 2 and 4, and the resolutions are the notes over them.
-    const resolutions = riff.hook.notes.filter((n) => ['I', 'IV'].includes(chordAtStep(riff, n.step) ?? ''))
-    expect(resolutions.map((n) => n.step)).toEqual([25, 57])
-    // Both are steps: a second above the suspension they resolve.
-    const [d, e, g, a] = riff.hook.notes.map((n) => n.degree)
-    expect([e, a]).toEqual([(d ?? 0) + 1, (g ?? 0) + 1])
+    expect(riff.constraints?.forbiddenDegrees).toBeUndefined()
+    expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([
+      ['I', 2],
+      ['IV', 2],
+      ['vi', 2],
+      ['V', 2],
+    ])
+    const [d, e, g, a] = riff.hook.notes
+    if (d === undefined || e === undefined || g === undefined || a === undefined) {
+      throw new Error('four notes expected')
+    }
+    expect([e.degree, a.degree]).toEqual([3, 6])
+    expect([e.degree, a.degree]).toEqual([d.degree + 1, g.degree + 1])
+    for (const third of [e, a]) {
+      const barIntoChord = Math.floor((third.step - 1) / STEPS_PER_BAR) % 2
+      expect(barIntoChord, `step ${String(third.step)}`).toBe(1)
+    }
+    // And nothing sounds either third before its resolution.
+    for (const n of riff.hook.notes) {
+      if (n.step < e.step) expect(n.degree, `step ${String(n.step)}`).not.toBe(3)
+      if (n.step >= e.step && n.step < a.step) expect(n.degree, `step ${String(n.step)}`).not.toBe(6)
+    }
   })
 
   it('the machine loop never strikes on a beat, and enters every bar on the "and" of one', () => {
@@ -1151,7 +1166,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // The F# is the raised seventh and runs past the figure.
     expect(fSharp.alter).toBe(1)
     expect(fSharp.step + fSharp.len).toBeGreaterThan(64)
-    expect(chordAtStep(riff, g.step)).toBe('V7sus4')
+    expect(chordAtStep(riff, g.step)).toBe('V')
   })
 
   it('the brass cycle stabs off the beat for three bars and lands the fourth on the downbeat', () => {

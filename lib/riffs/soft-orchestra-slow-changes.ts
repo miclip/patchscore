@@ -70,7 +70,7 @@ export const softOrchestraSlowChanges: Riff = {
   constraints: {
     forbiddenDegrees: [
       {
-        chord: 'V7sus4',
+        chord: 'V',
         degree: 7,
         reason: 'the natural seventh is a minor third against the raised one the suspension resolves to',
       },
@@ -82,11 +82,11 @@ export const softOrchestraSlowChanges: Riff = {
       { degree: 'i', bars: 2 },
       { degree: 'VI', bars: 2 },
       { degree: 'iv', bars: 2 },
-      { degree: 'V7sus4', bars: 2 },
+      { degree: 'V', bars: 2 },
     ],
   },
   /**
-   * Four bars: two over `iv`, two over `V7sus4`. `baseOctave: 4` puts `G4` at degree 1, so the
+   * Four bars: two over `iv`, two over `V`. `baseOctave: 4` puts `G4` at degree 1, so the
    * held D is `D5`. The C runs into the suspended chord and the F# runs past the figure, which
    * is the last paragraph as data.
    */
@@ -97,10 +97,10 @@ export const softOrchestraSlowChanges: Riff = {
     baseOctave: 4,
     notes: [
       // `iv` runs bars 5-6, figure steps 1-32. D5 from the first step, tied from the chord
-      // before; C5 on beat three of bar 6, held into the `V7sus4`.
+      // before; C5 on beat three of bar 6, held into the `V`.
       { step: 1, degree: 5, octave: 0, len: 24 },
       { step: 25, degree: 4, octave: 0, len: 16 },
-      // `V7sus4` runs bars 7-8, figure steps 33-64. G4 two beats in; F#4 on beat three of the
+      // `V` runs bars 7-8, figure steps 33-64. G4 two beats in; F#4 on beat three of the
       // last bar, held past the figure.
       { step: 41, degree: 1, octave: 0, len: 16 },
       { step: 57, degree: 7, octave: -1, len: 12, alter: 1 },

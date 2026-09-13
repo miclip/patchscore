@@ -11,7 +11,7 @@ import type { Riff } from '../core/riff'
  * ## Two notes at a time, over a chord table
  *
  * Like `detroit-funk-aeolian-machine-loop`, this stab plays the top of the chord and leaves the
- * root to the bass: a third and a fifth over the `i`, a third and a seventh over the `IV7` and
+ * root to the bass: a third and a fifth over the `i`, a third and a seventh over the `IV` and
  * the `VII`, a third alone over the `v`. Two notes at one step are a voicing (§4.1), and
  * `polyphony: 2` is its width. The chord table says which chord each pair is the top of.
  *
@@ -26,7 +26,7 @@ import type { Riff } from '../core/riff'
  *
  * F minor's sixth is `Db`. The third of Bb7 and the seventh of Ebmaj7 are both `D` natural,
  * `alter: 1` on degree 6, and the chord table is what says why the same raised degree is a
- * chord tone on two different chords. Over the `IV7` the *third* of the key raised, `A`
+ * chord tone on two different chords. Over the `IV` the *third* of the key raised, `A`
  * natural, is the major seventh against the dominant seventh, and is forbidden as data.
  */
 export const polyphonicPowerBrassStabCycle: Riff = {
@@ -68,7 +68,7 @@ export const polyphonicPowerBrassStabCycle: Riff = {
   constraints: {
     forbiddenDegrees: [
       {
-        chord: 'IV7',
+        chord: 'IV',
         degree: 3,
         alter: 1,
         reason: 'the major seventh cancels the dominant seventh driving the move to Eb',
@@ -79,7 +79,7 @@ export const polyphonicPowerBrassStabCycle: Riff = {
     cycleBars: 4,
     progression: [
       { degree: 'i', bars: 1 },
-      { degree: 'IV7', bars: 1 },
+      { degree: 'IV', bars: 1 },
       { degree: 'VII', bars: 1 },
       { degree: 'v', bars: 1 },
     ],
@@ -98,7 +98,7 @@ export const polyphonicPowerBrassStabCycle: Riff = {
       // `i`: Ab4 and C5, from the "and" of one.
       { step: 3, degree: 3, octave: 0, len: 14 },
       { step: 3, degree: 5, octave: 0, len: 14 },
-      // `IV7`: D5 and Ab5, the third and seventh of Bb7. The D is the sixth of the key raised.
+      // `IV`: D5 and Ab5, the third and seventh of Bb7. The D is the sixth of the key raised.
       { step: 19, degree: 6, octave: 0, len: 14, alter: 1 },
       { step: 19, degree: 3, octave: 1, len: 14 },
       // `VII`: D5 and G5, the seventh and third of Ebmaj7.

@@ -18,7 +18,7 @@ Keep the stabs short and the release fast. The brass should stop before the next
 
 ## The rules
 
-- Over IV7, never the raised 3rd — the major seventh cancels the dominant seventh driving the move to Eb.
+- Over IV, never the raised 3rd — the major seventh cancels the dominant seventh driving the move to Eb.
 
 ## The chords
 
@@ -27,7 +27,7 @@ Keep the stabs short and the release fast. The brass should stop before the next
 | Degree | Bars | Under the figure |
 | --- | ---: | :---: |
 | i | 1–1 | ● |
-| IV7 | 2–2 | ● |
+| IV | 2–2 | ● |
 | VII | 3–3 | ● |
 | v | 4–4 | ● |
 
