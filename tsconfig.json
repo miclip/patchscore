@@ -27,7 +27,9 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
 
-    "baseUrl": ".",
+    // No `baseUrl`. TypeScript 7 removed it (TS5102), and since 4.4 a relative `paths` entry
+    // resolves against the directory holding this file, which is the same answer `"."` gave.
+    // Nothing else read it: it appeared once in the repo, here.
     "paths": {
       "@/*": ["./*"]
     }
