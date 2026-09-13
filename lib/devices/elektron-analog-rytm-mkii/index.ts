@@ -57,16 +57,24 @@ import { ANALOG_RYTM_MKII_PANEL } from './panel'
  *
  * This is the Digitakt II's situation on a box twice as deep, and it gets the Digitakt II's
  * answer: **the manifest is enum-dominated, and every uncited numeric is absent rather than
- * given an invented `0-127`.** Reading SY RAW's `LEV (0–127)` onto the twenty-two other machines
- * that also have a `LEV` would be exactly the invention `DESIGN.md` §3.1 refuses — plausible,
- * probably even right, and not something any page says.
+ * given an invented `0-127`** — with one exception, made on purpose and recorded at `dec()`.
+ * Reading SY RAW's `LEV (0–127)` onto the twenty-two other machines that also have a `LEV` would
+ * be exactly the invention `DESIGN.md` §3.1 refuses — plausible, probably even right, and not
+ * something any page says.
+ *
+ * **The exception is the AMP page's `DEC`** (#547). It is the stage that ends every sound on the
+ * box, p.79 ranges `HLD` beside it and gives it nothing, and a part authored without it is one a
+ * reader cannot reproduce. It is carried on every recipe with a range that says `verified: false`
+ * and a point that resolves provisional, which is what the model has for a value nobody checked,
+ * as against a silent hole. The trade, and why it is the only one, is in `dec()`'s JSDoc.
  *
  * **What that costs is mood, and it is worth naming.** A device declines an axis by having no
  * param that declares it (§6), and the axes this box can declare are the ones with a printed
  * range behind them: `density` and `space` from the AMP page's `HLD` and `PAN`, which every drum
  * track has (p.79); `darkness` from `TUN` on the recipes that load a sample (p.78); and `grit`
  * from `FMA` on the one machine whose amount the manual ranged (p.100). `OVR`, the overdrive
- * that would carry `grit` across the whole box, is named on p.79 and ranged nowhere.
+ * that would carry `grit` across the whole box, is named on p.79 and ranged nowhere, and `DEC`
+ * is deaf to `density` for the same reason (§3.2).
  *
  * ## Twelve tracks, eight voices, and the coupling this model cannot express (§6/#57)
  *
@@ -389,6 +397,52 @@ function hold(v: number, amount = -18): AuthoredParam {
   })
 }
 
+/**
+ * AMP `DEC`, p.79: *"sets the length of the decay phase of the amp envelope."* That is the whole
+ * sentence, and it is the one stage on the page the reader cannot do without: `HLD` says how
+ * long the sound stays up and `DEC` is what ends it. A part authored as `HLD 12` alone leaves the
+ * decay wherever the last Sound put it, which is #547's complaint in one line.
+ *
+ * **The range is unverified, explicitly, and that is the decision rather than an oversight.** The
+ * manual prints no scale for it, and the absence was checked by rendering the pages rather than
+ * grepping a text dump: p.79 (`HLD` ranged, `DEC` not, on the same page), Appendix A's parameter
+ * list, and Appendix C's AMP table on p.87, which gives `Amp Decay Time` a CC (80) and an NRPN
+ * (1/26) and no value column. The same shape holds on the other three boxes #547 names, checked
+ * the same way — Digitakt II p.56 and B.5 on p.110, Digitone II p.61 and C.5 on p.113, Octatrack
+ * MKII p.58 and the CC table on p.140: each describes its stage times in prose, and where a value
+ * appears at all it is a controller number. A 7-bit CC implies 128 steps and is still not a
+ * printed scale, which is `CLAUDE.md`'s trap about a range that looks cited and is not.
+ *
+ * So `0-127` is carried as `verified: false` on the range and the point resolves provisional. What
+ * that costs is settled by §3.2's legality gate: **mood may not move a value inside bounds nobody
+ * checked**, so `DEC` carries no `mood` and the box's `density` stays on `HLD`, which p.79 does
+ * range. Declaring an offset here anyway would be the audit's `mood-inert` finding twenty-one
+ * times over, on a library whose count is zero — the RD-9 and the DFAM both hold that line for
+ * their unranged knobs, and it holds here. Measured before deciding: `slow-noir` is the only
+ * direction that opens off-centre on `density` (at 12), and on this box that lands on `HLD`
+ * exactly as it did before, so no guide loses a move it had.
+ *
+ * The other way — leaving `DEC` unauthored — was tried by the first author of this file and is
+ * what the issue is about. A reproducible decay the page says nobody checked beats a silent hole
+ * the reader fills from whatever Sound was loaded last. The day somebody with the box reads the
+ * two ends off its screen, this becomes an `observed` range and the `mood` question reopens on
+ * its own terms.
+ *
+ * Named `DEC` because that is the ink on the AMP page, exactly as `HLD` is; most machines print a
+ * `DEC` of their own on the SRC page (the module JSDoc has the two that invert), so the note
+ * says which page.
+ */
+function dec(v: number): AuthoredParam {
+  return {
+    kind: 'numeric',
+    name: 'DEC',
+    value: v,
+    range: { min: 0, max: 127, verified: false },
+    verified: false,
+    note: 'The AMP page, beside HLD; the SRC page prints a DEC of its own on most machines',
+  }
+}
+
 /** AMP `PAN`, p.79: bipolar, *"-64 sending all sound to the left channel and +63 … to the right"*. */
 function pan(v: number, amount = 0): AuthoredParam {
   return amount === 0
@@ -491,6 +545,7 @@ const recipes: Recipe[] = [
       wav3('sine'),
       filter('2-pole Lowpass'),
       hold(12),
+      dec(40),
       pan(0),
     ],
     articulation: [
@@ -509,6 +564,7 @@ const recipes: Recipe[] = [
       machine('bd', 'BD FM'),
       filter('1-pole Lowpass'),
       hold(18),
+      dec(46),
       pan(0),
     ],
     articulation: [art('downbeat', { velocity: 124, accent: true }, 'accent')],
@@ -530,6 +586,7 @@ const recipes: Recipe[] = [
       machine('bd', 'SY DUAL VCO'),
       filter('2-pole Lowpass'),
       hold(96, -32),
+      dec(64),
       pan(0),
       lfoMode('FREE'),
     ],
@@ -548,6 +605,7 @@ const recipes: Recipe[] = [
       machine('sd', 'SD HARD'),
       filter('Bandpass'),
       hold(14),
+      dec(36),
       pan(0),
     ],
     articulation: [
@@ -572,6 +630,7 @@ const recipes: Recipe[] = [
       num('FMA', 78, { min: 0, max: 127 }, 100, { mood: [{ axis: 'grit', amount: 24 }] }),
       filter('1-pole Highpass'),
       hold(10),
+      dec(30),
       pan(0),
     ],
     articulation: [
@@ -592,6 +651,7 @@ const recipes: Recipe[] = [
       machine('rs', 'RS CLASSIC'),
       filter('Bandpass'),
       hold(6),
+      dec(18),
       pan(-22, -10),
     ],
     articulation: [art('offbeat', { velocity: 96, 'micro-timing': -2 }, 'micro-timing')],
@@ -607,6 +667,7 @@ const recipes: Recipe[] = [
       machine('rs', 'RS HARD'),
       filter('Peak'),
       hold(4),
+      dec(14),
       pan(18, 12),
     ],
     articulation: [art('ghost', { velocity: 38, probability: 50 }, 'trig-params')],
@@ -627,6 +688,7 @@ const recipes: Recipe[] = [
       machine('cp', 'CP CLASSIC'),
       filter('1-pole Highpass'),
       hold(20),
+      dec(34),
       pan(0),
     ],
     articulation: [art('backbeat', { velocity: 112, accent: true }, 'accent')],
@@ -648,6 +710,7 @@ const recipes: Recipe[] = [
       machine('bt', 'BT CLASSIC'),
       filter('2-pole Lowpass'),
       hold(48, -26),
+      dec(56),
       pan(0),
     ],
     articulation: [art('fill', { velocity: 110 }, 'trig-params')],
@@ -665,6 +728,7 @@ const recipes: Recipe[] = [
       machine('lt', 'XT CLASSIC'),
       filter('2-pole Lowpass'),
       hold(40, -22),
+      dec(52),
       pan(-30, -14),
     ],
     articulation: [art('fill', { velocity: 96 }, 'trig-params')],
@@ -680,6 +744,7 @@ const recipes: Recipe[] = [
       machine('mt', 'XT CLASSIC'),
       filter('Bandpass'),
       hold(28, -18),
+      dec(44),
       pan(0),
     ],
     articulation: [art('fill', { velocity: 114, accent: true }, 'accent')],
@@ -700,6 +765,7 @@ const recipes: Recipe[] = [
       machine('ht', 'XT CLASSIC'),
       filter('1-pole Highpass'),
       hold(20, -14),
+      dec(38),
       pan(30, 14),
     ],
     articulation: [art('fill', { velocity: 118 }, 'trig-params')],
@@ -717,6 +783,7 @@ const recipes: Recipe[] = [
       machine('ch', 'CH CLASSIC'),
       filter('2-pole Highpass'),
       hold(3),
+      dec(12),
       pan(12, 10),
     ],
     articulation: [art('offbeat', { velocity: 88, 'micro-timing': -3 }, 'micro-timing')],
@@ -737,6 +804,7 @@ const recipes: Recipe[] = [
       machine('ch', 'CH METALLIC'),
       filter('Bandstop'),
       hold(2),
+      dec(10),
       pan(-12, 10),
     ],
     articulation: [
@@ -760,6 +828,7 @@ const recipes: Recipe[] = [
       machine('oh', 'OH CLASSIC'),
       filter('2-pole Highpass'),
       hold(56, -30),
+      dec(60),
       pan(0),
     ],
     articulation: [art('offbeat', { velocity: 104, 'note-length': '1/8' }, 'trig-params')],
@@ -784,6 +853,7 @@ const recipes: Recipe[] = [
       machine('cy', 'CY RIDE'),
       filter('1-pole Highpass'),
       hold(72, -34),
+      dec(70),
       pan(26, 14),
     ],
     articulation: [art('offbeat', { velocity: 84 }, 'trig-params')],
@@ -799,6 +869,7 @@ const recipes: Recipe[] = [
       machine('cy', 'CY METALLIC'),
       filter('Bandstop'),
       hold(44, -24),
+      dec(48),
       pan(-26, 14),
     ],
     articulation: [art('accent', { velocity: 116, accent: true }, 'accent')],
@@ -814,6 +885,7 @@ const recipes: Recipe[] = [
       machine('cb', 'CB METALLIC'),
       filter('Peak'),
       hold(16),
+      dec(28),
       pan(34, 12),
     ],
     articulation: [art('offbeat', { velocity: 98, 'micro-timing': 2 }, 'micro-timing')],
@@ -835,6 +907,7 @@ const recipes: Recipe[] = [
       machine('cb', 'UT NOISE'),
       filter('Bandpass'),
       hold(88, -36),
+      dec(72),
       pan(0),
       lfoMode('FREE'),
       lfoWave('Triangle'),
@@ -876,6 +949,7 @@ const recipes: Recipe[] = [
       loop('OFF'),
       filter('Bandpass'),
       hold(22),
+      dec(40),
       pan(0),
     ],
     articulation: [art('offbeat', { velocity: 106 }, 'trig-params')],
@@ -928,6 +1002,7 @@ const recipes: Recipe[] = [
       loop('ON'),
       filter('2-pole Lowpass'),
       hold(110, -40),
+      dec(96),
       pan(0),
       lfoMode('FREE'),
       lfoWave('Sine'),

@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { DeviceSchema, expand, type AuthoredParam } from '../lib/core/index'
+import {
+  DeviceSchema,
+  expand,
+  moodState,
+  resolveParams,
+  type AuthoredParam,
+} from '../lib/core/index'
 import {
   ARTICULABLE_PER_STEP,
   MACHINE_PAGES,
   device,
 } from '../lib/devices/elektron-analog-rytm-mkii/index'
 import { ANALOG_RYTM_MKII_PANEL_SPAN_MM } from '../lib/devices/elektron-analog-rytm-mkii/panel'
+import { auditDevice } from '../scripts/audit-verified'
 
 /**
  * The Analog Rytm MKII is the third Elektron box in the library and the first one whose *voice*
@@ -17,7 +24,8 @@ import { ANALOG_RYTM_MKII_PANEL_SPAN_MM } from '../lib/devices/elektron-analog-r
  *
  *  1. the MACHINE is carried on every recipe, and only ever a machine that track can load;
  *  2. twelve tracks over eight voice circuits, modelled as twelve and crowded at eight;
- *  3. no numeric range is authored that the manual does not print;
+ *  3. no numeric range is authored that the manual does not print, with the AMP page's `DEC` as
+ *     the one deliberate exception (#547) — unverified, mood-free, and on every recipe;
  *  4. the panel's aspect check, which is what picks 385 x 225 out of a three-number spec line.
  */
 describe('Analog Rytm MKII manifest', () => {
@@ -294,14 +302,23 @@ describe('Analog Rytm MKII manifest', () => {
   // 3. No invented ranges (§3.1)
   // -------------------------------------------------------------------------
 
-  it('authors no numeric whose range this manual does not print', () => {
+  it('authors no numeric whose range this manual does not print, except DEC', () => {
     // Appendix D prints exactly two numeric ranges across thirty-four machines — SD FM's FMA and
     // SY RAW's LEV — and Appendix A six more. Twenty-two other machines also have a `LEV`, and
     // reading SY RAW's onto them is the invention this asserts against. Every range here is cited,
     // so a numeric added without a page fails rather than looking like the rest.
+    //
+    // #547 made one exception and this is where it is held to being one: the AMP page's `DEC`,
+    // the stage that ends the sound, which p.79 describes and does not range. It is authored with
+    // a range that says so — `verified: false`, not omitted, so the claim is explicit rather than
+    // inherited — and nothing else on the box may follow it without landing here.
     const numerics = device.recipes.flatMap((r) => r.params.filter((p) => p.kind === 'numeric'))
     expect(numerics.length).toBeGreaterThan(0)
     for (const param of numerics) {
+      if (param.name === 'DEC') {
+        expect(param.range, 'DEC range').toEqual({ min: 0, max: 127, verified: false })
+        continue
+      }
       expect(param.range.verified, `${param.name} range`).not.toBe(false)
       expect(param.range.verified, `${param.name} range`).toBeDefined()
     }
@@ -310,6 +327,54 @@ describe('Analog Rytm MKII manifest', () => {
     const fma = numerics.find((p) => p.name === 'FMA')
     expect(fma?.range).toMatchObject({ min: 0, max: 127 })
     expect(fma?.mood).toEqual([{ axis: 'grit', amount: 24 }])
+  })
+
+  it('carries DEC on every recipe, provisional on both claims and deaf to density (#547)', () => {
+    // The reader-facing half: a part that names `HLD` and no `DEC` has no end, so every recipe
+    // carries both, `DEC` immediately after `HLD` in the order the AMP page prints them (p.79).
+    for (const recipe of device.recipes) {
+      const names = recipe.params.map((p) => p.name)
+      const hld = names.indexOf('HLD')
+      expect(hld, `${recipe.id} HLD`).toBeGreaterThanOrEqual(0)
+      expect(names[hld + 1], `${recipe.id} DEC after HLD`).toBe('DEC')
+      expect(names.filter((n) => n === 'DEC'), `${recipe.id} one DEC`).toHaveLength(1)
+    }
+
+    // The audit-facing half. §3.2's legality gate makes an unverified range deaf to mood, so a
+    // `density` offset on `DEC` would be the audit's `mood-inert` finding on all twenty-one — the
+    // RD-9 and the DFAM keep that count at zero for their unranged knobs, and so does this box.
+    // Density stays on `HLD`, whose range p.79 prints, so the axis is still answered.
+    const counts = auditDevice(device).counts
+    expect(counts.unverifiedRanges).toBe(device.recipes.length)
+    expect(counts.moodInert).toBe(0)
+    for (const recipe of device.recipes) {
+      const dec = recipe.params.find((p) => p.name === 'DEC')
+      expect(dec?.kind).toBe('numeric')
+      if (dec?.kind !== 'numeric') continue
+      expect(dec.mood, `${recipe.id} DEC mood`).toBeUndefined()
+      expect(dec.value, `${recipe.id} DEC in range`).toBeGreaterThanOrEqual(0)
+      expect(dec.value, `${recipe.id} DEC in range`).toBeLessThanOrEqual(127)
+      const hld = recipe.params.find((p) => p.name === 'HLD')
+      expect(hld?.kind === 'numeric' ? hld.mood : undefined, `${recipe.id} HLD density`).toEqual([
+        { axis: 'density', amount: expect.any(Number) },
+      ])
+    }
+  })
+
+  it('resolves DEC provisional and leaves it where it was authored under full density', () => {
+    // What the two claims come to in a guide: the value the reader dials is the authored one, it
+    // wears the provisional badge, and turning density to either end moves `HLD` and not `DEC`.
+    const kick = device.recipes.find((r) => r.id === 'rytm-kick-hard')
+    expect(kick).toBeDefined()
+    if (kick === undefined) return
+    for (const density of [0, 100]) {
+      const resolved = resolveParams(kick, moodState({ density }))
+      const dec = resolved.find((p) => p.name === 'DEC')
+      const hld = resolved.find((p) => p.name === 'HLD')
+      expect(dec).toMatchObject({ value: 40, provenance: { state: 'provisional' } })
+      expect(dec?.range).toEqual({ min: 0, max: 127, verified: false })
+      expect(hld?.value, `HLD at density ${String(density)}`).not.toBe(12)
+    }
   })
 
   // -------------------------------------------------------------------------
