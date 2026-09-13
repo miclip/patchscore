@@ -352,6 +352,26 @@ describe('the riff library (§5A)', () => {
   })
 
   /**
+   * The other half of that exemption, and the reason it is safe to make.
+   *
+   * The scan above skips `reference.name` where it sits in the title, so a reference that *is* a
+   * device name would carry one onto the page through the one string nothing reads. `Muse Runner`
+   * is a preset the manufacturer named and passes; a bare `Muse` is the box, and an entry titled
+   * *The Muse lead* would put it in front of a reader with the scan looking the other way.
+   *
+   * Containment is what the exemption is for, so this asks for equality rather than substring:
+   * the reference may carry a box's name inside a longer preset name, and may not be one.
+   */
+  it('no reference is a device by itself (invariant 3)', () => {
+    const names = DEVICES.flatMap((d) => [d.id, d.name])
+    for (const entry of RIFFS) {
+      for (const name of names) {
+        expect(entry.reference.name, `${entry.id} is named for a box`).not.toBe(name)
+      }
+    }
+  })
+
+  /**
    * The rule the Blue Monday entry exists to demonstrate: **the reference is how a reader finds
    * the technique, and the notes are ours.**
    *

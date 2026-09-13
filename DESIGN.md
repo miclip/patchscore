@@ -4382,7 +4382,12 @@ A `patch` reference is not a device (invariant 3). It names the preset, never th
 it, and the resolver reads neither. A manufacturer may put the box's own name inside a preset's,
 and *Muse Runner* does, so `test/riff.test.ts`'s device scan exempts `reference.name` where it
 sits in the title and scans everything else: the rest of the title and every paragraph of
-technique. A box named in prose is still refused. Nothing in this section puts a device id or a
+technique. A box named in prose is still refused.
+
+**A reference may carry a box's name and may not be one.** The exemption is the one string on the
+page nothing scans, so a bare *Muse* as a reference would put the box in a title with the scan
+looking the other way. Containment is what the exemption is for and equality is what it is not, so
+a second check asks that no `reference.name` equals a device's id or name outright. Nothing in this section puts a device id or a
 device name in a field on a riff. It is also a different fact from `Recipe.factoryPatch` (#553):
 that says a *recipe's* parameters reach a sound a box also ships, and this says what a *riff* is
 found by. One is a claim about settings and the other is a name to search, and a riff named for a
