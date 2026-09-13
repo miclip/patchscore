@@ -303,6 +303,8 @@ One setting for the whole song — set it once, not once per part below.
 
 #### Timbre 2 — `bass-mid`: Mono, overload up and the ring modulator sitting under the note
 
+Factory patch — the box ships **3 Osc Bass Love**, which arrives here already. The settings below build the same sound from scratch.
+
 - **● VOICE CONTROL**
   - **UNISON** `OFF`
     - ↳ note: Stacks every unused voice onto the first note held, so the timbre plays one note at a time
