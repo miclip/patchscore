@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
 import {
+  CHARACTERS,
+  characterDistanceSq,
   deadArticulationSlots,
+  expandAll,
+  moodState,
   reachableSlots,
   resolve,
+  resolveCharacter,
   unpatternedArticulation,
   unrequestedRecipes,
+  type Character,
   type Device,
   type Recipe,
+  type Template,
 } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { auditDevice, formatAudit } from '../scripts/audit-verified'
@@ -772,6 +779,323 @@ describe('#57 Industrial Techno asks for a dark sweep, and the boxes that wrote 
     for (const device of DEVICES) {
       for (const seed of [1, 2, 3, 4]) {
         expect(others(techno, device, seed), `${device.id} seed ${seed}`).toEqual(others(without, device, seed))
+      }
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #538 — the eight pairs that had never been decided, declined with the evidence
+// ---------------------------------------------------------------------------
+
+/**
+ * #538's ledger stands at 23 pairs / 54 recipes. Fifteen of those carry a written decision in
+ * #560 or #562; these eight carried none anywhere in the repository, only a row in a pull
+ * request body that reasoned about them without resolving anything. This block is the decision
+ * for all eight, and every claim in it is measured: each authoring box solo, under every
+ * direction that requests the role, on seeds 1-4, with the outcome pinned — the exact sibling
+ * that wins the part where the part lands, and the higher-ranked request holding the voice
+ * where it does not.
+ *
+ * **All eight are declined, and no template or recipe changes.** The verdict was the likely one
+ * from the arithmetic — every recipe is on a box that expands to one assignable — and the value
+ * is in the reasons, which differ:
+ *
+ *   - *Geometry.* The box has one voice. Where the role is ranked below a sub, kick, pad,
+ *     bass-mid or acid request, that request takes the voice first and the role is a
+ *     `no-room/contended` gap whatever character it asked for. Where the role *is* ranked first,
+ *     the box authors the requested character exactly, and §3.5 has nothing to substitute for.
+ *   - *Not rescued by §3.5.* Substitution reaches a pair only when the request is within sqrt(2)
+ *     of it **and** nothing nearer is on the box **and** the voice is free. For every one of the
+ *     eight, at least one of those fails on every direction, and which one is said per pair.
+ *   - *Not rescued by the mood knobs either, with one exception worth stating.* `resolveCharacter`
+ *     moves a request along tone and grit and never force, so no knob can make any direction ask
+ *     for `hard` or `soft`: six of the eight are unreachable by construction. `noise / dark` is
+ *     knob-reachable as a request and still loses the voice. **`bass-mid / clean` is reached** —
+ *     grit at 0 re-pins Lydian House's and Relay's dark p1 bass to `clean`, and both boxes'
+ *     clean recipes are selected. It stays on the ledger because the ledger is measured neutral,
+ *     and it is the one of the eight that is *retained* rather than recommended for deletion:
+ *     the same shape #562 found for `acid / dirty`.
+ *   - *Absent direction versus geometry.* Three pairs describe a part a direction could plausibly
+ *     want (`lead / soft`, `sub / soft`, `noise / dark`) and would still not land on the box that
+ *     wrote it, because the box's voice is spent above the role. That is a content finding for
+ *     #57, recorded as such, and not a reason to bend any direction that exists.
+ *
+ * Where a recipe has no musical owner the record recommends deletion **later**: nothing is
+ * deleted here, since that removes cited work and is the operator's call, and the audit's
+ * dead-recipe line keeps them visible until it is made.
+ */
+describe('#538 the eight pairs no decision had been written for, declined with the evidence', () => {
+  /** The pairs and the recipes behind them, exactly as the ledger carries them. */
+  const EIGHT: Record<string, readonly string[]> = {
+    'bass-mid / clean': ['minitaur-bass-mid-clean', 'sub37-bass-mid-clean'],
+    'bass-mid / soft': ['sub37-bass-mid-soft'],
+    'lead / soft': ['mf-lead-soft', 'subh-lead-soft'],
+    'noise / dark': ['cascadia-noise-dark'],
+    'noise / hard': ['mf-noise-hard'],
+    'pad / hard': ['mxd-pad-hard'],
+    'sub / hard': ['minitaur-sub-hard'],
+    'sub / soft': ['minitaur-sub-soft'],
+  }
+
+  const SEEDS = [1, 2, 3, 4]
+
+  /** Every recipe in the library authored on this pair, as `device:recipe`. */
+  const authoring = (pair: string) => {
+    const [role, character] = pair.split(' / ')
+    return DEVICES.flatMap((d) =>
+      d.recipes.filter((r) => r.role === role && r.character === character).map((r) => `${d.id}:${r.id}`),
+    ).sort()
+  }
+
+  const template = (id: string): Template => {
+    const found = templateById(id)
+    if (found === undefined) throw new Error(`${id} missing from the templates`)
+    return found
+  }
+
+  /**
+   * What one request gets on one box solo, on every seed, with the mood neutral. `landed:` names
+   * the recipe that took the part; `held:` names the request holding the voice when it did not.
+   * Asserted seed by seed rather than once, so a tie the seed permutes cannot hide a miss.
+   */
+  const outcome = (deviceId: string, templateId: string, requestId: string, mood?: ReturnType<typeof moodState>) => {
+    const t = template(templateId)
+    const seen = new Set<string>()
+    for (const seed of SEEDS) {
+      const { assignments, shortfalls } = resolve({ devices: [deviceById(deviceId)], template: t, mood, seed })
+      const a = assignments.find((x) => x.requestId === requestId)
+      if (a !== undefined) {
+        seen.add(`landed:${a.recipe.id}`)
+        continue
+      }
+      const gap = shortfalls.find((x) => x.requestId === requestId)
+      if (gap === undefined) throw new Error(`${templateId}/${requestId} neither assigned nor a shortfall on ${deviceId}`)
+      const because = gap.reason === 'no-room' ? `/${gap.because}` : ''
+      const held = assignments.map((x) => x.requestId).sort().join('+')
+      seen.add(`${gap.reason}${because} held:${held}`)
+    }
+    if (seen.size !== 1) throw new Error(`${deviceId} ${templateId}/${requestId} varies by seed: ${[...seen].join(' | ')}`)
+    return [...seen][0]
+  }
+
+  it('pins the eight pairs, the ten recipes behind them, and that every one is on a one-assignable box', () => {
+    for (const [pair, recipes] of Object.entries(EIGHT)) {
+      expect(authoring(pair), pair).toEqual(
+        recipes.map((id) => `${DEVICES.find((d) => d.recipes.some((r) => r.id === id))?.id}:${id}`).sort(),
+      )
+    }
+    expect(Object.values(EIGHT).flat()).toHaveLength(10)
+    // Six boxes, and each expands to exactly one assignable. The nominal polyphony varies —
+    // Minitaur and Cascadia 1, Subsequent 37 2, MicroFreak and minilogue xd 4, Subharmonicon
+    // 6 — and none of it matters to the question: a stack of four notes on the minilogue xd
+    // is still one resolver voice, so a pad on it and a sub on it are the same voice asked for
+    // twice, and the higher-ranked request gets it.
+    const boxes = [
+      ...new Set(Object.keys(EIGHT).flatMap((pair) => authoring(pair).map((s) => s.slice(0, s.indexOf(':'))))),
+    ].sort()
+    expect(boxes).toEqual([
+      'arturia-microfreak',
+      'intellijel-cascadia',
+      'korg-minilogue-xd',
+      'moog-minitaur',
+      'moog-subharmonicon',
+      'moog-subsequent-37',
+    ])
+    for (const id of boxes) expect(expandAll([deviceById(id)]), id).toHaveLength(1)
+  })
+
+  it('leaves all eight on the never-selected ledger, and no direction asks for any of them', () => {
+    const { selected } = selectedPairs()
+    for (const pair of Object.keys(EIGHT)) expect(selected.has(pair), pair).toBe(false)
+    const asked = new Set(TEMPLATES.flatMap((t) => t.roles.map((r) => `${r.role} / ${r.character}`)))
+    for (const pair of Object.keys(EIGHT)) expect(asked.has(pair), pair).toBe(false)
+  })
+
+  it('`bass-mid / clean` and `bass-mid / soft`: the bass lands only at p1, and then the dark sibling wins exactly', () => {
+    // Five directions ask for a bass-mid. The two that rank it first get it, as `dark`, and
+    // both boxes author a dark bass — so the exact answer wins and neither `clean` (sqrt(2)
+    // from `dark`) nor `soft` (sqrt(2) from everything) is consulted. The three that rank it
+    // second lose the voice to the sub at p1, except Major-Key Electro on the Subsequent 37,
+    // which has no sub request: there the bass lands, as the `dirty` the box also authors. On
+    // the Minitaur the same request loses to the kick.
+    for (const box of ['moog-minitaur', 'moog-subsequent-37']) {
+      const prefix = box === 'moog-minitaur' ? 'minitaur' : 'sub37'
+      expect(outcome(box, 'lydian-house', 'r-bass-mid')).toBe(`landed:${prefix}-bass-mid-dark`)
+      expect(outcome(box, 'relay', 'r-bass-mid')).toBe(`landed:${prefix}-bass-mid-dark`)
+      expect(outcome(box, 'ambient-dub', 'r-bass-mid')).toBe('no-room/contended held:r-sub')
+      expect(outcome(box, 'industrial-techno', 'r-bass-mid')).toBe('no-room/contended held:r-sub')
+    }
+    expect(outcome('moog-subsequent-37', 'major-key-electro', 'r-bass-mid')).toBe('landed:sub37-bass-mid-dirty')
+    expect(outcome('moog-minitaur', 'major-key-electro', 'r-bass-mid')).toBe('no-room/contended held:r-kick')
+    // The ranks and characters the reasoning rests on, pinned so a direction moving its bass
+    // shows up here rather than silently changing which sentence above is true.
+    const bass = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'bass-mid').map((r) => `${t.id}:${r.character}:p${String(r.priority)}`),
+    )
+    expect(bass.sort()).toEqual([
+      'ambient-dub:dark:p2',
+      'industrial-techno:dirty:p2',
+      'lydian-house:dark:p1',
+      'major-key-electro:dirty:p2',
+      'relay:dark:p1',
+    ])
+    // Verdicts. `bass-mid / soft`: a triangle bass with a slow attack is Ambient Dub's shape,
+    // and Ambient Dub's bass is p2 on a box whose voice the p1 sub takes; asking `soft` at p1
+    // would trade the sub for it. No owner — recommend deletion later. `bass-mid / clean`:
+    // retained, because the grit knob reaches it (below), which is the one thing on this list
+    // that the neutral sweep cannot see.
+  })
+
+  it('`bass-mid / clean` is the exception: grit at 0 re-pins the p1 dark bass to clean, and both boxes play theirs', () => {
+    // `resolveCharacter` adds grit from the knob; from `dark` at grit 0 the vector sits at
+    // equal distance from `dark` and `clean`, and `clean` sorts first by code unit. Lydian
+    // House and Relay both rank the bass first, so the re-pinned request meets a free voice
+    // and an exact recipe. The ledger stays as it is — it is measured neutral, and a pair a
+    // knob reaches is not the same as one a direction asks for — but a recipe a reader can
+    // reach by turning one knob down is not dead work.
+    expect(resolveCharacter('dark', moodState({ grit: 0 }))).toBe('clean')
+    const gritDown = moodState({ grit: 0 })
+    expect(outcome('moog-minitaur', 'lydian-house', 'r-bass-mid', gritDown)).toBe('landed:minitaur-bass-mid-clean')
+    expect(outcome('moog-minitaur', 'relay', 'r-bass-mid', gritDown)).toBe('landed:minitaur-bass-mid-clean')
+    expect(outcome('moog-subsequent-37', 'lydian-house', 'r-bass-mid', gritDown)).toBe('landed:sub37-bass-mid-clean')
+    expect(outcome('moog-subsequent-37', 'relay', 'r-bass-mid', gritDown)).toBe('landed:sub37-bass-mid-clean')
+  })
+
+  it('`lead / soft`: the lead lands only under Relay, as the bright the box also authors; elsewhere the voice is gone', () => {
+    // Four directions ask for a lead. Relay's two requests never share a section — the bass
+    // takes Enter, Walk, Press and Haul, the lead Trade, Ease, Reply and Depart — so one voice
+    // carries both in turn and the lead lands; both boxes author a bright lead, which is what
+    // Relay asks for. Slow Noir is the plausible owner of a soft lead and asks `bright` at p1
+    // because its lead is the one thing that cuts through a minor ballad; on these two boxes it
+    // would not matter, since the pad at p1 takes the voice under it. Hard Techno's `dirty` p2
+    // and Major-Key Electro's `bright` p3 lose the voice to the sub, the bass-mid or the kick.
+    for (const [box, prefix] of [
+      ['arturia-microfreak', 'mf'],
+      ['moog-subharmonicon', 'subh'],
+    ] as const) {
+      expect(outcome(box, 'relay', 'r-lead')).toBe(`landed:${prefix}-lead-bright`)
+      expect(outcome(box, 'slow-noir', 'r-lead')).toBe('no-room/contended held:r-pad')
+    }
+    expect(outcome('arturia-microfreak', 'hard-techno', 'r-lead')).toBe('no-room/contended held:r-sub')
+    expect(outcome('arturia-microfreak', 'major-key-electro', 'r-lead')).toBe('no-room/contended held:r-bass-mid')
+    expect(outcome('moog-subharmonicon', 'hard-techno', 'r-lead')).toBe('no-room/contended held:r-kick')
+    expect(outcome('moog-subharmonicon', 'major-key-electro', 'r-lead')).toBe('no-room/contended held:r-kick')
+    const relay = template('relay')
+    const sectionsOf = (id: string) => relay.roles.find((r) => r.id === id)?.sections ?? []
+    expect(sectionsOf('r-bass-mid').filter((s) => sectionsOf('r-lead').includes(s))).toEqual([])
+    // Slow Noir's pad and lead share priority 1, and the pad takes the voice on both boxes.
+    // Pinned because it is the fact that makes a soft lead unreachable here even under a
+    // direction that asked for one: it is geometry, not the absent request.
+    const noir = template('slow-noir')
+    expect(noir.roles.find((r) => r.id === 'r-pad')?.priority).toBe(1)
+    expect(noir.roles.find((r) => r.id === 'r-lead')?.priority).toBe(1)
+    // Verdict: a direction whose lead is soft and ranked above its pad does not exist; if one
+    // arrives, these are its recipes. Until then no owner — recommend deletion later.
+  })
+
+  it('`noise / dark` and `noise / hard`: both noise requests sit below a part that takes the whole box', () => {
+    // Ambient Dub asks `soft` at p3, Industrial Techno `dirty` at p5 and optional. The Cascadia
+    // and the MicroFreak each have one voice, and on both directions it is spent at p1 — on the
+    // sub or the kick, or the pad — long before the noise is considered.
+    expect(outcome('intellijel-cascadia', 'ambient-dub', 'r-noise')).toBe('no-room/contended held:r-sub')
+    expect(outcome('intellijel-cascadia', 'industrial-techno', 'r-noise')).toBe('no-room/contended held:r-kick')
+    expect(outcome('arturia-microfreak', 'ambient-dub', 'r-noise')).toBe('no-room/contended held:r-pad')
+    expect(outcome('arturia-microfreak', 'industrial-techno', 'r-noise')).toBe('no-room/contended held:r-sub')
+    // §3.5 on top of that. `hard` is the opposite of the `soft` Ambient Dub asks for and is
+    // refused outright; from Industrial Techno's `dirty` it is sqrt(2), as is the dirty noise
+    // the MicroFreak also authors, which answers exactly. `dark` is sqrt(2) from both requests,
+    // and the Cascadia's dirty noise is the exact answer to one of them.
+    expect(characterDistanceSq('soft', 'hard')).toBe(4)
+    expect(characterDistanceSq('dirty', 'hard')).toBe(2)
+    expect(characterDistanceSq('soft', 'dark')).toBe(2)
+    expect(characterDistanceSq('dirty', 'dark')).toBe(2)
+    // The darkness knob does re-pin Ambient Dub's wash to `dark`, and on the Cascadia it changes
+    // nothing: the voice is still the sub's. Knob-reachable as a request, never as a part.
+    expect(resolveCharacter('soft', moodState({ darkness: 100 }))).toBe('dark')
+    expect(outcome('intellijel-cascadia', 'ambient-dub', 'r-noise', moodState({ darkness: 100 }))).toBe(
+      'no-room/contended held:r-sub',
+    )
+    // Verdicts. A slewed pink-noise bed is a real ambient part and Ambient Dub is its owner —
+    // but the Cascadia is a one-voice modular whose voice is the sub's on that direction, so an
+    // absent request is not what keeps it dark. Recommend deletion later for both; the Cascadia
+    // one is the better candidate for a second life on a box with a voice to spare, and that is
+    // a #57 note, not a change here.
+  })
+
+  it('`pad / hard`: four notes and still one voice; the soft pad wins exact at p1, the dark p4 pad loses the voice', () => {
+    // Six directions ask for a pad, five of them `soft` at p1 — the opposite of `hard`, refused
+    // by §3.5 before any tie is weighed — and Industrial Techno `dark` at p4. On the four soft-p1
+    // directions the minilogue xd's soft pad wins exactly, on every seed. Breakbeat's p5 pad and
+    // Industrial Techno's p4 pad both lose the voice to the sub above them. That is the one
+    // #538's diagnosis singled out: the box authors a dark pad too, so even with the voice free
+    // the exact sibling would answer, and the four-note polyphony the panel advertises is a
+    // stack the resolver counts as one assignable.
+    expect(characterDistanceSq('soft', 'hard')).toBe(4)
+    for (const id of ['ambient-dub', 'generative-drift', 'lydian-house', 'slow-noir']) {
+      expect(outcome('korg-minilogue-xd', id, 'r-pad'), id).toBe('landed:mxd-pad-soft')
+    }
+    expect(outcome('korg-minilogue-xd', 'breakbeat', 'r-pad')).toBe('no-room/contended held:r-sub')
+    expect(outcome('korg-minilogue-xd', 'industrial-techno', 'r-pad')).toBe('no-room/contended held:r-sub')
+    expect(deviceById('korg-minilogue-xd').voices.map((v) => v.polyphony)).toEqual([4])
+    const pads = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'pad').map((r) => `${t.id}:${r.character}:p${String(r.priority)}`),
+    )
+    expect(pads.sort()).toEqual([
+      'ambient-dub:soft:p1',
+      'breakbeat:soft:p5',
+      'generative-drift:soft:p1',
+      'industrial-techno:dark:p4',
+      'lydian-house:soft:p1',
+      'slow-noir:soft:p1',
+    ])
+    // Verdict: opposite of every pad the library asks for but one, and that one never reaches
+    // this box. No owner — recommend deletion later.
+  })
+
+  it('`sub / hard` and `sub / soft`: the dark sub wins exactly on seven directions; the other two spend the voice above the sub', () => {
+    // Nine directions ask for a sub. Seven ask `dark` and rank it first or second with nothing
+    // the Minitaur can play above it, and the Minitaur's dark sub takes the part exactly on
+    // every one — both `hard` and `soft` are sqrt(2) from `dark` and never consulted. Hip-Hop
+    // ranks its `dark` sub third behind a kick the box also plays; Acid Lineage ranks its
+    // `clean` sub fourth behind an acid line at p1.
+    for (const id of ['ambient-dub', 'breakbeat', 'generative-drift', 'hard-techno', 'industrial-techno', 'slow-noir', 'weave']) {
+      expect(outcome('moog-minitaur', id, 'r-sub'), id).toBe('landed:minitaur-sub-dark')
+    }
+    expect(outcome('moog-minitaur', 'hip-hop', 'r-sub')).toBe('no-room/contended held:r-kick')
+    expect(outcome('moog-minitaur', 'acid-lineage', 'r-sub')).toBe('no-room/contended held:r-acid')
+    const subs = TEMPLATES.flatMap((t) => t.roles.filter((r) => r.role === 'sub').map((r) => `${t.id}:${r.character}`))
+    expect(subs.filter((s) => !s.endsWith(':dark'))).toEqual(['acid-lineage:clean'])
+    // Verdicts. `sub / hard`, a sub with the envelope snapping shut: no direction's sub is a
+    // transient and none should be. `sub / soft`, the swell with no transient: Ambient Dub's
+    // shape, and Ambient Dub's sub is `dark` at p1 with the Minitaur's dark sub answering it
+    // exactly, so the request that would want it is the one it loses to. No owner for either —
+    // recommend deletion later.
+  })
+
+  it('no mood knob reaches `hard` or `soft` from any character a direction pins these roles at', () => {
+    // The structural half of six declines. `resolveCharacter` moves tone and grit and never
+    // force, so a request on the tone or grit axis can be pushed anywhere on the disc except
+    // onto `hard` or `soft`. Every direction asking for a bass-mid, lead, noise, pad or sub
+    // pins it at `dark`, `dirty`, `bright`, `clean` or `soft`, and `soft` is on the wrong end
+    // of the one axis no knob moves. Swept at every knob detent that changes the answer.
+    const pinned = new Set<Character>(
+      TEMPLATES.flatMap((t) =>
+        t.roles.filter((r) => ['bass-mid', 'lead', 'noise', 'pad', 'sub'].includes(r.role)).map((r) => r.character),
+      ),
+    )
+    expect([...pinned].sort()).toEqual(['bright', 'clean', 'dark', 'dirty', 'soft'])
+    for (const base of CHARACTERS) {
+      const reach = new Set<Character>()
+      for (const darkness of [0, 25, 50, 75, 100]) {
+        for (const grit of [0, 25, 50, 75, 100]) reach.add(resolveCharacter(base, moodState({ darkness, grit })))
+      }
+      if (base === 'hard' || base === 'soft') {
+        expect(reach.has(base), base).toBe(true)
+        expect(reach.has(base === 'hard' ? 'soft' : 'hard'), base).toBe(false)
+      } else {
+        expect(reach.has('hard'), base).toBe(false)
+        expect(reach.has('soft'), base).toBe(false)
       }
     }
   })
