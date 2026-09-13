@@ -4,14 +4,17 @@ import type {
   ContentNotice,
   ControlPositionNotice,
   Device,
+  MiddleCNotice,
   NoteDurationNotice,
 } from './device'
 import {
   clockJackNotes,
   clockSourceSetup,
   clockWires,
+  PRINTED_MIDDLE_C,
   contentNotice,
   controlPositionNotice,
+  middleCNotice,
   noteDurationNotice,
   patternEntryNotice,
   noteOffSteps,
@@ -2393,7 +2396,11 @@ function phaseSteps(
       // Bare, and that is the accurate form. `C5` is where the sample plays as recorded, not the
       // only note it answers to — every other note plays it transposed — so a gloss saying "the
       // note this voice answers to" claims more than what was read off the box supports.
-      out.push(`**Trigger note** — \`${note.note}\` · MIDI ${num(note.midi)}`)
+      //
+      // §4.1/#571. Except for the one condition the box itself puts on the pair: where middle
+      // C is a setting, the MIDI half is true under one option, and the line names it so the
+      // device block's *choose C-4* above cannot make `C5 · MIDI 60` read as unconditional.
+      out.push(`**Trigger note** — \`${note.note}\` · MIDI ${num(note.midi)}${withMiddleC(note)}`)
     }
 
     if (!replacesGrid) {
@@ -2818,6 +2825,72 @@ function controlPositionLines(notice: ControlPositionNotice): Line[] {
 }
 
 /**
+ * §4.1/#571. **How to read a note printed here against this box's screen**, said once for the
+ * device, above its parts, and only where there is something to translate.
+ *
+ * Restated in `components/guide/phase-sound.tsx` for the web guide, exactly as `contentText` and
+ * `controlPositionText` are, and local for the same reason: the two renderers are siblings that
+ * share no code path. `middleCNotice` decides whether a box is in one of the two states worth a
+ * sentence — fixed an octave or more away from C4, or a setting the reader chooses — and hands
+ * over the octave or the menu; each renderer writes the sentence around it.
+ *
+ * **A box at C4 and a box nobody has settled both print nothing**, on purpose. The first has
+ * nothing to translate. The second would put *we do not know where this box puts middle C* on
+ * most device blocks in the library, which is the note convention's caveat multiplied rather
+ * than answered; the reason lives on the device page, where a reader at a desk can ask.
+ *
+ * The sentence ends on the MIDI number every time, because that is the form nothing disagrees
+ * about and the riff page prints it beside the pitch.
+ */
+function middleCText(notice: MiddleCNotice): string {
+  if (notice.state === 'fixed') {
+    const away = notice.octave - PRINTED_MIDDLE_C
+    return (
+      `Middle C is C${PRINTED_MIDDLE_C} here and C${notice.octave} to this box, so a note ` +
+      `printed here is ${octavesAway(away)} in the box's own naming: C${PRINTED_MIDDLE_C} here ` +
+      `is its C${notice.octave}. A MIDI number, where one is printed, is the same on both.`
+    )
+  }
+  const offered = andList(notice.options.map((o) => o.label))
+  const ours = notice.options.find((o) => o.octave === PRINTED_MIDDLE_C)
+  if (ours === undefined) {
+    return (
+      `Middle C is C${PRINTED_MIDDLE_C} here, and on this box it is a setting: ` +
+      `${notice.control} offers ${offered}, none of them C${PRINTED_MIDDLE_C}. Read a note ` +
+      'printed here against the one you chose. A MIDI number, where one is printed, is the same ' +
+      'whichever you choose.'
+    )
+  }
+  return (
+    `Middle C is C${PRINTED_MIDDLE_C} here, and on this box it is a setting: ` +
+    `${notice.control} offers ${offered}. Choose ${ours.label} and every note printed here ` +
+    'reads the same on the box. A MIDI number, where one is printed, is the same whichever ' +
+    'you choose.'
+  )
+}
+
+/** `an octave higher`, `two octaves lower`. The sign is the direction and the size the count. */
+function octavesAway(away: number): string {
+  const count = Math.abs(away)
+  const octaves = count === 1 ? 'an octave' : count === 2 ? 'two octaves' : `${count} octaves`
+  return `${octaves} ${away > 0 ? 'higher' : 'lower'}`
+}
+
+function middleCLines(notice: MiddleCNotice): Line[] {
+  return ['', '**Note names**', '', `- ${middleCText(notice)}`]
+}
+
+/**
+ * §4.1/#571. The condition a trigger note carries on a box where middle C is a setting, as a
+ * tail on its line: `· with middle C set to \`C-5\``. Empty for every other box. Restated in
+ * `components/guide/phase-steps.tsx`, `lib/studio/riff-markdown.ts`, `lib/studio/sample-markdown.ts`
+ * and their web siblings, because the six trigger-note lines are six hand-written copies (#33).
+ */
+function withMiddleC(note: { withMiddleC?: string }): string {
+  return note.withMiddleC === undefined ? '' : ` · with middle C set to \`${note.withMiddleC}\``
+}
+
+/**
  * #107's heading, in words. Restated in `components/guide/phase-sound.tsx` for the web guide,
  * exactly as `fxText` and `realisationInstruction` are — and **local, not exported**: §8's two
  * renderers are siblings that share no code path, so the web guide reaching in here for a
@@ -3009,6 +3082,11 @@ function soundShared(
   // line the box had.
   const positions = controlPositionNotice(device)
   if (positions !== undefined) out.push(...controlPositionLines(positions))
+  // §4.1/#571. Once for the box, beside the other two facts about reading it: where the box
+  // puts middle C is true of every note on every part below, and prints only where a reader
+  // has to do something about it.
+  const middleC = middleCNotice(device)
+  if (middleC !== undefined) out.push(...middleCLines(middleC))
   // #107. Above the parts, because that is the order it is done at the box: set the one
   // control the pattern shares, then work through the voices.
   const hoist = hoistedParams(mine.map((a) => a.params))

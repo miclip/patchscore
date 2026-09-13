@@ -1190,9 +1190,18 @@ export const device: Device = {
     unit: 'note divisions — 1/16 is one step',
   },
 
+  /**
+   * §4.1/#571. p.25 §8.4: *"MIDI note numbers 16–84, that corresponds to notes E2–C7 (C5, MIDI
+   * note 60, being middle C)"*. An octave above the C4 every note here is printed in, and the
+   * same page `TRIGGER_NOTE_CITE` reads the trigger note's octave off — so the two claims rest on
+   * one sentence, and `DeviceSchema` checks that they agree.
+   */
+  middleC: { kind: 'fixed', octave: 5 },
+
   capabilityEvidence: {
     noteDuration: { kind: 'manual', source: `${MANUAL}, p.43, p.53` },
     content: cite(70),
+    middleC: cite(25),
     'clock.preferredSource': {
       kind: 'unknown',
       reason:

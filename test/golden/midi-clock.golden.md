@@ -402,7 +402,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **Half-open hat, gated short** — settings in Sound design
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 **Intro, Outro** — 16 steps, band 0
 
@@ -476,7 +476,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 
 **One trig, not a figure** — the direction authors no grid for this part. Place its single trig so the gesture arrives at the change.
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 ### `noise` — TR-1000 · OH
 
@@ -522,7 +522,7 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 - **Intro** — Place its single trig so the gesture arrives at the change.
 - **Outro** — Place its single trig wherever the gesture should be heard; nothing follows this section for it to lead into.
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 ## 6. Sound design
 
@@ -533,6 +533,10 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 **Content**
 
 - Ships 50 factory genre-based sample packs — look in /Samples/FactoryPacks on the microSD card. p.34 names the folder and the count, and no page lists what is in a pack, so the Source line below says what the part needs rather than naming a file.
+
+**Note names**
+
+- Middle C is C4 here, and on this box it is a setting: Config > MIDI > Middle C offers C-3, C-4, C-5 and C-6. Choose C-4 and every note printed here reads the same on the box. A MIDI number, where one is printed, is the same whichever you choose.
 
 **Pattern-wide**
 

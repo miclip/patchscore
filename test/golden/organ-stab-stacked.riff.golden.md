@@ -44,7 +44,7 @@ Lowest note to the lowest voice: Track 1 takes the bottom of every chord and Tra
 
 Source — A single-note tonal sample — one pitch, with a front edge. Yours, or one note rendered here; it does not need to be a chord and should not be one
 
-**Trigger note** — `C5` · MIDI 60
+**Trigger note** — `C5` · MIDI 60 · with middle C set to `C-5`
 
 Routing — Tracks 1-8 — costs no synth slot, and one loaded sample serves every track of the stack
 

@@ -495,6 +495,10 @@ Note length is set per note here — `the note’s extent on the grid — hold i
 
 - Ships a factory library on the supplied SD card — look in SAMPLES/ARTISTS and SAMPLES/DRUMS. p.12 marks both folders as supplied samples and never names one of them, so the Source line below says what the part needs rather than naming a file.
 
+**Note names**
+
+- Middle C is C4 here and C3 to this box, so a note printed here is an octave lower in the box's own naming: C4 here is its C3. A MIDI number, where one is printed, is the same on both.
+
 **Song-wide**
 
 One setting for the whole song — set it once, not once per part below.

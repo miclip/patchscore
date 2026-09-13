@@ -848,7 +848,16 @@ export const device: Device = {
    */
   noteDuration: { kind: 'per-note-value', control: 'LENGTH' },
 
+  /**
+   * §4.1/#571. **MIDI 60 is C4 to this box**, which is the C4 every note here is printed in, so
+   * the guide prints nothing for it. Reference p.68, Cutoff Keyfollow Base Point: *"If this is
+   * 60, the C4 key (middle C) is the reference key."* Declared all the same, because a finished
+   * reading that agrees is worth more than an absence that looks like nobody asked.
+   */
+  middleC: { kind: 'fixed', octave: 4 },
+
   capabilityEvidence: {
+    middleC: ref(68),
     ...JACK_EVIDENCE,
     'clock.canSendClock': ref(60),
     'clock.canReceiveClock': ref(60),

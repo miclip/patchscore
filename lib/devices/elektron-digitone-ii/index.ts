@@ -1150,7 +1150,16 @@ export const device: Device = {
     unit: 'note divisions — 1/16 is one step',
   },
 
+  /**
+   * §4.1/#571. **MIDI 60 is C5 to this box**, an octave above the C4 every note here is printed
+   * in. p.24 §8.4: *"MIDI note numbers 16–84, that corresponds to notes E2–C7 (C5, MIDI note 60,
+   * being middle C)"*; p.38 says it again from the other side, *"all modulation are centered
+   * around middle C (C5)"*.
+   */
+  middleC: { kind: 'fixed', octave: 5 },
+
   capabilityEvidence: {
+    middleC: cites('p.24 ("C5, MIDI note 60, being middle C"), p.38 (key tracking centred on "middle C (C5)")'),
     'clock.canSendClock': cite(74),
     'clock.canReceiveClock': cite(74),
     /**

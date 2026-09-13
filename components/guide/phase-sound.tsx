@@ -10,6 +10,7 @@ import type {
   ResolvedSourceAudio,
 } from '@/lib/core'
 import {
+  PRINTED_MIDDLE_C,
   citationSentence,
   resolvedClaims,
   contentNotice,
@@ -18,6 +19,7 @@ import {
   hoistedParams,
   inertBlocks,
   inertNotice,
+  middleCNotice,
   renderedParams,
   sourceLengthLine,
 } from '@/lib/core'
@@ -26,11 +28,12 @@ import type {
   ContentNotice,
   ControlPositionNotice,
   InertFinding,
+  MiddleCNotice,
   ParamGroup,
   ParamScope,
   ScopedParams,
 } from '@/lib/core'
-import { count, hintText, isStacked, num, voicesLabel } from './format'
+import { andList, count, hintText, isStacked, num, voicesLabel } from './format'
 import { Instruction, ParamLine } from './instruction'
 import { VocabularyTerm } from '../vocabulary-term'
 
@@ -377,6 +380,63 @@ function ControlPositionBlock({ notice }: { notice: ControlPositionNotice }) {
 }
 
 /**
+ * §4.1/#571. **How to read a note printed here against this box's screen**, once for the box
+ * and only where there is something to translate.
+ *
+ * Hand-written to match `middleCText` in `lib/core/render.ts` word for word, the arrangement
+ * `contentText` and `controlPositionText` above live under: `middleCNotice` decides whether a
+ * box is fixed away from C4 or offers the choice, and hands over the octave or the menu; the
+ * words are this renderer's own. A box at C4 and a box nobody has settled both print nothing,
+ * and the reason for the second is on the device page rather than on every block.
+ *
+ * `test/middle-c.test.ts` asserts the sentence in both renderers and both layouts, because two
+ * copies of one sentence is exactly the thing that drifts.
+ */
+function middleCText(notice: MiddleCNotice): string {
+  if (notice.state === 'fixed') {
+    const away = notice.octave - PRINTED_MIDDLE_C
+    return (
+      `Middle C is C${PRINTED_MIDDLE_C} here and C${notice.octave} to this box, so a note ` +
+      `printed here is ${octavesAway(away)} in the box's own naming: C${PRINTED_MIDDLE_C} here ` +
+      `is its C${notice.octave}. A MIDI number, where one is printed, is the same on both.`
+    )
+  }
+  const offered = andList(notice.options.map((o) => o.label))
+  const ours = notice.options.find((o) => o.octave === PRINTED_MIDDLE_C)
+  if (ours === undefined) {
+    return (
+      `Middle C is C${PRINTED_MIDDLE_C} here, and on this box it is a setting: ` +
+      `${notice.control} offers ${offered}, none of them C${PRINTED_MIDDLE_C}. Read a note ` +
+      'printed here against the one you chose. A MIDI number, where one is printed, is the same ' +
+      'whichever you choose.'
+    )
+  }
+  return (
+    `Middle C is C${PRINTED_MIDDLE_C} here, and on this box it is a setting: ` +
+    `${notice.control} offers ${offered}. Choose ${ours.label} and every note printed here ` +
+    'reads the same on the box. A MIDI number, where one is printed, is the same whichever ' +
+    'you choose.'
+  )
+}
+
+/** `an octave higher`, `two octaves lower`. The sign is the direction and the size the count. */
+function octavesAway(away: number): string {
+  const count = Math.abs(away)
+  const octaves = count === 1 ? 'an octave' : count === 2 ? 'two octaves' : `${count} octaves`
+  return `${octaves} ${away > 0 ? 'higher' : 'lower'}`
+}
+
+function MiddleCBlock({ notice }: { notice: MiddleCNotice }) {
+  return (
+    <div className="callout">
+      <p>
+        <strong>Note names</strong> — {middleCText(notice)}
+      </p>
+    </div>
+  )
+}
+
+/**
  * #107's heading and its reason, hand-written to match the Markdown renderer word for word — the
  * same arrangement `realisationInstruction` above already lives under. The two renderers share no
  * code path by design (#33), so importing the sentence from `lib/core/render.ts` would make this
@@ -450,6 +510,9 @@ export function SoundShared({
   // §3.1/#324. Computed here rather than passed in, because unlike `content` it asks nothing
   // about which parts were assigned — only what this box's panel prints.
   const positions = controlPositionNotice(device)
+  // §4.1/#571. Computed here for the same reason: where the box puts middle C asks nothing
+  // about which parts were assigned.
+  const middleC = middleCNotice(device)
   // §3.2. The markdown renderer's own sentence, so the two cannot say different things — and
   // over the same set, which is the half that would drift silently if each counted its own way.
   const cites = citationSentence(resolvedClaims(renderedParams(hoist, perPart)))
@@ -465,6 +528,11 @@ export function SoundShared({
           panel that prints no scale is a fact about the panel, and it used to print on every
           parameter line the box had. */}
       {positions === undefined ? null : <ControlPositionBlock notice={positions} />}
+
+      {/* §4.1/#571, once for the box beside the other two facts about reading it: where it
+          puts middle C is true of every note on every part below, and prints only where a
+          reader has to do something about it. */}
+      {middleC === undefined ? null : <MiddleCBlock notice={middleC} />}
 
       {/* #107, above the parts: the order it is done at the box — set the one control the
           pattern shares, then work through the voices. */}

@@ -151,6 +151,10 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 - Ships 50 factory genre-based sample packs — look in /Samples/FactoryPacks on the microSD card. p.34 names the folder and the count, and no page lists what is in a pack, so the Source line below says what the part needs rather than naming a file.
 
+**Note names**
+
+- Middle C is C4 here, and on this box it is a setting: Config > MIDI > Middle C offers C-3, C-4, C-5 and C-6. Choose C-4 and every note printed here reads the same on the box. A MIDI number, where one is printed, is the same whichever you choose.
+
 **Pattern-wide**
 
 One setting for the whole pattern — set it once, not once per part below.

@@ -1973,7 +1973,16 @@ export const device: Device = {
     source: 'the gate that plays it holds it, from MIDI, a patched gate, or the MANUAL GATE button',
   },
 
+  /**
+   * §4.1/#571. **MIDI 60 is C3 to this box**, and it has no screen to say so: the fact lives in
+   * its manual's own naming. p.17, MIDI PITCH out: *"MIDI note 0 (C-2) maps to -5V; MIDI note
+   * 60 (C3) maps to 0V; and MIDI note 120 (C8) maps to 10V."* An octave below the C4 every note
+   * here is printed in, so a reader checking a hook's `G2` against that page reads it as G1.
+   */
+  middleC: { kind: 'fixed', octave: 3 },
+
   capabilityEvidence: {
+    middleC: cite(17),
     noteDuration: cite(83),
     // §8/#65. p.78 describes MIDI IN as being for "whichever controller, sequencer or MIDI
     // interface you'll use to play Cascadia" — the manual saying in its own words that the
