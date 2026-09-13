@@ -8,6 +8,7 @@ import {
   acidTracksLine,
   bladeRunnerBluesLead,
   blueMondayBass,
+  museRunnerFloatingArrivalLead,
   showMeLoveOrganStab,
 } from '@/lib/riffs'
 import { renderRiff } from '@/lib/studio/riff-markdown'
@@ -47,6 +48,7 @@ export const RIFF_NAMES = [
   'organ-stab-stacked',
   'acid-on-a-mother-32',
   'blade-runner-on-a-muse',
+  'muse-runner-on-a-muse',
 ] as const
 export type RiffName = (typeof RIFF_NAMES)[number]
 
@@ -106,6 +108,20 @@ const FIXTURES: Record<RiffName, () => Fixture> = {
    */
   'blade-runner-on-a-muse': () => ({
     riff: bladeRunnerBluesLead,
+    devices: rig('moog-muse'),
+  }),
+  /*
+   * §5A.5/#566. **The one riff fixture named after a factory patch.** The title and the card
+   * line carry a preset's name where every other fixture carries a record's, and the build
+   * sentence reads the same over both, which is the claim §5A.5 makes and these bytes pin.
+   *
+   * On the Muse because it is the box that ships the patch, and because its `lead / bright`
+   * recipe names the same patch as `factoryPatch`: the page therefore shows both facts at once,
+   * the riff's reference in its title and the recipe's patch on its settings, and the fixture is
+   * what says the two are rendered as different things.
+   */
+  'muse-runner-on-a-muse': () => ({
+    riff: museRunnerFloatingArrivalLead,
     devices: rig('moog-muse'),
   }),
 }

@@ -3,6 +3,7 @@ import type { Riff } from '../core/riff'
 import { acidTracksLine } from './acid-tracks-line'
 import { bladeRunnerBluesLead } from './blade-runner-blues-lead'
 import { blueMondayBass } from './blue-monday-bass'
+import { museRunnerFloatingArrivalLead } from './muse-runner-floating-arrival-lead'
 import { showMeLoveOrganStab } from './show-me-love-organ-stab'
 import { thrillerSynthRiff } from './thriller-synth-riff'
 
@@ -41,11 +42,18 @@ import { thrillerSynthRiff } from './thriller-synth-riff'
  * chord under them is borrowed, where printing the degree alone would say `3rd` over two
  * different pitches. It is also the slowest by a distance and the sparsest: three notes in four
  * bars, which is the technique rather than a gap in it.
+ *
+ * **`muse-runner-floating-arrival-lead` is the sixth, and the first named after a factory patch**
+ * (§5A.5, #566). It is a third `lead`, and it is the closest in shape to Blade Runner: one note
+ * per chord, entering late, held past the change. What it adds is the case §5A.5 was relaxed
+ * for, a reference that is a preset's name and not a release's, in the title and in the slug
+ * exactly as a record's would be.
  */
 export const RIFFS: readonly Riff[] = [
   acidTracksLine,
   bladeRunnerBluesLead,
   blueMondayBass,
+  museRunnerFloatingArrivalLead,
   showMeLoveOrganStab,
   thrillerSynthRiff,
 ]
@@ -54,6 +62,7 @@ export {
   acidTracksLine,
   bladeRunnerBluesLead,
   blueMondayBass,
+  museRunnerFloatingArrivalLead,
   showMeLoveOrganStab,
   thrillerSynthRiff,
 }

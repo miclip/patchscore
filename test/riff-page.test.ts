@@ -283,6 +283,16 @@ describe('the riff page exists exactly where an entry does', () => {
       'Build the Blue Monday bass-mid sound on the boxes you own, then practise the technique ' +
         'against a figure written here.',
     )
+    // §5A.5/#566. The same sentence over a patch reference, unchanged in form: the name in that
+    // slot is a sound to build whichever kind of thing it names.
+    const patch = await generateMetadata({
+      params: Promise.resolve({ id: 'muse-runner-floating-arrival-lead' }),
+    })
+    expect(patch.title).toBe('The Muse Runner floating-arrival lead — Patchscore')
+    expect(patch.description).toBe(
+      'Build the Muse Runner lead sound on the boxes you own, then practise the technique ' +
+        'against a figure written here.',
+    )
     // An id with no page has no metadata to give, and says so with nothing rather than a title
     // for a page that 404s.
     expect(await generateMetadata({ params: Promise.resolve({ id: 'nope' }) })).toEqual({})

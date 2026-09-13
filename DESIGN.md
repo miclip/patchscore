@@ -4364,13 +4364,13 @@ figure from having notes, and a reader deciding what to buy is better served see
 
 **Every entry names what it is found by, in the title and in the slug.** A technique is looked
 for by the thing it is heard on before a reader has a name for what the part is doing. For most
-that is a record — *the Blue Monday bass*, *the Thriller synth riff*. For some it is a factory
-patch a box ships, named on its own panel — *the Muse Runner sequence* — and the technique is what
-somebody does with that preset rather than the preset itself. `Riff.reference` is the field that
-says which, as `{ kind, name }`, and `RiffSchema` checks both surfaces against `reference.name`:
-the title has to contain it verbatim and the id has to open with its slug, so an entry named for
-one reference and filed under another cannot parse. The checks do not read `kind`; a patch is
-findable in the same two places a record is.
+that is a record: *the Blue Monday bass*, *the Thriller synth riff*. For some it is a factory
+patch a box ships, named on its own panel: *the Muse Runner floating-arrival lead*. The technique
+is what somebody does with that preset, and the preset is how they find it. `Riff.reference` is
+the field that says which, as `{ kind, name }`, and `RiffSchema` checks both surfaces against
+`reference.name`: the title has to contain it verbatim and the id has to open with its slug, so an
+entry named for one reference and filed under another cannot parse. The checks do not read
+`kind`; a patch is findable in the same two places a record is.
 
 **Two kinds and not three** ([#566](https://github.com/miclip/patchscore/issues/566)). `record` is
 a release somebody has heard; `patch` is a preset with a name printed by the manufacturer. A third
@@ -4379,7 +4379,11 @@ string satisfies constrains nothing. It stays a reference: it says what a reader
 technique up by, and nothing about the notes.
 
 A `patch` reference is not a device (invariant 3). It names the preset, never the box that ships
-it, and the resolver reads neither. It is also a different fact from `Recipe.factoryPatch` (#553):
+it, and the resolver reads neither. A manufacturer may put the box's own name inside a preset's,
+and *Muse Runner* does, so `test/riff.test.ts`'s device scan exempts `reference.name` where it
+sits in the title and scans everything else: the rest of the title and every paragraph of
+technique. A box named in prose is still refused. Nothing in this section puts a device id or a
+device name in a field on a riff. It is also a different fact from `Recipe.factoryPatch` (#553):
 that says a *recipe's* parameters reach a sound a box also ships, and this says what a *riff* is
 found by. One is a claim about settings and the other is a name to search, and a riff named for a
 patch resolves to whatever recipe its role and character reach, with or without a recipe carrying
