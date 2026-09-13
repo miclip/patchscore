@@ -1124,6 +1124,197 @@ export const ControlPositionsSchema = z.strictObject({
   mapped: MappedControlsSchema.optional(),
 })
 
+/**
+ * §4.1/#571. **Where this box puts middle C**, read off its manual and cited like every other
+ * capability fact.
+ *
+ * Every note this site prints is scientific pitch with middle C at C4 (§4.1). Boxes disagree
+ * three ways — the Deluge and the Cascadia call MIDI 60 `C3`, the Elektrons and the Hapax call
+ * it `C5`, Roland agrees — and until #571 no device declared which, so `A#4` on a page read as
+ * `A#5` on one screen and `A#3` on another with nothing in between saying so. The guide's note
+ * convention warned in general terms; this is the fact the warning was standing in for.
+ *
+ * ## Two declarable kinds
+ *
+ *  - **`fixed`** — the box calls MIDI 60 `C<octave>` and nothing on it changes that. `octave` is
+ *    the number after the C, so the Deluge is `3`, the Digitakt II is `5` and a Roland is `4`. A
+ *    `fixed` at 4 is worth declaring: it is a finished reading that agrees, it counts in the
+ *    audit, and the guide prints nothing for it because there is nothing to translate.
+ *  - **`setting`** — the reader chooses. Both Polyend trackers print *"Sets middle C as C-3, C-4,
+ *    C-5, C-6"*, so a `fixed` octave on either would be a false claim of exactly the kind
+ *    `CLAUDE.md` describes as a cited range read off the wrong printed scale. `control` is the
+ *    setting's path as the box names it, and each option carries the **label the menu prints**
+ *    beside the octave it means — `C-4` is what a Polyend reader has to find, and `C4` is what
+ *    the check below has to compare. Options are as printed, in the order printed, and nothing
+ *    here names a default: the Mini's p.298 shows `C-5` in a suggested setup and calls it
+ *    nothing, and a default no page states is invented.
+ *
+ * ## The third state is the absence of the field
+ *
+ * Exactly as `content` and `noteDuration` do it, and for the same reason: absence is the
+ * default, and the *reason* somebody came back empty lives in `capabilityEvidence` at `middleC`
+ * as one of #120's three reasoned non-claims. Most of the 46 manuals are expected to be silent,
+ * and `unknown` with the pages read is the honest and finished result there. The guide prints
+ * nothing for an unsettled box — a sentence saying *we do not know where this box puts middle C*
+ * on thirty-six of forty-six device blocks is the note convention's caveat multiplied, not
+ * improved — and the device page carries the reason, where a reader at a desk can ask.
+ *
+ * ## What it checks, and why it is not the note-naming field §4.1 refuses
+ *
+ * §4.1 declines a per-device *transformation* of the template's notes, because that is device
+ * knowledge leaking toward the template (invariant 3). This is not that. No template reads it,
+ * no resolved note is respelled by it, and the guide prints one sentence per device block saying
+ * how to read the page against the screen. What it does reach is `TriggerNote`: a voice's
+ * `note` and `midi` are two spellings of one fact under the box's own mapping, and where the
+ * mapping is declared, `DeviceSchema` checks that the pair implies it. A `C5` beside `60` on a
+ * box declared `fixed` at 3 is two citations disagreeing in one folder, and before #571 it was
+ * silent.
+ */
+export const MIDDLE_C_FACT = 'middleC'
+
+/** The octave number scientific pitch notation gives MIDI 60 — what every printed note assumes. */
+export const PRINTED_MIDDLE_C = 4
+
+/** One entry of a middle-C setting: what the menu prints, and the octave it puts MIDI 60 in. */
+export type MiddleCOption = {
+  /** Exactly as the box's menu prints it: `'C-4'` on a Polyend. */
+  label: string
+  /** The octave number that choice gives MIDI 60. */
+  octave: number
+}
+
+export type MiddleC =
+  /** The box calls MIDI 60 `C<octave>`, and nothing on it changes that. */
+  | { kind: 'fixed'; octave: number }
+  /** The reader chooses, at `control`, from `options`. */
+  | { kind: 'setting'; control: string; options: MiddleCOption[] }
+
+/**
+ * MIDI 60 as C3, C4 or C5 covers every convention a maker has shipped; the bound is wider than
+ * that so a manifest stating what a manual says is never refused for it, and narrow enough that
+ * a MIDI number written where an octave was meant fails.
+ */
+const MiddleCOctaveSchema = z.int().min(0).max(8)
+
+export const MiddleCOptionSchema = z.strictObject({
+  label: z.string().min(1, 'an option carries the label the menu prints'),
+  octave: MiddleCOctaveSchema,
+})
+
+export const MiddleCSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('fixed'), octave: MiddleCOctaveSchema }),
+  z
+    .strictObject({
+      kind: z.literal('setting'),
+      control: z.string().min(1, 'name the setting as the box names it'),
+      options: z.array(MiddleCOptionSchema).min(2, 'a setting offers a choice, so at least two'),
+    })
+    .superRefine((setting, ctx) => {
+      const octaves = new Set<number>()
+      const labels = new Set<string>()
+      setting.options.forEach((option, i) => {
+        if (octaves.has(option.octave)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `two options put MIDI 60 in octave ${option.octave}; a menu offers each once`,
+            path: ['options', i, 'octave'],
+          })
+        }
+        if (labels.has(option.label)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `two options are labelled '${option.label}'; a menu prints each once`,
+            path: ['options', i, 'label'],
+          })
+        }
+        octaves.add(option.octave)
+        labels.add(option.label)
+      })
+    }),
+])
+
+/**
+ * A note name as a `TriggerNote` spells it — letter, one accidental, octave — read into the
+ * pitch class and octave the check needs. `undefined` for anything else, so a spelling this
+ * cannot read is refused loudly rather than checked wrongly: `C 5` with the Elektron's space
+ * would parse as nothing, and an author writes `C5`.
+ *
+ * **`pitchClass` is the letter's plus the accidental, unwrapped**: `Cb4` is `-1` in octave 4
+ * and `B#3` is `12` in octave 3, because the octave number belongs to the letter. Wrapping it
+ * would put `Cb4` a semitone under C5 rather than under C4, and the octave the check implies
+ * would be off by one on exactly the two spellings that sit on the boundary.
+ *
+ * Local rather than borrowed from `harmony.ts`, which imports the resolver, which imports this.
+ */
+const TRIGGER_NOTE_NAME = /^([A-G])(#|b)?(-?\d+)$/
+const LETTER_PITCH_CLASS: Readonly<Record<string, number>> = {
+  C: 0,
+  D: 2,
+  E: 4,
+  F: 5,
+  G: 7,
+  A: 9,
+  B: 11,
+}
+
+export function parseTriggerNoteName(
+  note: string,
+): { pitchClass: number; octave: number } | undefined {
+  const match = TRIGGER_NOTE_NAME.exec(note)
+  if (match === null) return undefined
+  const [, letter, accidental, octave] = match as unknown as [
+    string,
+    string,
+    string | undefined,
+    string,
+  ]
+  const shift = accidental === '#' ? 1 : accidental === 'b' ? -1 : 0
+  return { pitchClass: (LETTER_PITCH_CLASS[letter] as number) + shift, octave: Number(octave) }
+}
+
+/**
+ * §4.1/#571. **The octave a box must be calling MIDI 60, for this note name to send this MIDI
+ * number.** `C5` beside `60` implies 5; `B4` beside `59` implies 5 too, since B4 is the semitone
+ * under C5 on any box, and `Cb4` beside `59` implies 4, since it is the semitone under C4.
+ * `undefined` where the name cannot be read or the two disagree on pitch class, which is a
+ * different mistake from an octave and is reported as one.
+ */
+export function middleCImpliedBy(note: TriggerNote): number | undefined {
+  const parsed = parseTriggerNoteName(note.note)
+  if (parsed === undefined) return undefined
+  const semitones = note.midi - 60 - parsed.pitchClass
+  if (semitones % 12 !== 0) return undefined
+  return parsed.octave - semitones / 12
+}
+
+/**
+ * §4.1/#571. **What a guide should say about this box's note names, once, above its parts** — or
+ * nothing, which is the ordinary case and the deliberate one.
+ *
+ * Nothing for a box that declares nothing, nothing for one whose reading is unsettled, and
+ * nothing for one that calls MIDI 60 `C4`, because a page that already reads the same as the
+ * screen has nothing to translate. What is left is the two states a reader has to act on: a box
+ * that is fixed an octave away, and a box that offers the choice. The decision lives here and
+ * the sentences live in each renderer, the arrangement `contentNotice` and `controlPositionNotice`
+ * already sit in (#33).
+ */
+export type MiddleCNotice =
+  | { state: 'fixed'; octave: number; evidence: Cite }
+  | { state: 'setting'; control: string; options: readonly MiddleCOption[]; evidence: Cite }
+
+export function middleCNotice(device: Device | undefined): MiddleCNotice | undefined {
+  if (device === undefined) return undefined
+  const declared = device.middleC
+  if (declared === undefined) return undefined
+  const evidence = evidenceFor(device, MIDDLE_C_FACT)
+  if (evidence === undefined || !isCite(evidence)) return undefined
+  if (declared.kind === 'fixed') {
+    if (declared.octave === PRINTED_MIDDLE_C) return undefined
+    return { state: 'fixed', octave: declared.octave, evidence }
+  }
+  return { state: 'setting', control: declared.control, options: declared.options, evidence }
+}
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -1144,6 +1335,7 @@ export const CAPABILITY_FACTS = [
   PATTERN_ENTRY_FACT,
   DAW_TRANSPORT_FACT,
   CONTROL_POSITION_FACT,
+  MIDDLE_C_FACT,
 ] as const
 
 export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
@@ -3694,6 +3886,12 @@ export type Device = {
    */
   controlPositions?: ControlPositions
   /**
+   * §4.1/#571. Where this box puts middle C — see `MiddleC`. Optional, and the omission is the
+   * third state: absent means nobody here has established it, the reason lives at `middleC` in
+   * the evidence map, and the guide prints nothing rather than a caveat on every block.
+   */
+  middleC?: MiddleC
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -3790,6 +3988,7 @@ export const DeviceSchema = z
     patternEntry: PatternEntrySchema.optional(),
     dawTransport: DawTransportSchema.optional(),
     controlPositions: ControlPositionsSchema.optional(),
+    middleC: MiddleCSchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -4297,6 +4496,102 @@ export const DeviceSchema = z
         code: 'custom',
         message: `'${CONTROL_POSITION_FACT}' carries a finding but no controlPositions is declared; a reading that supports no claim says nothing (§3.1/#324)`,
         path: ['capabilityEvidence', CONTROL_POSITION_FACT],
+      })
+    }
+
+    /**
+     * §4.1/#571. **Middle C is a positive claim about the box and carries a citation**, in the
+     * same two directions as `noteDuration`: a declaration with no page behind it, and a page
+     * with no declaration behind it, both fail. `false` is refused as it is at `content` — an
+     * entry here exists to say something about a field that is absent, and one with no reason
+     * says nothing the omission does not.
+     */
+    const middleCEvidence = evidence[MIDDLE_C_FACT]
+    if (device.middleC !== undefined) {
+      if (middleCEvidence === undefined || !isCite(middleCEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `middleC is declared '${device.middleC.kind}' with no citation at '${MIDDLE_C_FACT}'; where a box puts middle C is read off its manual (§4.1/#571)`,
+          path: ['capabilityEvidence', MIDDLE_C_FACT],
+        })
+      }
+    } else if (middleCEvidence !== undefined && isCite(middleCEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${MIDDLE_C_FACT}' carries a citation but no middleC is declared; a reading that supports no claim is 'cited-against' (§4.1/#571)`,
+        path: ['capabilityEvidence', MIDDLE_C_FACT],
+      })
+    }
+    if (middleCEvidence === false) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${MIDDLE_C_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§4.1/#571)`,
+        path: ['capabilityEvidence', MIDDLE_C_FACT],
+      })
+    }
+
+    /**
+     * §4.1/#571. **Every trigger note on the box agrees with where it puts middle C.**
+     *
+     * A `TriggerNote` is two spellings of one fact — the name the screen shows and the number
+     * the box sends — and both are cited. A `middleC` declaration is a third citation about the
+     * same mapping, and three cited claims about one fact can disagree with every one of them
+     * individually well-formed. `C5` beside `60` on a box declared `fixed` at 3 is that: two
+     * pages read, two facts recorded, and one of them wrong. Before #571 nothing compared them.
+     *
+     * On a `setting` box the note is true under one option, so the check is membership: the
+     * octave the pair implies must be one the menu offers. Where no `middleC` is declared there
+     * is nothing to compare against, and the pair stands on its own citation as it always has.
+     */
+    const declaredMiddleC = device.middleC
+    if (declaredMiddleC !== undefined) {
+      const checkTriggerNote = (note: TriggerNote, path: (string | number)[]) => {
+        const parsed = parseTriggerNoteName(note.note)
+        if (parsed === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `triggerNote '${note.note}' cannot be read as a note name, so it cannot be checked against middleC; spell it as letter, accidental, octave (§4.1/#571)`,
+            path,
+          })
+          return
+        }
+        const implied = middleCImpliedBy(note)
+        if (implied === undefined) {
+          ctx.addIssue({
+            code: 'custom',
+            message: `triggerNote '${note.note}' and MIDI ${note.midi} disagree on pitch class; no octave mapping makes them the same note (§4.1/#571)`,
+            path,
+          })
+          return
+        }
+        if (declaredMiddleC.kind === 'fixed') {
+          if (implied !== declaredMiddleC.octave) {
+            ctx.addIssue({
+              code: 'custom',
+              message: `triggerNote '${note.note}' = MIDI ${note.midi} puts middle C at C${implied}, but middleC declares C${declaredMiddleC.octave}; one of the two citations is wrong (§4.1/#571)`,
+              path,
+            })
+          }
+        } else if (!declaredMiddleC.options.some((o) => o.octave === implied)) {
+          const offered = declaredMiddleC.options.map((o) => `C${o.octave}`).join(', ')
+          ctx.addIssue({
+            code: 'custom',
+            message: `triggerNote '${note.note}' = MIDI ${note.midi} puts middle C at C${implied}, which ${declaredMiddleC.control} does not offer (${offered}); one of the two citations is wrong (§4.1/#571)`,
+            path,
+          })
+        }
+      }
+      device.voices.forEach((voice, i) => {
+        if (voice.triggerNote !== undefined) {
+          checkTriggerNote(voice.triggerNote, ['voices', i, 'triggerNote'])
+        }
+        if (voice.kind === 'pool') {
+          voice.modes?.forEach((mode, j) => {
+            if (mode.triggerNote !== undefined) {
+              checkTriggerNote(mode.triggerNote, ['voices', i, 'modes', j, 'triggerNote'])
+            }
+          })
+        }
       })
     }
 

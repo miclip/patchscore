@@ -5,6 +5,7 @@ import {
   DAW_TRANSPORT_FACT,
   PATTERN_ENTRY_FACT,
   CONTROL_POSITION_FACT,
+  MIDDLE_C_FACT,
   CapabilityEvidenceSchema,
   DeviceSchema,
   clockJackNotes,
@@ -171,7 +172,11 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
                       exact: 'MIDI CC',
                     } as const,
                   }
-                : {}
+                : fact === MIDDLE_C_FACT
+                  ? // §4.1/#571. The fifth: where a box puts middle C is a positive claim about
+                    // it, and a page with no declaration is refused (`test/middle-c.test.ts`).
+                    { middleC: { kind: 'fixed', octave: 3 } as const }
+                  : {}
       /**
        * §3.1/#324 is the one path that refuses a citation rather than requiring one: what it
        * declares is that no page maps a panel mark to a value, and no page asserts an absence.

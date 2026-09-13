@@ -172,6 +172,11 @@ a true sentence fastened to the wrong object: it was authored, declined at #422,
 the one `TrackMode` p.90's sentence is true of. See §2.2. The full-size Tracker still authors
 none — its manual does not say what a written step note does under either sliced mode.
 
+**Where the box declares where it puts middle C, the pair is checked against it (#571).** `note`
+and `midi` are two spellings of one mapping, `Device.middleC` is a third citation about the same
+mapping, and §4.1 says how the schema compares them. A folder may carry a trigger note and no
+`middleC`, and then the pair stands on its own citation as it always has.
+
 **It models the whole-sample case only, and that boundary is settled rather than provisional
 (#369).** A *sliced* instrument is addressed by note as well, and that is not the same fact: under
 the Tracker Mini's Beat Slice mode `C2` selects the first slice and the next semitone the next
@@ -760,7 +765,9 @@ finding instead.** Four notices already say their state outright and so lose not
 `contentText` and `unsettledText` split four ways and open *Not established — the manual was read
 and does not say* (or the `unread` or `cited-against` wording); `controlPositionText` reports the
 reading it made rather than a result about the document; `noteDurationText` says when how a box
-ends a note is not established here. Two lines are not like that — a clock jack note and a
+ends a note is not established here. `middleCText` (§4.1/#571) is the one that prints nothing for
+its unsettled state, on purpose: the fact is true of every note on the page rather than of a
+line, and thirty-odd blocks each confessing the same gap is not honesty a reader can act on. Two lines are not like that — a clock jack note and a
 clock-source setup path (§7.4) were bare device assertions whose only qualifier was the mark — and
 those now read the same whether a manual was read, was not read, or was read and is silent. That
 is a real loss of the honesty invariant 5 asks for, it is recorded here rather than argued away,
@@ -3764,25 +3771,68 @@ device states the gesture. Overlap is legal — two notes at one step are a chor
 running past the next note's `step` is a line that overlaps itself — and whether the carrying voice
 can *play* that is §7.1's question, exactly as range and polyphony are kept out of this layer.
 
-#### The convention is not universal on hardware, and we are not fixing that here
+#### The convention is not universal on hardware, and a box says where it stands (#571)
 
 Scientific pitch notation is a convention, not a fact about instruments. Roland and most makers put
 middle C at C4; Yamaha puts it at C3; some boxes display note *numbers* and no names at all. A guide
 that says `G2` can therefore read an octave off on some hardware.
 
-Fixing that needs per-device note-naming data, which this design does not model — and bolting it on
-carelessly is device knowledge leaking toward the template, which is what invariant 3 exists to
-stop. So: the convention is named here, the risk is recorded here, and `Device` gains no
-note-naming field.
+For a long time this section ended there: fixing it needed per-device note-naming data, bolting
+that on carelessly is device knowledge leaking toward the template (invariant 3), so the risk was
+recorded and `Device` gained no note-naming field. **#571 sized the risk and it was not
+hypothetical.** Eight documents in `manuals/` state MIDI 60's note name outright and they disagree
+three ways — the Deluge and the Cascadia call it `C3`, the Digitakt, Digitakt II, Digitone II and
+Hapax call it `C5`, the MC-707 agrees with C4 — and both Polyend trackers make it a *setting*,
+`C-3` to `C-6`, chosen by the reader. So a reader on a Deluge holding our `A#4` looks at a screen
+saying `A#3`, and the note convention's caveat was the only thing between them.
 
-**§2.1's `triggerNote` is not that field, and the difference is the whole of why it is allowed.**
-Note *naming* would be a scheme for spelling any note the template produces on any box — a
-transformation applied to musical output, which is the leak this section refuses. A trigger note is
-one cited fact about one voice, saying which note plays its sound as it is: `C5` plays a Tracker
-Mini sample as recorded, and what comes out is whatever the sample is. It transforms nothing, no
-template can reach it, and it is never compared against a hook's pitch. What this section *does*
-bind it to is the citation rule — because octave numbering is a convention, a `midi` written beside
-a note name read off a manual page has to cite the box's own mapping, not scientific pitch notation.
+**What a device declares is a fact, not a transformation, and that is the line this section drew
+and still draws.** `Device.middleC` is one of two cited kinds:
+
+```ts
+middleC?:
+  | { kind: 'fixed';   octave: number }                                   // MIDI 60 is C<octave>
+  | { kind: 'setting'; control: string; options: { label: string; octave: number }[] }
+```
+
+- **`fixed`** — the box calls MIDI 60 `C<octave>`. A `fixed` at 4 is a finished reading that
+  agrees, counts in the audit, and prints nothing.
+- **`setting`** — the reader chooses. A fixed octave on a Polyend tracker would be a false claim
+  of exactly the kind `CLAUDE.md` describes as a cited range read off the wrong printed scale, so
+  the manifest names the setting as the box names it and each option as the menu prints it
+  (`C-4`) beside the octave it means. **No default**: the Mini's Config table marks Clock In
+  *"(default)"* and marks nothing beside Middle C, and p.298's `C-5` is a suggested setup for
+  driving the box from a Play. A default no page states is invented.
+- **Absence is the third state**, as at `content` and `noteDuration`: the reason lives in
+  `capabilityEvidence` at `middleC` as one of #120's three reasoned non-claims, `npm run audit`
+  counts it, and the device page carries it. Most of the 46 manuals are expected to be silent, and
+  `unknown` with the pages read is the honest result there.
+
+No template reads the field and none can; no resolved note is respelled by it; §4.1's notes stay
+C4 everywhere. It reaches a reader in **one sentence per device block, and only where there is
+something to translate**: a box fixed away from C4 gets *C4 here is its C3* and the reminder that
+a MIDI number is the same on both; a setting box gets the menu and which option makes the page
+and the screen agree. A box at C4 and a box nobody has settled both print nothing, on purpose — a
+sentence saying *we do not know where this box puts middle C* on thirty-six of forty-six blocks is
+the caveat multiplied, not answered, and the reason is on the device page where a reader at a
+desk can ask.
+
+**§2.1's `triggerNote` is not that field, and the difference is still the whole of why it is
+allowed** — it was allowed before `middleC` existed and it is bound to `middleC` now. Note
+*naming* would be a scheme for spelling any note the template produces on any box, a
+transformation applied to musical output, which this section refuses. A trigger note is one cited
+fact about one voice, saying which note plays its sound as it is: `C5` plays a Tracker Mini sample
+as recorded. It transforms nothing, no template can reach it, and it is never compared against a
+hook's pitch. What it *is* compared against is the box's own mapping: `note` and `midi` are two
+spellings of one fact, `middleC` is a third citation about the same mapping, and three individually
+cited claims can disagree with every one of them well-formed. So `DeviceSchema` derives the octave
+the pair implies — `C5` beside `60` implies 5, `B4` beside `59` implies 5 too, `Cb4` beside `59`
+implies 4 — and refuses a `fixed` declaration it contradicts, or a `setting` whose menu does not
+offer it. Before #571 a `C5 · 60` beside a manifest that said C3 was two pages read and one of
+them wrong, silently. Where no `middleC` is declared there is nothing to compare against and the
+pair stands on its own citation, which is what the citation rule below has always required — a
+`midi` written beside a note name read off a manual page cites the box's own mapping, not
+scientific pitch notation.
 
 #### A note is not always a pitch, and the third kind is not this guide's to say (#369)
 

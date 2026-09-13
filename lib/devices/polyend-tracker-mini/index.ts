@@ -2488,9 +2488,35 @@ export const device: Device = {
    */
   noteDuration: { kind: 'until-next', noteOff: 'OFF' },
 
+  /**
+   * §4.1/#571. **Middle C is a setting on this box, so a fixed octave would be a false claim.**
+   *
+   * p.54's Config table and p.285's MIDI configuration both print it: *"Sets Tracker Mini's
+   * middle C as C-3, C-4, C-5, C-6. This will calibrate the note ranges to external gear if this
+   * does not naturally match."* The labels are the menu's, hyphen and all, because that is what
+   * a reader has to find. **No default**: the same table marks Clock In *"(default)"* and marks
+   * nothing beside Middle C, and p.298's `C-5` is a suggested setup for driving the box from a
+   * Play, not a statement of where it ships. The pool's `C5 · MIDI 60` trigger note is therefore
+   * true under `C-5` and `DeviceSchema` checks only that the menu offers it.
+   */
+  middleC: {
+    kind: 'setting',
+    control: 'Config > MIDI > Middle C',
+    options: [
+      { label: 'C-3', octave: 3 },
+      { label: 'C-4', octave: 4 },
+      { label: 'C-5', octave: 5 },
+      { label: 'C-6', octave: 6 },
+    ],
+  },
+
   capabilityEvidence: {
     content: cite(34),
     noteDuration: cite(105),
+    middleC: {
+      kind: 'manual',
+      source: `${MANUAL}, p.54 (Config table, Middle C: "Sets middle C as C-3, C-4, C-5, C-6"); p.285 (11.2 MIDI Configuration, the same setting)`,
+    },
 
     /**
      * §2.6/#22. Two pages state the same number and both are named, because they are different
