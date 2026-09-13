@@ -10,9 +10,9 @@ whether the screen in front of you is the one the line is about.
 - **Key** D minor (a reroll may pick F minor, G minor)
 - **Harmonic cycle** 4 bars
 
-| Degree | Bars |
-| --- | ---: |
-| i | 4 |
+| Degree | Notes | Bars |
+| --- | --- | ---: |
+| i | D · F · A | 4 |
 
 **Arrangement** — 120 bars total
 

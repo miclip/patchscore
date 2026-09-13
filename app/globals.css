@@ -1990,6 +1990,22 @@ body {
 }
 
 /*
+ * #570. The key a chord table is read in, above the table on a direction or riff page. The
+ * studio's `.song-row` and `.song-select`, so the two gestures look alike, but sized to its own
+ * content rather than to the panel: a select the width of a panel, above a table a quarter as
+ * wide, reads as a search box. The 44px target and 16px type are inherited.
+ */
+.key-select .song-select {
+  flex: 0 1 auto;
+  min-width: 14ch;
+}
+
+/* On a riff page the control heads the figure's columns, and the grid's own gap spaces it. */
+.riff-key .song-row {
+  margin-top: 0;
+}
+
+/*
  * The slider is the second affordance and never the only one, so it may take the whole width on
  * its own line when the row wraps — the number above it is still there to be typed.
  */

@@ -1,4 +1,5 @@
 import type { Arrangement, Harmony, Section } from '@/lib/core'
+import { chordNotesText, progressionRows } from '@/lib/core'
 import { num } from './format'
 import { VocabularyTerm } from '../vocabulary-term'
 
@@ -28,24 +29,37 @@ export function EnergyMeter({ energy }: { energy: number }) {
   )
 }
 
-/** §4.1. Degrees, not notes: a template authors `i`, and a key is chosen per guide. */
-export function ProgressionTable({ harmony }: { harmony: Harmony }) {
+/**
+ * §4.1/#570. Degrees and the notes they spell in `songKey`: a template authors `i`, and the key
+ * it is read in is the caller's — the guide's chosen key, or a direction page's first offered
+ * one. Rows come from `progressionRows`, so this table and the Markdown's cannot spell a chord
+ * differently.
+ */
+export function ProgressionTable({
+  harmony,
+  songKey,
+}: {
+  harmony: Harmony
+  songKey: string | undefined
+}) {
   return (
     <div className="table-scroll">
       <table>
         <thead>
           <tr>
             <th scope="col">Degree</th>
+            <th scope="col">Notes</th>
             <th scope="col" className="numeric">
               Bars
             </th>
           </tr>
         </thead>
         <tbody>
-          {harmony.progression.map((step, i) => (
-            <tr key={`${step.degree}-${i}`}>
-              <td className="mono">{step.degree}</td>
-              <td className="mono numeric">{num(step.bars)}</td>
+          {progressionRows(harmony, songKey).map((row, i) => (
+            <tr key={`${row.degree}-${i}`}>
+              <td className="mono">{row.degree}</td>
+              <td className="mono">{chordNotesText(row.notes)}</td>
+              <td className="mono numeric">{num(row.bars)}</td>
             </tr>
           ))}
         </tbody>

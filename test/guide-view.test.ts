@@ -16,6 +16,7 @@ import {
   noteInstruction,
   renderGuide,
   resolve,
+  spellChord,
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
@@ -24,7 +25,9 @@ import {
   acidLineage,
   ambientDub,
   droneStudy,
+  generativeDrift,
   industrialTechno,
+  lydianHouse,
   majorKeyElectro,
   relay,
   weave,
@@ -348,6 +351,56 @@ describe('the two renderers agree about the facts', () => {
       }
     }
     expect(sparse.shortfalls.length).toBeGreaterThan(0)
+  })
+
+  it('spells every chord of the progression in the song’s key, once per authored row (#570)', () => {
+    // Three directions rather than one, because the forms that exercise the speller are spread
+    // across the library: Lydian House authors the one seventh (`II7`), Generative Drift the one
+    // suspension (`Vsus2`), and Drone Study the one flat prefix (`bII`). Industrial Techno is the
+    // plain case. Every row is checked against `spellChord` on the *authored* progression, so a
+    // renderer that dropped a seventh or printed a triad for a sus chord fails here by name.
+    const results = [
+      real,
+      resolve({ devices: DEVICES, template: lydianHouse, mood: NEUTRAL_MOOD, seed: 1 }),
+      resolve({ devices: DEVICES, template: generativeDrift, mood: NEUTRAL_MOOD, seed: 1 }),
+      resolve({ devices: DEVICES, template: droneStudy, mood: NEUTRAL_MOOD, seed: 1 }),
+    ]
+    const forms = new Set<string>()
+    for (const result of results) {
+      const key = result.song.key
+      expect(key, result.template.id).toBeDefined()
+      if (key === undefined) continue
+      const markdown = renderGuide(result)
+      const page = html(result)
+      const rows = result.template.harmony.progression
+      for (const step of rows) {
+        forms.add(step.degree)
+        const spelt = spellChord(step.degree, key)
+        expect(spelt.outcome, `${result.template.id}: ${step.degree} in ${key}`).toBe('resolved')
+        if (spelt.outcome !== 'resolved') continue
+        const notes = spelt.chord.notes.join(' · ')
+        // A degree may be authored twice in one cycle, so the count is of equal authored rows.
+        const authored = rows.filter((r) => r.degree === step.degree && r.bars === step.bars).length
+        const mdRow = `| ${step.degree} | ${notes} | ${step.bars} |`
+        expect(markdown.split(mdRow).length - 1, `${result.template.id}: ${mdRow}`).toBe(authored)
+        const pageRow =
+          `<td class="mono">${step.degree}</td><td class="mono">${notes}</td>` +
+          `<td class="mono numeric">${step.bars}</td>`
+        expect(page.split(pageRow).length - 1, `${result.template.id}: ${pageRow}`).toBe(authored)
+      }
+      // No row the template did not author: the table has exactly as many rows as the cycle.
+      expect(markdown.match(/^\| (b?[IViv]+(?:7|sus2)?) \| /gm)?.length).toBe(rows.length)
+    }
+    // Non-vacuous: the seventh, the suspension and the flat prefix were all on the page.
+    expect(forms.has('II7')).toBe(true)
+    expect(forms.has('Vsus2')).toBe(true)
+    expect(forms.has('bII')).toBe(true)
+    // And a seventh is four notes and a suspension has no third, on the rendered page.
+    const lydian = results[1] as ResolveResult
+    expect(renderGuide(lydian)).toMatch(/\| II7 \| [A-G][#b]? · [A-G][#b]? · [A-G][#b]? · [A-G][#b]? \| 2 \|/)
+    const drift = results[2] as ResolveResult
+    const sus = spellChord('Vsus2', drift.song.key as string)
+    expect(sus.outcome === 'resolved' && sus.chord.notes.length).toBe(3)
   })
 })
 

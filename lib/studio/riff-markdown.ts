@@ -9,6 +9,7 @@ import type {
 } from '@/lib/core'
 import {
   SUBORDINATE,
+  chordNotesText,
   groupedParams,
   modulationEndParts,
   num,
@@ -140,11 +141,12 @@ function chordLines(riff: Riff): string[] {
     '',
     summary,
     '',
-    '| Degree | Bars | Under the figure |',
-    '| --- | ---: | :---: |',
+    '| Degree | Notes | Bars | Under the figure |',
+    '| --- | --- | ---: | :---: |',
     ...chordRows(riff).map(
       (row) =>
-        `| ${row.degree} | ${num(row.from)}\u2013${num(row.from + row.bars - 1)} |` +
+        `| ${row.degree} | ${chordNotesText(row.notes)} |` +
+        ` ${num(row.from)}\u2013${num(row.from + row.bars - 1)} |` +
         ` ${row.underFigure ? '●' : ''} |`,
     ),
     '',

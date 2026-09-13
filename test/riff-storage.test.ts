@@ -158,6 +158,8 @@ describe('and never writes it', () => {
       'components/rig/rig-picker.tsx',
       'components/riff/riff-voice.tsx',
       'components/riff/riff-figure.tsx',
+      'components/riff/riff-in-key.tsx',
+      'components/harmony/key-select.tsx',
       'components/catalogue/riff-index.tsx',
       'lib/studio/riff-page.ts',
       'lib/studio/riff-text.ts',

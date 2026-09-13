@@ -8,10 +8,17 @@ import {
   resolveHook,
   resolveHooksForRole,
   sharpSpelling,
+  spellChord,
+  parseChordDegree,
+  progressionRows,
+  chordNotesText,
+  UNSPELLABLE_CHORD,
   type Hook,
   HookNoteSchema,
+  ChordDegreeSchema,
 } from '../lib/core/index'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
+import { RIFFS } from '../lib/riffs/index'
 import { degreeName } from '../components/guide/format'
 import { degreeLabel } from '../lib/studio/riff-text'
 
@@ -483,5 +490,176 @@ describe('naming an altered degree on both surfaces (§4.1/#548)', () => {
     expect(degreeLabel(row(1))).toBe('degree #3')
     expect(degreeLabel(row(-1))).toBe('degree b3')
     expect(degreeLabel(row(2))).toBe('degree ##3')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// #570 — chord degrees, spelt
+// ---------------------------------------------------------------------------
+
+/** The pitch classes a degree spells in a key. Fails loudly if it did not resolve. */
+function chordOf(degree: string, key: string): string[] {
+  const result = spellChord(degree, key)
+  if (result.outcome !== 'resolved') throw new Error(`${result.reason}: ${result.detail}`)
+  return result.chord.notes
+}
+
+describe('spellChord (#570)', () => {
+  it('spells the triad the numeral names, as pitch classes with no octave', () => {
+    expect(chordOf('i', 'D minor')).toEqual(['D', 'F', 'A'])
+    expect(chordOf('VI', 'D minor')).toEqual(['Bb', 'D', 'F'])
+    expect(chordOf('III', 'D minor')).toEqual(['F', 'A', 'C'])
+    expect(chordOf('iv', 'D minor')).toEqual(['G', 'Bb', 'D'])
+    for (const note of chordOf('VI', 'D minor')) expect(note).not.toMatch(/\d/)
+  })
+
+  it('reads the third off the case, never off the mode: Blade Runner borrows I and IV', () => {
+    // F# minor's own first and fourth are minor; the riff writes them uppercase because they
+    // are borrowed major chords, and stacking thirds inside the mode would lose the borrowing.
+    expect(chordOf('I', 'F# minor')).toEqual(['F#', 'A#', 'C#'])
+    expect(chordOf('IV', 'F# minor')).toEqual(['B', 'D#', 'F#'])
+    expect(chordOf('i', 'F# minor')).toEqual(['F#', 'A', 'C#'])
+    expect(chordOf('iv', 'F# minor')).toEqual(['B', 'D', 'F#'])
+    // The raised third keeps the degree's letter — A#, the spelling a hook's `alter` gives it.
+    expect(chordOf('I', 'F# minor')[1]).toBe('A#')
+  })
+
+  it('adds a minor seventh for `7`, in either case', () => {
+    // Lydian House's II7: a major chord on the second degree with the #4 as its third.
+    expect(chordOf('II7', 'C lydian')).toEqual(['D', 'F#', 'A', 'C'])
+    expect(chordOf('II7', 'F lydian')).toEqual(['G', 'B', 'D', 'F'])
+    expect(chordOf('V7', 'C major')).toEqual(['G', 'B', 'D', 'F'])
+    expect(chordOf('ii7', 'C major')).toEqual(['D', 'F', 'A', 'C'])
+  })
+
+  it('replaces the third with the second for `sus2`', () => {
+    // Generative Drift's Vsus2 exists to keep degree 7 out of the chord.
+    expect(chordOf('Vsus2', 'G ionian')).toEqual(['D', 'E', 'A'])
+    expect(chordOf('Vsus2', 'E ionian')).toEqual(['B', 'C#', 'F#'])
+    expect(chordOf('Vsus2', 'B ionian')).toEqual(['F#', 'G#', 'C#'])
+  })
+
+  it('reads `b` as the major-scale degree lowered, so bII is the phrygian second and the Neapolitan', () => {
+    // Drone Study's bII in phrygian is the mode's own second, a semitone above the tonic.
+    expect(chordOf('bII', 'E phrygian')).toEqual(['F', 'A', 'C'])
+    expect(chordOf('bII', 'A phrygian')).toEqual(['Bb', 'D', 'F'])
+    expect(chordOf('bII', 'C phrygian')).toEqual(['Db', 'F', 'Ab'])
+    // In a major key the same numeral is a semitone below the mode's second, spelt on D.
+    expect(chordOf('bII', 'C major')).toEqual(['Db', 'F', 'Ab'])
+  })
+
+  it('carries the authored degree and the key through', () => {
+    const result = spellChord('bII', 'E phrygian')
+    expect(result.outcome).toBe('resolved')
+    if (result.outcome !== 'resolved') return
+    expect(result.chord.key).toBe('E phrygian')
+    expect(result.chord.degree).toEqual({
+      source: 'bII',
+      numeral: 2,
+      flat: true,
+      quality: 'major',
+      seventh: false,
+    })
+    expect(parseChordDegree('Vsus2')).toEqual({
+      source: 'Vsus2',
+      numeral: 5,
+      flat: false,
+      quality: 'sus2',
+      seventh: false,
+    })
+    expect(parseChordDegree('vii')).toMatchObject({ numeral: 7, quality: 'minor' })
+  })
+
+  it('spells every degree the library authors, in every key its template or riff offers', () => {
+    const seen = new Set<string>()
+    for (const template of TEMPLATES) {
+      for (const key of template.keys) {
+        for (const step of template.harmony?.progression ?? []) {
+          seen.add(step.degree)
+          const result = spellChord(step.degree, key)
+          expect(result, `${template.id}: ${step.degree} in ${key}`).toMatchObject({
+            outcome: 'resolved',
+          })
+        }
+      }
+    }
+    for (const riff of RIFFS) {
+      for (const step of riff.harmony?.progression ?? []) {
+        seen.add(step.degree)
+        const result = spellChord(step.degree, riff.key)
+        expect(result, `${riff.id}: ${step.degree} in ${riff.key}`).toMatchObject({
+          outcome: 'resolved',
+        })
+      }
+    }
+    // The seventeen forms the library authors today, across templates and riffs — the claim this
+    // test makes. The sweep above spells whatever is authored, so a new form cannot hide from it;
+    // this list is checked both ways so a form that stops being authored, or arrives, is noticed
+    // here and the list kept exact.
+    const AUTHORED_FORMS = [
+      'I', 'II', 'II7', 'III', 'IV', 'V', 'VI', 'VII', 'Vsus2', 'bII',
+      'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii',
+    ]
+    expect(AUTHORED_FORMS).toHaveLength(17)
+    for (const form of AUTHORED_FORMS) {
+      expect(seen.has(form), `${form} is no longer authored anywhere`).toBe(true)
+    }
+    expect([...seen].sort(), 'a degree form is authored that this list does not name').toEqual(
+      [...AUTHORED_FORMS].sort(),
+    )
+  })
+
+  it('reports rather than throws for a key or degree it cannot read', () => {
+    expect(spellChord('I', 'H minor')).toMatchObject({ outcome: 'unresolved', reason: 'unparsed-key' })
+    expect(spellChord('V7x', 'C major')).toMatchObject({
+      outcome: 'unresolved',
+      reason: 'unparsed-degree',
+    })
+    expect(spellChord('#iv', 'C major')).toMatchObject({ outcome: 'unresolved', reason: 'unparsed-degree' })
+    expect(spellChord('Vsus4', 'C major')).toMatchObject({ outcome: 'unresolved', reason: 'unparsed-degree' })
+    expect(spellChord('VIII', 'C major')).toMatchObject({ outcome: 'unresolved', reason: 'unparsed-degree' })
+    expect(spellChord('Iv', 'C major')).toMatchObject({ outcome: 'unresolved', reason: 'unparsed-degree' })
+    expect(parseChordDegree('V6sus4')).toBeUndefined()
+  })
+
+  it('reports a chord tone the notation cannot write, past two accidentals', () => {
+    // Fbb major is a legal key string; its lowered second sits on a G that would need three flats.
+    const result = spellChord('bII', 'Fbb major')
+    expect(result).toMatchObject({ outcome: 'unresolved', reason: 'unspellable' })
+    if (result.outcome === 'unresolved') expect(result.detail).toContain("'bII' in Fbb major")
+    // The tonic chord in the same key is writable, so it is the tone and not the key that fails.
+    expect(chordOf('I', 'Fbb major')).toEqual(['Fbb', 'Abb', 'Cbb'])
+  })
+
+  it('is the same grammar the schema enforces, so an unknown suffix fails content validation', () => {
+    for (const degree of ['i', 'VII', 'bII', 'II7', 'Vsus2', 'vii7', 'bVI']) {
+      expect(ChordDegreeSchema.safeParse(degree).success, degree).toBe(true)
+      expect(parseChordDegree(degree), degree).toBeDefined()
+    }
+    for (const degree of ['V7sus4', 'Vsus4', 'IV7sus2', 'Imaj7', '#iv', 'VIII', 'Iv', 'v9', 'b', '']) {
+      expect(ChordDegreeSchema.safeParse(degree).success, degree).toBe(false)
+      expect(parseChordDegree(degree), degree).toBeUndefined()
+    }
+  })
+})
+
+describe('progressionRows and chordNotesText (#570)', () => {
+  it('derives one row per authored step, with the notes joined by a middle dot', () => {
+    const harmony = { cycleBars: 8, progression: [{ degree: 'i', bars: 4 }, { degree: 'VI', bars: 4 }] }
+    const rows = progressionRows(harmony, 'D minor')
+    expect(rows).toEqual([
+      { degree: 'i', bars: 4, notes: ['D', 'F', 'A'] },
+      { degree: 'VI', bars: 4, notes: ['Bb', 'D', 'F'] },
+    ])
+    expect(rows.map((r) => chordNotesText(r.notes))).toEqual(['D · F · A', 'Bb · D · F'])
+  })
+
+  it('says a chord is not spellable rather than leaving nothing (invariant 5)', () => {
+    const harmony = { cycleBars: 4, progression: [{ degree: 'bII', bars: 4 }] }
+    expect(progressionRows(harmony, 'Fbb major')[0]?.notes).toBeUndefined()
+    expect(progressionRows(harmony, undefined)[0]?.notes).toBeUndefined()
+    expect(progressionRows(harmony, 'H minor')[0]?.notes).toBeUndefined()
+    expect(chordNotesText(undefined)).toBe(UNSPELLABLE_CHORD)
+    expect(UNSPELLABLE_CHORD).toBe('not spellable in this key')
   })
 })

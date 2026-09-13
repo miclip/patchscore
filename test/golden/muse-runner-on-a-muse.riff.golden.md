@@ -30,12 +30,12 @@ Wide vibrato, arriving after the note has settled. The note should be still for 
 
 4 chords over 8 bars, in D minor. The figure is bars 3–6.
 
-| Degree | Bars | Under the figure |
-| --- | ---: | :---: |
-| i | 1–2 |  |
-| VI | 3–4 | ● |
-| III | 5–6 | ● |
-| iv | 7–8 |  |
+| Degree | Notes | Bars | Under the figure |
+| --- | --- | ---: | :---: |
+| i | D · F · A | 1–2 |  |
+| VI | Bb · D · F | 3–4 | ● |
+| III | F · A · C | 5–6 | ● |
+| iv | G · Bb · D | 7–8 |  |
 
 The figure is played over these chords; supply them separately if your rig allows.
 

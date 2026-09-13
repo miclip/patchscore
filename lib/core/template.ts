@@ -366,13 +366,34 @@ export const PatternSchema = z
 // ---------------------------------------------------------------------------
 
 /**
- * A roman-numeral degree ('i', 'VI', 'VII'), resolved against the chosen key at §11 step 5.5.
- * Left open: DESIGN.md gives examples but never fixes the vocabulary, and a closed union
- * guessed here would reject legal authoring (sevenths, inversions, sharp-side borrowings).
- * Template-internal either way - it never crosses to a device (invariant 3).
+ * A roman-numeral chord degree, resolved against the chosen key by `spellChord` (#570).
+ *
+ * The grammar is exactly what the library authors and what the speller can read:
+ *
+ *     b?  (I|II|III|IV|V|VI|VII | i|ii|iii|iv|v|vi|vii)  (7|sus2)?
+ *
+ *  - **Case gives the third.** `I` in F# minor is a borrowed major chord and `i` is the key's
+ *    own; stacking thirds inside the mode would spell both minor, which is why the quality is
+ *    read off the numeral and never inferred.
+ *  - **`b` lowers the major-scale degree**, so `bII` is the same root in C major (Db) and in
+ *    E phrygian (F, the mode's own second) — the classical reading, and the one Drone Study's
+ *    authored `bII` means.
+ *  - **A suffix this grammar does not name fails validation.** Rendering `V7` as the triad `V`
+ *    would put the wrong chord on the page while looking right, which is worse than refusing
+ *    the string; a new suffix is a change to `spellChord` first and to this pattern second.
+ *
+ * Still a string rather than a union: the template type never crosses to a device
+ * (invariant 3), and the pattern is the vocabulary.
  */
 export type ChordDegree = string
-export const ChordDegreeSchema = z.string().min(1)
+export const CHORD_DEGREE_PATTERN = /^(b)?(VII|VI|IV|V|III|II|I|vii|vi|iv|v|iii|ii|i)(7|sus2)?$/
+export const ChordDegreeSchema = z
+  .string()
+  .min(1)
+  .regex(
+    CHORD_DEGREE_PATTERN,
+    "a chord degree is 'b?' + a roman numeral I..VII in one case + an optional '7' or 'sus2'",
+  )
 
 export type ProgressionStep = { degree: ChordDegree; bars: number }
 

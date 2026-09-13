@@ -26,14 +26,14 @@ Over the four minor chords either side, do the same thing with the plain third o
 
 6 chords over 12 bars, in F# minor. The figure is bars 7–10.
 
-| Degree | Bars | Under the figure |
-| --- | ---: | :---: |
-| i | 1–2 |  |
-| VI | 3–4 |  |
-| iv | 5–6 |  |
-| I | 7–8 | ● |
-| IV | 9–10 | ● |
-| v | 11–12 |  |
+| Degree | Notes | Bars | Under the figure |
+| --- | --- | ---: | :---: |
+| i | F# · A · C# | 1–2 |  |
+| VI | D · F# · A | 3–4 |  |
+| iv | B · D · F# | 5–6 |  |
+| I | F# · A# · C# | 7–8 | ● |
+| IV | B · D# · F# | 9–10 | ● |
+| v | C# · E · G# | 11–12 |  |
 
 The figure is played over these chords; supply them separately if your rig allows.
 

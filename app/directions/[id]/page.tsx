@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
 import { num } from '@/components/guide/format'
-import { ProgressionTable, SectionTable } from '@/components/guide/song-tables'
+import { SectionTable } from '@/components/guide/song-tables'
+import { ProgressionInKey } from '@/components/harmony/progression-in-key'
 import type { Template } from '@/lib/core'
 import { TEMPLATES } from '@/lib/templates'
 import { directionPage } from '@/lib/studio/direction-page'
@@ -22,13 +23,17 @@ function plural(n: number, one: string): string {
 /**
  * #84. One direction, everything the template holds and what any rig covers of it.
  *
- * Prerendered per template, a server component with no client boundary, and canonical to its own
- * address — the same three rules as a device page, for the same reasons.
+ * Prerendered per template and canonical to its own address — the same rules as a device page,
+ * for the same reasons. A server component with one client island since #570: `ProgressionInKey`,
+ * which holds the key the reader is reading the chord table in. That is view state and not a
+ * song control — no seed, no mood, no BPM, nothing written anywhere; the studio is where a key
+ * becomes a fact about a guide.
  *
  * The progression and the section map are the guide's own tables, imported rather than rewritten
  * (`components/guide/song-tables.tsx`). Both were already reading the template rather than a
  * resolved song, which is what made them shared rather than copied: a progression is authored in
- * degrees and only resolves against a key at guide time, and a section's bars do not move at all.
+ * degrees and spells against whichever key the table is read in, and a section's bars do not
+ * move at all.
  */
 
 export const dynamicParams = false
@@ -101,8 +106,10 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
           </dl>
 
           <h3>Progression</h3>
-          {/* Degrees, not notes: the key is chosen per guide, so this is what the genre authors. */}
-          <ProgressionTable harmony={harmony} />
+          {/* Opens in the first offered key, because the page has to pick one to name notes at
+              all — and since a guide may pick any of them, the reader can read the table in the
+              others, or in any key the chords spell (#570). View state only; nothing is written. */}
+          <ProgressionInKey harmony={harmony} initialKey={keys[0] as string} />
         </section>
 
         <section className="panel">

@@ -73,7 +73,7 @@ export function PhaseSong({ result }: { result: ResolveResult }) {
       </dl>
 
       <h4>Progression</h4>
-      <ProgressionTable harmony={template.harmony} />
+      <ProgressionTable harmony={template.harmony} songKey={song.key} />
 
       <h4>
         Arrangement <span className="quiet">{num(plan.totalBars)} bars total</span>

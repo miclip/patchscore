@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { NEUTRAL_MOOD, resolve, sectionsFor } from '../lib/core/index'
+import { NEUTRAL_MOOD, resolve, sectionsFor, spellChord } from '../lib/core/index'
 import type { Template } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
@@ -168,8 +168,17 @@ describe('the direction routes', () => {
     const page = directionPage(TECHNO)
 
     for (const section of TECHNO.structure) expect(markup).toContain(section.name)
-    // Degrees, not notes: the key is chosen per guide, so the page shows what is authored.
-    for (const step of TECHNO.harmony.progression) expect(markup).toContain(step.degree)
+    // Degrees and their notes, spelt in the first offered key: a guide picks one per seed, and
+    // the page names notes at all only by picking one to name them in (#570).
+    const first = TECHNO.keys[0] as string
+    for (const step of TECHNO.harmony.progression) {
+      const spelt = spellChord(step.degree, first)
+      expect(spelt.outcome).toBe('resolved')
+      if (spelt.outcome !== 'resolved') continue
+      expect(markup).toContain(
+        `<td class="mono">${step.degree}</td><td class="mono">${spelt.chord.notes.join(' · ')}</td>`,
+      )
+    }
     for (const key of TECHNO.keys) expect(markup).toContain(key)
     expect(markup).toContain(`${TECHNO.bpm.min}`)
     expect(markup).toContain(`${TECHNO.bpm.max}`)
