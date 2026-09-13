@@ -345,7 +345,15 @@ export const device: Device = {
    * content is expensive — that is not what this says. It says the question does not arise, and
    * names the page it does not arise on.
    */
+  /**
+   * §4.1/#571. **MIDI 60 is C5 to this box**, an octave above the C4 every note here is printed
+   * in. p.148, the CV calibration tip: *"Hapax outputs -5.00V for a C0 note (midi note 0), ...,
+   * 0.00V for a C5 note (midi note 60), ..., 5.00V for a C10 note (midi note 120)."*
+   */
+  middleC: { kind: 'fixed', octave: 5 },
+
   capabilityEvidence: {
+    middleC: cite(148),
     'clock.canSendClock': cite(132),
     'clock.canReceiveClock': cite(130),
     'clock.transport': cite(130),

@@ -2066,7 +2066,16 @@ export const device: Device = {
     unit: 'note divisions — 1/16 is one step',
   },
 
+  /**
+   * §4.1/#571. **MIDI 60 is C5 to this box**, an octave above the C4 every note here is printed
+   * in. p.23 §8.4: *"MIDI note numbers 12–84, that corresponds to notes C1–C7 (C5, MIDI note 60,
+   * being middle C)"* — the same sentence the slice-base reading at `track-sample` declines a
+   * trigger note from.
+   */
+  middleC: { kind: 'fixed', octave: 5 },
+
   capabilityEvidence: {
+    middleC: cite(23),
     ...JACK_EVIDENCE,
     'clock.canSendClock': cite(69),
     'clock.canReceiveClock': cite(69),

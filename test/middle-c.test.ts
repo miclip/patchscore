@@ -392,24 +392,26 @@ function guideOn(middleC: MiddleC | undefined, at: unknown): ResolveResult {
 
 const LAYOUTS: readonly GuideLayout[] = ['phase', 'sequencer']
 const HEADING = 'Note names'
+// "In the box's own naming" rather than "on its screen": the Cascadia has no screen, and its
+// convention is in its manual, where MIDI note 60 is C3 and maps to 0V.
 const LOW_SENTENCE =
-  'Middle C is C4 here and C3 on this box, so every note printed here reads an octave lower on ' +
-  'its screen: C4 here is its C3. A MIDI number, where one is printed, is the same on both.'
+  "Middle C is C4 here and C3 to this box, so a note printed here is an octave lower in the box's " +
+  'own naming: C4 here is its C3. A MIDI number, where one is printed, is the same on both.'
 const HIGH_SENTENCE =
-  'Middle C is C4 here and C5 on this box, so every note printed here reads an octave higher on ' +
-  'its screen: C4 here is its C5. A MIDI number, where one is printed, is the same on both.'
+  "Middle C is C4 here and C5 to this box, so a note printed here is an octave higher in the box's " +
+  'own naming: C4 here is its C5. A MIDI number, where one is printed, is the same on both.'
 const SETTING_SENTENCE =
   'Middle C is C4 here, and on this box it is a setting: Config > MIDI > Middle C offers C-3, ' +
-  'C-4, C-5 and C-6. Choose C-4 and every note printed here reads the same on its screen. A ' +
+  'C-4, C-5 and C-6. Choose C-4 and every note printed here reads the same on the box. A ' +
   'MIDI number, where one is printed, is the same whichever you choose.'
 
 function occurrences(haystack: string, needle: string): number {
   return haystack.split(needle).length - 1
 }
 
-/** React escapes `>` in text, so the web guide's copy of the setting sentence reads `&gt;`. */
+/** React escapes `>` and `'` in text, so the web guide's copies read `&gt;` and `&#x27;`. */
 function escaped(sentence: string): string {
-  return sentence.replaceAll('>', '&gt;')
+  return sentence.replaceAll('>', '&gt;').replaceAll("'", '&#x27;')
 }
 
 describe('the notice reaches a reader once per device, both renderers, both layouts', () => {
@@ -454,6 +456,48 @@ describe('the notice reaches a reader once per device, both renderers, both layo
  * the same page, and the Tracker Mini is the box on which a fixed octave would be a false claim.
  */
 describe('the catalogue', () => {
+  /**
+   * #571's count, verified against the registry rather than by eye: seven boxes state where MIDI
+   * 60 sits and two make it a setting. A floor rather than a target — a manual stating it inside
+   * a table or a drawing would not have shown up in the text search that found these, so a tenth
+   * is likely and belongs here when it is read.
+   */
+  it('declares the nine boxes whose manuals say, at the octave each manual prints', () => {
+    const declared = new Map(DEVICES.filter((d) => d.middleC !== undefined).map((d) => [d.id, d.middleC]))
+    expect([...declared.keys()].sort()).toEqual(
+      [
+        'elektron-digitakt',
+        'elektron-digitakt-ii',
+        'elektron-digitone-ii',
+        'intellijel-cascadia',
+        'polyend-tracker',
+        'polyend-tracker-mini',
+        'roland-mc-707',
+        'squarp-hapax',
+        'synthstrom-deluge',
+      ].sort(),
+    )
+    const octave = (id: string) => {
+      const m = declared.get(id)
+      return m?.kind === 'fixed' ? m.octave : m?.kind
+    }
+    expect(octave('synthstrom-deluge')).toBe(3)
+    expect(octave('intellijel-cascadia')).toBe(3)
+    expect(octave('roland-mc-707')).toBe(4)
+    expect(octave('elektron-digitakt')).toBe(5)
+    expect(octave('elektron-digitakt-ii')).toBe(5)
+    expect(octave('elektron-digitone-ii')).toBe(5)
+    expect(octave('squarp-hapax')).toBe(5)
+    expect(octave('polyend-tracker')).toBe('setting')
+    expect(octave('polyend-tracker-mini')).toBe('setting')
+    // The MC-707 agrees with the page and so prints nothing; the other eight print a sentence.
+    expect(middleCNotice(DEVICES.find((d) => d.id === 'roland-mc-707'))).toBeUndefined()
+    for (const id of declared.keys()) {
+      if (id === 'roland-mc-707') continue
+      expect(middleCNotice(DEVICES.find((d) => d.id === id)), id).toBeDefined()
+    }
+  })
+
   it('declares the Digitakt II fixed at C5, off the page its trigger note cites', () => {
     const dt2 = DEVICES.find((d) => d.id === 'elektron-digitakt-ii')
     expect(dt2?.middleC).toEqual({ kind: 'fixed', octave: 5 })

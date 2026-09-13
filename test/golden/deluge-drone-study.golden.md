@@ -143,6 +143,10 @@ and cut the final one short: 9 bars of a 4-bar pattern is 4 + 4 + 1.
 
 *This block draws on the Deluge Official Guidebook OS 4.1 (OLED), pp.18-225 and the Deluge community firmware release_1_2_1; its values are starting points.*
 
+**Note names**
+
+- Middle C is C4 here and C3 to this box, so a note printed here is an octave lower in the box's own naming: C4 here is its C3. A MIDI number, where one is printed, is the same on both.
+
 **Song-wide**
 
 One setting for the whole song — set it once, not once per part below.

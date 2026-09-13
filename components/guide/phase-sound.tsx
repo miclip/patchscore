@@ -396,9 +396,9 @@ function middleCText(notice: MiddleCNotice): string {
   if (notice.state === 'fixed') {
     const away = notice.octave - PRINTED_MIDDLE_C
     return (
-      `Middle C is C${PRINTED_MIDDLE_C} here and C${notice.octave} on this box, so every note ` +
-      `printed here reads ${octavesAway(away)} on its screen: C${PRINTED_MIDDLE_C} here is its ` +
-      `C${notice.octave}. A MIDI number, where one is printed, is the same on both.`
+      `Middle C is C${PRINTED_MIDDLE_C} here and C${notice.octave} to this box, so a note ` +
+      `printed here is ${octavesAway(away)} in the box's own naming: C${PRINTED_MIDDLE_C} here ` +
+      `is its C${notice.octave}. A MIDI number, where one is printed, is the same on both.`
     )
   }
   const offered = andList(notice.options.map((o) => o.label))
@@ -414,7 +414,7 @@ function middleCText(notice: MiddleCNotice): string {
   return (
     `Middle C is C${PRINTED_MIDDLE_C} here, and on this box it is a setting: ` +
     `${notice.control} offers ${offered}. Choose ${ours.label} and every note printed here ` +
-    'reads the same on its screen. A MIDI number, where one is printed, is the same whichever ' +
+    'reads the same on the box. A MIDI number, where one is printed, is the same whichever ' +
     'you choose.'
   )
 }

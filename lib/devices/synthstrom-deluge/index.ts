@@ -1678,7 +1678,24 @@ export const device: Device = {
     unit: 'grid steps at the current zoom',
   },
 
+  /**
+   * §4.1/#571. **MIDI 60 is C3 to this box**, an octave below the C4 every note here is printed
+   * in. The OS 4.0 guidebook's MC05 `MIDI Note Output` command shows the seven-segment display
+   * reading `12.60` with two captions under it, *"MIDI Channel 12"* and *"MIDI Note 60 (C3)"*
+   * (printed p.313). The
+   * OS 4.1 (OLED) edition, which the rest of this manifest cites, prints the same command on the
+   * same printed page and drops the display example, so the sentence is cited to the edition
+   * that still carries it. What the page shows is a number and what it names is the note; no
+   * page here pairs a note name on the box's own screen with a MIDI number.
+   */
+  middleC: { kind: 'fixed', octave: 3 },
+
   capabilityEvidence: {
+    middleC: {
+      kind: 'manual',
+      source:
+        'Deluge Official Guidebook OS 4.0, printed p.313 (MC05 MIDI Note Output, display example captioned "MIDI Channel 12" and "MIDI Note 60 (C3)"); the OS 4.1 (OLED) edition drops the example',
+    },
     noteDuration: cite(48),
     // §2.6/#111. §2.1 Factory Library, and the File Structure drawing beneath it — see `content`.
     content: cite(12),

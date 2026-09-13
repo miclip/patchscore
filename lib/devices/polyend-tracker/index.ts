@@ -1546,7 +1546,33 @@ export const device: Device = {
    */
   noteDuration: { kind: 'until-next', noteOff: 'OFF' },
 
+  /**
+   * §4.1/#571. **Middle C is a setting on this box, so a fixed octave would be a false claim** —
+   * the Tracker Mini's reading, on the full-size Tracker's own pages. p.50's Config table and
+   * p.251's MIDI configuration both print it: *"Sets Tracker's middle C as C-3, C-4, C-5, C-6.
+   * This will calibrate the note ranges to external gear if this does not naturally match."*
+   * Labels are the menu's, hyphen and all. **No default**: the same table marks Clock In
+   * *"(default)"* and marks nothing beside Middle C, and the `C-5` on pp.253, 255 and 264 is a
+   * suggested setup for driving the box from something else. This box authors no trigger note,
+   * so there is nothing here for `withMiddleC` to condition.
+   */
+  middleC: {
+    kind: 'setting',
+    control: 'Config > MIDI > Middle C',
+    options: [
+      { label: 'C-3', octave: 3 },
+      { label: 'C-4', octave: 4 },
+      { label: 'C-5', octave: 5 },
+      { label: 'C-6', octave: 6 },
+    ],
+  },
+
   capabilityEvidence: {
+    middleC: {
+      kind: 'manual',
+      source:
+        'Polyend Tracker Manual 1.9.2a, p.50 (Config table, Middle C: "Sets middle C as C-3, C-4, C-5, C-6"); p.251 (11.2 MIDI Configuration, the same setting)',
+    },
     'clock.canSendClock': cite(251),
     'clock.canReceiveClock': cite(251),
     'clock.transport': cite(251),
