@@ -38,13 +38,8 @@ export const museRunnerFloatingArrivalLead: Riff = {
   id: 'muse-runner-floating-arrival-lead',
   name: 'The Muse Runner floating-arrival lead',
   reference: { kind: 'patch', name: 'Muse Runner' },
-  /**
-   * The original definition wrote `bpm: 66` and, beside it, `range: [58, 78]`, which is a MIDI
-   * pitch range (Bb3 to F#5) and not a tempo span. The span here is Blade Runner's width moved
-   * to 66. The pitch bound has no field to land in, and the figure keeps it anyway: the resolved
-   * notes are MIDI 71, 72 and 76, and the test on this entry says so.
-   */
-  bpm: { min: 58, max: 74, default: 66 },
+  /** The definition's own `bpm: 66` and `range: [58, 78]`, which is the tempo window (#569). */
+  bpm: { min: 58, max: 78, default: 66 },
   key: 'D minor',
   technique: [
     'Bars 3 to 6 of the cycle, over the second and third chords. The chords either side are ' +

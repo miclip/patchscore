@@ -1,6 +1,6 @@
 # The Muse Runner floating-arrival lead
 
-`lead` · `bright` · 66 BPM (58–74) · D minor · 4 bars · 64 steps
+`lead` · `bright` · 66 BPM (58–78) · D minor · 4 bars · 64 steps
 
 ## The technique
 

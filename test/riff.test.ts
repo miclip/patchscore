@@ -604,16 +604,20 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566)', () => {
     expect(riff.hook.notes.map((n) => n.alter)).toEqual([undefined, 1, undefined])
   })
 
-  it('keeps the pitch range the original definition asked for, which no field carries', () => {
-    // The definition wrote `range: [58, 78]`: MIDI, Bb3 to F#5, and not a tempo. There is no
-    // field for a pitch bound (§4.1 puts range policy outside the hook), so the figure keeps it
-    // by construction and this is where that is checked.
+  /**
+   * **`range` is the tempo window, and this entry read it as a pitch range** (#566, corrected in
+   * #569). Every one of the twelve definitions brackets its own `bpm` with it, so the reading was
+   * checkable against eleven other rows and was not checked. This one shipped a span of 58 to 74,
+   * Blade Runner's width moved to 66, where the operator wrote 58 to 78.
+   *
+   * The old assertion passed on a coincidence: the figure's three notes are MIDI 71, 72 and 76,
+   * which sit inside 58 and 78 read as pitches. A test that would have passed on the wrong reading
+   * is not evidence of the right one, so the pitches are pinned as themselves below and the tempo
+   * is pinned as the definition wrote it.
+   */
+  it('carries the definition\u2019s own tempo window, and its three pitches', () => {
     expect(notes.map((n) => n.midi)).toEqual([76, 71, 72])
-    for (const note of notes) {
-      expect(note.midi, note.note).toBeGreaterThanOrEqual(58)
-      expect(note.midi, note.note).toBeLessThanOrEqual(78)
-    }
-    expect(riff.bpm).toEqual({ min: 58, max: 74, default: 66 })
+    expect(riff.bpm).toEqual({ min: 58, max: 78, default: 66 })
   })
 
   it('puts the E over the VI and the B and C over the III', () => {
