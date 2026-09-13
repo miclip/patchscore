@@ -29,11 +29,11 @@ function card(riff: Riff) {
         {riffLength(riff)}
       </span>
       {/*
-        §5A.5. The record, said on the card as well as on the page. It is how a reader recognises
-        the entry, and a list that showed only our own titles would be a list of things nobody has
-        heard of.
+        §5A.5. The reference, said on the card as well as on the page. It is how a reader
+        recognises the entry, and a list that showed only our own titles would be a list of things
+        nobody has heard of. "From" reads the same over a record and over a factory patch.
       */}
-      <span className="catalogue-sub">From {riff.track}</span>
+      <span className="catalogue-sub">From {riff.reference.name}</span>
     </Link>
   )
 }

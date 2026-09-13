@@ -312,9 +312,9 @@ describe('the riff page exists exactly where an entry does', () => {
     for (const riff of RIFFS) {
       expect(markup, riff.id).toContain(`href="/riffs/${riff.id}"`)
       expect(text(markup), riff.id).toContain(riff.name)
-      // §5A.5. The record is on the card too: a list of only our own titles is a list of things
-      // nobody has heard of.
-      expect(text(markup), riff.track).toContain(`From ${riff.track}`)
+      // §5A.5. The reference is on the card too: a list of only our own titles is a list of
+      // things nobody has heard of.
+      expect(text(markup), riff.reference.name).toContain(`From ${riff.reference.name}`)
     }
   })
 })

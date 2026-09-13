@@ -16,7 +16,7 @@ import type { Riff } from '../core/riff'
 export const acidTracksLine: Riff = {
   id: 'acid-tracks-line',
   name: 'The Acid Tracks line',
-  track: 'Acid Tracks',
+  reference: { kind: 'record', name: 'Acid Tracks' },
   bpm: { min: 112, max: 132, default: 122 },
   key: 'C minor',
   technique: [

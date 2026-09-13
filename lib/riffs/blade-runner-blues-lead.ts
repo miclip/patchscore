@@ -37,7 +37,7 @@ import type { Riff } from '../core/riff'
 export const bladeRunnerBluesLead: Riff = {
   id: 'blade-runner-blues-lead',
   name: 'The Blade Runner Blues lead',
-  track: 'Blade Runner Blues',
+  reference: { kind: 'record', name: 'Blade Runner Blues' },
   bpm: { min: 56, max: 72, default: 64 },
   key: 'F# minor',
   technique: [

@@ -20,7 +20,7 @@ import type { Riff } from '../core/riff'
 export const showMeLoveOrganStab: Riff = {
   id: 'show-me-love-organ-stab',
   name: 'The Show Me Love organ stab',
-  track: 'Show Me Love',
+  reference: { kind: 'record', name: 'Show Me Love' },
   bpm: { min: 112, max: 128, default: 120 },
   key: 'A minor',
   technique: [

@@ -5,7 +5,7 @@ import {
   RiffSchema,
   resolveHook,
   riffConstraintViolations,
-  trackSlug,
+  referenceSlug,
   type Riff,
 } from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
@@ -32,7 +32,7 @@ function riff(over: Partial<Riff> = {}): Riff {
   return {
     id: 'fixture-riff',
     name: 'The fixture riff',
-    track: 'fixture',
+    reference: { kind: 'record', name: 'fixture' },
     technique: ['Play it.'],
     bpm: { min: 100, max: 140, default: 120 },
     key: 'A minor',
@@ -72,19 +72,70 @@ describe('RiffSchema (§5A)', () => {
     expect(RiffSchema.safeParse({ ...riff(), sections: ['Drop'] }).success).toBe(false)
   })
 
-  it('refuses a title that does not name the record (§5A.5)', () => {
+  /**
+   * §5A.5. **A reference is a record or a factory patch, and the checks are the same for both.**
+   * The title has to carry the name and the id has to open with its slug whichever kind it is;
+   * the kind changes nothing about where the reference is findable, only what it names.
+   */
+  it('parses a record reference (§5A.5)', () => {
+    const parsed = RiffSchema.safeParse(riff({ reference: { kind: 'record', name: 'fixture' } }))
+    expect(parsed.success).toBe(true)
+  })
+
+  it('parses a patch reference (§5A.5)', () => {
+    const parsed = RiffSchema.safeParse(
+      riff({
+        id: 'fixture-patch-riff',
+        name: 'The fixture patch riff',
+        reference: { kind: 'patch', name: 'fixture patch' },
+      }),
+    )
+    expect(parsed.success).toBe(true)
+  })
+
+  it('refuses a reference of a third kind: the idiom is not a reference (§5A.5)', () => {
+    const idiom = { kind: 'idiom', name: 'fixture' } as unknown as Riff['reference']
+    expect(RiffSchema.safeParse(riff({ reference: idiom })).success).toBe(false)
+  })
+
+  it('refuses an empty reference name (§5A.5)', () => {
+    expect(RiffSchema.safeParse(riff({ reference: { kind: 'record', name: '' } })).success).toBe(
+      false,
+    )
+  })
+
+  it('refuses a title that does not name the reference (§5A.5)', () => {
     expect(refusal(riff({ name: 'The nameless riff' }))).toContain('must name')
+    expect(
+      refusal(
+        riff({
+          id: 'fixture-patch-riff',
+          name: 'The nameless riff',
+          reference: { kind: 'patch', name: 'fixture patch' },
+        }),
+      ),
+    ).toContain('must name')
   })
 
-  it('refuses an id that does not open with the record’s slug (§5A.5)', () => {
+  it('refuses an id that does not open with the reference’s slug (§5A.5)', () => {
     expect(refusal(riff({ id: 'some-other-riff' }))).toContain('must open with')
+    expect(
+      refusal(
+        riff({
+          id: 'some-other-riff',
+          name: 'The fixture patch riff',
+          reference: { kind: 'patch', name: 'fixture patch' },
+        }),
+      ),
+    ).toContain('must open with')
   })
 
-  it('slugifies a multi-word title the way an address bar needs it', () => {
-    expect(trackSlug('Show Me Love')).toBe('show-me-love')
-    expect(trackSlug('Blue Monday')).toBe('blue-monday')
+  it('slugifies a multi-word reference the way an address bar needs it', () => {
+    expect(referenceSlug('Show Me Love')).toBe('show-me-love')
+    expect(referenceSlug('Blue Monday')).toBe('blue-monday')
+    expect(referenceSlug('Muse Runner')).toBe('muse-runner')
     // Punctuation collapses rather than surviving, and no leading or trailing separator is left.
-    expect(trackSlug("Ain't  Nobody!")).toBe('ain-t-nobody')
+    expect(referenceSlug("Ain't  Nobody!")).toBe('ain-t-nobody')
   })
 
   it('refuses a key the engine cannot read, because the hook has no second one', () => {
@@ -210,34 +261,36 @@ describe('the riff library (§5A)', () => {
   })
 
   /**
-   * §5A.5. **Every entry names the record it is found by, in both the things a reader sees** — the
+   * §5A.5. **Every entry names what it is found by, in both the things a reader sees** — the
    * title on the page and the slug in the address bar.
    *
    * Asserted here as well as in the schema, and the two are not the same check. The schema refuses
-   * an entry whose `track` disagrees with its own id and title; this refuses a *library* where an
-   * entry declared a reference nobody would recognise as a record — an empty one, a bare role
-   * name, or a `track` that is really just the riff's own id typed twice.
+   * an entry whose `reference` disagrees with its own id and title; this refuses a *library* where
+   * an entry declared a reference nobody would recognise as a record or a patch — an empty one, a
+   * bare role name, or a name that is really just the riff's own id typed twice.
    */
-  it('every entry’s title and slug carry its track reference', () => {
+  it('every entry’s title and slug carry its reference', () => {
     for (const entry of RIFFS) {
-      expect(entry.track.trim(), entry.id).toBe(entry.track)
-      expect(entry.track.length, entry.id).toBeGreaterThan(2)
-      // The reference is a record, not the part. `Riff.request.role` is what the part is.
-      expect(entry.track.toLowerCase(), entry.id).not.toBe(entry.request.role)
+      const { name } = entry.reference
+      expect(name.trim(), entry.id).toBe(name)
+      expect(name.length, entry.id).toBeGreaterThan(2)
+      // The reference is a record or a patch, not the part. `Riff.request.role` is what the part
+      // is.
+      expect(name.toLowerCase(), entry.id).not.toBe(entry.request.role)
       // Both surfaces, which is the whole rule.
-      expect(entry.name, `${entry.id} title`).toContain(entry.track)
-      expect(entry.id.startsWith(trackSlug(entry.track)), `${entry.id} slug`).toBe(true)
+      expect(entry.name, `${entry.id} title`).toContain(name)
+      expect(entry.id.startsWith(referenceSlug(name)), `${entry.id} slug`).toBe(true)
       // And the slug is a real prefix rather than the whole id: `blue-monday` alone would not say
       // which part of the record the page is about.
       expect(entry.id.length, `${entry.id} names no part`).toBeGreaterThan(
-        trackSlug(entry.track).length,
+        referenceSlug(name).length,
       )
     }
   })
 
-  it('no two entries name the same record', () => {
-    const tracks = RIFFS.map((r) => r.track)
-    expect(new Set(tracks).size).toBe(tracks.length)
+  it('no two entries share a reference', () => {
+    const names = RIFFS.map((r) => `${r.reference.kind}:${r.reference.name}`)
+    expect(new Set(names).size).toBe(names.length)
   })
 
   /**
