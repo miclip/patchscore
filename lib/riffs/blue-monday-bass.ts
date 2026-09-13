@@ -25,7 +25,7 @@ import type { Riff } from '../core/riff'
 export const blueMondayBass: Riff = {
   id: 'blue-monday-bass',
   name: 'The Blue Monday bass',
-  track: 'Blue Monday',
+  reference: { kind: 'record', name: 'Blue Monday' },
   bpm: { min: 118, max: 134, default: 128 },
   key: 'F minor',
   technique: [

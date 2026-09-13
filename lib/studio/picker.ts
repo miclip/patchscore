@@ -136,10 +136,10 @@ export function templateFields(template: Template): readonly string[] {
 }
 
 /**
- * §5A. A riff's searchable text: its name, the record it is named for, and the part it is.
+ * §5A. A riff's searchable text: its name, the record or patch it is named for, and the part it is.
  *
- * The `track` is here because it is how a reader looks for one — somebody types *thriller* long
- * before they type *lead*. The role and character are here because they are the other half of the
+ * The reference is here because it is how a reader looks for one — somebody types *thriller*
+ * long before they type *lead*. The role and character are here because they are the other half of the
  * question and the only two words a riff shares with the rest of the site.
  *
  * **The technique prose is not searched**, deliberately. Four paragraphs of it per entry would
@@ -147,7 +147,7 @@ export function templateFields(template: Template): readonly string[] {
  * tells you nothing — the same argument `deviceFields` makes for leaving a manual out.
  */
 export function riffFields(riff: Riff): readonly string[] {
-  return [riff.name, riff.track, riff.request.role, riff.request.character]
+  return [riff.name, riff.reference.name, riff.request.role, riff.request.character]
 }
 
 // ---------------------------------------------------------------------------

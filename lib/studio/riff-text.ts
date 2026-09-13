@@ -44,14 +44,15 @@ export function riffTitle(riff: Riff): string {
  * not opened it, and gives them no reason to. What they came for is to get the sound out of the
  * gear on their desk and then play the part.
  *
- * **It describes a technique, never a recording.** *The bass-mid figure from Blue Monday* reads as
- * a claim that the notes came off the record, which would be false: the figure is authored here
- * (§5A.5). So the track names the *sound* to build, and the figure is one **written here** to
- * practise the technique against.
+ * **It describes a technique, never a recording or a patch.** *The bass-mid figure from Blue
+ * Monday* reads as a claim that the notes came off the record, which would be false: the figure
+ * is authored here (§5A.5). So the reference names the *sound* to build, and the figure is one
+ * **written here** to practise the technique against. The sentence reads the same whether the
+ * reference is a record or a factory patch, which is why it names neither kind.
  */
 export function riffDescription(riff: Riff): string {
   return (
-    `Build the ${riff.track} ${riff.request.role} sound on the boxes you own, then practise the ` +
+    `Build the ${riff.reference.name} ${riff.request.role} sound on the boxes you own, then practise the ` +
     'technique against a figure written here.'
   )
 }

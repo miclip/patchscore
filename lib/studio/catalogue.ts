@@ -81,14 +81,20 @@ export const DIRECTION_CATALOGUE: CatalogueSource<Template> = {
 }
 
 /**
- * §5A. The third catalogue, and the narrowest search of the three: a riff is found by the record
- * it is named for or by the part it is, and it has no maker and no key list to match on.
+ * §5A. The third catalogue, and the narrowest search of the three: a riff is found by what it is
+ * named for or by the part it is, and it has no maker and no key list to match on.
+ *
+ * **The label names neither kind of reference, and that is deliberate** (§5A.5, #566). It said
+ * *record* until a riff arrived named for a factory patch, and the repair is not to list both:
+ * `RiffSchema` requires the reference verbatim inside `name`, so somebody typing *Blue Monday* or
+ * *Muse Runner* matches the title without the label having promised it. A label enumerating the
+ * kinds goes stale the next time one is added, and this one already did.
  */
 export const RIFF_CATALOGUE: CatalogueSource<Riff> = {
   id: 'riffs',
   noun: { one: 'riff', many: 'riffs' },
-  searchLabel: 'Search riffs by name, record or part',
-  placeholder: 'Search name, record, part',
+  searchLabel: 'Search riffs by name or part',
+  placeholder: 'Search name, part',
   kinds: [],
   empty: 'No riff matches that.',
   search: (filter) => riffView(RIFFS, filter.query),

@@ -100,28 +100,50 @@ import { NEUTRAL_MOOD, bearsPattern, type Character } from './vocabulary'
 // The riff
 // ---------------------------------------------------------------------------
 
+/**
+ * §5A.5. What a riff is named for. See `Riff.reference`.
+ */
+export type RiffReference = {
+  /** `record`: a recording. `patch`: a factory patch a box ships, by the name on its panel. */
+  kind: 'record' | 'patch'
+  /** The name as somebody would say it: `'Blue Monday'`, `'Muse Runner'`. */
+  name: string
+}
+
+export const RiffReferenceSchema = z.strictObject({
+  kind: z.enum(['record', 'patch']),
+  name: z.string().min(1),
+})
+
 export type Riff = {
-  /** Opens with `track`, slugified — `RiffSchema` enforces it. See `track`. */
+  /** Opens with `reference.name`, slugified — `RiffSchema` enforces it. See `reference`. */
   id: RiffId
-  /** 'The Blue Monday bass'. Contains `track` verbatim — `RiffSchema` enforces it. */
+  /** 'The Blue Monday bass'. Contains `reference.name` verbatim — `RiffSchema` enforces it. */
   name: string
   /**
-   * §5A.5. **The recording this technique is named for**, as somebody would say it out loud.
+   * §5A.5. **What this technique is named for**, as somebody would say it out loud: a recording,
+   * or a factory patch a box ships.
    *
-   * Every riff has one. A technique is found by the record it is famous from, and a library where
-   * some entries carried a reference and some did not would be asking a reader to know which kind
-   * they were looking at before they could search for it.
+   * Every riff has one. It names how a reader looks the technique up. A technique is found by the
+   * record it is famous from or the patch it is heard on before anyone has a name for what the
+   * part is doing, and a library where some entries carried a reference and some did not would be
+   * asking a reader to know which kind they were looking at before they could search for it.
+   *
+   * **Two kinds and not three.** `record` is a release somebody has heard; `patch` is a preset
+   * named on the box's own panel. A third kind for the idiom would be the rule dissolving: every
+   * riff has an idiom, and a field that any string satisfies constrains nothing.
    *
    * **A field rather than a convention, because both the slug and the title have to carry it and
    * a convention is a thing two authors can disagree about by Tuesday.** `RiffSchema` requires
-   * `name` to contain this verbatim and `id` to open with its slug, so an entry named for one
-   * record and filed under another cannot parse.
+   * `name` to contain `reference.name` verbatim and `id` to open with its slug, so an entry named
+   * for one reference and filed under another cannot parse.
    *
-   * **It is a reference, never a claim about the notes.** The hook below is this library's own —
-   * see `lib/riffs` and §5A.5. What a riff teaches is a way of playing a part; the figure carrying
-   * that here is ours, and a reader who wants the record should go and listen to the record.
+   * **It is a reference, never a claim about the notes and never a device.** The hook below is
+   * this library's own — see `lib/riffs` and §5A.5. A `patch` reference names a preset, not the
+   * box that ships it: a riff names no device (invariant 3), and `Recipe.factoryPatch` is the
+   * separate fact that a *recipe's* parameters reach a sound a box also ships.
    */
-  track: string
+  reference: RiffReference
   /**
    * **What the technique is, in the words somebody would use teaching it.** One string per
    * paragraph, prose, and the only free text a riff carries.
@@ -131,9 +153,9 @@ export type Riff = {
    * part* — where the accents sit, what the figure is answering, what to listen for when it is
    * right. Neither the resolver nor the schema reads it.
    *
-   * **It never names a device** (invariant 3) and it never carries a transcription. Where an
-   * entry is named after a recording, the recording is the reference and the notes below are
-   * this library's own — see `lib/riffs`.
+   * **It never names a device** (invariant 3) and it never carries a transcription. Whether an
+   * entry is named after a recording or a factory patch, that is the reference and the notes
+   * below are this library's own — see `lib/riffs`.
    */
   technique: string[]
   /**
@@ -156,7 +178,7 @@ export type Riff = {
    * transient request to name.
    */
   request: RoleRequest
-  /** The notes. Original, always — never a transcription of the recording an entry references. */
+  /** The notes. Original, always — never a transcription of the recording or patch an entry references. */
   /**
    * §5A/§4.1. **The chords the figure is played over**, where the figure only makes sense against
    * them. Optional, and absent on every riff that is one part in one key.
@@ -202,13 +224,13 @@ export type Riff = {
 /**
  * §5A.5. `'Show Me Love'` → `'show-me-love'`. The form a riff's `id` has to open with.
  *
- * ASCII by construction: a track name outside it would produce a slug nobody could type into an
+ * ASCII by construction: a reference outside it would produce a slug nobody could type into an
  * address bar, and the schema refusing the entry is the right answer rather than a transliteration
  * this file would have to invent. `toLowerCase` is locale-independent by specification, unlike its
  * `toLocale` sibling, which is the one §7.2 bans.
  */
-export function trackSlug(track: string): string {
-  return track
+export function referenceSlug(name: string): string {
+  return name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
@@ -357,7 +379,7 @@ export const RiffSchema = z
   .strictObject({
     id: z.string().min(1),
     name: z.string().min(1),
-    track: z.string().min(1),
+    reference: RiffReferenceSchema,
     technique: z.array(z.string().min(1)).min(1, 'a riff is a technique: say what it is'),
     bpm: BpmSpecSchema,
     key: MusicalKeySchema,
@@ -374,18 +396,18 @@ export const RiffSchema = z
     // page and the slug in the address bar — so both are checked against the one field that says
     // what it is. `toLowerCase` and a character class, never `toLocaleLowerCase`: a Turkish
     // locale folds `I` to a dotless `ı` and the slug would differ by machine (§7.2).
-    if (!riff.name.includes(riff.track)) {
+    if (!riff.name.includes(riff.reference.name)) {
       ctx.addIssue({
         code: 'custom',
-        message: `the title must name '${riff.track}', the record this technique is found by (§5A.5)`,
+        message: `the title must name '${riff.reference.name}', the ${riff.reference.kind} this technique is found by (§5A.5)`,
         path: ['name'],
       })
     }
-    const slug = trackSlug(riff.track)
+    const slug = referenceSlug(riff.reference.name)
     if (!riff.id.startsWith(slug)) {
       ctx.addIssue({
         code: 'custom',
-        message: `the id must open with '${slug}', so the address carries the record too (§5A.5)`,
+        message: `the id must open with '${slug}', so the address carries the ${riff.reference.kind} too (§5A.5)`,
         path: ['id'],
       })
     }

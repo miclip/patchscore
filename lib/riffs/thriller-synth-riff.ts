@@ -22,7 +22,7 @@ import type { Riff } from '../core/riff'
 export const thrillerSynthRiff: Riff = {
   id: 'thriller-synth-riff',
   name: 'The Thriller synth riff',
-  track: 'Thriller',
+  reference: { kind: 'record', name: 'Thriller' },
   bpm: { min: 108, max: 124, default: 118 },
   key: 'C# minor',
   technique: [

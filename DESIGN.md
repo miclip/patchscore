@@ -4223,9 +4223,9 @@ that part — resolved against whatever boxes the reader has. Settled at
 
 ```ts
 {
-  id: 'blue-monday-bass',            // opens with the slug of `track` (§5A.5)
-  name: 'The Blue Monday bass',      // contains `track` verbatim (§5A.5)
-  track: 'Blue Monday',              // the record it is found by. The notes below are ours
+  id: 'blue-monday-bass',            // opens with the slug of `reference.name` (§5A.5)
+  name: 'The Blue Monday bass',      // contains `reference.name` verbatim (§5A.5)
+  reference: { kind: 'record', name: 'Blue Monday' },  // what it is found by. The notes below are ours
   technique: [ /* prose. What makes it this part, in the words somebody teaching it would use */ ],
   bpm: { min: 118, max: 134, default: 128 },
   key: 'F minor',
@@ -4360,14 +4360,39 @@ that can never be produced.
 The notes are printed on both outcomes. A rig that cannot play the figure has not stopped the
 figure from having notes, and a reader deciding what to buy is better served seeing them.
 
-### 5A.5 Every riff names its record, and none of them carries its notes
+### 5A.5 Every riff names its reference, and none of them carries its notes
 
-**Every entry names the recording it is found by, in the title and in the slug.** A technique is
-looked for by the record it is famous from — *the Blue Monday bass*, *the Thriller synth riff* —
-and that is the name a reader has in their head before they have a name for what the part is
-doing. `Riff.track` is the field that says which record, and `RiffSchema` checks both surfaces
-against it: the title has to contain it verbatim and the id has to open with its slug, so an entry
-named for one record and filed under another cannot parse.
+**Every entry names what it is found by, in the title and in the slug.** A technique is looked
+for by the thing it is heard on before a reader has a name for what the part is doing. For most
+that is a record: *the Blue Monday bass*, *the Thriller synth riff*. For some it is a factory
+patch a box ships, named on its own panel: *the Muse Runner floating-arrival lead*. The technique
+is what somebody does with that preset, and the preset is how they find it. `Riff.reference` is
+the field that says which, as `{ kind, name }`, and `RiffSchema` checks both surfaces against
+`reference.name`: the title has to contain it verbatim and the id has to open with its slug, so an
+entry named for one reference and filed under another cannot parse. The checks do not read
+`kind`; a patch is findable in the same two places a record is.
+
+**Two kinds and not three** ([#566](https://github.com/miclip/patchscore/issues/566)). `record` is
+a release somebody has heard; `patch` is a preset with a name printed by the manufacturer. A third
+kind for the idiom would be the rule dissolving, because every riff has an idiom and a field any
+string satisfies constrains nothing. It stays a reference: it says what a reader looks the
+technique up by, and nothing about the notes.
+
+A `patch` reference is not a device (invariant 3). It names the preset, never the box that ships
+it, and the resolver reads neither. A manufacturer may put the box's own name inside a preset's,
+and *Muse Runner* does, so `test/riff.test.ts`'s device scan exempts `reference.name` where it
+sits in the title and scans everything else: the rest of the title and every paragraph of
+technique. A box named in prose is still refused.
+
+**A reference may carry a box's name and may not be one.** The exemption is the one string on the
+page nothing scans, so a bare *Muse* as a reference would put the box in a title with the scan
+looking the other way. Containment is what the exemption is for and equality is what it is not, so
+a second check asks that no `reference.name` equals a device's id or name outright. Nothing in this section puts a device id or a
+device name in a field on a riff. It is also a different fact from `Recipe.factoryPatch` (#553):
+that says a *recipe's* parameters reach a sound a box also ships, and this says what a *riff* is
+found by. One is a claim about settings and the other is a name to search, and a riff named for a
+patch resolves to whatever recipe its role and character reach, with or without a recipe carrying
+the same patch name.
 
 A field rather than a convention, because a convention is something two authors disagree about by
 Tuesday, and because it is *both* surfaces: a title that carries the reference and an address bar
@@ -4375,7 +4400,7 @@ that does not is a page nobody can link to by name.
 
 **The notes under every one of them are this library's own.** What a riff teaches is a *way of
 playing a part*: where the accents sit, what the figure is answering, what to listen for when it
-is right. The figure carrying that here is ours.
+is right. The figure carrying that here is ours, whether the reference is a record or a patch.
 
 **The page says none of that, and the silence is the decision.** A subtitle reading *The technique
 from Blue Monday. The figure below is ours, not a transcription* stood under every title and is
@@ -4383,7 +4408,8 @@ gone. Half of it repeated the title; the other half was a disclaimer, a sentence
 against a charge nobody had made, in the first place a reader's eye lands. Copy that hedges what a
 page is teaches a reader to doubt it, and a reader who came to play a bassline is not the audience
 for a legal position. The reference lives in the title and in the slug. Nothing else about the
-record is rendered anywhere.
+reference is rendered anywhere, and the card's *From …* line reads the same over a record and a
+patch.
 
 The same rule governs the rest of the rendered copy, and `test/riff-page.test.ts` holds it: no
 endorsement (*official*, *approved*, *as heard on*), no hedge (*roughly*, *something like*, *our
@@ -4394,8 +4420,10 @@ has*, *unauthored*). What is left is the technique and the settings.
 settings for whichever box in your rig carries it* described the document to somebody who had not
 opened it and gave them no reason to. Both descriptions now open with a verb and name the reader's
 own gear: *Build the Blue Monday bass-mid sound on the boxes you own, then practise the technique
-against a figure written here.* The track names the **sound to build**; the figure is one **written
-here** to practise against, so nothing in either sentence suggests the record's own notes ship.
+against a figure written here.* The reference names the **sound to build**; the figure is one
+**written here** to practise against, so nothing in either sentence suggests the record's own notes
+ship. The sentence is unchanged by the kind of reference, because a patch name in that slot reads
+the same way: a sound to build, then a figure of ours to play.
 
 **Prose is written straight.** No em dashes, no *not X but Y*, and every paragraph of technique
 says what to do rather than what the part is not: *Keep each note short so a gap opens between
