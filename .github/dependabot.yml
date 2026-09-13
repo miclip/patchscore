@@ -1,0 +1,43 @@
+# Dependabot, for the reason the repo already had a critical nobody was told about.
+#
+# `npm audit` found a Next.js RCE, a `sharp` high underneath it and two moderates in vitest,
+# while the repo's Dependabot alerts were switched off. This file is the half that lives in git;
+# the alerts themselves are a repository setting and have to be enabled in Settings → Advanced
+# Security, which no file here can do.
+#
+# Weekly rather than daily: this is a two-person repo and a daily cadence on a Next.js app is a
+# pull request most mornings, which is how a security bot becomes noise somebody mutes.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    # One PR for a framework and its ecosystem rather than six. Next, React and the types move
+    # together often enough that separate PRs would each fail CI until the last one landed.
+    groups:
+      next:
+        patterns:
+          - next
+          - '@next/*'
+          - react
+          - react-dom
+          - '@types/react'
+          - '@types/react-dom'
+      dev-tooling:
+        dependency-type: development
+        patterns:
+          - vitest
+          - '@vitest/*'
+          - typescript
+          - '@types/*'
+          - eslint
+          - '@eslint/*'
+          - prettier
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
