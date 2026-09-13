@@ -3609,6 +3609,52 @@ no generation. The seed picks among multiple authored hooks.
 **If no hook is authored for the assigned role, the guide omits the hook section rather than
 inventing one.** This is invariant 5 applied to melody.
 
+#### A degree is spelt, and the vocabulary is closed (#570)
+
+A progression prints the notes of every chord beside the numeral, because a roman numeral is
+the notation you reach for once you already understand the thing it stands for, and a page
+telling a beginner to *supply these chords separately* never said what they were.
+
+**Pitch classes, never a voicing.** `Bb · D · F`. A progression has no octave until something
+plays it, and printing `Bb3 D4 F4` would invent a voicing no author wrote. Octaves on notes that
+already carry one are a different question, and §4.1's note convention is where that lives.
+
+`spellChord` reads a degree against a key and calls `spell` once per chord tone, so the letter
+is decided in one place and a raised third of F# minor stays `A#`. The grammar is closed:
+
+    b?  (I|II|III|IV|V|VI|VII | i|ii|iii|iv|v|vi|vii)  (7|sus2)?
+
+- **Case gives the third**, never diatonic stacking. Blade Runner's `I` and `IV` in F# minor are
+  borrowed, and stacking thirds inside the mode would spell both minor.
+- **`b` lowers the major-scale degree**, so `bII` is Db in C major and Eb in D phrygian, which is
+  the classical reading and the one Drone Study's authored `bII` means.
+- **A suffix the grammar does not name fails validation.** Rendering `V7` as the triad `V` would
+  put the wrong chord on the page while looking right, which is worse than refusing the string.
+
+`DegreeSchema` used to be an open string, on the reasoning that a closed union guessed here would
+reject legal authoring. That reasoning held while nothing read the degree. Something reads it now,
+and a speller that cannot parse what an author wrote has to say so at build time rather than
+render a chord nobody meant.
+
+#### The key a table is read in is view state (#570)
+
+A direction authors several keys and a guide's seed picks one; a riff authors one. So a direction
+page cannot spell a chord without choosing, and the same control answers both: `transposableKeys`
+offers twelve roots, one per pitch class, each in the spelling that mode wants — derived by
+spelling the seven degrees through `spell` and counting the marks, so `Ab major` beats `G# major`
+and a spelling needing a double accidental is excluded by the count rather than by a rule naming
+it. Ties break by code unit (§7.2). The authored key always wins its own pitch class, because a
+control that cannot show the key its table is already in is broken.
+
+**It is read, never written** — the rule §5A.6 makes about the rig, applied to the key. It starts
+at the authored key, changes when the reader picks another, and reaches no storage, no studio and
+no URL. A key chosen to read one table in is not a fact about anything, and a test walks the
+page's import graph to keep a writer out of it.
+
+**A guide has no such control**, and that is the distinction rather than an omission. Its key is
+chosen by the seed and is an input to the whole song; a reader who wants another rerolls. Offering
+a second way to change it would make two answers to what key the guide is in.
+
 **A hook is authored as notes; how those notes are *delivered* is the recipe's business
 (§12.4), and the two can disagree.** A hook is degrees and steps — it says nothing about
 polyphony and must not, because the same hook is legal on any box that can carry the part. But a

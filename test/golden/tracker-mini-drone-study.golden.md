@@ -10,11 +10,11 @@ whether the screen in front of you is the one the line is about.
 - **Key** A phrygian (a reroll may pick E phrygian, C phrygian)
 - **Harmonic cycle** 16 bars
 
-| Degree | Bars |
-| --- | ---: |
-| i | 8 |
-| bII | 4 |
-| vii | 4 |
+| Degree | Notes | Bars |
+| --- | --- | ---: |
+| i | A · C · E | 8 |
+| bII | Bb · D · F | 4 |
+| vii | G · Bb · D | 4 |
 
 **Arrangement** — 132 bars total
 

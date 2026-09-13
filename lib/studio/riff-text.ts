@@ -1,6 +1,7 @@
 import type {
   Assignable,
   Device,
+  ProgressionRow,
   ResolvedHook,
   ResolvedNote,
   Riff,
@@ -8,7 +9,15 @@ import type {
   RiffResolution,
   RiffVoicing,
 } from '@/lib/core'
-import { citationSentence, count, num, resolvedClaims, slotGroups, stepGridRows } from '@/lib/core'
+import {
+  citationSentence,
+  count,
+  num,
+  progressionRows,
+  resolvedClaims,
+  slotGroups,
+  stepGridRows,
+} from '@/lib/core'
 
 /**
  * §5A/#495. **Everything a riff page says in words, and the shapes both renderings walk.**
@@ -89,26 +98,31 @@ export function riffLength(riff: Riff): string {
  * on the riff surface, and #33's rule is that a surface renders, it does not decide.
  */
 /**
- * A row of the chord table: the degree, how long it lasts, the bar it starts on, and whether the
- * figure is playing over it.
+ * A row of the chord table: the degree, the notes it spells in the key shown, how long it
+ * lasts, the bar it starts on, and whether the figure is playing over it.
  *
  * `from` and `underFigure` exist because a table without them is a table a reader has to align by
  * guessing (#552). A four-bar figure printed against a twelve-bar cycle reads as starting at bar
  * one, and that is the wrong chord whenever it does not.
+ *
+ * `notes` comes from `progressionRows` (#570), the same rows a guide's table is built from, so
+ * a riff and a direction cannot spell one degree two ways. `key` defaults to the riff's own: the
+ * Markdown and the prerendered page are in it, and only the page's key control (§5A.6, view
+ * state) ever passes another. The degrees, the bars and the marker do not move with it.
  */
-export type ChordRow = { degree: string; bars: number; from: number; underFigure: boolean }
+export type ChordRow = ProgressionRow & { from: number; underFigure: boolean }
 
-export function chordRows(riff: Riff): readonly ChordRow[] {
+export function chordRows(riff: Riff, key: string = riff.key): readonly ChordRow[] {
   const { harmony } = riff
   if (harmony === undefined) return []
   const start = riff.figureStartsAtBar ?? 1
   const end = start + riff.hook.bars - 1
   const rows: ChordRow[] = []
   let from = 1
-  for (const step of harmony.progression) {
-    const last = from + step.bars - 1
-    rows.push({ ...step, from, underFigure: from <= end && last >= start })
-    from += step.bars
+  for (const row of progressionRows(harmony, key)) {
+    const last = from + row.bars - 1
+    rows.push({ ...row, from, underFigure: from <= end && last >= start })
+    from += row.bars
   }
   return rows
 }
@@ -119,12 +133,12 @@ export function chordRows(riff: Riff): readonly ChordRow[] {
  * The second sentence appears only where the figure is shorter than the cycle. Where the two are
  * the same length there is nothing to align and saying so would be noise.
  */
-export function riffChordSummary(riff: Riff): string | undefined {
+export function riffChordSummary(riff: Riff, key: string = riff.key): string | undefined {
   const { harmony } = riff
   if (harmony === undefined) return undefined
   const head =
     `${count(harmony.progression.length, 'chord')} over ` +
-    `${count(harmony.cycleBars, 'bar')}, in ${riff.key}.`
+    `${count(harmony.cycleBars, 'bar')}, in ${key}.`
   if (riff.hook.bars >= harmony.cycleBars) return head
   const start = riff.figureStartsAtBar ?? 1
   const end = start + riff.hook.bars - 1

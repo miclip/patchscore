@@ -1,5 +1,11 @@
 import type { HookId, TemplateId } from './ids'
-import type { Hook, HookNote, RequestPitch } from './template'
+import {
+  CHORD_DEGREE_PATTERN,
+  type Harmony,
+  type Hook,
+  type HookNote,
+  type RequestPitch,
+} from './template'
 import type { Role } from './vocabulary'
 import { compareCodeUnits } from './resolver'
 import { saltSeed, seededPick } from './seed'
@@ -195,7 +201,7 @@ function spell(
   key: ParsedKey,
   baseOctave: number,
   note: HookNote,
-): { note: string; midi: number } | { unspellable: string } {
+): { note: string; pitchClass: string; midi: number } | { unspellable: string } {
   const steps = MODE_STEPS[key.mode]
   const tonicLetterIndex = LETTERS.indexOf(key.letter as (typeof LETTERS)[number])
   const stepsAboveTonic = note.degree - 1
@@ -229,7 +235,8 @@ function spell(
   const octave = (semitone - natural - accidental) / 12 - 1
   const marks = accidental >= 0 ? '#'.repeat(accidental) : 'b'.repeat(-accidental)
   // `semitone` is already the MIDI number: `absoluteSemitone` counts from C-1, which is MIDI 0.
-  return { note: `${letter}${marks}${octave}`, midi: semitone }
+  // `pitchClass` is the same letter and marks with no octave, for a chord that has none (#570).
+  return { note: `${letter}${marks}${octave}`, pitchClass: `${letter}${marks}`, midi: semitone }
 }
 
 /**
@@ -271,6 +278,291 @@ export function resolvePitch(pitch: RequestPitch, key: string): PitchResolution 
   return 'unspellable' in spelt
     ? { outcome: 'unresolved', reason: 'unspellable', detail: spelt.unspellable }
     : { outcome: 'resolved', note: spelt.note, midi: spelt.midi }
+}
+
+// ---------------------------------------------------------------------------
+// #570 — a chord degree, spelt
+// ---------------------------------------------------------------------------
+
+/**
+ * The quality a numeral's case and suffix name. `sus2` has no third, so case decides nothing
+ * there and both cases parse to it.
+ */
+export type ChordQuality = 'major' | 'minor' | 'sus2'
+
+export type ParsedChordDegree = {
+  /** Exactly as authored: `bII`, `Vsus2`. */
+  source: string
+  /** 1..7, the scale step the root is built on. */
+  numeral: number
+  /** `true` for a `b` prefix: the root is the major-scale degree lowered a semitone. */
+  flat: boolean
+  quality: ChordQuality
+  /** `true` for a `7` suffix: a minor seventh above the root, in either case. */
+  seventh: boolean
+}
+
+const NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'] as const
+
+/**
+ * `CHORD_DEGREE_PATTERN` read into its parts. `undefined` for anything the pattern refuses,
+ * which through validated data is unreachable — `ChordDegreeSchema` is the same pattern — but
+ * the speller takes a string and answers for every string it can be handed.
+ */
+export function parseChordDegree(degree: string): ParsedChordDegree | undefined {
+  const match = CHORD_DEGREE_PATTERN.exec(degree)
+  if (match === null) return undefined
+  const [, flat, numeral, suffix] = match as unknown as [
+    string,
+    string | undefined,
+    string,
+    string | undefined,
+  ]
+  const upper = numeral.toUpperCase()
+  return {
+    source: degree,
+    numeral: NUMERALS.indexOf(upper as (typeof NUMERALS)[number]) + 1,
+    flat: flat === 'b',
+    quality: suffix === 'sus2' ? 'sus2' : numeral === upper ? 'major' : 'minor',
+    seventh: suffix === '7',
+  }
+}
+
+/**
+ * A chord with no octave. A progression has none until something plays it (#570): `Bb · D · F`
+ * is what a reader at a keyboard needs, and `Bb3 D4 F4` would be a voicing the author never
+ * wrote.
+ */
+export type SpeltChord = {
+  degree: ParsedChordDegree
+  /** The key it was spelt in, as authored. */
+  key: string
+  /** Pitch classes, root first, in stacking order: `['F#', 'A#', 'C#']`. */
+  notes: string[]
+}
+
+export type ChordResolution =
+  | { outcome: 'resolved'; chord: SpeltChord }
+  | {
+      outcome: 'unresolved'
+      reason: 'unparsed-key' | 'unparsed-degree' | 'unspellable'
+      detail: string
+    }
+
+/**
+ * Semitones above the root for each tone a quality has, paired with the scale steps above the
+ * root that tone's *letter* is counted to. The interval decides the pitch; the step decides the
+ * letter, which is what keeps a major third on F# an `A#` and never a `Bb`.
+ */
+function chordTones(degree: ParsedChordDegree): { steps: number; semitones: number }[] {
+  const tones =
+    degree.quality === 'sus2'
+      ? [
+          { steps: 0, semitones: 0 },
+          { steps: 1, semitones: 2 },
+          { steps: 4, semitones: 7 },
+        ]
+      : [
+          { steps: 0, semitones: 0 },
+          { steps: 2, semitones: degree.quality === 'major' ? 4 : 3 },
+          { steps: 4, semitones: 7 },
+        ]
+  if (degree.seventh) tones.push({ steps: 6, semitones: 10 })
+  return tones
+}
+
+/**
+ * #570. **One authored chord degree, as pitch classes in one key.**
+ *
+ * `spell` does the spelling, once per chord tone, so a chord's third and a hook note on the
+ * same degree in the same key are the same letter with the same accidental. Each tone is
+ * handed to it as the scale degree its letter is counted to plus the `alter` that moves that
+ * degree onto the interval the chord wants — the same mechanism a hook uses for a raised third,
+ * and the reason the quality can be read off the numeral rather than off the mode.
+ *
+ * The root is the mode's own degree, or with a `b` prefix the major scale's degree lowered a
+ * semitone (see `ChordDegreeSchema`). Everything above it is measured from the root and not
+ * from the key, so `I` in F# minor is `F# · A# · C#` and stays that in any mode on F#.
+ *
+ * Reported, never thrown, for `parseKey`'s reason: the key is an open string and a chord is
+ * authored content, and a page that cannot spell one says so rather than printing a guess
+ * (invariant 5).
+ */
+export function spellChord(degree: string, key: string): ChordResolution {
+  const parsedKey = parseKey(key)
+  if (parsedKey === undefined) {
+    return {
+      outcome: 'unresolved',
+      reason: 'unparsed-key',
+      detail: `'${key}' is not '<A-G><#|b> <mode>' with a mode in ${MODES.join(', ')}`,
+    }
+  }
+  const parsed = parseChordDegree(degree)
+  if (parsed === undefined) {
+    return {
+      outcome: 'unresolved',
+      reason: 'unparsed-degree',
+      detail: `'${degree}' is not 'b?' + a roman numeral I..VII + an optional '7' or 'sus2'`,
+    }
+  }
+
+  const steps = MODE_STEPS[parsedKey.mode]
+  const rootStep = parsed.numeral - 1
+  // Semitones above the tonic, before any octave: the mode's degree, or major's lowered.
+  const root = parsed.flat ? (MODE_STEPS.major[rootStep] as number) - 1 : (steps[rootStep] as number)
+
+  const notes: string[] = []
+  for (const tone of chordTones(parsed)) {
+    const step = mod(rootStep + tone.steps, 7)
+    // The displacement from the mode's own pitch on this letter to the chord tone, nearest way
+    // round, so `spell` is asked the same question a hook's `alter` asks it.
+    const alter = mod(root + tone.semitones - (steps[step] as number) + 6, 12) - 6
+    // The octave is immaterial to a pitch class; 4 is any octave the note can be written in.
+    const spelt = spell(parsedKey, 4, { step: 1, len: 1, degree: step + 1, octave: 0, alter })
+    if ('unspellable' in spelt) {
+      return {
+        outcome: 'unresolved',
+        reason: 'unspellable',
+        detail: `'${degree}' in ${key}: ${spelt.unspellable}`,
+      }
+    }
+    notes.push(spelt.pitchClass)
+  }
+  return { outcome: 'resolved', chord: { degree: parsed, key, notes } }
+}
+
+/**
+ * One row of a progression table, on any of the surfaces that print one (#570).
+ *
+ * `notes` is `undefined` where the chord could not be spelt — a key this build cannot read, or
+ * a tone past two accidentals — and the cell is left empty rather than guessed at (invariant 5).
+ * The degree still prints, because it is authored and true whatever the key.
+ */
+export type ProgressionRow = {
+  degree: string
+  bars: number
+  /** Pitch classes, root first: `['Bb', 'D', 'F']`. */
+  notes: readonly string[] | undefined
+}
+
+/**
+ * #570. **A progression's rows, spelt in one key**, derived once for the four renderers that
+ * print them — the shared table, the guide's Markdown, and the riff page's two surfaces. A
+ * chord spelt in `render.ts` and again in a component would be one musical fact with two
+ * chances to differ, which is what §8's *no shared ink* rule is not about: the ink differs, the
+ * fact must not.
+ *
+ * `key` may be `undefined` for a song that has none; every row then has no notes and the table
+ * says what it can, which is the degrees.
+ */
+export function progressionRows(harmony: Harmony, key: string | undefined): ProgressionRow[] {
+  return harmony.progression.map((step) => {
+    const spelt = key === undefined ? undefined : spellChord(step.degree, key)
+    return {
+      degree: step.degree,
+      bars: step.bars,
+      notes: spelt?.outcome === 'resolved' ? spelt.chord.notes : undefined,
+    }
+  })
+}
+
+/**
+ * What a cell says where a chord has no spelling. Said, not blanked: an empty cell beside a
+ * degree reads as a table that forgot, and invariant 5 wants the gap named. It is the one
+ * string a reader sees for both causes — a key this build cannot read and a tone past two
+ * accidentals — because at the page both mean the same thing: pick another key.
+ */
+export const UNSPELLABLE_CHORD = 'not spellable in this key'
+
+/**
+ * `Bb · D · F` — the cell text, or `UNSPELLABLE_CHORD`. The same separator the direction page
+ * already joins its keys with, so the two lists on one page read as one idiom.
+ */
+export function chordNotesText(notes: readonly string[] | undefined): string {
+  return notes === undefined ? UNSPELLABLE_CHORD : notes.join(' \u00b7 ')
+}
+
+/**
+ * #570. **The twelve keys a progression can be read in, keeping its mode** — one per pitch
+ * class, each in the spelling that mode wants.
+ *
+ * **Derived, never listed.** The candidates are every root with at most one accidental, and
+ * each is scored by spelling the seven degrees of the mode through `spell` and counting the
+ * marks. Within one pitch class the spelling with the fewest wins: `Ab major` (four flats) over
+ * `G# major` (`F##`, and out), and `G# locrian` over `Ab locrian` (`Bbb`, and out) — the same
+ * pitch class answers differently in a different mode, which is why a fixed table would be wrong
+ * for one of them. A spelling whose scale needs a double accidental anywhere is excluded by that
+ * count, which is where `B#` and `Cb` go without a rule naming them.
+ *
+ * **Ties break by code unit** (§7.2): `F# major` and `Gb major` both carry six, and `F` sorts
+ * before `G`. Platform-stable, unlike anything that consults a locale.
+ *
+ * **The authored key always wins its own pitch class**, even where the count would have chosen
+ * its enharmonic partner: the page opens on it, and a control that cannot show the key the table
+ * is already in is broken. The list is still twelve.
+ *
+ * Twelve rows in chromatic order from C, always, so a reader looking for the figure in F finds
+ * one F. The progression is not consulted: the rule is about the scale, and what its chords
+ * spell as at the chosen key is `progressionRows`' answer there. `[]` for a key this build
+ * cannot read, since the mode to keep is unknown.
+ */
+export function transposableKeys(key: string): string[] {
+  const parsed = parseKey(key)
+  if (parsed === undefined) return []
+  const authoredClass = mod(
+    (NATURAL_PITCH_CLASS[LETTERS.indexOf(parsed.letter as (typeof LETTERS)[number])] as number) +
+      parsed.accidental,
+    12,
+  )
+
+  const best = new Map<number, { key: string; marks: number }>()
+  for (const [letterIndex, letter] of LETTERS.entries()) {
+    for (const accidental of [-1, 0, 1]) {
+      const candidate = `${letter}${accidental === 1 ? '#' : accidental === -1 ? 'b' : ''} ${parsed.mode}`
+      const pitchClass = mod((NATURAL_PITCH_CLASS[letterIndex] as number) + accidental, 12)
+      const marks = scaleMarks(parseKey(candidate) as ParsedKey)
+      if (marks === undefined) continue
+      const holder = best.get(pitchClass)
+      if (
+        holder === undefined ||
+        marks < holder.marks ||
+        (marks === holder.marks && compareCodeUnits(candidate, holder.key) < 0)
+      ) {
+        best.set(pitchClass, { key: candidate, marks })
+      }
+    }
+  }
+
+  const keys: string[] = []
+  for (let pitchClass = 0; pitchClass < 12; pitchClass++) {
+    if (pitchClass === authoredClass) {
+      keys.push(key)
+      continue
+    }
+    const chosen = best.get(pitchClass)
+    // Unreachable for the seven modes: two spellings of one pitch class differ by twelve marks,
+    // so one of them is always within seven. Said rather than assumed, because a mode added
+    // later is data and not a proof.
+    if (chosen !== undefined) keys.push(chosen.key)
+  }
+  return keys
+}
+
+/**
+ * The accidental marks a key's seven scale degrees carry, summed — `Ab major` is 4, `C major`
+ * is 0 — or `undefined` where any degree needs a double. Spelt through `spell`, the one place
+ * the letter is decided, so what is counted is exactly what the page would print.
+ */
+function scaleMarks(key: ParsedKey): number | undefined {
+  let marks = 0
+  for (let degree = 1; degree <= 7; degree++) {
+    const spelt = spell(key, 4, { step: 1, len: 1, degree, octave: 0 })
+    if ('unspellable' in spelt) return undefined
+    const count = spelt.pitchClass.length - 1
+    if (count > 1) return undefined
+    marks += count
+  }
+  return marks
 }
 
 /**

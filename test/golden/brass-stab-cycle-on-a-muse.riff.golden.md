@@ -24,12 +24,12 @@ Keep the stabs short and the release fast. The brass should stop before the next
 
 4 chords over 4 bars, in F minor.
 
-| Degree | Bars | Under the figure |
-| --- | ---: | :---: |
-| i | 1–1 | ● |
-| IV | 2–2 | ● |
-| VII | 3–3 | ● |
-| v | 4–4 | ● |
+| Degree | Notes | Bars | Under the figure |
+| --- | --- | ---: | :---: |
+| i | F · Ab · C | 1–1 | ● |
+| IV | Bb · D · F | 2–2 | ● |
+| VII | Eb · G · Bb | 3–3 | ● |
+| v | C · Eb · G | 4–4 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 

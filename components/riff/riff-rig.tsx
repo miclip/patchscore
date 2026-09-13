@@ -15,9 +15,10 @@ import { RiffVoice } from './riff-voice'
  * §5A/#503. **The rig half of a riff page: the boxes the reader owns, and where the figure lands
  * on them.**
  *
- * The one client boundary on the route. Everything else — the technique, the notes, the grid — is
- * a property of the entry and is prerendered; only *where it plays* depends on what somebody
- * ticked, and only that is here.
+ * One of the route's two client boundaries, and the only one that depends on what somebody
+ * ticked. Everything else — the technique, the notes, the grid — is a property of the entry and
+ * is prerendered; `RiffInKey` (#570) is the other island, and it holds nothing but the key the
+ * figure is being read in.
  *
  * ---------------------------------------------------------------------------
  * It reads the studio and never writes it

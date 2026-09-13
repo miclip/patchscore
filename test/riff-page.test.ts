@@ -12,7 +12,7 @@ import { RigPicker } from '../components/rig/rig-picker'
 import { NAV_LINKS } from '../components/site-nav'
 import { hintText } from '../components/guide/format'
 import type { DeviceId, RiffVoicing } from '../lib/core'
-import { MAX_RIG_DEVICES, resolveRiff } from '../lib/core'
+import { MAX_RIG_DEVICES, resolveRiff, spellChord } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS, blueMondayBass } from '../lib/riffs'
 import { riffHref } from '../lib/studio/catalogue'
@@ -246,7 +246,48 @@ describe('the chord table says the chords are supplied separately', () => {
     }
     // Under the table, not above it: the rows come first, then where they come from.
     const chords = md.slice(md.indexOf('## The chords'), md.indexOf('## The notes'))
-    expect(chords.indexOf('| v | 11')).toBeLessThan(chords.indexOf(SENTENCE))
+    expect(chords.indexOf('| v | C# · E · G# | 11')).toBeLessThan(chords.indexOf(SENTENCE))
+  })
+
+  it('spells every chord in the riff’s key, once per authored row, on both surfaces (#570)', async () => {
+    // Every entry with a `harmony`, checked row by row against `spellChord` on the *authored*
+    // progression rather than against the other renderer: parity alone would pass on both
+    // surfaces printing the wrong notes, or none.
+    let withHarmony = 0
+    for (const riff of RIFFS) {
+      if (riff.harmony === undefined) continue
+      withHarmony++
+      const md = renderRiff(resolveRiff(riff, []))
+      const markup = await markupFor(riff.id)
+      const rows = riff.harmony.progression
+      let from = 1
+      for (const step of rows) {
+        const spelt = spellChord(step.degree, riff.key)
+        expect(spelt.outcome, `${riff.id}: ${step.degree} in ${riff.key}`).toBe('resolved')
+        if (spelt.outcome !== 'resolved') continue
+        const notes = spelt.chord.notes.join(' · ')
+        const span = `${from}\u2013${from + step.bars - 1}`
+        // The bar span makes each row unique even where a degree is authored twice in a cycle.
+        const mdRow = `| ${step.degree} | ${notes} | ${span} |`
+        expect(md.split(mdRow).length - 1, `${riff.id}: ${mdRow}`).toBe(1)
+        const pageRow =
+          `<td class="mono">${step.degree}</td><td class="mono">${notes}</td>` +
+          `<td class="mono numeric">${span}</td>`
+        expect(markup.split(pageRow).length - 1, `${riff.id}: ${pageRow}`).toBe(1)
+        from += step.bars
+      }
+      // Exactly the authored rows and no others.
+      expect(md.match(/^\| b?[IViv]+(?:7|sus2)? \| /gm)?.length, riff.id).toBe(rows.length)
+      expect(markup.match(/<td class="mono">b?[IViv]+(?:7|sus2)?<\/td>/g)?.length, riff.id).toBe(
+        rows.length,
+      )
+    }
+    expect(withHarmony).toBeGreaterThan(0)
+    // Not vacuous about the borrowing that motivated case-decides-the-third: Blade Runner's `I`
+    // in F# minor is on the page as a major chord, beside the key's own minor `i`.
+    const blade = text(await markupFor('blade-runner-blues-lead'))
+    expect(blade).toContain('I F# · A# · C#')
+    expect(blade).toContain('i F# · A · C#')
   })
 
   it('says nothing on a riff with no harmony, which is most of them', () => {

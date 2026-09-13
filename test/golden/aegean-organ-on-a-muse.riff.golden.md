@@ -26,12 +26,12 @@ Over the first half of the cycle, do the same kind of thing with the same rule: 
 
 4 chords over 8 bars, in D phrygian. The figure is bars 5–8.
 
-| Degree | Bars | Under the figure |
-| --- | ---: | :---: |
-| i | 1–2 |  |
-| II | 3–4 |  |
-| i | 5–6 | ● |
-| VII | 7–8 | ● |
+| Degree | Notes | Bars | Under the figure |
+| --- | --- | ---: | :---: |
+| i | D · F · A | 1–2 |  |
+| II | Eb · G · Bb | 3–4 |  |
+| i | D · F · A | 5–6 | ● |
+| VII | C · E · G | 7–8 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 

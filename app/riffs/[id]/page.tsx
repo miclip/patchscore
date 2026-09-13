@@ -18,8 +18,9 @@ import { riffLength, riffTempo } from '@/lib/studio/riff-text'
  *
  * **Mostly a server component.** The technique, the notes and the grid are properties of the
  * entry, so they are in the prerendered HTML where a crawler, a reader with no JavaScript and a
- * sheet of paper all receive them. `RiffRig` is the one client boundary and it is drawn around
- * the only part that depends on what somebody owns.
+ * sheet of paper all receive them. `RiffRig` is the client boundary drawn around the only part
+ * that depends on what somebody owns; `RiffInKey` (#570) is the other, drawn around the two
+ * panels a chosen key re-spells, and it holds that key as view state and nothing more.
  *
  * **It renders from the model, never from the Markdown.** `renderRiff` is this page's sibling in
  * §8's sense, not its source: parsing one renderer's output to produce another's is how the two
@@ -28,7 +29,9 @@ import { riffLength, riffTempo } from '@/lib/studio/riff-text'
  * asserts the facts of one against the other (#495).
  *
  * **No song, and no controls for one.** No direction, no mood, no seed, no arrangement, no clock,
- * no sections, no density — §5A's boundary, unchanged. A riff is one figure.
+ * no sections, no density — §5A's boundary, unchanged. A riff is one figure. The key control is
+ * not a song control: it transposes the reading of the figure on this page and writes nothing,
+ * where the studio's key is an input to a guide.
  */
 
 export const dynamicParams = false

@@ -210,17 +210,19 @@ describe('Harmony and hooks (§4.1)', () => {
     expect(HarmonySchema.safeParse({ cycleBars: 0, progression: [] }).success).toBe(false)
   })
 
-  it('takes a degree as an open non-empty string', () => {
-    // DESIGN.md shows 'i', 'VI', 'VII' but never fixes the vocabulary, so sevenths and
-    // borrowings stay authorable; only an empty or non-string degree is refused.
-    for (const degree of ['i', 'VI', 'bVII', 'V7', '#iv']) {
+  it('takes a degree in the grammar spellChord reads, and nothing looser (#570)', () => {
+    // A flat prefix, a roman numeral whose case is the third, a `7` or `sus2`. Anything else
+    // is refused at validation rather than rendered as a chord it is not.
+    for (const degree of ['i', 'VI', 'bVII', 'V7', 'Vsus2', 'bII']) {
       expect(HarmonySchema.safeParse({ cycleBars: 2, progression: [{ degree, bars: 2 }] }).success).toBe(
         true,
       )
     }
-    expect(HarmonySchema.safeParse({ cycleBars: 2, progression: [{ degree: '', bars: 2 }] }).success).toBe(
-      false,
-    )
+    for (const degree of ['', '#iv', 'Vsus4', 'Imaj7', 'VIII']) {
+      expect(HarmonySchema.safeParse({ cycleBars: 2, progression: [{ degree, bars: 2 }] }).success).toBe(
+        false,
+      )
+    }
     expect(HarmonySchema.safeParse({ cycleBars: 2, progression: [{ degree: 5 as never, bars: 2 }] }).success).toBe(
       false,
     )
