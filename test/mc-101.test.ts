@@ -653,8 +653,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // Hard Techno added none, because this box carries all ten of its parts. 90 since #57 gave
     // Ambient Dub a `soft` impact: this box's one impact is `hard`, the opposite pole, so the
     // request is a `no-recipe` gap on all six seeds. The gap is in the library's coverage of
-    // this box.
-    expect(shortfalls).toBe(90)
+    // this box. 96 since #57 gave Industrial Techno a `sweep` on the Intro and Outro: four
+    // tracks are spoken for by the time a priority-5 request is reached, so it is
+    // `no-room/contended` on every seed.
+    expect(shortfalls).toBe(96)
   })
 
   /**

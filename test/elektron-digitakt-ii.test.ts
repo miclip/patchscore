@@ -682,7 +682,8 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
     expect(hooked.length).toBe(162)
     expect(sustained).toEqual([])
-    expect(noPattern.length).toBe(42)
+    // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
+    expect(noPattern.length).toBe(48)
     // `sweep` joins the list rather than the grid, and that is the recipe working as authored: no
     // direction writes a step variant for the role, so there is nothing to program and
     // `dt2-sweep-soft` articulates nothing. See its comment, and `lib/core/reachability.ts`.
@@ -693,6 +694,7 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'industrial-techno/sweep',
       'slow-noir/texture',
     ])
 
@@ -739,8 +741,10 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
         }
       }
     }
-    expect(seen).toBe(588)
-    expect(carrying).toBe(576)
+    // 588 and 576 until #57 gave Industrial Techno a `sweep`, which this box carries on all six
+    // seeds from a whole-sample recipe, so it carries the note like the rest.
+    expect(seen).toBe(594)
+    expect(carrying).toBe(582)
   })
 
   /**

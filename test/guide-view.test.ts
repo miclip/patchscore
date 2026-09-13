@@ -1086,8 +1086,9 @@ describe('pattern-global settings are set once per device, not once per part (#1
 
   it('resolves the nine repetitions the issue reported, so the counts below are not vacuous', () => {
     // Three until #345 gave this box seven more roles; the claim is that the count is above one,
-    // so the repetition the issue reported is real on this rig rather than hypothetical.
-    expect(partsSetting('SWING', 'polyend-tracker-mini')).toBe(5)
+    // so the repetition the issue reported is real on this rig rather than hypothetical. Six
+    // since #57: this box takes the direction's `sweep` on the landing rig.
+    expect(partsSetting('SWING', 'polyend-tracker-mini')).toBe(6)
     expect(partsSetting('SHUFFLE', 'roland-tr-1000')).toBe(7)
   })
 

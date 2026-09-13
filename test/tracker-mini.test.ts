@@ -2141,7 +2141,8 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // 12 until #345. The three new entries are `riser` and `sweep`, which no direction authors a
     // step variant for — both say so in their own `PATTERNS` note, and it is why neither recipe
     // articulates anything. 30 until Hard Techno's riser, a single trig with no grid (#473).
-    expect(noPattern.length).toBe(42)
+    // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
+    expect(noPattern.length).toBe(48)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
@@ -2149,6 +2150,7 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'industrial-techno/sweep',
       'slow-noir/texture',
     ])
   })

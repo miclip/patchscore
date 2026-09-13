@@ -587,8 +587,9 @@ function tr1000(): Device {
 }
 
 describe('industrial-techno resolves (§7)', () => {
-  it('requests twelve roles, ascending by priority (§4.4)', () => {
-    expect(industrialTechno.roles).toHaveLength(12)
+  it('requests thirteen roles, ascending by priority (§4.4)', () => {
+    // Twelve until #57 added the sweep that opens and closes the track, at the back of the list.
+    expect(industrialTechno.roles).toHaveLength(13)
     const priorities = industrialTechno.roles.map((r) => r.priority)
     expect(priorities).toEqual([...priorities].sort((a, b) => a - b))
   })
@@ -615,7 +616,7 @@ describe('industrial-techno resolves (§7)', () => {
     }
   }
 
-  it('fills all twelve on the full rig, with no gap left to explain', () => {
+  it('fills all thirteen on the full rig, with no gap left to explain', () => {
     expect(report(DEVICES)).toEqual({
       method: 'exhaustive',
       capped: false,
@@ -632,6 +633,7 @@ describe('industrial-techno resolves (§7)', () => {
         'r-riser',
         'r-stab',
         'r-sub',
+        'r-sweep',
       ],
       // `r-metallic` was the one hole in three devices' worth of content, and it was an
       // authoring hole rather than a rig one: three boxes declared `metallic` on a voice and
@@ -641,7 +643,7 @@ describe('industrial-techno resolves (§7)', () => {
     })
   })
 
-  it('fills seven of twelve on the TR-1000 alone, with a reason for each of the five', () => {
+  it('fills seven of thirteen on the TR-1000 alone, with a reason for each of the six', () => {
     expect(report([tr1000()])).toEqual({
       method: 'exhaustive',
       capped: false,
@@ -671,6 +673,7 @@ describe('industrial-techno resolves (§7)', () => {
         'r-stab': 'no-capable-voice',
         'r-pad': 'no-capable-voice',
         'r-riser': 'no-capable-voice',
+        'r-sweep': 'no-capable-voice',
       },
     })
   })

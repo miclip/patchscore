@@ -704,3 +704,75 @@ describe('#538 Breakbeat asks for a soft tom fill, and the box with a spare tom 
     }
   })
 })
+
+describe('#57 Industrial Techno asks for a dark sweep, and the boxes that wrote one play it', () => {
+  const techno = templateById('industrial-techno')
+  if (techno === undefined) throw new Error('industrial-techno missing from the templates')
+  const request = techno.roles.find((r) => r.id === 'r-sweep')
+  if (request === undefined) throw new Error('industrial-techno has no r-sweep')
+
+  it('asks for `sweep` as `dark`, at priority 5, transient on the Intro and the Outro', () => {
+    // `sweep / dark` was the second-largest unasked block #57 measured: eleven recipes on eleven
+    // boxes, reachable only as a substitution for the `soft` the two ambient directions ask for.
+    // The Intro and Outro are the one band pair in this direction with no transient on it, so
+    // the six sections still program as three, and the three gestures can take turns on one
+    // voice. Not `optional`: measured, it changes nothing on any solo rig, so the field would
+    // only say the direction would rather not spend a voice on it, and where one is free it would.
+    expect(request.character).toBe('dark')
+    expect(request.priority).toBe(5)
+    expect(request.optional).toBeUndefined()
+    expect(request.inessential).toBeDefined()
+    expect(request.sustain).toBe('transient')
+    expect(request.sections).toEqual(['Intro', 'Outro'])
+    const sweeps = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'sweep').map((r) => `${t.id}:${r.character}`),
+    )
+    expect(sweeps.filter((n) => n.endsWith(':dark'))).toEqual(['industrial-techno:dark'])
+  })
+
+  it('selects `sweep / dark` in the solo sweep, on the three boxes with a voice to spare at priority 5', () => {
+    // Sixty fills over 46 boxes x 4 seeds: twelve exact, the rest `soft` at sqrt(2). Eight of
+    // the eleven boxes that author the dark one are mono synths whose voice is spent at
+    // priority 1 on a solo rig — the #538 arithmetic — but a transient asked for in two sections
+    // is not a continuous part: beside a drum machine, the Crave, the Model D and the Mother-32
+    // each take it exactly, chained on the one voice with the riser and the impact.
+    const picked = new Map<string, number>()
+    const exact = new Set<string>()
+    for (const device of DEVICES) {
+      for (const seed of [1, 2, 3, 4]) {
+        const { assignments } = resolve({ devices: [device], template: techno, seed })
+        const sweep = assignments.find((a) => a.requestId === 'r-sweep')
+        if (sweep === undefined) continue
+        picked.set(sweep.recipe.character, (picked.get(sweep.recipe.character) ?? 0) + 1)
+        if (sweep.recipe.character === 'dark') exact.add(device.id)
+      }
+    }
+    expect([...picked].sort()).toEqual([
+      ['dark', 12],
+      ['soft', 48],
+    ])
+    expect([...exact].sort()).toEqual([
+      'elektron-digitone-ii',
+      'elektron-octatrack-mkii',
+      'polyend-play-plus',
+    ])
+  })
+
+  it('costs no other request its part on any solo rig', () => {
+    // Asserted against the direction with the request removed, box by box and seed by seed:
+    // every other assignment is identical. The same request on the Breakdown and Outro was
+    // measured first and displaced the optional `noise` on two boxes, because there it overlapped
+    // the riser and could not share its voice; on the Intro and Outro it moves nothing.
+    const without = { ...techno, roles: techno.roles.filter((r) => r.id !== 'r-sweep') }
+    const others = (t: typeof techno, device: Device, seed: number) =>
+      resolve({ devices: [device], template: t, seed })
+        .assignments.filter((a) => a.requestId !== 'r-sweep')
+        .map((a) => `${a.requestId}=${a.recipe.id}`)
+        .sort()
+    for (const device of DEVICES) {
+      for (const seed of [1, 2, 3, 4]) {
+        expect(others(techno, device, seed), `${device.id} seed ${seed}`).toEqual(others(without, device, seed))
+      }
+    }
+  })
+})

@@ -35,6 +35,7 @@ impact      ······ ······ ██████████████
 pad         ██████ ██████ ██████████████ █████████ ██████████████ ██████
 riser       ······ ██████ ·············· █████████ ·············· ······
 noise       ██████ ██████ ██████████████ █████████ ██████████████ ██████
+sweep       ██████ ······ ·············· ········· ·············· ██████
 ```
 
 ## 2. Voice assignment
@@ -63,6 +64,8 @@ noise       ██████ ██████ ██████████
   - p4 · exact `bright` · Build, Breakdown
 - **`noise`** → TR-1000 · OH — *White noise burst on the open-hat track, up where the hats sit*
   - p5, optional · exact `dirty` · every section
+- **`sweep`** → Tracker Mini · Track 7 — *Held source with the cutoff climbing once, over the longest envelope the box has*
+  - p5 · substituted — asked `dark`, authored `soft` · Intro, Outro
 
 ### Gaps
 
@@ -70,7 +73,7 @@ None.
 
 ## 3. Rig integration
 
-**Clock source** — Tracker Mini over `midi-din`, carrying 9 parts. Sync everything else to it.
+**Clock source** — Tracker Mini over `midi-din`, carrying 10 parts. Sync everything else to it.
 
 - Why this box — its manual says leading a rig is its job
 
@@ -79,11 +82,11 @@ None.
 
 **Before you start** — the TR-1000 can make the `kick` the Tracker Mini is asking you to go and find. Build [Low long kick that owns the bottom](https://patchscore.app/devices/roland-tr-1000) on the TR-1000, then sample it into the Tracker Mini.
 
-- **Tracker Mini** — groovebox · 9 parts
+- **Tracker Mini** — groovebox · 10 parts
   - clock: sends clock · midi-din/usb
   - MIDI Out, MIDI In: 3.5mm TRS — use the supplied Type B adapter for 5-pin MIDI (p.13, p.284)
   - audio: stereo main out · USB audio · audio in
-  - mixer: 9 parts, no individual outs: one stereo channel for all
+  - mixer: 10 parts, no individual outs: one stereo channel for all
 - **TR-1000** — drum-machine · 7 parts
   - clock: sends clock · midi-din/din-sync/usb/analog-clock/trigger
   - audio: stereo main out · 10 individual outs · USB audio · audio in
@@ -510,6 +513,17 @@ Lowest note to the lowest voice: **Track 3** takes the bottom of every chord and
 - `offbeat` → `accent` true on steps 7, 15, 23
   - ↳ hint: ACCENT [STEP], then step keys
 
+### `sweep` — Tracker Mini · Track 7
+
+**Held source with the cutoff climbing once, over the longest envelope the box has** — settings in Sound design
+
+**One trig, not a figure** — the direction authors no grid for this part.
+
+- **Intro** — Place its single trig so the gesture arrives at the change.
+- **Outro** — Place its single trig wherever the gesture should be heard; nothing follows this section for it to lead into.
+
+**Trigger note** — `C5` · MIDI 60
+
 ## 6. Sound design
 
 ### Tracker Mini
@@ -620,6 +634,34 @@ Routing — **Set `r` to `<<<` on the step eight bars before the change** — th
 - **CUTOFF LFO AMOUNT** `60%`
   - ↳ note: How far the ramp travels; the Saw is what makes it travel upward (p.122)
 - **REVERB SEND** `-18.4` dB (-39.6…0 dB)
+  - ↳ note: -39.60 dB is the quietest step; one below it the send reads -inf dB, off
+
+#### Track 7 — `sweep`: Held source with the cutoff climbing once, over the longest envelope the box has
+
+Source — A steady drone, held chord or noise bed about one bar long, looping cleanly. `Forward loop` cycles it (p.127), which is what holds the source under a filter sweep of about five bars — the file does not have to be that long, it has to loop without a seam. The filter supplies the movement, so anything already moving fights it
+
+Routing — **One note where the gesture starts, held.** The envelope runs once from each note on (p.125), so a part re-struck every bar sweeps every bar instead of once. **How long the climb can be:** the attack tops out at 10 Sec (p.126), which is about five bars at these tempi — long enough to open across a section boundary, not long enough to cross a whole section. **If you want it repeating instead**, set the Cutoff row to `LFO` and reach for the `j` step effect: p.201 gives 128-32 as its sweep range, and 128 steps is eight bars a cycle, restarting on every trig
+
+- **PLAY MODE** `Forward loop`
+- **FILTER TYPE** `Low-pass`
+- **CUTOFF** `32` % (0…100 %)
+  - ↳ note: Where the sweep starts from — a filter already open has nowhere to travel
+- **RESONANCE** `30` % (0…100 %)
+- **CUTOFF AUTOMATION TYPE** `Envelope`
+  - ↳ note: On the Cutoff row of Instrument Automation — an envelope runs once, an LFO cycles
+  - ↳ hint: Screen button 4 cycles instrument pages
+- **CUTOFF ENVELOPE · ATTACK** `9.5` Sec (0…10 Sec)
+  - ↳ note: The climb. 10 Sec is the ceiling, which is about five bars at these tempi
+- **CUTOFF ENVELOPE · DECAY** `0.5` Sec (0…10 Sec)
+- **CUTOFF ENVELOPE · SUSTAIN** `100` % (0…100 %)
+  - ↳ note: Full, so the filter stays where the climb left it rather than falling back
+- **CUTOFF ENVELOPE · RELEASE** `2` Sec (0…10 Sec)
+- **CUTOFF ENVELOPE · AMOUNT** `70` % (0…100 %)
+  - ↳ note: How much of the envelope reaches the cutoff
+- **ENVELOPE · ATTACK** `1.2` Sec (0…10 Sec)
+- **ENVELOPE · SUSTAIN** `96` % (0…100 %)
+- **ENVELOPE · RELEASE** `1.6` Sec (0…10 Sec)
+- **REVERB SEND** `-15.2` dB (-39.6…0 dB)
   - ↳ note: -39.60 dB is the quietest step; one below it the send reads -inf dB, off
 
 ### TR-1000
@@ -780,6 +822,6 @@ Sections that program identically, part for part — build one and copy it:
 - **band 1** — Build, Breakdown · 9 parts, 27 strikes
 - **band 3** — Drop, Peak · 10 parts, 73 strikes
 
-`riser` has no pattern authored at any band, so nothing here varies for it.
+`riser` and `sweep` have no pattern authored at any band, so nothing here varies for them.
 
 `pad` is held rather than struck, so there is no grid here to vary.

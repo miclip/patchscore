@@ -875,10 +875,17 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     // 10 goes 25,870 -> 7,606 and seed 18 goes 26,425 -> 15,726. A candidate that lets the search
     // commit earlier prunes more than it adds. The legal-rig figure `measure:search` gates on did
     // not move at all — 47,284 before and after.
+    //
+    // #57. A thirteenth request, `sweep / dark` at priority 5, transient on the Intro and Outro,
+    // moved every seed by between 27 and 84 nodes: peak 586,551 -> 586,606, floor 505,758 ->
+    // 505,785. Eleven boxes author the pair and the whole catalogue has them all, so the search
+    // commits on an exact answer at once and the new decision costs almost nothing at any node.
+    // Measured identically with the request on the Breakdown and Outro instead: the sections a
+    // transient occupies never enter this count on a rig this size.
     'industrial-techno': [
-      506982, 512544, 508787, 511352, 514162, 506984, 511778, 508176, 511140, 505759, 546739,
-      508176, 509880, 505758, 512550, 508118, 505759, 555297, 586551, 511640, 505759, 511045,
-      506984, 508787
+      507036, 512628, 508843, 511436, 514218, 507040, 511834, 508232, 511194, 505786, 546794,
+      508232, 509934, 505785, 512634, 508172, 505787, 555381, 586606, 511694, 505787, 511099,
+      507040, 508843
     ],
     'lydian-house': [
       235, 1258, 2747, 3245, 1157, 4551, 1141, 4520, 1157, 1371, 2720, 6278, 1220, 723, 315,

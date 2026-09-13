@@ -681,7 +681,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(sustained).toEqual([])
     // 18 until #345: `sweep` gains two entries, and no direction authors a step variant for it.
     // 30 until Hard Techno, whose riser is a single trig with no grid (#473).
-    expect(noPattern.length).toBe(42)
+    // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
+    expect(noPattern.length).toBe(48)
     expect([...new Set(noPattern)].sort()).toEqual([
       'ambient-dub/sweep',
       'ambient-dub/texture',
@@ -689,6 +690,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       'hard-techno/riser',
       'hip-hop/texture',
       'industrial-techno/riser',
+      'industrial-techno/sweep',
       'slow-noir/texture',
     ])
   })

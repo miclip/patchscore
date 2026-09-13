@@ -371,15 +371,22 @@ describe('phase 5 states a single-trig part once, in both renderers (§8/#473)',
    * The collapse itself, which Ambient Dub cannot show: its `riser` plays one section, so one
    * block and one sentence look the same. Industrial Techno's runs across `Build` and `Breakdown`
    * — two entries, two blocks before #473 — and prints the sentence once.
+   *
+   * Since #57 the same rig carries a second single-trig part, the `sweep` across `Intro` and
+   * `Outro`, so the document holds one head sentence per such part — two. The riser's is still
+   * the one-line form, because both of its sections lead upward; the sweep's is the two-line
+   * form, because the Intro leads up and nothing follows the Outro.
    */
   it('collapses a multi-section riser to one sentence', () => {
     const riser = part(techno, 'riser')
     expect(riser.patterns.length).toBeGreaterThan(1)
     expect(isSingleTrigPart(riser)).toBe(true)
+    const singleTrig = techno.assignments.filter(isSingleTrigPart)
+    expect(singleTrig.map((a) => a.role).sort()).toEqual(['riser', 'sweep'])
     const doc = stepProgramming(techno)
-    expect(doc.split(TRIG).length - 1).toBe(1)
+    expect(doc.split(TRIG).length - 1).toBe(singleTrig.length)
     expect(doc).toContain(`${TRIG}** — the direction authors no grid for this part. ${RISES}`)
-    expect(text(html(techno)).split(TRIG).length - 1).toBe(1)
+    expect(text(html(techno)).split(TRIG).length - 1).toBe(singleTrig.length)
   })
 
   it('still states the absence, so the hole is not hidden (invariant 5)', () => {
