@@ -157,6 +157,33 @@ const PATTERNS: Pattern[] = [
     at('accent', 104, 31),
   ),
 
+  // ---- impact -------------------------------------------------------------------------
+  // #57. Four bars long for the reason the techno impacts are: §12.5 keeps variants flat, so a
+  // 16-step swell would start on every bar of a 20-bar Bloom. Both sections it is scoped to
+  // divide by four, so the variant never straddles a boundary.
+  //
+  // A soft impact is a swell that arrives, and a step here is where the swell starts. The note
+  // goes in on the step, and the sound is still opening seconds later, wherever the box's
+  // attack puts the peak. `first-hit` on step 1 is the entry gesture, which is what the slot is
+  // for, and everything after it follows the house rule the ride, the sub and the noise
+  // already keep: offbeats first, the beat itself only at band 3. Steps 15, 31 and 47 are the
+  // "and" of 4 at the end of a bar, so a swell started there is rising across the bar line and
+  // lands somewhere in the next bar. The accent at 47 in band 3 is the one that leans into the
+  // last bar of the phrase.
+  variant('dub-impact-b0', 'impact', 0, 64, on('first-hit', 1)),
+  variant('dub-impact-b1', 'impact', 1, 64, on('first-hit', 1), on('offbeat', 47)),
+  variant('dub-impact-b2', 'impact', 2, 64, on('first-hit', 1), on('offbeat', 31, 47)),
+  variant(
+    'dub-impact-b3',
+    'impact',
+    3,
+    64,
+    on('first-hit', 1),
+    on('offbeat', 15, 31),
+    on('downbeat', 33),
+    at('accent', 100, 47),
+  ),
+
   // ---- ghost-perc ---------------------------------------------------------------------
   // Every hit is a ghost, at every band. That is the part: a shaker figure that fills the grid
   // without ever asking to be listened to, so it has no accent anywhere.
@@ -276,7 +303,7 @@ export const ambientDub: Template = {
   ],
 
   /**
-   * §4.4. Ascending: 1 outranks 5. Ten requests, and the top of the list is the part of the
+   * §4.4. Ascending: 1 outranks 5. Twelve requests, and the top of the list is the part of the
    * shape techno puts last — the pad and the sub are the track, and the kick is a texture that
    * happens to be low.
    */
@@ -390,6 +417,37 @@ export const ambientDub: Template = {
       sections: ['Bloom'],
       optional: true,
       inessential: { reason: 'the crest gets there by itself; this is one more thing leaning into it' },
+    },
+
+    /**
+     * §3.4/#57. The only impact request in the library that is not `hard`. Every box that
+     * authors an impact authors exactly one, and all but one of them are hard: a crash that
+     * lands. A soft impact is a different object, a swell that arrives, and `hard` is `soft`'s
+     * opposite pole on the force axis, distance 4, so §3.5 refuses the substitution. Until a
+     * direction asked for one, a soft impact was unreachable by construction, which is the shape
+     * #300 and #538 both record.
+     *
+     * It belongs here for the reason the dark riser does. A swell arriving out of the reverb is
+     * a dub gesture; a crash on the drop is what the two techno directions already ask for.
+     * `Bloom` and `Crest`, because those are the two sections a swell has somewhere to arrive
+     * into: the riser leans into the crest from Bloom, and this is the thing that lands there
+     * and keeps landing across it. Not `Recede`, since a swell into a fade is a texture that
+     * happens to breathe. The pattern's steps are where each swell is started; where it peaks
+     * is the box's attack time, seconds later, and the pattern says nothing about that.
+     *
+     * Priority 5 and `optional`, beside the riser and the ghost perc: the crest gets there
+     * without it, and a rig with nothing left after the top nine should not be told it is short
+     * a part.
+     */
+    {
+      id: 'r-impact',
+      role: 'impact',
+      priority: 5,
+      character: 'soft',
+      sustain: 'transient',
+      sections: ['Bloom', 'Crest'],
+      optional: true,
+      inessential: { reason: 'the crest arrives by itself; a swell into it is one more thing' },
     },
   ],
 

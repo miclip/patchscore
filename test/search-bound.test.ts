@@ -770,9 +770,38 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     // has more to permute among. The catalogue benchmark did not move — 586,551 before and
     // after — which is the same lesson as `hip-hop` below, seen from the other side: the
     // catalogue can be cheaper than a rig somebody owns, and neither number is the other.
+    //
+    // #57. The `impact / soft` request (optional, priority 5, `Bloom` and `Crest`) and the one
+    // recipe that answers it, `dt2-impact-soft`, together lift every seed by two to twenty-two
+    // nodes, peak 1,146 -> 1,168. Measured in two steps:
+    //
+    //  - The request alone, before any box authored the pair: one to eleven nodes a seed, peak
+    //    1,157. No candidate anywhere, since `hard` is the opposite pole and refused, so the
+    //    request took the miss branch once on every path through its depth, and that was its
+    //    whole cost.
+    //  - The Digitakt II's recipe: one to eleven more, peak 1,168. One exact answer on one pool,
+    //    so the search prices it once per tie and commits to it early.
+    //
+    // The request first measured as 306 -> 35,026, and the difference is a bound that got
+    // tighter in the same change. `lowerBound`'s idle floor counted every remaining request as
+    // one that could wake a device; a request with nothing to take cannot, and on a direction
+    // whose ties are settled on the idle key that one loose box stopped the bound proving
+    // anything. The floor now counts `suffixWakeable`, the requests ahead with a candidate or a
+    // stack plan, and `test/search-matching-floor.test.ts` carries the fixture that pins it:
+    // same optimum, 37 -> 38 nodes where the old floor gave 37 -> 417. No other row moved.
+    //
+    // The legal rig moved the other way, and by more than the request cost. The figure
+    // `measure:search` gates on was 99,459 on this direction's seed 16 (#538), and that rig has
+    // no dark riser, so `riser / dark` was a candidate-less request loosening the old floor
+    // there. The tighter floor took the same rig to 38,777, and it stays there with the recipe
+    // authored, since that rig has no Digitakt II and the request is unanswered on it either
+    // way. So the gate is back on `hard-techno` seed 15 at 68,253, 29x headroom, 3.41% of the
+    // cap, where it stood before #538: the repaired floor is what keeps a rig without the one
+    // authoring box tight, and one box is enough. The catalogue benchmark did not move: 586,551
+    // on `industrial-techno` seed 18 throughout.
     'ambient-dub': [
-      306, 679, 306, 534, 685, 309, 306, 528, 312, 309, 306, 559, 306, 312, 310, 307, 528, 1061,
-      1146, 675, 693, 1051, 307, 467
+      308, 689, 308, 538, 695, 311, 308, 532, 314, 311, 308, 563, 308, 314, 312, 309, 532, 1077,
+      1168, 685, 701, 1069, 309, 471
     ],
     // #538. The `tom / soft` fill — optional, priority 4, three sections — is the largest single
     // move this table has recorded on one row: peak 68,839 -> 277,966, and eighteen of the

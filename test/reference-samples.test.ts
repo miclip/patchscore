@@ -737,11 +737,13 @@ describe('reference samples: who this is for', () => {
     for (const recipe of scratch) expect(recipe.soundSetup, recipe.id).toBeDefined()
   })
 
-  it('counts 155 recipes across them, and 100 covered by the fourteen', () => {
+  it('counts 156 recipes across them, and 101 covered by the fourteen', () => {
+    // 156 and 101 since #57: `dt2-impact-soft` is a recipe on a sample-only box, and `impact`
+    // is a role the fourteen files cover.
     const offered = new Set<Role>(REFERENCE_SAMPLES.map((s) => s.role))
     const recipes = sampleOnly.flatMap((device) => device.recipes)
-    expect(recipes).toHaveLength(155)
-    expect(recipes.filter((recipe) => offered.has(recipe.role))).toHaveLength(100)
+    expect(recipes).toHaveLength(156)
+    expect(recipes.filter((recipe) => offered.has(recipe.role))).toHaveLength(101)
   })
 
   /**
@@ -757,6 +759,8 @@ describe('reference samples: who this is for', () => {
    * recipe on a box that loads samples, so it asks for a file like every other drum on it. That is
    * a recipe added rather than a definition changed, and the two are worth telling apart here —
    * #516 moved this figure without a single recipe being written.
+   *
+   * 286 since #57, the same ordinary way: `dt2-impact-soft` asks for a reversed cymbal.
    */
   it('reproduces the library-wide figure the issue was sized against', () => {
     const asking = DEVICES.flatMap((device) => device.recipes).filter(
@@ -765,9 +769,9 @@ describe('reference samples: who this is for', () => {
     const selecting = DEVICES.flatMap((device) => device.recipes).filter(
       (recipe) => recipe.soundSetup !== undefined,
     )
-    expect(asking).toHaveLength(285)
+    expect(asking).toHaveLength(286)
     expect(selecting).toHaveLength(3)
-    expect(asking.length + selecting.length).toBe(288)
+    expect(asking.length + selecting.length).toBe(289)
   })
 
   it('leaves the roles it declines to the surface that can answer them', () => {

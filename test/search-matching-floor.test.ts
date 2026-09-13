@@ -501,6 +501,103 @@ describe('the exclusion is load-bearing, on a rig whose first leaf is not the op
 })
 
 // ---------------------------------------------------------------------------
+// #57. A request with nothing to take cannot wake a device, and the idle floor knows it
+// ---------------------------------------------------------------------------
+
+/**
+ * The idle key is the last one, and it is where a rig of interchangeable boxes settles. Six boxes
+ * below author the same three parts exactly, on two voices each, so every leaf ties on every key
+ * above `idleDevices` and the search's whole job is to prove that three boxes woken is the floor,
+ * one per part, since an idle box is a cost. `lowerBound` proves it by counting the requests
+ * still to come (a request wakes at most one device), and that count used to include a request
+ * with no candidate at all.
+ *
+ * `r-impact` is that request. Every box declares the role and authors it at `hard`; the request
+ * asks `soft`, the opposite pole, which `resolveRecipe` refuses. So it is `unvoiced` everywhere,
+ * `voiceable` and `stacks` are both empty, and the only branch it ever takes is the miss. The true
+ * cost of adding it is one extra node per path through its depth. On the old bound it cost
+ * 37 -> 417 here, because the idle floor allowed one more box to wake at every node above it and
+ * stopped proving anything; on the shipped library it took `ambient-dub`'s catalogue row from 306
+ * to 35,026 for a request the guide reports as `no-recipe`.
+ *
+ * Three claims, each its own test, because the first two are premises the third means nothing
+ * without: the request really has no candidate, the rig really ties above idle, and then the
+ * search still finds the optimum from at most double the nodes.
+ */
+const TWIN_VOICED = Array.from({ length: 6 }, (_, i) => {
+  const id = `i-box-${String.fromCharCode(97 + i)}`
+  return box(id, {
+    voices: [
+      { kind: 'fixed', id: 'v1', label: 'V1', roles: ['kick', 'snare', 'closed-hat', 'impact'], polyphony: 1 },
+      { kind: 'fixed', id: 'v2', label: 'V2', roles: ['snare', 'closed-hat', 'kick', 'impact'], polyphony: 1 },
+    ],
+    comfortableVoices: 2,
+    recipes: [
+      makeRecipe(`${id}-kick`, 'kick', 'hard', 'v1'),
+      makeRecipe(`${id}-snare`, 'snare', 'hard', 'v1'),
+      makeRecipe(`${id}-hat`, 'closed-hat', 'hard', 'v1'),
+      makeRecipe(`${id}-kick2`, 'kick', 'hard', 'v2'),
+      makeRecipe(`${id}-snare2`, 'snare', 'hard', 'v2'),
+      makeRecipe(`${id}-hat2`, 'closed-hat', 'hard', 'v2'),
+      makeRecipe(`${id}-impact`, 'impact', 'hard', 'v1'),
+    ],
+  })
+})
+const THREE_LIVE: RoleRequest[] = [
+  request({ id: 'r-kick', role: 'kick', priority: 1, character: 'hard' }),
+  request({ id: 'r-snare', role: 'snare', priority: 2, character: 'hard' }),
+  request({ id: 'r-hat', role: 'closed-hat', priority: 3, character: 'hard' }),
+]
+const NOBODY_ANSWERS = request({
+  id: 'r-impact',
+  role: 'impact',
+  priority: 4,
+  character: 'soft',
+  optional: true,
+  inessential: { reason: 'nobody authors a soft impact' },
+})
+const threeLive = withRoles(THREE_LIVE)
+const threeLiveAndOneDead = withRoles([...THREE_LIVE, NOBODY_ANSWERS])
+
+describe('a request nobody can answer does not loosen the idle floor (#57)', () => {
+  it('is a request with nothing to take: the rig declares the role and cannot voice it', () => {
+    const found = best(TWIN_VOICED, threeLiveAndOneDead)
+    expect(placement(found, 'r-impact')).toBeUndefined()
+    const shortfall = found.shortfalls.find((s) => s.requestId === 'r-impact')
+    expect(shortfall?.reason).toBe('no-recipe')
+    // Reported as `no-recipe` and not `no-capable-voice`: every box has a voice for the part.
+    if (shortfall?.reason === 'no-recipe') expect(shortfall.capable.length).toBeGreaterThan(0)
+  })
+
+  it('is a rig where idle decides: the three live parts land exactly, one box each', () => {
+    // An idle box is a cost, so the optimum wakes three of the six and the search's job is to
+    // prove that no fourth can be woken, which is exactly the claim the dead request loosened.
+    const found = best(TWIN_VOICED, threeLive)
+    expect(keys(found.score).misses).toEqual([0, 0, 0])
+    expect(keys(found.score).recipeDistance).toBe(0)
+    expect(keys(found.score).idleDevices).toBe(3)
+  })
+
+  it('agrees with the oracle with and without the dead request', () => {
+    agreesWithOracle(TWIN_VOICED, threeLive)
+    agreesWithOracle(TWIN_VOICED, threeLiveAndOneDead)
+  })
+
+  it('costs at most one node per path, on every seed', () => {
+    // The miss branch is the dead request's only branch, so every node at its depth gains one
+    // child and nothing else changes. The tree can at most double, and it does not come close.
+    for (const seed of SEEDS) {
+      const alone = best(TWIN_VOICED, threeLive, seed).search.nodes
+      const withDead = best(TWIN_VOICED, threeLiveAndOneDead, seed).search.nodes
+      expect(withDead, `seed ${String(seed)}: ${String(alone)} -> ${String(withDead)}`).toBeGreaterThan(alone)
+      expect(withDead, `seed ${String(seed)}: ${String(alone)} -> ${String(withDead)}`).toBeLessThanOrEqual(
+        alone * 2,
+      )
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
 // The generator, shared by both sweeps
 // ---------------------------------------------------------------------------
 

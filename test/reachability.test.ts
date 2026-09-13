@@ -101,9 +101,11 @@ describe('#108 no device authors a slot no direction emits', () => {
    * direction emitted them, for exactly one role each. Nine of the fourteen findings this check
    * first produced were a device reaching for one of those two slots on some other role. Hard
    * Techno now emits `first-hit` too, on the same role — a crash's entry gesture is what the slot
-   * is for — and `last-hit` is still Industrial Techno's alone.
+   * is for. Ambient Dub emits it too since #57, still on `impact`: the step that starts a swell
+   * is the same entry gesture at the other pole of the force axis. `last-hit` is still Industrial
+   * Techno's alone.
    */
-  it('names the two slots only two directions emit, and the roles they emit them for', () => {
+  it('names the two slots only three directions emit, and the one role they emit them for', () => {
     const emitters = new Map<string, Set<string>>()
     for (const template of TEMPLATES) {
       for (const pattern of template.patterns) {
@@ -116,6 +118,7 @@ describe('#108 no device authors a slot no direction emits', () => {
       }
     }
     expect([...(emitters.get('first-hit') ?? [])].sort()).toEqual([
+      'ambient-dub/impact',
       'hard-techno/impact',
       'industrial-techno/impact',
     ])
@@ -388,6 +391,15 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // nothing selects a soft tom anywhere. Worth being plain about: the trade was a real
     // `no-recipe` closed against a pair going dark, and it is the right trade, but it is not
     // this list getting shorter.
+    //
+    // 23 and 54 still, since #57 gave the library a soft impact. `authored.size` moves to 87,
+    // the first pair the library has carried on `impact` that is not `hard`, and it does not
+    // join this list: the Digitakt II authors it, Ambient Dub asks for it, and a solo Digitakt
+    // II selects it on every seed below. The box matters. On a mono synth the one voice goes to
+    // the pad at priority 1 for the whole track, a transient cannot share it, and the pair would
+    // sit on this list while being asked for, which is the finding the list exists to catch. A
+    // sixteen-track sampler has a track to spare after the top eleven.
+    expect(selected.has('impact / soft')).toBe(true)
     const never = [...authored.keys()].filter((pair) => !selected.has(pair)).sort()
     expect(never).toEqual([
       'arp / dark',
@@ -414,7 +426,7 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'sub / soft',
       'texture / dirty',
     ])
-    expect(authored.size).toBe(86)
+    expect(authored.size).toBe(87)
     // **54 since #538 gave Breakbeat a `tom / soft` fill.** The three recipes #541 watched go
     // dark — the Rytm's, the DFAM's and the Circuit Tracks' — are back off the list by the shape
     // the list rewards: a direction asking. The Rytm's is selected exactly; the other two boxes
@@ -435,6 +447,24 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // eight boxes already and a ninth adds no pair — which is why recipes-behind is the number
     // worth pinning beside it. A pair can go dark with the pair count saying nothing at all.
     expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(54)
+  })
+
+  it('selects the soft impact on a solo Digitakt II, on every measured seed (#57)', () => {
+    // The pair's one recipe, on the one box that authors it, picked by the resolver with
+    // nothing else on the rig. Asserted as the pick, since the pick is what the reader is told
+    // to build, and on all four of #538's seeds so a seed-dependent tie cannot hide a miss.
+    const dub = templateById('ambient-dub')
+    if (dub === undefined) throw new Error('ambient-dub missing from the templates')
+    for (const seed of [1, 2, 3, 4]) {
+      const { assignments } = resolve({
+        devices: [deviceById('elektron-digitakt-ii')],
+        template: dub,
+        seed,
+      })
+      expect(assignments.find((a) => a.requestId === 'r-impact')?.recipe.id, `seed ${String(seed)}`).toBe(
+        'dt2-impact-soft',
+      )
+    }
   })
 
   it('moves three solo rigs from the dark sub to the clean one, and no other', () => {
