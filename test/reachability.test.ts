@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   CHARACTERS,
+  MAX_SUBSTITUTION_DISTANCE_SQ,
   characterDistanceSq,
   deadArticulationSlots,
   expandAll,
@@ -825,6 +826,146 @@ describe('#57 Industrial Techno asks for a dark sweep, and the boxes that wrote 
  * deleted here, since that removes cited work and is the operator's call, and the audit's
  * dead-recipe line keeps them visible until it is made.
  */
+// The per-pair decision records below share one helper set. `outcome` is the whole method:
+// one request, one box solo, every seed, and one answer or a thrown seed-variance.
+
+const SEEDS = [1, 2, 3, 4]
+
+/** Every recipe in the library authored on this pair, as `device:recipe`. */
+const authoring = (pair: string) => {
+  const [role, character] = pair.split(' / ')
+  return DEVICES.flatMap((d) =>
+    d.recipes.filter((r) => r.role === role && r.character === character).map((r) => `${d.id}:${r.id}`),
+  ).sort()
+}
+
+const template = (id: string): Template => {
+  const found = templateById(id)
+  if (found === undefined) throw new Error(`${id} missing from the templates`)
+  return found
+}
+
+/**
+ * What one request gets on one box solo, on every seed, with the mood neutral. `landed:` names
+ * the recipe that took the part; `held:` names the request holding the voice when it did not.
+ * Asserted seed by seed rather than once, so a tie the seed permutes cannot hide a miss.
+ */
+const outcome = (deviceId: string, templateId: string, requestId: string, mood?: ReturnType<typeof moodState>) => {
+  const t = template(templateId)
+  const seen = new Set<string>()
+  for (const seed of SEEDS) {
+    const { assignments, shortfalls } = resolve({ devices: [deviceById(deviceId)], template: t, mood, seed })
+    const a = assignments.find((x) => x.requestId === requestId)
+    if (a !== undefined) {
+      seen.add(`landed:${a.recipe.id}`)
+      continue
+    }
+    const gap = shortfalls.find((x) => x.requestId === requestId)
+    if (gap === undefined) throw new Error(`${templateId}/${requestId} neither assigned nor a shortfall on ${deviceId}`)
+    const because = gap.reason === 'no-room' ? `/${gap.because}` : ''
+    const held = assignments.map((x) => x.requestId).sort().join('+')
+    seen.add(`${gap.reason}${because} held:${held}`)
+  }
+  const [only] = seen
+  if (seen.size !== 1 || only === undefined) {
+    throw new Error(`${deviceId} ${templateId}/${requestId} varies by seed: ${[...seen].join(' | ')}`)
+  }
+  return only
+}
+
+/** The `device:recipe` spelling `authoring` returns, for a list of recipe ids the record names. */
+const spelled = (recipes: readonly string[]) =>
+  recipes.map((id) => `${DEVICES.find((d) => d.recipes.some((r) => r.id === id))?.id}:${id}`).sort()
+
+/** The boxes behind a set of pairs, each once, sorted by code unit. */
+const boxesBehind = (pairs: Record<string, readonly string[]>) =>
+  [...new Set(Object.keys(pairs).flatMap((pair) => authoring(pair).map((s) => s.slice(0, s.indexOf(':')))))].sort()
+
+/** One box's row of a pinned matrix: the direction's outcome at neutral, at 0 and at 100. */
+type PinnedMatrix = Record<string, Record<string, Record<string, readonly [string, string, string]>>>
+
+/** A pinned matrix with one cell per row: the neutral outcome alone. */
+type PinnedNeutral = Record<string, Record<string, Record<string, string>>>
+
+/**
+ * The rows a pinned matrix over these pairs must have, derived from the live library: for every
+ * role the pairs name, every box authoring one of those pairs, under every direction requesting
+ * the role. A matrix is checked against this, never only against itself, so a box or a direction
+ * added later fails here rather than going unmeasured.
+ */
+function expectedRows(pairs: Record<string, readonly string[]>) {
+  const roles = [...new Set(Object.keys(pairs).map((pair) => pair.slice(0, pair.indexOf(' /'))))].sort()
+  return roles.map((role) => {
+    const boxes = [
+      ...new Set(
+        Object.keys(pairs)
+          .filter((pair) => pair.startsWith(`${role} /`))
+          .flatMap((pair) => authoring(pair).map((x) => x.slice(0, x.indexOf(':')))),
+      ),
+    ].sort()
+    const asking = TEMPLATES.flatMap((t) => {
+      const request = t.roles.find((r) => r.role === role)
+      return request === undefined ? [] : [{ templateId: t.id, requestId: request.id }]
+    })
+    return { role, boxes, asking }
+  })
+}
+
+/** The key-set half of a matrix check: exactly these roles, these boxes per role, these directions per box. */
+function expectKeys(rows: ReturnType<typeof expectedRows>, matrix: Record<string, Record<string, Record<string, unknown>>>) {
+  expect(Object.keys(matrix).sort()).toEqual(rows.map((r) => r.role))
+  for (const { role, boxes, asking } of rows) {
+    expect(Object.keys(matrix[role] ?? {}).sort(), role).toEqual(boxes)
+    for (const box of boxes) {
+      expect(Object.keys(matrix[role]?.[box] ?? {}).sort(), `${role} ${box}`).toEqual(asking.map((a) => a.templateId).sort())
+    }
+  }
+}
+
+/**
+ * A pinned matrix, checked exhaustively against the live library rather than only against
+ * itself: the keys as `expectKeys`, and every cell as `outcome`'s answer at neutral and at the
+ * two ends of `axis` — with the quarter detents asserted to equal neutral, since the re-pin
+ * tables in each block prove they move nothing. Returns the number of box×direction rows
+ * walked, for the caller to pin.
+ */
+function checkMatrix(pairs: Record<string, readonly string[]>, matrix: PinnedMatrix, axis: 'darkness' | 'grit'): number {
+  const rows = expectedRows(pairs)
+  expectKeys(rows, matrix)
+  let walked = 0
+  for (const { role, boxes, asking } of rows) {
+    for (const box of boxes) {
+      for (const { templateId, requestId } of asking) {
+        const [neutral, at0, at100] = matrix[role]?.[box]?.[templateId] ?? ['', '', '']
+        const where = `${role} ${box} ${templateId} ${axis}`
+        expect(outcome(box, templateId, requestId), `${where} neutral`).toBe(neutral)
+        expect(outcome(box, templateId, requestId, moodState({ [axis]: 0 })), `${where} 0`).toBe(at0)
+        expect(outcome(box, templateId, requestId, moodState({ [axis]: 100 })), `${where} 100`).toBe(at100)
+        expect(outcome(box, templateId, requestId, moodState({ [axis]: 25 })), `${where} 25`).toBe(neutral)
+        expect(outcome(box, templateId, requestId, moodState({ [axis]: 75 })), `${where} 75`).toBe(neutral)
+        walked += 1
+      }
+    }
+  }
+  return walked
+}
+
+/** As `checkMatrix`, for a matrix pinned at neutral only. */
+function checkNeutral(pairs: Record<string, readonly string[]>, matrix: PinnedNeutral): number {
+  const rows = expectedRows(pairs)
+  expectKeys(rows, matrix)
+  let walked = 0
+  for (const { role, boxes, asking } of rows) {
+    for (const box of boxes) {
+      for (const { templateId, requestId } of asking) {
+        expect(outcome(box, templateId, requestId), `${role} ${box} ${templateId}`).toBe(matrix[role]?.[box]?.[templateId] ?? '')
+        walked += 1
+      }
+    }
+  }
+  return walked
+}
+
 describe('#538 the eight pairs no decision had been written for, declined with the evidence', () => {
   /** The pairs and the recipes behind them, exactly as the ledger carries them. */
   const EIGHT: Record<string, readonly string[]> = {
@@ -838,62 +979,15 @@ describe('#538 the eight pairs no decision had been written for, declined with t
     'sub / soft': ['minitaur-sub-soft'],
   }
 
-  const SEEDS = [1, 2, 3, 4]
-
-  /** Every recipe in the library authored on this pair, as `device:recipe`. */
-  const authoring = (pair: string) => {
-    const [role, character] = pair.split(' / ')
-    return DEVICES.flatMap((d) =>
-      d.recipes.filter((r) => r.role === role && r.character === character).map((r) => `${d.id}:${r.id}`),
-    ).sort()
-  }
-
-  const template = (id: string): Template => {
-    const found = templateById(id)
-    if (found === undefined) throw new Error(`${id} missing from the templates`)
-    return found
-  }
-
-  /**
-   * What one request gets on one box solo, on every seed, with the mood neutral. `landed:` names
-   * the recipe that took the part; `held:` names the request holding the voice when it did not.
-   * Asserted seed by seed rather than once, so a tie the seed permutes cannot hide a miss.
-   */
-  const outcome = (deviceId: string, templateId: string, requestId: string, mood?: ReturnType<typeof moodState>) => {
-    const t = template(templateId)
-    const seen = new Set<string>()
-    for (const seed of SEEDS) {
-      const { assignments, shortfalls } = resolve({ devices: [deviceById(deviceId)], template: t, mood, seed })
-      const a = assignments.find((x) => x.requestId === requestId)
-      if (a !== undefined) {
-        seen.add(`landed:${a.recipe.id}`)
-        continue
-      }
-      const gap = shortfalls.find((x) => x.requestId === requestId)
-      if (gap === undefined) throw new Error(`${templateId}/${requestId} neither assigned nor a shortfall on ${deviceId}`)
-      const because = gap.reason === 'no-room' ? `/${gap.because}` : ''
-      const held = assignments.map((x) => x.requestId).sort().join('+')
-      seen.add(`${gap.reason}${because} held:${held}`)
-    }
-    if (seen.size !== 1) throw new Error(`${deviceId} ${templateId}/${requestId} varies by seed: ${[...seen].join(' | ')}`)
-    return [...seen][0]
-  }
-
   it('pins the eight pairs, the ten recipes behind them, and that every one is on a one-assignable box', () => {
-    for (const [pair, recipes] of Object.entries(EIGHT)) {
-      expect(authoring(pair), pair).toEqual(
-        recipes.map((id) => `${DEVICES.find((d) => d.recipes.some((r) => r.id === id))?.id}:${id}`).sort(),
-      )
-    }
+    for (const [pair, recipes] of Object.entries(EIGHT)) expect(authoring(pair), pair).toEqual(spelled(recipes))
     expect(Object.values(EIGHT).flat()).toHaveLength(10)
     // Six boxes, and each expands to exactly one assignable. The nominal polyphony varies —
     // Minitaur and Cascadia 1, Subsequent 37 2, MicroFreak and minilogue xd 4, Subharmonicon
     // 6 — and none of it matters to the question: a stack of four notes on the minilogue xd
     // is still one resolver voice, so a pad on it and a sub on it are the same voice asked for
     // twice, and the higher-ranked request gets it.
-    const boxes = [
-      ...new Set(Object.keys(EIGHT).flatMap((pair) => authoring(pair).map((s) => s.slice(0, s.indexOf(':'))))),
-    ].sort()
+    const boxes = boxesBehind(EIGHT)
     expect(boxes).toEqual([
       'arturia-microfreak',
       'intellijel-cascadia',
@@ -1098,5 +1192,1640 @@ describe('#538 the eight pairs no decision had been written for, declined with t
         expect(reach.has('soft'), base).toBe(false)
       }
     }
+  })
+})
+
+describe('#538 the seven tone-axis pairs, decided with the evidence: four retained, three declined', () => {
+  /**
+   * The seven pairs on the ledger whose character sits on the tone axis, and the recipes behind
+   * them. They are one group because the darkness knob is the one thing that moves a request
+   * along that axis, and the previous block's structural test was about the axis no knob moves.
+   * Here the knob is the question: a pair a reader reaches by turning darkness down or up is
+   * not dead work, however the neutral sweep counts it.
+   */
+  const SEVEN: Record<string, readonly string[]> = {
+    'arp / dark': ['mf-arp-dark'],
+    'bass-mid / bright': ['sub37-bass-mid-bright'],
+    'noise / bright': ['neutron-noise-bright'],
+    'pad / bright': ['mf-pad-bright', 'mxd-pad-bright', 'muse-pad-bright', 'subh-pad-bright'],
+    'pad / dark': [
+      'cascadia-pad-dark',
+      'gm-pad-dark',
+      'mat-pad-dark',
+      'mf-pad-dark',
+      'muse-pad-dark',
+      'mxd-pad-dark',
+      'neutron-pad-dark',
+      'opxy-pad-dark',
+      'sub37-pad-dark',
+      'subh-pad-dark',
+    ],
+    'stab / bright': ['mf-stab-bright', 'muse-stab-bright', 'mxd-stab-bright'],
+    'stab / dark': ['mxd-stab-dark', 'sub37-stab-dark'],
+  }
+
+  const darkest = moodState({ darkness: 100 })
+  const brightest = moodState({ darkness: 0 })
+
+  /**
+   * The whole sweep, pinned cell by cell: every box that authors one of the seven pairs, every
+   * direction that requests that role, at neutral and at the two darkness ends — the only
+   * detents that re-pin a request, as the structural test below proves. Keyed by role rather
+   * than pair, so the two pad pairs share their ten boxes and the two stab pairs their four,
+   * and a box authoring both is measured once. Each cell is `outcome`'s answer, which is one
+   * string across seeds 1-4 or a throw. 81 rows, 243 cells.
+   *
+   * The per-pair tests below are the reasoning, and they quote the cells that carry it. This is
+   * the coverage: a cell changing here is a resolve changing on a solo box, whether or not a
+   * sentence below was written about it.
+   */
+  const MATRIX: PinnedMatrix = {
+  'arp': {
+    'arturia-microfreak': {
+      'generative-drift': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+      ],
+      'major-key-electro': [
+        'no-room/contended held:r-bass-mid',
+        'no-room/contended held:r-bass-mid',
+        'no-room/contended held:r-bass-mid',
+      ],
+    },
+  },
+  'bass-mid': {
+    'moog-subsequent-37': {
+      'ambient-dub': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'landed:sub37-bass-mid-dark',
+        'landed:sub37-bass-mid-bright',
+        'landed:sub37-bass-mid-dark',
+      ],
+      'major-key-electro': [
+        'landed:sub37-bass-mid-dirty',
+        'landed:sub37-bass-mid-bright',
+        'landed:sub37-bass-mid-dark',
+      ],
+      'relay': [
+        'landed:sub37-bass-mid-dark',
+        'landed:sub37-bass-mid-bright',
+        'landed:sub37-bass-mid-dark',
+      ],
+    },
+  },
+  'noise': {
+    'behringer-neutron': {
+      'ambient-dub': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-recipe held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-recipe held:r-sub',
+      ],
+    },
+  },
+  'pad': {
+    'arturia-microfreak': {
+      'ambient-dub': [
+        'landed:mf-pad-soft',
+        'landed:mf-pad-bright',
+        'landed:mf-pad-dark',
+      ],
+      'breakbeat': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'generative-drift': [
+        'landed:mf-pad-soft',
+        'landed:mf-pad-bright',
+        'landed:mf-pad-dark',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'landed:mf-pad-soft',
+        'landed:mf-pad-bright',
+        'landed:mf-pad-dark',
+      ],
+      'slow-noir': [
+        'landed:mf-pad-soft',
+        'landed:mf-pad-bright',
+        'landed:mf-pad-dark',
+      ],
+    },
+    'behringer-neutron': {
+      'ambient-dub': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'breakbeat': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
+      'generative-drift': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
+      'lydian-house': [
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+      ],
+      'slow-noir': [
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+      ],
+    },
+    'intellijel-cascadia': {
+      'ambient-dub': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'breakbeat': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
+      'generative-drift': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
+      'lydian-house': [
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+      ],
+      'slow-noir': [
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+      ],
+    },
+    'korg-minilogue-xd': {
+      'ambient-dub': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-bright',
+        'landed:mxd-pad-dark',
+      ],
+      'breakbeat': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'generative-drift': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-bright',
+        'landed:mxd-pad-dark',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-bright',
+        'landed:mxd-pad-dark',
+      ],
+      'slow-noir': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-bright',
+        'landed:mxd-pad-dark',
+      ],
+    },
+    'moog-grandmother': {
+      'ambient-dub': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
+      'breakbeat': [
+        'no-capable-voice held:r-snare',
+        'no-capable-voice held:r-snare',
+        'no-capable-voice held:r-snare',
+      ],
+      'generative-drift': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-arp',
+        'no-capable-voice held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
+      'lydian-house': [
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+      ],
+      'slow-noir': [
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+      ],
+    },
+    'moog-matriarch': {
+      'ambient-dub': [
+        'no-room/contended held:r-sub',
+        'landed:mat-pad-soft',
+        'no-room/contended held:r-sub',
+      ],
+      'breakbeat': [
+        'no-room/contended held:r-snare',
+        'no-room/contended held:r-snare',
+        'no-room/contended held:r-snare',
+      ],
+      'generative-drift': [
+        'no-room/contended held:r-sub',
+        'landed:mat-pad-soft',
+        'no-room/contended held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'landed:mat-pad-soft',
+        'no-room/contended held:r-bass-mid',
+        'landed:mat-pad-dark',
+      ],
+      'slow-noir': [
+        'landed:mat-pad-soft',
+        'no-room/contended held:r-lead',
+        'landed:mat-pad-dark',
+      ],
+    },
+    'moog-muse': {
+      'ambient-dub': [
+        'landed:muse-pad-soft',
+        'landed:muse-pad-bright',
+        'landed:muse-pad-dark',
+      ],
+      'breakbeat': [
+        'landed:muse-pad-soft',
+        'landed:muse-pad-bright',
+        'landed:muse-pad-dark',
+      ],
+      'generative-drift': [
+        'landed:muse-pad-soft',
+        'landed:muse-pad-bright',
+        'landed:muse-pad-dark',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-bass-mid+r-sub',
+        'no-room/contended held:r-bass-mid+r-sub',
+        'no-room/contended held:r-bass-mid+r-sub',
+      ],
+      'lydian-house': [
+        'landed:muse-pad-soft',
+        'landed:muse-pad-bright',
+        'landed:muse-pad-dark',
+      ],
+      'slow-noir': [
+        'landed:muse-pad-soft',
+        'landed:muse-pad-bright',
+        'landed:muse-pad-dark',
+      ],
+    },
+    'moog-subharmonicon': {
+      'ambient-dub': [
+        'no-room/contended held:r-sub',
+        'landed:subh-pad-bright',
+        'no-room/contended held:r-sub',
+      ],
+      'breakbeat': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-sub',
+      ],
+      'generative-drift': [
+        'no-room/contended held:r-sub',
+        'landed:subh-pad-bright',
+        'no-room/contended held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-bass-mid',
+        'landed:subh-pad-bright',
+        'no-room/contended held:r-bass-mid',
+      ],
+      'slow-noir': [
+        'landed:subh-pad-soft',
+        'landed:subh-pad-bright',
+        'landed:subh-pad-dark',
+      ],
+    },
+    'moog-subsequent-37': {
+      'ambient-dub': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'breakbeat': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'generative-drift': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'lydian-house': [
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+      ],
+      'slow-noir': [
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+        'no-capable-voice held:r-lead',
+      ],
+    },
+    'teenage-engineering-op-xy': {
+      'ambient-dub': [
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-dark',
+      ],
+      'breakbeat': [
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-dark',
+      ],
+      'generative-drift': [
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-dark',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-bass-mid+r-clap+r-closed-hat+r-impact+r-kick+r-open-hat+r-riser+r-stab+r-sub+r-sweep',
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-dark',
+      ],
+      'lydian-house': [
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-dark',
+      ],
+      'slow-noir': [
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-dark',
+      ],
+    },
+  },
+  'stab': {
+    'arturia-microfreak': {
+      'hip-hop': [
+        'no-room/contended held:r-vox-chop',
+        'no-room/contended held:r-vox-chop',
+        'no-room/contended held:r-vox-chop',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+      ],
+    },
+    'korg-minilogue-xd': {
+      'hip-hop': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+      ],
+    },
+    'moog-muse': {
+      'hip-hop': [
+        'no-recipe held:r-sub+r-texture',
+        'landed:muse-stab-bright',
+        'no-recipe held:r-sub+r-texture',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-bass-mid+r-sub',
+        'no-room/contended held:r-bass-mid+r-sub',
+        'no-recipe held:r-bass-mid+r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-bass-mid+r-pad',
+        'no-room/contended held:r-bass-mid+r-pad',
+        'no-room/contended held:r-bass-mid+r-pad',
+      ],
+    },
+    'moog-subsequent-37': {
+      'hip-hop': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'lydian-house': [
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+      ],
+    },
+  },
+  }
+
+  it('pins every box × direction × detent for the five roles, exactly, and the quarter detents move none of them', () => {
+    expect(checkMatrix(SEVEN, MATRIX, 'darkness')).toBe(81)
+  })
+
+  it('pins the seven pairs, the twenty-two recipes behind them, and the ten boxes with their voice counts', () => {
+    for (const [pair, recipes] of Object.entries(SEVEN)) expect(authoring(pair), pair).toEqual(spelled(recipes))
+    expect(Object.values(SEVEN).flat()).toHaveLength(22)
+    const boxes = boxesBehind(SEVEN)
+    expect(boxes).toEqual([
+      'arturia-microfreak',
+      'behringer-neutron',
+      'intellijel-cascadia',
+      'korg-minilogue-xd',
+      'moog-grandmother',
+      'moog-matriarch',
+      'moog-muse',
+      'moog-subharmonicon',
+      'moog-subsequent-37',
+      'teenage-engineering-op-xy',
+    ])
+    // Two of the ten are not one-voice boxes, and both matter below: the Muse's second voice is
+    // where a stab lands once the knob has re-pinned it, and the OP-XY's eight tracks are where
+    // the one direction asking for a dark pad gets it.
+    const voices = Object.fromEntries(boxes.map((id) => [id, expandAll([deviceById(id)]).length]))
+    expect(voices).toEqual({
+      'arturia-microfreak': 1,
+      'behringer-neutron': 1,
+      'intellijel-cascadia': 1,
+      'korg-minilogue-xd': 1,
+      'moog-grandmother': 1,
+      'moog-matriarch': 1,
+      'moog-muse': 2,
+      'moog-subharmonicon': 1,
+      'moog-subsequent-37': 1,
+      'teenage-engineering-op-xy': 8,
+    })
+  })
+
+  it('leaves all seven on the never-selected ledger; two are asked for by a direction and five by none', () => {
+    const { selected } = selectedPairs()
+    for (const pair of Object.keys(SEVEN)) expect(selected.has(pair), pair).toBe(false)
+    const asked = new Set(TEMPLATES.flatMap((t) => t.roles.map((r) => `${r.role} / ${r.character}`)))
+    expect(Object.keys(SEVEN).filter((pair) => asked.has(pair))).toEqual(['pad / dark', 'stab / dark'])
+  })
+
+  it('the darkness knob re-pins every character to `bright` at 0, and only the three off the tone axis to `dark` at 100', () => {
+    // The structural half of the seven. `resolveCharacter` adds a full unit of tone at either
+    // end of the knob. At 0 that lands every character on or nearer `bright` than anything
+    // else, and the two ties — `clean` and `dirty` at equal distance from `bright` — fall to
+    // `bright` by code unit. At 100 the same push lands `dirty`, `hard` and `soft` on a tie
+    // with `dark` and code unit picks `dark`; it lands `bright` on the origin, equidistant from
+    // all six, and `bright` sorts first; and it lands `clean` on a tie with `dark` that `clean`
+    // wins. So no knob moves a `bright` or a `clean` request to `dark`, which is the fact under
+    // `arp / dark` below, and every request that is not `bright` or `clean` can be pushed there.
+    // The quarter detents move nothing, so the sweep below is the two ends and neutral.
+    for (const base of CHARACTERS) {
+      expect(resolveCharacter(base, brightest), `${base} at 0`).toBe('bright')
+      expect(resolveCharacter(base, moodState({ darkness: 25 })), `${base} at 25`).toBe(base)
+      expect(resolveCharacter(base, moodState({ darkness: 75 })), `${base} at 75`).toBe(base)
+    }
+    expect(resolveCharacter('dirty', darkest)).toBe('dark')
+    expect(resolveCharacter('hard', darkest)).toBe('dark')
+    expect(resolveCharacter('soft', darkest)).toBe('dark')
+    expect(resolveCharacter('dark', darkest)).toBe('dark')
+    expect(resolveCharacter('bright', darkest)).toBe('bright')
+    expect(resolveCharacter('clean', darkest)).toBe('clean')
+  })
+
+  it('`arp / dark`: declined — both arp requests lose the MicroFreak\'s voice above them, and neither can be re-pinned to `dark`', () => {
+    // Two directions ask for an arp. Generative Drift asks `bright` at p2, the opposite of
+    // `dark` and refused by §3.5 before the voice is weighed; Major-Key Electro asks `clean` at
+    // p3, sqrt(2) away. On the one box that authors a dark arp the voice is spent at p1 either
+    // way, on the pad or the bass. The knob does not help: `bright` and `clean` are the two
+    // characters darkness at 100 leaves where they are.
+    expect(characterDistanceSq('bright', 'dark')).toBe(4)
+    expect(characterDistanceSq('clean', 'dark')).toBe(2)
+    for (const mood of [undefined, brightest, darkest]) {
+      expect(outcome('arturia-microfreak', 'generative-drift', 'r-arp', mood)).toBe('no-room/contended held:r-pad')
+      expect(outcome('arturia-microfreak', 'major-key-electro', 'r-arp', mood)).toBe('no-room/contended held:r-bass-mid')
+    }
+    const arps = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'arp').map((r) => `${t.id}:${r.character}:p${String(r.priority)}`),
+    )
+    expect(arps.sort()).toEqual(['generative-drift:bright:p2', 'major-key-electro:clean:p3'])
+    // Verdict: a damped harmonic arpeggio is a real part, and a direction that wants it dark
+    // and ranks it above its pad does not exist; on a one-voice box nothing below p1 lands.
+    // No owner — recommend deletion later.
+  })
+
+  it('`bass-mid / bright`: retained — darkness at 0 re-pins the three landed basses to `bright`, and the Subsequent 37 plays it', () => {
+    // The neutral picture is the one the previous block pinned: the two p1 dark basses land
+    // as the dark recipe, Major-Key Electro's p2 dirty bass lands as the dirty one, and the two
+    // p2 basses under a sub lose the voice. Darkness at 0 moves the three that land onto the
+    // bright recipe, which answers exactly, and moves nothing for the two that do not — the sub
+    // still ranks above them and still takes the voice.
+    for (const id of ['lydian-house', 'relay', 'major-key-electro']) {
+      expect(outcome('moog-subsequent-37', id, 'r-bass-mid', brightest), id).toBe('landed:sub37-bass-mid-bright')
+    }
+    expect(outcome('moog-subsequent-37', 'lydian-house', 'r-bass-mid')).toBe('landed:sub37-bass-mid-dark')
+    expect(outcome('moog-subsequent-37', 'relay', 'r-bass-mid')).toBe('landed:sub37-bass-mid-dark')
+    expect(outcome('moog-subsequent-37', 'major-key-electro', 'r-bass-mid')).toBe('landed:sub37-bass-mid-dirty')
+    for (const mood of [undefined, brightest, darkest]) {
+      expect(outcome('moog-subsequent-37', 'ambient-dub', 'r-bass-mid', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('moog-subsequent-37', 'industrial-techno', 'r-bass-mid', mood)).toBe('no-room/contended held:r-sub')
+    }
+    // Verdict: one knob, three directions, exact. Retained.
+  })
+
+  it('`noise / bright`: declined — both noise requests sit under a part that takes the Neutron\'s voice, at every detent', () => {
+    // Ambient Dub asks `soft` at p3, Industrial Techno `dirty` at p5 and optional; both are
+    // sqrt(2) from `bright`. On the Neutron the voice goes at p1 to the sub or the kick. At
+    // darkness 0 both requests re-pin to `bright`, the exact character, and the voice is still
+    // gone. At 100 both re-pin to `dark`, the opposite, and the gap changes its reason to
+    // `no-recipe` — the box's only noise is refused — while the sub holds the voice under it.
+    expect(characterDistanceSq('soft', 'bright')).toBe(2)
+    expect(characterDistanceSq('dirty', 'bright')).toBe(2)
+    for (const mood of [undefined, brightest]) {
+      expect(outcome('behringer-neutron', 'ambient-dub', 'r-noise', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('behringer-neutron', 'industrial-techno', 'r-noise', mood)).toBe('no-room/contended held:r-kick')
+    }
+    expect(outcome('behringer-neutron', 'ambient-dub', 'r-noise', darkest)).toBe('no-recipe held:r-sub')
+    expect(outcome('behringer-neutron', 'industrial-techno', 'r-noise', darkest)).toBe('no-recipe held:r-sub')
+    // Verdict: filtered white noise with the oscillators out of the mix is a part any of the
+    // two noise directions could carry, and both rank the noise where a one-voice box never
+    // reaches it. No owner — recommend deletion later.
+  })
+
+  it('`pad / bright`: retained — darkness at 0 re-pins every p1 soft pad to `bright`, and all four boxes play theirs', () => {
+    // Five directions ask a soft pad and four rank it first. On the MicroFreak and the
+    // minilogue xd the four p1 pads land as the soft recipe and, at darkness 0, as the bright
+    // one; Breakbeat's p5 and Industrial Techno's p4 lose the voice to the sub at any detent.
+    // The Muse has a second voice, so Breakbeat's p5 pad lands too. The Subharmonicon is the
+    // interesting one: at neutral its voice goes to the sub or the bass at p1 on three of the
+    // four, and only Slow Noir's pad lands. At darkness 0 the sub and the bass re-pin to
+    // `bright`, the box's sub is `dark` — refused as the opposite — and its bass is `dirty`, a
+    // substitution, so the pad's exact bright recipe takes the p1 voice on all four.
+    const p1 = ['ambient-dub', 'generative-drift', 'lydian-house', 'slow-noir']
+    for (const [box, prefix] of [
+      ['arturia-microfreak', 'mf'],
+      ['korg-minilogue-xd', 'mxd'],
+    ] as const) {
+      for (const id of p1) {
+        expect(outcome(box, id, 'r-pad'), `${box} ${id}`).toBe(`landed:${prefix}-pad-soft`)
+        expect(outcome(box, id, 'r-pad', brightest), `${box} ${id}`).toBe(`landed:${prefix}-pad-bright`)
+      }
+      for (const mood of [undefined, brightest, darkest]) {
+        expect(outcome(box, 'breakbeat', 'r-pad', mood), box).toBe('no-room/contended held:r-sub')
+        expect(outcome(box, 'industrial-techno', 'r-pad', mood), box).toBe('no-room/contended held:r-sub')
+      }
+    }
+    for (const id of [...p1, 'breakbeat']) {
+      expect(outcome('moog-muse', id, 'r-pad'), id).toBe('landed:muse-pad-soft')
+      expect(outcome('moog-muse', id, 'r-pad', brightest), id).toBe('landed:muse-pad-bright')
+    }
+    expect(outcome('moog-muse', 'industrial-techno', 'r-pad')).toBe('no-room/contended held:r-bass-mid+r-sub')
+    expect(outcome('moog-subharmonicon', 'slow-noir', 'r-pad')).toBe('landed:subh-pad-soft')
+    expect(outcome('moog-subharmonicon', 'ambient-dub', 'r-pad')).toBe('no-room/contended held:r-sub')
+    expect(outcome('moog-subharmonicon', 'generative-drift', 'r-pad')).toBe('no-room/contended held:r-sub')
+    expect(outcome('moog-subharmonicon', 'lydian-house', 'r-pad')).toBe('no-room/contended held:r-bass-mid')
+    for (const id of p1) expect(outcome('moog-subharmonicon', id, 'r-pad', brightest), id).toBe('landed:subh-pad-bright')
+    expect(deviceById('moog-subharmonicon').recipes.filter((r) => r.role === 'sub').map((r) => r.character)).toEqual(['dark'])
+    expect(deviceById('moog-subharmonicon').recipes.filter((r) => r.role === 'bass-mid').map((r) => r.character)).toEqual([
+      'dark',
+      'dirty',
+    ])
+    // Verdict: one knob, four directions, every authoring box, exact. Retained.
+  })
+
+  it('`pad / dark`: retained — darkness at 100 reaches it on six boxes, and on the OP-XY the direction that asks for it gets it', () => {
+    // Industrial Techno asks `dark` at p4, the one direction that does. Six of the ten boxes
+    // reach the pair by the knob. On the MicroFreak, the minilogue xd and the Muse the p1 soft
+    // pads re-pin to `dark` at 100 and land the dark recipe; the Matriarch does the same under
+    // the two directions whose p1 pad wins its voice at neutral, and the Subharmonicon under
+    // the one. Industrial Techno's p4 pad loses every one of those voices above it.
+    const p1 = ['ambient-dub', 'generative-drift', 'lydian-house', 'slow-noir']
+    for (const [box, prefix] of [
+      ['arturia-microfreak', 'mf'],
+      ['korg-minilogue-xd', 'mxd'],
+      ['moog-muse', 'muse'],
+    ] as const) {
+      for (const id of p1) expect(outcome(box, id, 'r-pad', darkest), `${box} ${id}`).toBe(`landed:${prefix}-pad-dark`)
+    }
+    expect(outcome('moog-muse', 'breakbeat', 'r-pad', darkest)).toBe('landed:muse-pad-dark')
+    for (const id of ['lydian-house', 'slow-noir']) {
+      expect(outcome('moog-matriarch', id, 'r-pad'), id).toBe('landed:mat-pad-soft')
+      expect(outcome('moog-matriarch', id, 'r-pad', darkest), id).toBe('landed:mat-pad-dark')
+    }
+    expect(outcome('moog-subharmonicon', 'slow-noir', 'r-pad', darkest)).toBe('landed:subh-pad-dark')
+    for (const box of ['arturia-microfreak', 'korg-minilogue-xd']) {
+      expect(outcome(box, 'industrial-techno', 'r-pad', darkest), box).toBe('no-room/contended held:r-sub')
+    }
+    expect(outcome('moog-muse', 'industrial-techno', 'r-pad', darkest)).toBe('no-room/contended held:r-bass-mid+r-sub')
+    expect(outcome('moog-matriarch', 'industrial-techno', 'r-pad', darkest)).toBe('no-room/contended held:r-sub')
+    expect(outcome('moog-subharmonicon', 'industrial-techno', 'r-pad', darkest)).toBe('no-room/contended held:r-sub')
+    // The OP-XY is the sixth, and the one where the asking direction is the one that lands it.
+    // Eight tracks, and at neutral ten of Industrial Techno's thirteen requests hold them — the
+    // three transients share tracks across sections — so the p4 pad is contended on every seed.
+    // At darkness 100 the p2 closed hat re-pins from `dirty` to `dark`, the box's only closed
+    // hat is `bright`, the opposite, and that request drops to `no-recipe`; the track it would
+    // have held goes to the pad, and the pad is exact. At 0 the same request is `bright` and
+    // lands, and the pad re-pins to `bright` and takes the soft recipe at sqrt(2), so the knob
+    // reaches the part at both ends and the dark recipe at one.
+    expect(outcome('teenage-engineering-op-xy', 'industrial-techno', 'r-pad')).toBe(
+      'no-room/contended held:r-bass-mid+r-clap+r-closed-hat+r-impact+r-kick+r-open-hat+r-riser+r-stab+r-sub+r-sweep',
+    )
+    expect(outcome('teenage-engineering-op-xy', 'industrial-techno', 'r-pad', darkest)).toBe('landed:opxy-pad-dark')
+    expect(outcome('teenage-engineering-op-xy', 'industrial-techno', 'r-pad', brightest)).toBe('landed:opxy-pad-soft')
+    // The release itself, pinned on the hat rather than inferred from the pad: the hat lands
+    // its bright recipe at neutral and at 0, and at 100 it is the request with no recipe while
+    // the pad is among the ten holding a track. Seed by seed, like every other cell.
+    expect(resolveCharacter('dirty', darkest)).toBe('dark')
+    expect(characterDistanceSq('dark', 'bright')).toBe(MAX_SUBSTITUTION_DISTANCE_SQ)
+    expect(outcome('teenage-engineering-op-xy', 'industrial-techno', 'r-closed-hat')).toBe('landed:opxy-closed-hat-bright')
+    expect(outcome('teenage-engineering-op-xy', 'industrial-techno', 'r-closed-hat', brightest)).toBe('landed:opxy-closed-hat-bright')
+    expect(outcome('teenage-engineering-op-xy', 'industrial-techno', 'r-closed-hat', darkest)).toBe(
+      'no-recipe held:r-bass-mid+r-clap+r-impact+r-kick+r-open-hat+r-pad+r-riser+r-stab+r-sub+r-sweep',
+    )
+    expect(deviceById('teenage-engineering-op-xy').recipes.filter((r) => r.role === 'closed-hat').map((r) => r.character)).toEqual([
+      'bright',
+    ])
+    for (const id of [...p1, 'breakbeat']) {
+      expect(outcome('teenage-engineering-op-xy', id, 'r-pad', darkest), id).toBe('landed:opxy-pad-dark')
+    }
+    // The other four boxes never reach it, and not for the reason the ledger implies. Every pad
+    // request in the library asks for three or four notes, and the Cascadia and the
+    // Grandmother sound one, the Neutron and the Subsequent 37 two: `no-capable-voice` on
+    // every direction at every detent, before character or rank is consulted. A one-voice
+    // drone and a two-note pad are honest recipes on those boxes, and no pad request the
+    // library carries can be answered by them.
+    const asked = TEMPLATES.flatMap((t) => t.roles.filter((r) => r.role === 'pad').map((r) => r.polyphony))
+    expect(asked.sort()).toEqual([3, 3, 3, 3, 4, 4])
+    for (const [box, polyphony] of [
+      ['behringer-neutron', 2],
+      ['intellijel-cascadia', 1],
+      ['moog-grandmother', 1],
+      ['moog-subsequent-37', 2],
+    ] as const) {
+      expect(expandAll([deviceById(box)]).map((a) => a.polyphony), box).toEqual([polyphony])
+      // The exact cells are in `MATRIX`; this reads the reason off every one of them, so the
+      // sentence above is asserted on all eighteen cells per box and not on a sample.
+      for (const [id, cells] of Object.entries(MATRIX['pad']?.[box] ?? {})) {
+        for (const cell of cells) expect(cell.split(' ')[0], `${box} ${id}`).toBe('no-capable-voice')
+      }
+      expect(Object.keys(MATRIX['pad']?.[box] ?? {})).toHaveLength(6)
+    }
+    // Verdict: asked for by one direction, reached exactly on that direction by one knob on the
+    // one box with tracks to spare, and reached on five more under the soft-pad directions.
+    // Retained. The four recipes the note count excludes are a separate question from this
+    // pair — they are a #57 note about what a pad request asks for, not a ledger entry.
+  })
+
+  it('`stab / bright`: retained — darkness at 0 re-pins Hip-Hop\'s stab to `bright`, and the Muse\'s second voice plays it', () => {
+    // Three directions ask for a stab: Hip-Hop `dark` at p4 and four notes, Industrial Techno
+    // `hard` at p3 and three, Lydian House `clean` at p3 and three. On the MicroFreak and the
+    // minilogue xd the one voice is spent above every stab at every detent. The Muse is the
+    // case. At neutral Hip-Hop's stab is `no-recipe` there: its hard and dirty stabs are
+    // unison patches capped at one note, the only four-note stab it has is `bright`, and
+    // `bright` is the opposite of `dark`. Darkness at 0 re-pins the request to `bright`, the
+    // exact answer, and the p4 stab takes the second voice from the p5 texture that held it.
+    for (const mood of [undefined, brightest, darkest]) {
+      expect(outcome('arturia-microfreak', 'hip-hop', 'r-stab', mood)).toBe('no-room/contended held:r-vox-chop')
+      expect(outcome('arturia-microfreak', 'industrial-techno', 'r-stab', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('arturia-microfreak', 'lydian-house', 'r-stab', mood)).toBe('no-room/contended held:r-pad')
+      expect(outcome('korg-minilogue-xd', 'hip-hop', 'r-stab', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'industrial-techno', 'r-stab', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'lydian-house', 'r-stab', mood)).toBe('no-room/contended held:r-pad')
+    }
+    expect(outcome('moog-muse', 'hip-hop', 'r-stab')).toBe('no-recipe held:r-sub+r-texture')
+    expect(outcome('moog-muse', 'hip-hop', 'r-stab', brightest)).toBe('landed:muse-stab-bright')
+    expect(outcome('moog-muse', 'hip-hop', 'r-texture', brightest)).toBe('no-room/contended held:r-stab+r-sub')
+    // The other two stab directions on the Muse, at every detent: the second voice is the
+    // bass's under both, and the knob moves the reason once — at 100 Industrial Techno's
+    // `hard` re-pins to `dark`, which the box has no four-note answer to — and never the part.
+    for (const mood of [undefined, brightest]) {
+      expect(outcome('moog-muse', 'industrial-techno', 'r-stab', mood)).toBe('no-room/contended held:r-bass-mid+r-sub')
+    }
+    expect(outcome('moog-muse', 'industrial-techno', 'r-stab', darkest)).toBe('no-recipe held:r-bass-mid+r-sub')
+    for (const mood of [undefined, brightest, darkest]) {
+      expect(outcome('moog-muse', 'lydian-house', 'r-stab', mood)).toBe('no-room/contended held:r-bass-mid+r-pad')
+    }
+    const muse = deviceById('moog-muse').recipes.filter((r) => r.role === 'stab')
+    expect(muse.map((r) => `${r.character}:${String(r.patchPolyphony ?? 'full')}`).sort()).toEqual([
+      'bright:full',
+      'dirty:1',
+      'hard:1',
+    ])
+    const stabs = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'stab').map((r) => `${t.id}:${r.character}:p${String(r.priority)}:${String(r.polyphony)}`),
+    )
+    expect(stabs.sort()).toEqual(['hip-hop:dark:p4:4', 'industrial-techno:hard:p3:3', 'lydian-house:clean:p3:3'])
+    // Verdict: one knob, one direction, one box, exact. Retained. The MicroFreak's and the
+    // minilogue xd's bright stabs are dark by the rig — a one-voice box under a direction that
+    // ranks its stab third or fourth — which is the state the ledger is for.
+  })
+
+  it('`stab / dark`: declined — asked for at p4, and the one box that could carry four notes spends its voice at p3', () => {
+    // Hip-Hop asks for exactly this, at p4 and four notes. The minilogue xd is the only one of
+    // the two authoring boxes that can sound four notes, and under Hip-Hop its voice goes to
+    // the p3 sub on every seed; under the other two stab directions it goes to the sub or the
+    // pad, and no detent moves any of it. The Subsequent 37 sounds two notes, every stab
+    // request asks for three or four, and it is `no-capable-voice` on all three directions
+    // before the character is consulted — the same fact as the four pads above.
+    for (const mood of [undefined, brightest, darkest]) {
+      expect(outcome('korg-minilogue-xd', 'hip-hop', 'r-stab', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'industrial-techno', 'r-stab', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'lydian-house', 'r-stab', mood)).toBe('no-room/contended held:r-pad')
+    }
+    expect(outcome('moog-subsequent-37', 'hip-hop', 'r-stab')).toBe('no-capable-voice held:r-sub')
+    expect(outcome('moog-subsequent-37', 'industrial-techno', 'r-stab')).toBe('no-capable-voice held:r-sub')
+    expect(outcome('moog-subsequent-37', 'lydian-house', 'r-stab')).toBe('no-capable-voice held:r-bass-mid')
+    for (const [id, cells] of Object.entries(MATRIX['stab']?.['moog-subsequent-37'] ?? {})) {
+      for (const cell of cells) expect(cell.split(' ')[0], id).toBe('no-capable-voice')
+    }
+    expect(Object.keys(MATRIX['stab']?.['moog-subsequent-37'] ?? {})).toHaveLength(3)
+    expect(expandAll([deviceById('moog-subsequent-37')]).map((a) => a.polyphony)).toEqual([2])
+    const hipHop = template('hip-hop')
+    expect(hipHop.roles.find((r) => r.id === 'r-sub')?.priority).toBe(3)
+    expect(hipHop.roles.find((r) => r.id === 'r-stab')?.priority).toBe(4)
+    // Verdict: this is one of the three #538 measured as asked for and never landing, and the
+    // measurement holds — the request exists, the geometry defeats it, and moving Hip-Hop's
+    // stab above its sub to reach a recipe is the change #538 ruled out. The minilogue xd's
+    // recipe is dark by the rig and stays; the Subsequent 37's cannot answer any stab the
+    // library asks for. No owner for the pair — recommend deletion of the Subsequent 37's
+    // later, and the minilogue xd's stays as the answer to a rig with a voice to spare.
+  })
+})
+
+describe('#538 the five grit-axis pairs, decided with the evidence: two retained, three declined', () => {
+  /**
+   * The five pairs on the ledger whose character sits on the grit axis, with the recipes behind
+   * them. The grit knob is the one that moves a request along it, and the same shape as the tone
+   * block applies: a pair the knob reaches is not dead work, and one it cannot reach on any
+   * direction from any box is decided here, one way or the other.
+   */
+  const FIVE: Record<string, readonly string[]> = {
+    'pad / dirty': ['mxd-pad-dirty'],
+    'stab / clean': ['crave-stab-clean', 'mat-stab-clean', 'mf-stab-clean', 'mxd-stab-clean'],
+    'stab / dirty': ['minitaur-stab-dirty', 'muse-stab-dirty', 'mxd-stab-dirty', 'subh-stab-dirty'],
+    'sub / dirty': ['sub37-sub-dirty'],
+    'texture / dirty': ['muse-texture-dirty', 'mxd-texture-dirty'],
+  }
+
+  const dirtiest = moodState({ grit: 100 })
+  const cleanest = moodState({ grit: 0 })
+
+  /** As `MATRIX` above, on the grit axis. 46 rows, 138 cells. */
+  const MATRIX: PinnedMatrix = {
+  'pad': {
+    'korg-minilogue-xd': {
+      'ambient-dub': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-clean',
+        'landed:mxd-pad-dirty',
+      ],
+      'breakbeat': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'generative-drift': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-clean',
+        'landed:mxd-pad-dirty',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-clean',
+        'landed:mxd-pad-dirty',
+      ],
+      'slow-noir': [
+        'landed:mxd-pad-soft',
+        'landed:mxd-pad-clean',
+        'landed:mxd-pad-dirty',
+      ],
+    },
+  },
+  'stab': {
+    'arturia-microfreak': {
+      'hip-hop': [
+        'no-room/contended held:r-vox-chop',
+        'no-room/contended held:r-vox-chop',
+        'no-room/contended held:r-vox-chop',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-bass-mid',
+      ],
+    },
+    'behringer-crave': {
+      'hip-hop': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+      ],
+      'industrial-techno': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+      ],
+      'lydian-house': [
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-bass-mid',
+      ],
+    },
+    'korg-minilogue-xd': {
+      'hip-hop': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+      ],
+    },
+    'moog-matriarch': {
+      'hip-hop': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-bass-mid',
+      ],
+    },
+    'moog-minitaur': {
+      'hip-hop': [
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-kick',
+      ],
+      'industrial-techno': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'lydian-house': [
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+        'no-capable-voice held:r-bass-mid',
+      ],
+    },
+    'moog-muse': {
+      'hip-hop': [
+        'no-recipe held:r-sub+r-texture',
+        'landed:muse-stab-bright',
+        'no-recipe held:r-sub+r-texture',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-bass-mid+r-sub',
+        'no-room/contended held:r-bass-mid+r-sub',
+        'no-room/contended held:r-bass-mid+r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-bass-mid+r-pad',
+        'no-room/contended held:r-bass-mid+r-pad',
+        'no-room/contended held:r-bass-mid+r-pad',
+      ],
+    },
+    'moog-subharmonicon': {
+      'hip-hop': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+      ],
+      'industrial-techno': [
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-sub',
+      ],
+      'lydian-house': [
+        'no-room/contended held:r-bass-mid',
+        'no-room/contended held:r-bass-mid',
+        'no-room/contended held:r-bass-mid',
+      ],
+    },
+  },
+  'sub': {
+    'moog-subsequent-37': {
+      'acid-lineage': [
+        'no-room/contended held:r-acid',
+        'no-room/contended held:r-acid',
+        'no-room/contended held:r-acid',
+      ],
+      'ambient-dub': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
+      'breakbeat': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
+      'generative-drift': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
+      'hard-techno': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
+      'hip-hop': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
+      'industrial-techno': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
+      'slow-noir': [
+        'no-room/contended held:r-lead',
+        'no-room/contended held:r-lead',
+        'no-room/contended held:r-lead',
+      ],
+      'weave': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
+    },
+  },
+  'texture': {
+    'korg-minilogue-xd': {
+      'ambient-dub': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+      ],
+      'drone-study': [
+        'landed:mxd-texture-soft',
+        'landed:mxd-texture-soft',
+        'landed:mxd-texture-dirty',
+      ],
+      'generative-drift': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+      ],
+      'hip-hop': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'slow-noir': [
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+        'no-room/contended held:r-pad',
+      ],
+    },
+    'moog-muse': {
+      'ambient-dub': [
+        'no-room/contended held:r-pad+r-sub',
+        'no-room/contended held:r-pad+r-sub',
+        'no-room/contended held:r-pad+r-sub',
+      ],
+      'drone-study': [
+        'landed:muse-texture-soft',
+        'landed:muse-texture-soft',
+        'landed:muse-texture-dirty',
+      ],
+      'generative-drift': [
+        'no-room/contended held:r-pad+r-sub',
+        'no-room/contended held:r-pad+r-sub',
+        'no-room/contended held:r-pad+r-sub',
+      ],
+      'hip-hop': [
+        'landed:muse-texture-soft',
+        'no-room/contended held:r-stab+r-sub',
+        'landed:muse-texture-dirty',
+      ],
+      'slow-noir': [
+        'no-room/contended held:r-lead+r-pad',
+        'no-room/contended held:r-lead+r-pad',
+        'no-room/contended held:r-lead+r-pad',
+      ],
+    },
+  },
+  }
+
+  it('pins the five pairs, the twelve recipes behind them, and the eight boxes with their voice counts', () => {
+    for (const [pair, recipes] of Object.entries(FIVE)) expect(authoring(pair), pair).toEqual(spelled(recipes))
+    expect(Object.values(FIVE).flat()).toHaveLength(12)
+    const boxes = boxesBehind(FIVE)
+    expect(boxes).toEqual([
+      'arturia-microfreak',
+      'behringer-crave',
+      'korg-minilogue-xd',
+      'moog-matriarch',
+      'moog-minitaur',
+      'moog-muse',
+      'moog-subharmonicon',
+      'moog-subsequent-37',
+    ])
+    const voices = Object.fromEntries(boxes.map((id) => [id, expandAll([deviceById(id)]).length]))
+    expect(voices).toEqual({
+      'arturia-microfreak': 1,
+      'behringer-crave': 1,
+      'korg-minilogue-xd': 1,
+      'moog-matriarch': 1,
+      'moog-minitaur': 1,
+      'moog-muse': 2,
+      'moog-subharmonicon': 1,
+      'moog-subsequent-37': 1,
+    })
+  })
+
+  it('leaves all five on the never-selected ledger; one is asked for by a direction and four by none', () => {
+    const { selected } = selectedPairs()
+    for (const pair of Object.keys(FIVE)) expect(selected.has(pair), pair).toBe(false)
+    const asked = new Set(TEMPLATES.flatMap((t) => t.roles.map((r) => `${r.role} / ${r.character}`)))
+    expect(Object.keys(FIVE).filter((pair) => asked.has(pair))).toEqual(['stab / clean'])
+  })
+
+  it('pins every box × direction × detent for the four roles, exactly, and the quarter detents move none of them', () => {
+    expect(checkMatrix(FIVE, MATRIX, 'grit')).toBe(46)
+  })
+
+  it('the grit knob re-pins `hard` and `soft` to `dirty` at 100 and to `clean` at 0, and never moves `dark` onto `dirty`', () => {
+    // The structural half of the five. A full unit of grit either way: at 100 `hard` and `soft`
+    // tie between themselves and `dirty` and code unit picks `dirty`; `clean` lands on the origin
+    // and takes `bright`, the first by code unit; `dark` ties with `dirty` and keeps itself. At 0
+    // the mirror: `dark`, `hard` and `soft` go to `clean`, `dirty` lands on the origin and goes
+    // to `bright`. Two consequences carry the verdicts below. No sub request can reach `dirty`,
+    // because every sub is `dark` or `clean` and neither moves there. And every soft pad and
+    // texture request reaches `dirty` at 100, exactly.
+    for (const base of CHARACTERS) {
+      expect(resolveCharacter(base, moodState({ grit: 25 })), `${base} at 25`).toBe(base)
+      expect(resolveCharacter(base, moodState({ grit: 75 })), `${base} at 75`).toBe(base)
+    }
+    expect(CHARACTERS.map((c) => `${c}>${resolveCharacter(c, dirtiest)}`)).toEqual([
+      'hard>dirty',
+      'soft>dirty',
+      'bright>bright',
+      'dark>dark',
+      'clean>bright',
+      'dirty>dirty',
+    ])
+    expect(CHARACTERS.map((c) => `${c}>${resolveCharacter(c, cleanest)}`)).toEqual([
+      'hard>clean',
+      'soft>clean',
+      'bright>bright',
+      'dark>clean',
+      'clean>clean',
+      'dirty>bright',
+    ])
+  })
+
+  it('`pad / dirty`: retained — grit at 100 re-pins the four p1 soft pads to `dirty`, and the minilogue xd plays it', () => {
+    // The box authors a pad on all six characters, so whatever a pad request is re-pinned to,
+    // the exact recipe answers. At neutral the four p1 soft pads land the soft one; at grit 100
+    // the dirty one; at 0 the clean one. Breakbeat's p5 and Industrial Techno's p4 lose the
+    // voice to the sub at every detent, and Industrial Techno's `dark` is the one pad character
+    // the knob never moves.
+    for (const id of ['ambient-dub', 'generative-drift', 'lydian-house', 'slow-noir']) {
+      expect(outcome('korg-minilogue-xd', id, 'r-pad'), id).toBe('landed:mxd-pad-soft')
+      expect(outcome('korg-minilogue-xd', id, 'r-pad', dirtiest), id).toBe('landed:mxd-pad-dirty')
+      expect(outcome('korg-minilogue-xd', id, 'r-pad', cleanest), id).toBe('landed:mxd-pad-clean')
+    }
+    for (const mood of [undefined, cleanest, dirtiest]) {
+      expect(outcome('korg-minilogue-xd', 'breakbeat', 'r-pad', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'industrial-techno', 'r-pad', mood)).toBe('no-room/contended held:r-sub')
+    }
+    expect(deviceById('korg-minilogue-xd').recipes.filter((r) => r.role === 'pad').map((r) => r.character).sort()).toEqual([
+      ...CHARACTERS,
+    ].sort())
+    // Verdict: one knob, four directions, exact. Retained.
+  })
+
+  it('`stab / clean`: declined — asked for at p3, and on every authoring box the voice is spent above it at every detent', () => {
+    // Lydian House asks for exactly this, at p3 and three notes; Hip-Hop's `dark` p4 and
+    // Industrial Techno's `hard` p3 both re-pin to `clean` at grit 0. None of it lands. The
+    // minilogue xd and the Matriarch spend their voice at p1 on the pad, the kick, the sub or
+    // the bass under every stab direction. The Crave sounds one note and is `no-capable-voice`
+    // on all three. The MicroFreak's clean stab is a paraphonic patch capped at one note, so it
+    // could not answer a three-note request even with the voice free — and the voice is not
+    // free, it is the vox chop's, the sub's or the pad's.
+    for (const [box, held] of [
+      ['korg-minilogue-xd', { 'hip-hop': 'r-sub', 'industrial-techno': 'r-sub', 'lydian-house': 'r-pad' }],
+      ['arturia-microfreak', { 'hip-hop': 'r-vox-chop', 'industrial-techno': 'r-sub', 'lydian-house': 'r-pad' }],
+    ] as const) {
+      for (const [id, holder] of Object.entries(held)) {
+        expect(outcome(box, id, 'r-stab'), `${box} ${id}`).toBe(`no-room/contended held:${holder}`)
+        expect(outcome(box, id, 'r-stab', cleanest), `${box} ${id}`).toBe(`no-room/contended held:${holder}`)
+      }
+    }
+    // At grit 100 Lydian House's `clean` re-pins to `bright`, and on two boxes the p1 voice
+    // changes hands from the pad to the bass. The soft pad re-pinned to `dirty` loses its exact
+    // answer on both; on the MicroFreak the dark bass keeps one, and on the Matriarch both are
+    // substitutions at sqrt(2) and the tie no longer falls to the pad. The stab still does not
+    // get the voice either way.
+    expect(outcome('arturia-microfreak', 'lydian-house', 'r-stab', dirtiest)).toBe('no-room/contended held:r-bass-mid')
+    expect(outcome('moog-matriarch', 'lydian-house', 'r-stab', dirtiest)).toBe('no-room/contended held:r-bass-mid')
+    expect(outcome('arturia-microfreak', 'lydian-house', 'r-bass-mid', dirtiest)).toBe('landed:mf-bass-mid-dark')
+    expect(outcome('moog-matriarch', 'lydian-house', 'r-bass-mid', dirtiest)).toBe('landed:mat-bass-mid-dirty')
+    expect(deviceById('moog-matriarch').recipes.filter((r) => r.role === 'bass-mid').map((r) => r.character)).toEqual(['dirty'])
+    expect(deviceById('moog-matriarch').recipes.filter((r) => r.role === 'pad').map((r) => r.character)).toEqual(['soft', 'dark'])
+    expect(outcome('korg-minilogue-xd', 'lydian-house', 'r-stab', dirtiest)).toBe('no-room/contended held:r-pad')
+    expect(outcome('moog-matriarch', 'hip-hop', 'r-stab')).toBe('no-room/contended held:r-kick')
+    expect(outcome('moog-matriarch', 'industrial-techno', 'r-stab')).toBe('no-room/contended held:r-kick')
+    expect(outcome('moog-matriarch', 'lydian-house', 'r-stab')).toBe('no-room/contended held:r-pad')
+    for (const [id, cells] of Object.entries(MATRIX['stab']?.['behringer-crave'] ?? {})) {
+      for (const cell of cells) expect(cell.split(' ')[0], id).toBe('no-capable-voice')
+    }
+    expect(Object.keys(MATRIX['stab']?.['behringer-crave'] ?? {})).toHaveLength(3)
+    expect(expandAll([deviceById('behringer-crave')]).map((a) => a.polyphony)).toEqual([1])
+    expect(recipeById(deviceById('arturia-microfreak'), 'mf-stab-clean').patchPolyphony).toBe(1)
+    const stabs = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'stab').map((r) => `${t.id}:${r.character}:p${String(r.priority)}:${String(r.polyphony)}`),
+    )
+    expect(stabs.sort()).toEqual(['hip-hop:dark:p4:4', 'industrial-techno:hard:p3:3', 'lydian-house:clean:p3:3'])
+    // Verdict: one of the three #538 measured as asked for and never landing, and it holds. The
+    // request exists and every box that could answer it is a one-voice box with its voice spent
+    // at p1. Moving Lydian House's stab above its pad to reach a recipe is the change #538 ruled
+    // out. The minilogue xd's and the Matriarch's are dark by the rig and stay; the Crave's and
+    // the MicroFreak's cannot answer any stab the library asks for — recommend deletion of
+    // those two later.
+  })
+
+  it('`stab / dirty`: declined — reached by grit from two stab requests, and on every box the voice is gone or the patch is one note', () => {
+    // Industrial Techno's `hard` p3 re-pins to `dirty` at 100, and Hip-Hop's `dark` is sqrt(2)
+    // from it at neutral. On the minilogue xd and the Subharmonicon the one voice is the sub's
+    // or the kick's at every detent. The Minitaur sounds one note and is `no-capable-voice` on
+    // all three. The Muse's dirty stab is a unison patch capped at one note, so under Hip-Hop
+    // at neutral the stab is `no-recipe` — the only four-note stab it has is `bright`, the
+    // opposite of `dark` — and at grit 0 the request re-pins to `clean`, `bright` is sqrt(2)
+    // from that, and the bright stab lands on the second voice. That is `stab / bright` again,
+    // reached by a second knob; the dirty patch is never consulted for a part of three notes.
+    for (const mood of [undefined, cleanest, dirtiest]) {
+      expect(outcome('korg-minilogue-xd', 'hip-hop', 'r-stab', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'industrial-techno', 'r-stab', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'lydian-house', 'r-stab', mood)).toBe('no-room/contended held:r-pad')
+      expect(outcome('moog-subharmonicon', 'hip-hop', 'r-stab', mood)).toBe('no-room/contended held:r-kick')
+      expect(outcome('moog-subharmonicon', 'lydian-house', 'r-stab', mood)).toBe('no-room/contended held:r-bass-mid')
+    }
+    expect(outcome('moog-subharmonicon', 'industrial-techno', 'r-stab')).toBe('no-room/contended held:r-kick')
+    expect(outcome('moog-subharmonicon', 'industrial-techno', 'r-stab', dirtiest)).toBe('no-room/contended held:r-sub')
+    for (const [id, cells] of Object.entries(MATRIX['stab']?.['moog-minitaur'] ?? {})) {
+      for (const cell of cells) expect(cell.split(' ')[0], id).toBe('no-capable-voice')
+    }
+    expect(Object.keys(MATRIX['stab']?.['moog-minitaur'] ?? {})).toHaveLength(3)
+    expect(expandAll([deviceById('moog-minitaur')]).map((a) => a.polyphony)).toEqual([1])
+    expect(outcome('moog-muse', 'hip-hop', 'r-stab')).toBe('no-recipe held:r-sub+r-texture')
+    expect(outcome('moog-muse', 'hip-hop', 'r-stab', cleanest)).toBe('landed:muse-stab-bright')
+    expect(outcome('moog-muse', 'hip-hop', 'r-stab', dirtiest)).toBe('no-recipe held:r-sub+r-texture')
+    for (const mood of [undefined, cleanest, dirtiest]) {
+      expect(outcome('moog-muse', 'industrial-techno', 'r-stab', mood)).toBe('no-room/contended held:r-bass-mid+r-sub')
+      expect(outcome('moog-muse', 'lydian-house', 'r-stab', mood)).toBe('no-room/contended held:r-bass-mid+r-pad')
+    }
+    expect(recipeById(deviceById('moog-muse'), 'muse-stab-dirty').patchPolyphony).toBe(1)
+    expect(characterDistanceSq('dark', 'dirty')).toBe(2)
+    expect(characterDistanceSq('clean', 'bright')).toBe(2)
+    // Verdict: no owner. The minilogue xd's and the Subharmonicon's are dark by the rig and
+    // stay; the Minitaur's and the Muse's cannot answer any stab the library asks for —
+    // recommend deletion of those two later.
+  })
+
+  it('`sub / dirty`: declined — the dark sub wins exactly on seven directions, and no knob moves a sub request to `dirty`', () => {
+    // Nine directions ask for a sub, eight `dark` and Acid Lineage `clean`. The Subsequent 37's
+    // dark sub answers seven exactly, at neutral and at grit 0 where `dark` re-pins to `clean`
+    // and the dark one is still the nearest the box has. Slow Noir's p2 sub loses the voice to
+    // the p1 lead and Acid Lineage's p4 sub to the p1 acid line. Grit at 100 leaves `dark` on
+    // `dark` and sends `clean` to `bright`, so no sub request is ever `dirty`.
+    for (const id of ['ambient-dub', 'breakbeat', 'generative-drift', 'hard-techno', 'hip-hop', 'industrial-techno', 'weave']) {
+      for (const mood of [undefined, cleanest, dirtiest]) {
+        expect(outcome('moog-subsequent-37', id, 'r-sub', mood), id).toBe('landed:sub37-sub-dark')
+      }
+    }
+    for (const mood of [undefined, cleanest, dirtiest]) {
+      expect(outcome('moog-subsequent-37', 'slow-noir', 'r-sub', mood)).toBe('no-room/contended held:r-lead')
+      expect(outcome('moog-subsequent-37', 'acid-lineage', 'r-sub', mood)).toBe('no-room/contended held:r-acid')
+    }
+    expect(resolveCharacter('dark', dirtiest)).toBe('dark')
+    expect(resolveCharacter('clean', dirtiest)).toBe('bright')
+    const subs = TEMPLATES.flatMap((t) => t.roles.filter((r) => r.role === 'sub').map((r) => `${t.id}:${r.character}`))
+    expect(subs.filter((s) => !s.endsWith(':dark'))).toEqual(['acid-lineage:clean'])
+    // Verdict: a sub with the ladder driven into itself is a sound, and not one any direction's
+    // sub is or should be — the dark sub is the exact answer wherever the box gets the part.
+    // No owner — recommend deletion later.
+  })
+
+  it('`texture / dirty`: retained — grit at 100 re-pins the soft textures to `dirty`, and both boxes play it where the texture lands', () => {
+    // Five directions ask for a texture, all `soft`. Drone Study ranks it first, and on both
+    // boxes it lands the soft recipe at neutral and the dirty one at grit 100. On the minilogue
+    // xd the other four lose the one voice to the pad or the sub at every detent. The Muse's
+    // second voice takes Hip-Hop's p5 texture too — soft at neutral, dirty at 100 — and at grit
+    // 0 loses it to the p4 stab that `clean` lets the bright stab answer. Ambient Dub, Generative
+    // Drift and Slow Noir spend both Muse voices above the texture.
+    for (const [box, prefix] of [
+      ['korg-minilogue-xd', 'mxd'],
+      ['moog-muse', 'muse'],
+    ] as const) {
+      expect(outcome(box, 'drone-study', 'r-texture'), box).toBe(`landed:${prefix}-texture-soft`)
+      expect(outcome(box, 'drone-study', 'r-texture', cleanest), box).toBe(`landed:${prefix}-texture-soft`)
+      expect(outcome(box, 'drone-study', 'r-texture', dirtiest), box).toBe(`landed:${prefix}-texture-dirty`)
+    }
+    for (const mood of [undefined, cleanest, dirtiest]) {
+      expect(outcome('korg-minilogue-xd', 'ambient-dub', 'r-texture', mood)).toBe('no-room/contended held:r-pad')
+      expect(outcome('korg-minilogue-xd', 'generative-drift', 'r-texture', mood)).toBe('no-room/contended held:r-pad')
+      expect(outcome('korg-minilogue-xd', 'hip-hop', 'r-texture', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('korg-minilogue-xd', 'slow-noir', 'r-texture', mood)).toBe('no-room/contended held:r-pad')
+      expect(outcome('moog-muse', 'ambient-dub', 'r-texture', mood)).toBe('no-room/contended held:r-pad+r-sub')
+      expect(outcome('moog-muse', 'generative-drift', 'r-texture', mood)).toBe('no-room/contended held:r-pad+r-sub')
+      expect(outcome('moog-muse', 'slow-noir', 'r-texture', mood)).toBe('no-room/contended held:r-lead+r-pad')
+    }
+    expect(outcome('moog-muse', 'hip-hop', 'r-texture')).toBe('landed:muse-texture-soft')
+    expect(outcome('moog-muse', 'hip-hop', 'r-texture', dirtiest)).toBe('landed:muse-texture-dirty')
+    expect(outcome('moog-muse', 'hip-hop', 'r-texture', cleanest)).toBe('no-room/contended held:r-stab+r-sub')
+    const textures = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'texture').map((r) => `${t.id}:${r.character}:p${String(r.priority)}`),
+    )
+    expect(textures.sort()).toEqual([
+      'ambient-dub:soft:p3',
+      'drone-study:soft:p1',
+      'generative-drift:soft:p4',
+      'hip-hop:soft:p5',
+      'slow-noir:soft:p3',
+    ])
+    // Verdict: one knob, two directions, both boxes, exact. Retained.
+  })
+})
+
+describe('#538 the three force-axis pairs, decided with the evidence: one retained, two declined', () => {
+  /**
+   * The last three of the fifteen. `hard` sits on the one axis no knob moves, so unlike the
+   * tone and grit blocks the question is not which detent re-pins a request onto the pair —
+   * none does, and the structural test below sweeps every combination of both knobs to say so.
+   * The question is §3.5: whether a request that a knob has moved *near* `hard` can be handed
+   * the hard recipe by substitution, because the box's other recipes are further or refused.
+   * One box says yes.
+   */
+  const THREE: Record<string, readonly string[]> = {
+    'bass-mid / hard': ['minitaur-bass-mid-hard', 'model-d-bass-mid-hard', 'muse-bass-mid-hard', 'sub37-bass-mid-hard'],
+    'lead / hard': ['mf-lead-hard', 'muse-lead-hard', 'neutron-lead-hard', 'sub37-lead-hard'],
+    'metallic / hard': ['cascadia-metallic-hard', 'dfam-metallic-hard'],
+  }
+
+  const DETENTS = [0, 25, 50, 75, 100]
+
+  /**
+   * Neutral only. The two knobs do move these allocations — a Minitaur bass at grit 0 lands the
+   * clean recipe, a Muse lead at darkness 100 the dirty one — and those are the tone and grit
+   * pairs' cells, pinned in the blocks above and in #565. What a detent can do *for `hard`* is
+   * the substitution question, and the one row where the answer is yes is pinned on its own
+   * below, at every one of the twenty-five combinations. 42 rows.
+   */
+  const MATRIX: PinnedNeutral = {
+    'bass-mid': {
+      'behringer-model-d': {
+        'ambient-dub': 'no-room/contended held:r-sub',
+        'industrial-techno': 'no-room/contended held:r-kick',
+        'lydian-house': 'landed:model-d-bass-mid-dirty',
+        'major-key-electro': 'no-room/contended held:r-kick',
+        'relay': 'landed:model-d-bass-mid-dirty',
+      },
+      'moog-minitaur': {
+        'ambient-dub': 'no-room/contended held:r-sub',
+        'industrial-techno': 'no-room/contended held:r-sub',
+        'lydian-house': 'landed:minitaur-bass-mid-dark',
+        'major-key-electro': 'no-room/contended held:r-kick',
+        'relay': 'landed:minitaur-bass-mid-dark',
+      },
+      'moog-muse': {
+        'ambient-dub': 'no-room/contended held:r-pad+r-sub',
+        'industrial-techno': 'landed:muse-bass-mid-dirty',
+        'lydian-house': 'landed:muse-bass-mid-dark',
+        'major-key-electro': 'landed:muse-bass-mid-dirty',
+        'relay': 'landed:muse-bass-mid-dark',
+      },
+      'moog-subsequent-37': {
+        'ambient-dub': 'no-room/contended held:r-sub',
+        'industrial-techno': 'no-room/contended held:r-sub',
+        'lydian-house': 'landed:sub37-bass-mid-dark',
+        'major-key-electro': 'landed:sub37-bass-mid-dirty',
+        'relay': 'landed:sub37-bass-mid-dark',
+      },
+    },
+    'lead': {
+      'arturia-microfreak': {
+        'hard-techno': 'no-room/contended held:r-sub',
+        'major-key-electro': 'no-room/contended held:r-bass-mid',
+        'relay': 'landed:mf-lead-bright',
+        'slow-noir': 'no-room/contended held:r-pad',
+      },
+      'behringer-neutron': {
+        'hard-techno': 'no-room/contended held:r-kick',
+        'major-key-electro': 'no-room/contended held:r-kick',
+        'relay': 'landed:neutron-lead-bright',
+        'slow-noir': 'landed:neutron-lead-bright',
+      },
+      'moog-muse': {
+        'hard-techno': 'landed:muse-lead-dirty',
+        'major-key-electro': 'landed:muse-lead-bright',
+        'relay': 'landed:muse-lead-bright',
+        'slow-noir': 'landed:muse-lead-bright',
+      },
+      'moog-subsequent-37': {
+        'hard-techno': 'no-room/contended held:r-sub',
+        'major-key-electro': 'no-room/contended held:r-bass-mid',
+        'relay': 'landed:sub37-lead-bright',
+        'slow-noir': 'landed:sub37-lead-bright',
+      },
+    },
+    'metallic': {
+      'intellijel-cascadia': {
+        'generative-drift': 'no-room/contended held:r-sub',
+        'industrial-techno': 'no-room/contended held:r-kick',
+        'weave': 'no-room/contended held:r-kick',
+      },
+      'moog-dfam': {
+        'generative-drift': 'no-room/contended held:r-sub',
+        'industrial-techno': 'no-room/contended held:r-kick',
+        'weave': 'no-room/contended held:r-kick',
+      },
+    },
+  }
+
+  it('pins the three pairs, the ten recipes behind them, and the eight boxes with their voice counts', () => {
+    for (const [pair, recipes] of Object.entries(THREE)) expect(authoring(pair), pair).toEqual(spelled(recipes))
+    expect(Object.values(THREE).flat()).toHaveLength(10)
+    const boxes = boxesBehind(THREE)
+    expect(boxes).toEqual([
+      'arturia-microfreak',
+      'behringer-model-d',
+      'behringer-neutron',
+      'intellijel-cascadia',
+      'moog-dfam',
+      'moog-minitaur',
+      'moog-muse',
+      'moog-subsequent-37',
+    ])
+    const voices = Object.fromEntries(boxes.map((id) => [id, expandAll([deviceById(id)]).length]))
+    expect(voices).toEqual({
+      'arturia-microfreak': 1,
+      'behringer-model-d': 1,
+      'behringer-neutron': 1,
+      'intellijel-cascadia': 1,
+      'moog-dfam': 1,
+      'moog-minitaur': 1,
+      'moog-muse': 2,
+      'moog-subsequent-37': 1,
+    })
+  })
+
+  it('leaves all three on the never-selected ledger, and no direction asks for any of them', () => {
+    const { selected } = selectedPairs()
+    for (const pair of Object.keys(THREE)) expect(selected.has(pair), pair).toBe(false)
+    const asked = new Set(TEMPLATES.flatMap((t) => t.roles.map((r) => `${r.role} / ${r.character}`)))
+    for (const pair of Object.keys(THREE)) expect(asked.has(pair), pair).toBe(false)
+  })
+
+  it('pins every box × direction at neutral for the three roles, exactly', () => {
+    expect(checkNeutral(THREE, MATRIX)).toBe(42)
+  })
+
+  it('no combination of the two knobs moves any character these roles are requested at onto `hard`', () => {
+    // The structural half. `resolveCharacter` adds tone and grit and never force, so the
+    // vector can be pushed anywhere on the disc but never off it: `hard` is reached from `hard`
+    // and from nothing else, at every one of the twenty-five detent pairs. The three roles are
+    // requested at `bright`, `dark` and `dirty`, and the exact set each of those reaches is
+    // pinned, so a change to the geometry shows up as a set changing and not as a sweep that
+    // still happens to avoid `hard`.
+    const requested = new Map<Character, Set<string>>()
+    for (const t of TEMPLATES) {
+      for (const r of t.roles) {
+        if (!['bass-mid', 'lead', 'metallic'].includes(r.role)) continue
+        requested.set(r.character, (requested.get(r.character) ?? new Set()).add(`${t.id}:${r.role}`))
+      }
+    }
+    expect([...requested.keys()].sort()).toEqual(['bright', 'dark', 'dirty'])
+    const reach = (base: Character) => {
+      const seen = new Set<Character>()
+      for (const darkness of DETENTS) for (const grit of DETENTS) seen.add(resolveCharacter(base, moodState({ darkness, grit })))
+      return [...seen].sort()
+    }
+    expect(reach('bright')).toEqual(['bright', 'clean', 'dirty'])
+    expect(reach('dark')).toEqual(['bright', 'clean', 'dark', 'dirty'])
+    expect(reach('dirty')).toEqual(['bright', 'dark', 'dirty'])
+    expect(reach('clean')).toEqual(['bright', 'clean', 'dark'])
+    expect(reach('hard')).toEqual(['bright', 'clean', 'dark', 'dirty', 'hard'])
+    expect(reach('soft')).toEqual(['bright', 'clean', 'dark', 'dirty', 'soft'])
+  })
+
+  it('`bass-mid / hard`: retained — grit at 0 sends the p1 dark bass to `clean`, and on the Model D the hard recipe is the only answer left', () => {
+    // Five directions ask for a bass-mid, two of them `dark` at p1. On the Model D those two
+    // land at neutral, as the dirty recipe — sqrt(2) from `dark`, and the box's only bass
+    // within reach, since `hard` is sqrt(2) too and `model-d-bass-mid-dirty` sorts first by
+    // code unit on the tie. Grit at 0 re-pins `dark` to `clean`. `dirty` is the opposite of
+    // `clean` and is refused; `hard` is sqrt(2) from it, and it is the only candidate. So the
+    // hard bass lands, by substitution, on both p1 directions, on every seed, at the five of
+    // the twenty-five knob positions whose vector is nearer `clean` than anything else.
+    expect(characterDistanceSq('dark', 'dirty')).toBe(2)
+    expect(characterDistanceSq('dark', 'hard')).toBe(2)
+    expect(characterDistanceSq('clean', 'dirty')).toBe(MAX_SUBSTITUTION_DISTANCE_SQ)
+    expect(characterDistanceSq('clean', 'hard')).toBe(2)
+    expect(deviceById('behringer-model-d').recipes.filter((r) => r.role === 'bass-mid').map((r) => r.character).sort()).toEqual([
+      'dirty',
+      'hard',
+    ])
+    for (const id of ['lydian-house', 'relay']) {
+      const landsHard: string[] = []
+      for (const darkness of DETENTS) {
+        for (const grit of DETENTS) {
+          const mood = moodState({ darkness, grit })
+          const got = outcome('behringer-model-d', id, 'r-bass-mid', mood)
+          const want = resolveCharacter('dark', mood) === 'clean' ? 'landed:model-d-bass-mid-hard' : 'landed:model-d-bass-mid-dirty'
+          expect(got, `${id} darkness ${String(darkness)} grit ${String(grit)}`).toBe(want)
+          if (got.endsWith('-hard')) landsHard.push(`d${String(darkness)}g${String(grit)}`)
+        }
+      }
+      expect(landsHard, id).toEqual(['d0g0', 'd0g25', 'd25g0', 'd25g25', 'd50g0'])
+    }
+    // The other three directions on the Model D, and the other three boxes: the voice is the
+    // sub's or the kick's under the p2 requests; and where the bass lands, an exact or nearer
+    // sibling is always there. The Minitaur and the Subsequent 37 author a clean bass, so the
+    // same re-pin lands it exactly (#565 pinned the Minitaur's and the Subsequent 37's). The
+    // Muse has `dark` and `hard` both at sqrt(2) from `clean`, and `muse-bass-mid-dark` wins
+    // the tie by code unit — the one place the hard recipe is a candidate and loses.
+    for (const mood of [undefined, moodState({ grit: 0 })]) {
+      expect(outcome('behringer-model-d', 'ambient-dub', 'r-bass-mid', mood)).toBe('no-room/contended held:r-sub')
+      expect(outcome('behringer-model-d', 'major-key-electro', 'r-bass-mid', mood)).toBe('no-room/contended held:r-kick')
+      expect(outcome('moog-minitaur', 'lydian-house', 'r-bass-mid', mood)).toBe(
+        mood === undefined ? 'landed:minitaur-bass-mid-dark' : 'landed:minitaur-bass-mid-clean',
+      )
+      expect(outcome('moog-subsequent-37', 'relay', 'r-bass-mid', mood)).toBe(
+        mood === undefined ? 'landed:sub37-bass-mid-dark' : 'landed:sub37-bass-mid-clean',
+      )
+      expect(outcome('moog-muse', 'lydian-house', 'r-bass-mid', mood)).toBe('landed:muse-bass-mid-dark')
+      expect(outcome('moog-muse', 'relay', 'r-bass-mid', mood)).toBe('landed:muse-bass-mid-dark')
+    }
+    expect(outcome('behringer-model-d', 'industrial-techno', 'r-bass-mid')).toBe('no-room/contended held:r-kick')
+    expect(outcome('behringer-model-d', 'industrial-techno', 'r-bass-mid', moodState({ grit: 0 }))).toBe('no-room/contended held:r-sub')
+    expect('muse-bass-mid-dark' < 'muse-bass-mid-hard').toBe(true)
+    // Verdict: reached, by one knob on one box, as the substitution a reader gets when the
+    // knob has ruled out the alternative. Not an exact answer and not asked for — but a Model D
+    // is a common box, Lydian House and Relay are two directions, and grit at 0 is a knob
+    // position, so the recipe does reach a guide. Retained. The other three are dark by
+    // the rig or by a nearer sibling and stay with the pair.
+  })
+
+  it('`lead / hard`: declined — every lead request lands its exact or nearer sibling, or loses the voice above it', () => {
+    // Four directions ask for a lead: Slow Noir `bright` p1, Relay `bright` p2, Hard Techno
+    // `dirty` p2, Major-Key Electro `bright` p3. All four boxes author a bright lead, so the
+    // three bright requests land it exactly wherever the voice is free — Relay on all four,
+    // Slow Noir on the Neutron, the Muse and the Subsequent 37, and on the MicroFreak the p1
+    // pad takes the voice from the p1 lead. Hard Techno's `dirty` lands the Muse's dirty lead
+    // exactly and loses the voice to the sub or the kick elsewhere. The Neutron is the one box
+    // where `hard` is ever a candidate at neutral: its two leads are `bright` and `hard`, both
+    // sqrt(2) from `dirty`, and the voice is the kick's before the tie is weighed.
+    expect(characterDistanceSq('bright', 'hard')).toBe(2)
+    expect(characterDistanceSq('dirty', 'hard')).toBe(2)
+    for (const box of ['arturia-microfreak', 'behringer-neutron', 'moog-muse', 'moog-subsequent-37']) {
+      expect(deviceById(box).recipes.filter((r) => r.role === 'lead').map((r) => r.character), box).toContain('bright')
+    }
+    expect(deviceById('behringer-neutron').recipes.filter((r) => r.role === 'lead').map((r) => r.character).sort()).toEqual([
+      'bright',
+      'hard',
+    ])
+    expect(outcome('behringer-neutron', 'hard-techno', 'r-lead')).toBe('no-room/contended held:r-kick')
+    expect(outcome('behringer-neutron', 'hard-techno', 'r-lead', moodState({ grit: 0 }))).toBe('no-room/contended held:r-sub')
+    // A knob cannot make `hard` the nearest candidate on any of the four: `bright` and `dirty`
+    // reach `clean`, `dark`, `dirty` and `bright`, and every box authors a bright lead, which
+    // is exact or sqrt(2) from all of those. Where `hard` ties it — `clean` and `dirty` are
+    // sqrt(2) from both — the bright recipe sorts first by code unit on every box. Pinned as
+    // the sweep of both knobs on the two boxes with a free voice under Relay.
+    for (const box of ['behringer-neutron', 'moog-subsequent-37', 'moog-muse', 'arturia-microfreak']) {
+      for (const darkness of DETENTS) {
+        for (const grit of DETENTS) {
+          const got = outcome(box, 'relay', 'r-lead', moodState({ darkness, grit }))
+          expect(got.startsWith('landed:') && !got.endsWith('-hard'), `${box} d${String(darkness)} g${String(grit)}: ${got}`).toBe(true)
+        }
+      }
+    }
+    // Verdict: a hard lead is a real part — Hard Techno's is `dirty` because grit is the point
+    // there, and the other three want a lead that cuts by being bright, not by hitting. No
+    // owner, and no knob position on any box hands it the part — recommend deletion later.
+  })
+
+  it('`metallic / hard`: declined — both boxes are one voice, spent at p1 under all three directions at every knob position', () => {
+    // Three directions ask for a metallic: Generative Drift `bright` p3, Industrial Techno
+    // `dark` p3, Weave `dirty` p4 and optional. The Cascadia and the DFAM each have one voice,
+    // and under every one of those the sub or the kick has it at p1. The knobs move which of
+    // the two holds it and never the metallic, so the pair is dark by the rig at every one of
+    // the twenty-five positions on both boxes.
+    for (const box of ['intellijel-cascadia', 'moog-dfam']) {
+      for (const id of ['generative-drift', 'industrial-techno', 'weave']) {
+        for (const darkness of DETENTS) {
+          for (const grit of DETENTS) {
+            const got = outcome(box, id, 'r-metallic', moodState({ darkness, grit }))
+            expect(got.startsWith('no-room/contended held:'), `${box} ${id} d${String(darkness)} g${String(grit)}: ${got}`).toBe(true)
+          }
+        }
+      }
+    }
+    expect(deviceById('intellijel-cascadia').recipes.filter((r) => r.role === 'metallic').map((r) => r.character).sort()).toEqual([
+      'dark',
+      'hard',
+    ])
+    expect(deviceById('moog-dfam').recipes.filter((r) => r.role === 'metallic').map((r) => r.character).sort()).toEqual(['dirty', 'hard'])
+    const metallics = TEMPLATES.flatMap((t) =>
+      t.roles.filter((r) => r.role === 'metallic').map((r) => `${t.id}:${r.character}:p${String(r.priority)}`),
+    )
+    expect(metallics.sort()).toEqual(['generative-drift:bright:p3', 'industrial-techno:dark:p3', 'weave:dirty:p4'])
+    // Verdict: a struck, inharmonic hit is Industrial Techno's shape and it asks `dark` at p3,
+    // which on a one-voice box is two ranks below the voice. The Cascadia's dark metallic would
+    // answer that request exactly if it ever reached the box, and never does either. No owner
+    // for `hard` — recommend deletion later.
   })
 })
