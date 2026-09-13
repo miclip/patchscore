@@ -1978,11 +1978,13 @@ describe('sustain claims (§3/#506)', () => {
 describe('Moog Muse factory patches (#553)', () => {
   const claimed = device.recipes.filter((r) => r.factoryPatch !== undefined)
 
-  it('names three, and each one on the recipe whose idiom it is', () => {
+  it('names five, and each one on the recipe whose idiom it is', () => {
     expect(claimed.map((r) => [r.id, r.factoryPatch?.name])).toEqual([
       ['muse-pad-soft', 'Moog 55 Strings'],
       ['muse-stab-hard', 'Polyphonic Power'],
+      ['muse-stab-bright', 'Detroit Funk'],
       ['muse-lead-bright', 'Muse Runner'],
+      ['muse-bass-mid-dirty', '3 Osc Bass Love'],
     ])
   })
 

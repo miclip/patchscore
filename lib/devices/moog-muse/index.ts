@@ -460,8 +460,12 @@ function cite(page: number): Cite {
  *
  * **The name is evidence; the pairing is judgement.** That a patch called this exists is a fact
  * from the box. That it lands near a particular recipe is the library's ear, and it stays uncited
- * for the same reason a recipe's point values do (§3.2) — three of the 224 are claimed here, and
- * they are the three whose idiom is unambiguous.
+ * for the same reason a recipe's point values do (§3.2) — five of the 224 are claimed here, and
+ * they are the five whose idiom is unambiguous. Seven more were weighed and declined: `Vox
+ * Humana`, `Hamamatsu Tines`, `'70s Electro Pno`, `Aegean Organ`, `Moog Pro Solo`, `Bellbounce`
+ * and `Soft Orchestra` each name an idiom no recipe below builds — formant, electric piano,
+ * organ, portamento lead, bell, divide-down ensemble — and a pairing that is merely the nearest
+ * recipe would send a reader to load a sound the guide then contradicts.
  */
 function factoryPatch(name: string) {
   return {
@@ -2164,6 +2168,9 @@ const recipes: Recipe[] = [
   },
   {
     id: 'muse-stab-bright',
+    // The only polyphonic stab: a bright pulse pair with the highpass in parallel and a hard clip
+    // on the tail is the Detroit chord stab the factory bank names outright.
+    factoryPatch: factoryPatch('Detroit Funk'),
     role: 'stab',
     character: 'bright',
     voice: 'timbre',
@@ -2432,6 +2439,9 @@ const recipes: Recipe[] = [
   },
   {
     id: 'muse-bass-mid-dirty',
+    // The MOD OSC is audible here — in the mix at `20`, square, `45` — so with the 8′/16′ pair that
+    // is three oscillators driving a mono analogue bass an octave apart, which is the name.
+    factoryPatch: factoryPatch('3 Osc Bass Love'),
     role: 'bass-mid',
     character: 'dirty',
     voice: 'timbre',
