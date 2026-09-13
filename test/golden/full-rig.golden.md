@@ -937,6 +937,8 @@ Routing — Send the hi-hats to the FX bus: press SEND, use SELECT to light OPEN
 - **TYP** `1-pole Highpass`
 - **HLD** `20` (1…127)
   - ↳ note: A fixed hold runs regardless of how long the pad is held; AUTO hands it back
+- **DEC** `34` (0…127)
+  - ↳ note: The AMP page, beside HLD; the SRC page prints a DEC of its own on most machines
 - **PAN** `0` (-64…63)
 
 ### minilogue xd
