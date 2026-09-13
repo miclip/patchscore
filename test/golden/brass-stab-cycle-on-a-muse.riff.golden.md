@@ -63,10 +63,6 @@ Pulse-width pair four feet up, highpass parallel, a hard clip on the tail
 
 This riff asks for a hard stab and the nearest this box authors is bright.
 
-Factory patch — **Detroit Funk**
-
-- Load it and the settings below are already dialled. They build the same sound by hand.
-
 **Settings**
 
 - **● VOICE CONTROL**

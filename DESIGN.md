@@ -1555,6 +1555,35 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   all and so declares one on every recipe) and its own test enforces it. The Tracker Mini's
   three synth slots used to be enforced the same way and are not any more: they are a declared
   resource (§2.3/#25), which is what a rule becomes once the model can hold it.
+- **`factoryPatch` says the box ships a preset that already reaches the sound the recipe builds**
+  (#553). The opposite of `soundSetup`, and `RecipeSchema` refuses a recipe carrying both: one
+  says the voice is *chosen* and the recipe sets almost nothing, the other says the recipe *is*
+  the sound and the box happens to ship one like it. Delete a `factoryPatch` and the recipe still
+  works.
+
+  ```ts
+  factoryPatch: {
+    name: 'Muse Runner',        // as it reads on the box's own screen; never a slot number
+    evidence: { kind: 'observed', source: 'Moog Muse unit, firmware 1.4.0 factory bank' },
+  }
+  ```
+
+  By name and an optional bank, never by slot, since slots move across firmware and across any
+  owner who has reordered a bank. `observed` only, and the schema enforces it: no manual in the
+  library names a factory patch, so the only honest evidence is somebody with the unit in front
+  of them and the firmware in the source string. The *match* is the library's judgement and is
+  uncited, which is the split `verified` already draws: what exists is evidence, which to reach
+  for is taste.
+
+  **A guide prints it beside the block it belongs to, and a riff page prints it only where the
+  riff says the sound is its own** (#585). On a guide the reader asked for a bright lead, and a
+  patch that reaches one is the shortcut they wanted. A riff reaches the same recipe by the same
+  `(role, character)`, and that pair is the resolver's vocabulary for *which voice plays this*,
+  not for *this is the same sound*: the Thriller lead and the Blade Runner Blues lead are both
+  `lead / bright`, and one is a CS-80 line and one is not. So `RiffVoicing.factoryPatch` is the
+  recipe's patch where the riff authors an affinity with it (`Riff.patchAffinities`, §5A.5) and
+  `undefined` otherwise, and both riff renderers print nothing for `undefined`. Guides are
+  untouched.
 - **`sustain` says whether the recipe's amplitude stage holds a note for as long as it is held**
   (#506).
 
@@ -4504,6 +4533,42 @@ that says a *recipe's* parameters reach a sound a box also ships, and this says 
 found by. One is a claim about settings and the other is a name to search, and a riff named for a
 patch resolves to whatever recipe its role and character reach, with or without a recipe carrying
 the same patch name.
+
+**A riff may name the factory patches its sound aligns with, and that is a narrow, deliberate
+exception to device agnosticism** ([#585](https://github.com/miclip/patchscore/issues/585)).
+`Riff.patchAffinities` is a list of `{ name, bank?, reason }`, matched against the selected
+recipe's `factoryPatch` by exact `(name, bank)` equality, with an absent bank meaning absent and
+never any bank. Where an entry matches, the page prints the patch; where none does, or none is
+authored, `RiffVoicing.factoryPatch` is `undefined` and the page prints nothing about it, whatever
+the recipe it landed on carries. It used to inherit the patch by role and character alone, and
+every `lead / bright` figure on the Muse was told to load *Muse Runner*, the Thriller riff
+included. Role and character say which voice plays the part; they do not say it is the same
+sound, and the alignment is a fact somebody knows that nothing in the model could state. So it is
+authored, and inferred nowhere.
+
+The exception is named for what it is. An affinity carries no device id and no device name, and
+the resolver never reads it to choose a voice, so nothing about which box plays the figure has
+moved. But a patch belongs to exactly one box, and an entry naming a patch implies that box
+without naming it. `test/riff.test.ts` holds the line at that width: every `reason` is scanned
+for device names with no exemption at all, and an affinity's `name` may not equal a device's id
+or name outright, the same rule a reference is under. **It is a list, so that a field holding
+one cannot quietly pick a favourite**: a figure may align with patches on several boxes, and each
+entry is matched on its own. **`reason` records the sonic judgement**, the why that role and
+character cannot carry, and it is not rendered; **the recipe's observed evidence is what proves
+the patch exists**, since the riff claims only that the two sounds align, and a test requires
+every authored key to identify exactly one factory patch in the library, so an affinity can
+neither rest on nothing nor reach two boxes at once.
+
+On a rig with no patched recipe nothing changes: the page said nothing before and says nothing
+now. Guides are untouched, because a guide's reader asked for a character and a patch reaching it
+is the shortcut they wanted (§3). Exactly two entries author one, and `test/riff.test.ts` pins
+the set: Blade Runner Blues authors *Muse Runner*, since the record is a CS-80 piece and the patch
+is a CS-80 lead, and the riff named after that patch authors it too. **A patch-named reference is
+not an affinity.** The reference is how a reader finds the technique; it says nothing about
+whether the figure is that sound, and the other patch-named entries carry none, two of which
+were printing their own patch by inheritance before #585. Suppressing everything but a riff named
+after its own patch would have deleted the Blade Runner pairing, which is the case the patch list
+was collected for.
 
 A field rather than a convention, because a convention is something two authors disagree about by
 Tuesday, and because it is *both* surfaces: a title that carries the reference and an address bar
