@@ -4,10 +4,13 @@ import {
   RiffConstraintsSchema,
   RiffSchema,
   STEPS_PER_BAR,
+  affinePatch,
   chordAtStep,
   resolveHook,
+  resolveRiff,
   riffConstraintViolations,
   referenceSlug,
+  type FactoryPatch,
   type HookNote,
   type Riff,
 } from '@/lib/core'
@@ -28,6 +31,7 @@ import {
   polyphonicPowerBrassStabCycle,
   riffById,
   seventiesElectroPnoRhodesTurnaround,
+  showMeLoveOrganStab,
   softOrchestraSlowChanges,
   threeOscBassLoveRootOctaveFigure,
   thrillerSynthRiff,
@@ -242,6 +246,106 @@ describe('RiffSchema (§5A)', () => {
   it('refuses a riff with no technique prose', () => {
     expect(refusal(riff({ technique: [] }))).toContain('say what it is')
   })
+
+  /**
+   * §5A.5/#585. **A patch affinity is `(name, bank?, reason)` and nothing else.** No evidence,
+   * because the recipe naming the patch is what proves it exists; no device, because a riff
+   * names none.
+   */
+  it('parses a patch affinity, with and without a bank (§5A.5/#585)', () => {
+    const one = riff({ patchAffinities: [{ name: 'Fixture Lead', reason: 'it is the sound' }] })
+    expect(RiffSchema.safeParse(one).success).toBe(true)
+    const banked = riff({
+      patchAffinities: [{ name: 'Fixture Lead', bank: 'Leads', reason: 'it is the sound' }],
+    })
+    expect(RiffSchema.safeParse(banked).success).toBe(true)
+  })
+
+  it('refuses an affinity with no reason, an empty list, and a device on the entry', () => {
+    expect(
+      refusal(riff({ patchAffinities: [{ name: 'Fixture Lead', reason: '' }] })),
+    ).toContain('reason')
+    expect(RiffSchema.safeParse(riff({ patchAffinities: [] })).success).toBe(false)
+    expect(
+      RiffSchema.safeParse(
+        riff({
+          patchAffinities: [
+            { name: 'Fixture Lead', reason: 'it is the sound', device: 'moog-muse' },
+          ] as unknown as Riff['patchAffinities'],
+        }),
+      ).success,
+    ).toBe(false)
+  })
+
+  it('refuses two affinities naming one patch, and tells the two banks apart', () => {
+    expect(
+      refusal(
+        riff({
+          patchAffinities: [
+            { name: 'Fixture Lead', reason: 'one' },
+            { name: 'Fixture Lead', reason: 'two' },
+          ],
+        }),
+      ),
+    ).toContain('same patch')
+    expect(
+      RiffSchema.safeParse(
+        riff({
+          patchAffinities: [
+            { name: 'Fixture Lead', reason: 'one' },
+            { name: 'Fixture Lead', bank: 'Leads', reason: 'two' },
+          ],
+        }),
+      ).success,
+    ).toBe(true)
+  })
+})
+
+/**
+ * §5A.5/#585. **The match is exact on both halves of the key**, and an absent bank is a value
+ * rather than a wildcard. The matcher is pure and takes the recipe's patch by hand, so every
+ * shape is pinned without a rig.
+ */
+describe('affinePatch (§5A.5/#585)', () => {
+  const evidence = { kind: 'observed' as const, source: 'fixture unit, firmware 0' }
+  const flat: FactoryPatch = { name: 'Fixture Lead', evidence }
+  const banked: FactoryPatch = { name: 'Fixture Lead', bank: 'Leads', evidence }
+
+  it('answers the recipe’s patch where an affinity names it exactly', () => {
+    const r = riff({ patchAffinities: [{ name: 'Fixture Lead', reason: 'it is the sound' }] })
+    expect(affinePatch(r, flat)).toBe(flat)
+  })
+
+  it('answers `undefined` with no affinity authored, and with no patch on the recipe', () => {
+    expect(affinePatch(riff(), flat)).toBeUndefined()
+    const r = riff({ patchAffinities: [{ name: 'Fixture Lead', reason: 'it is the sound' }] })
+    expect(affinePatch(r, undefined)).toBeUndefined()
+  })
+
+  it('answers `undefined` on a different name, however close', () => {
+    const r = riff({ patchAffinities: [{ name: 'fixture lead', reason: 'it is the sound' }] })
+    expect(affinePatch(r, flat)).toBeUndefined()
+  })
+
+  it('treats an absent bank as absent, not as any bank', () => {
+    const noBank = riff({ patchAffinities: [{ name: 'Fixture Lead', reason: 'it is the sound' }] })
+    expect(affinePatch(noBank, banked)).toBeUndefined()
+    const withBank = riff({
+      patchAffinities: [{ name: 'Fixture Lead', bank: 'Leads', reason: 'it is the sound' }],
+    })
+    expect(affinePatch(withBank, flat)).toBeUndefined()
+    expect(affinePatch(withBank, banked)).toBe(banked)
+  })
+
+  it('matches any entry of the list, not only the first', () => {
+    const r = riff({
+      patchAffinities: [
+        { name: 'Other', reason: 'one' },
+        { name: 'Fixture Lead', bank: 'Leads', reason: 'two' },
+      ],
+    })
+    expect(affinePatch(r, banked)).toBe(banked)
+  })
 })
 
 describe('the riff library (§5A)', () => {
@@ -360,12 +464,18 @@ describe('the riff library (§5A)', () => {
    * requires it verbatim, so scanning it there would refuse the entry the relaxation exists for.
    * Everything else stays scanned: the rest of the title, and every paragraph of technique, so a
    * box named in prose is still caught.
+   *
+   * **Every affinity's `reason` is scanned too** (#585). An affinity implies a box, which is the
+   * exception §5A.5 makes, and a reason that went on to name it would be the exception widening
+   * in the one string nothing renders. So it gets no exemption at all: not even the patch's own
+   * name, which is why a reason says *this patch* rather than repeating it.
    */
   it('names no device, anywhere a reader can see', () => {
     const names = DEVICES.flatMap((d) => [d.id, d.name])
     for (const entry of RIFFS) {
       const title = entry.name.replace(entry.reference.name, '')
-      const ink = [title, ...entry.technique].join('\n')
+      const reasons = (entry.patchAffinities ?? []).map((a) => a.reason)
+      const ink = [title, ...entry.technique, ...reasons].join('\n')
       for (const name of names) {
         expect(ink.includes(name), `${entry.id} names ${name}`).toBe(false)
       }
@@ -389,6 +499,85 @@ describe('the riff library (§5A)', () => {
       for (const name of names) {
         expect(entry.reference.name, `${entry.id} is named for a box`).not.toBe(name)
       }
+    }
+  })
+
+  /**
+   * §5A.5/#585. The same equality rule over an affinity's `name`. An affinity is allowed to
+   * imply a box; one whose name *is* a box would be a device id in a riff field with a patch's
+   * label on it.
+   */
+  it('no affinity is a device by itself (invariant 3)', () => {
+    const names = DEVICES.flatMap((d) => [d.id, d.name])
+    for (const entry of RIFFS) {
+      for (const affinity of entry.patchAffinities ?? []) {
+        for (const name of names) {
+          expect(affinity.name, `${entry.id} has an affinity for a box`).not.toBe(name)
+        }
+      }
+    }
+  })
+
+  /**
+   * §5A.5/#585. **Every authored affinity identifies exactly one factory patch in the library.**
+   * The riff carries no evidence for the patch; the recipe naming it does. An affinity no recipe
+   * answers is a claim resting on nothing, and one two boxes answer is a key that stopped being
+   * one. Counted over every recipe of every device, by the exact `(name, bank)` the matcher uses.
+   */
+  it('every affinity names exactly one factory patch the library authors', () => {
+    for (const entry of RIFFS) {
+      for (const affinity of entry.patchAffinities ?? []) {
+        const boxes = new Set<string>()
+        let recipes = 0
+        for (const device of DEVICES) {
+          for (const recipe of device.recipes) {
+            const patch = recipe.factoryPatch
+            if (patch === undefined) continue
+            if (affinity.name !== patch.name || affinity.bank !== patch.bank) continue
+            boxes.add(device.id)
+            recipes += 1
+          }
+        }
+        const key = `${affinity.name}${affinity.bank === undefined ? '' : ` in ${affinity.bank}`}`
+        expect(recipes, `${entry.id}: no recipe names ${key}`).toBeGreaterThanOrEqual(1)
+        expect([...boxes], `${entry.id}: ${key} is on more than one box`).toHaveLength(1)
+      }
+    }
+  })
+
+  /**
+   * §5A.5/#585. **Exactly two entries author an affinity, and this is the complete set.** A
+   * patch-named reference is how a reader finds the technique and is not a judgement that the
+   * figure is that sound, so an entry named after a patch earns nothing here by that alone; a
+   * third id is a new judgement and has to be added to this list on purpose.
+   */
+  it('exactly two riffs author a patch affinity (#585)', () => {
+    const authored = RIFFS.filter((r) => r.patchAffinities !== undefined).map((r) => r.id)
+    expect(authored).toEqual(['blade-runner-blues-lead', 'muse-runner-floating-arrival-lead'])
+  })
+
+  /**
+   * §5A.5/#585. **The library's own answer, both ways, on the box that ships every patch.**
+   * Blade Runner Blues is a CS-80 line and *Muse Runner* is a CS-80 lead, so the page says to
+   * load it; Thriller reaches the same `lead / bright` recipe and is not that sound, so it says
+   * nothing. Show Me Love reaches a `stab / bright` recipe that names a patch too, and says
+   * nothing for the same reason.
+   */
+  it('a riff keeps a factory patch only where it authors the affinity (#585)', () => {
+    const muse = DEVICES.filter((d) => d.id === 'moog-muse')
+    const patchOn = (riff: Riff): string | undefined => {
+      const resolution = resolveRiff(riff, muse)
+      if (resolution.outcome !== 'played') throw new Error(`${riff.id}: ${resolution.gap.reason}`)
+      return resolution.voice.factoryPatch?.name
+    }
+    expect(patchOn(bladeRunnerBluesLead)).toBe('Muse Runner')
+    expect(patchOn(museRunnerFloatingArrivalLead)).toBe('Muse Runner')
+    // Each of these lands on a recipe that names a patch, and the page must not say so.
+    for (const entry of [thrillerSynthRiff, aegeanOrganPhrygianFigure, showMeLoveOrganStab]) {
+      const resolution = resolveRiff(entry, muse)
+      if (resolution.outcome !== 'played') throw new Error(entry.id)
+      expect(resolution.voice.recipe.factoryPatch, `${entry.id} lands on a patched recipe`).toBeDefined()
+      expect(resolution.voice.factoryPatch, entry.id).toBeUndefined()
     }
   })
 
