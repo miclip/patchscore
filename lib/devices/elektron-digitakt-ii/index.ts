@@ -110,10 +110,11 @@ import { DIGITAKT_II_PANEL } from './panel'
  *
  * ## Numbers: this manual prints almost none
  *
- * Across the whole of "11. TRACK PARAMETERS" (pp.53-60) and APPENDIX A, exactly **three** numeric
- * ranges are printed: `VFAD (-64–64)` on p.54, `FADE (-64–63)` on p.58, and `HOLD (0–126)` on
- * p.56. ATK, DEC, PAN, VOL, cutoff, resonance and the rest are described in words and given no
- * scale at all — Elektron documents what a parameter does and leaves the range to the screen.
+ * Across the whole of "11. TRACK PARAMETERS" (pp.53-60) and APPENDIX A, four numeric ranges are
+ * printed: `VFAD (-64–64)` on p.54, `FADE (-64–63)` on p.58, `HOLD (0–126)` on p.56, and the
+ * Oneshot machine's `TUNE`, *"+/- 5 octaves"* in prose on p.93 (#57). ATK, DEC, PAN, VOL, cutoff,
+ * resonance and the rest are described in words and given no scale at all — Elektron documents
+ * what a parameter does and leaves the range to the screen.
  *
  * So this manifest is **enum-dominated**, and every uncited numeric is absent rather than given
  * an invented `0-127`. That is the CRAVE's rule meeting a much deeper box, and it is why a
@@ -288,7 +289,7 @@ function pick(name: string, value: string, values: readonly string[], page: numb
   }
 }
 
-/** One of the three numerics this manual gives a range for. */
+/** One of the four numerics this manual gives a range for. */
 function num(
   name: string,
   value: number,
@@ -341,6 +342,24 @@ const hold = (v: number) =>
     mood: [{ axis: 'density', amount: -24 }],
     note: 'A fixed hold ignores Note Off and Trig Length — this value ends the note, not the key. NOTE hands it back',
   })
+/**
+ * Oneshot `TUNE`, p.93: *"The knob works in a bipolar fashion, and a value of 0 leaves the pitch
+ * unchanged. The range is +/- 5 octaves."* Sixty semitones either side, in the library's one
+ * spelling of the unit, the way the Neutron's `+1/-1 octave` is authored as ±12 `st`; the page
+ * says press-and-turn snaps the value to semitones, so the box shows that resolution. Authored
+ * where a recipe's duration claim rests on it (#57): a reversed file lasts as recorded only at
+ * 0, and a sentence that says so should have the value beside it.
+ */
+const tune = (v: number): AuthoredParam => ({
+  kind: 'numeric',
+  name: 'TUNE',
+  value: v,
+  unit: 'st',
+  range: { min: -60, max: 60, verified: cite(93) },
+  verified: false,
+  note:
+    'p.93 gives the range as +/- 5 octaves. Hold [FUNC] and turn DATA ENTRY to snap to full octaves; press and turn to snap to semitones',
+})
 /** LFO `FADE`, p.58. Positive fades out, negative fades in. */
 const fade = (v: number) => num('FADE', v, { min: -64, max: 63 }, 58)
 /** Retrig `VFAD`, p.54. The velocity curve of the retrig. */
@@ -923,6 +942,48 @@ const recipes: Recipe[] = [
     },
     params: [src('ONESHOT'), play('FORWARD'), fltr('LEGACY'), ampMode('AHD'), hold(110)],
     articulation: [art('first-hit', { velocity: 127 }, 'trig-params')],
+  },
+  {
+    id: 'dt2-impact-soft',
+    role: 'impact',
+    character: 'soft',
+    voice: 'track',
+    mode: 'whole-sample',
+    title: 'Reversed cymbal swell arriving on the step after',
+    verified: false,
+    /**
+     * #57. The library's first soft impact: a swell that arrives, where every other impact is a
+     * hit that lands. On a sampler the swell is the file played backwards. `REVERSE` plays the
+     * sample *"in reverse once every time it is trigged"* (p.94), so a cymbal's ring becomes the
+     * rise and its strike is where the rise gets to, and nothing loops or retriggers. At
+     * `TUNE 0` the file lasts as long as it was recorded (p.93), so the length of the file is the
+     * length of the swell.
+     *
+     * `ADSR` so the trig's length is what holds the sample open, and the articulation below sets
+     * that length to one bar on every slot the direction emits. `AHD` would end the note at a
+     * fixed `HOLD` whatever the trig said (p.56), and a swell cut off before its strike is a
+     * fade-in with nothing at the end of it. No filter machine is named: this manual prints no
+     * cutoff scale, so there is no value to author that would make the part softer than the
+     * file already is. The softness is the file's.
+     *
+     * The direction's step is where the swell starts. Where it lands is one bar later, which is
+     * why the note length is a bar and the file wants to be one too.
+     */
+    sourceAudio: {
+      need:
+        'A soft cymbal or noise wash one bar long at your tempo: a ride left to ring, a brushed ' +
+        'crash, a breath of filtered noise. REVERSE plays it backwards once per trig (p.94), so ' +
+        'the ring is the rise and the strike is where it arrives, and at TUNE 0 it lasts exactly ' +
+        'as long as it was recorded (p.93). The trig below holds one bar, so a shorter file ' +
+        'leaves silence before the intended arrival and a longer one is cut before it',
+    },
+    params: [src('ONESHOT'), play('REVERSE'), tune(0), ampMode('ADSR')],
+    articulation: [
+      art('first-hit', { velocity: 104, 'note-length': 16 }, 'trig-params'),
+      art('offbeat', { velocity: 88, 'note-length': 16 }, 'trig-params'),
+      art('downbeat', { velocity: 96, 'note-length': 16 }, 'trig-params'),
+      art('accent', { velocity: 120, 'note-length': 16 }, 'trig-params'),
+    ],
   },
   {
     id: 'dt2-stab-hard',

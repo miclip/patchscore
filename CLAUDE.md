@@ -144,9 +144,9 @@ one.
 
 ```
 rig limit      10 devices  (MAX_RIG_DEVICES)
-worst rig      99,459 nodes   (ambient-dub seed 16)
+worst rig      68,253 nodes   (hard-techno seed 15)
 cap         2,000,000
-headroom             20x  —  4.97% of the cap
+headroom             29x  —  3.41% of the cap
 ```
 
 It got *cheaper* at #25, from 83,874 nodes, and the direction of that is worth keeping: a
@@ -161,6 +161,17 @@ the floor is loose and the seed has more to permute among. That is a different m
 naming, because it is the shape of every request added to reach a pair one box authored. The
 catalogue figure did not move either time — the full catalogue *contains* the exact answer, and
 commits early on it, which is one more way the benchmark says nothing about a rig.
+
+Then back to 68,253, in #57. Most of the 99,459 was the idle floor, not the noise request.
+`lowerBound` counted every remaining request as one that could still wake a device, and a request
+with no candidate on the rig cannot: it only ever takes the miss branch. That rig has no dark riser,
+so `riser / dark` was such a request, and the bound was one idle box loose at every node above it.
+`suffixWakeable` counts only the requests ahead that have a candidate or a stack plan. With that
+fix the same rig measures 38,773 before the `impact / soft` request #57 added, 38,777 after it,
+and 38,777 still with the one Digitakt II recipe that answers it, since that rig has no Digitakt
+II. The lesson for the next request added to reach a pair one box authored: a rig without that box
+is kept tight by the floor, so one authoring box is enough, and `measure:search` says whether it
+was.
 
 **This section used to be an argument. It is now a fact, and the difference is the point.** The
 argument kept losing: the whole-catalogue sweep reports a worst case near the cap, and that figure

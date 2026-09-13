@@ -725,6 +725,12 @@ type Ctx = {
   /** Devices a request could legally occupy, ignoring occupancy — for the idle lower bound. */
   suffixReach: Set<DeviceId>[]
   /**
+   * #57. How many of requests `i..n-1` have anything to take at all: a candidate in `voiceable`
+   * or a plan in `stacks`. A request with neither has only the miss branch, so it can never wake
+   * a device, and `lowerBound` counts only the wakeable ones. `suffixWakeable[n]` is 0.
+   */
+  suffixWakeable: Int32Array
+  /**
    * §4.2/§7.1. **Which pairs of requests could collide.** `overlap[a * n + b]` is 1 when
    * requests `a` and `b` occupy at least one section in common and 0 when their sections are
    * disjoint, with `n = requests.length`. Symmetric, and the diagonal is 1 exactly when the
@@ -1490,6 +1496,15 @@ function buildCtx(
     suffixReach[i] = union
   }
 
+  // #57. The same suffix walk, counting requests: how many of `i..n-1` could wake a device if
+  // every one of them landed. `reach[i]` is empty exactly when the request has no candidate and
+  // no stack plan, which is the test `buildSuffixFloor` makes when it charges the miss outright,
+  // so the two bounds read the same fact.
+  const suffixWakeable = new Int32Array(requests.length + 1)
+  for (let i = requests.length - 1; i >= 0; i--) {
+    suffixWakeable[i] = (suffixWakeable[i + 1] as number) + ((reach[i]?.size ?? 0) > 0 ? 1 : 0)
+  }
+
   // The miss prefix is sized by the template, not by the outcome, so every candidate solution
   // produces a vector of the same shape and `compareScore` never compares ragged tuples.
   const missSlots = requests.reduce((max, r) => Math.max(max, r.priority), 0)
@@ -1557,6 +1572,7 @@ function buildCtx(
     voiceable,
     stacks,
     suffixReach,
+    suffixWakeable,
     suffixFloor,
     overlap,
     ladderSlot,
@@ -1735,6 +1751,18 @@ function scoreOf(ctx: Ctx, state: State): Score {
  * `min(reachableIdle, remainingRequests)` of the currently-idle devices can still be woken, and
  * the rest are as permanently idle as the unreachable ones.
  *
+ * A request with nothing to take activates none (#57). One whose `voiceable` and `stacks` are
+ * both empty has only the miss branch, on every path, so counting it among the requests that
+ * could still wake a device is one idle box the bound lets go for nothing. That mattered the
+ * moment a direction asked for a pair no box authored: `ambient-dub` gained a `soft` impact while
+ * every impact in the library was `hard`, the request was a forced miss everywhere, and the idle
+ * floor, the last key and the one that settles that direction's many exact-answer ties, went one
+ * device loose at every node above it. 306 nodes became 35,026 on the catalogue, from a request
+ * that visits one extra node per path. `remaining` is therefore `ctx.suffixWakeable[next]`, the
+ * count of requests ahead that have anything to take. It is `<=` the raw count, so the bound it
+ * gives is `>=` the old one term for term, and it is still admissible because a request with no
+ * candidate cannot wake anything.
+ *
  * The counting is exact whichever way it is written: `currentIdle - min(reachableIdle, remaining)`
  * is `unreachableIdle + max(0, reachableIdle - remaining)`, since the two idle classes partition
  * the idle devices. The second form is used below because it stays in non-negative integers —
@@ -1767,7 +1795,7 @@ function lowerBound(ctx: Ctx, state: State, next: number): Score {
     if (occupied !== undefined && occupied.size === 0) reachableIdle++
   }
   const unreachableIdle = state.idle - reachableIdle
-  const remaining = ctx.requests.length - next
+  const remaining = ctx.suffixWakeable[next] ?? 0
   const floorIdle = unreachableIdle + Math.max(0, reachableIdle - remaining)
   return [
     ...state.misses.map((m, p) => m + (floor.misses[p] ?? 0)),

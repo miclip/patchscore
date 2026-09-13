@@ -236,14 +236,16 @@ describe('Digitakt II manifest', () => {
   })
 
   it('is built from cited option sets, because the manual prints almost no ranges', () => {
-    // **Across pp.53-60 and APPENDIX A the manual prints exactly three numeric ranges**: VFAD
-    // (-64–64) p.54, FADE (-64–63) p.58, HOLD (0–126) p.56. Everything else is described in words
-    // with no scale. So a recipe here is a chain of machine and mode choices, and every numeric
-    // that survives is one of those three.
+    // **Across pp.53-60 and APPENDIX A the manual prints four numeric ranges**: VFAD (-64–64)
+    // p.54, FADE (-64–63) p.58, HOLD (0–126) p.56, and the Oneshot machine's TUNE, "+/- 5
+    // octaves" on p.93, authored as ±60 semitones in the library's spelling of the unit (#57).
+    // Everything else is described in words with no scale. So a recipe here is a chain of machine
+    // and mode choices, and every numeric that survives is one of those four.
     const SHAPES = [
       { min: -64, max: 64 },
       { min: -64, max: 63 },
       { min: 0, max: 126 },
+      { min: -60, max: 60 },
     ]
     let enums = 0
     let numerics = 0
@@ -265,7 +267,7 @@ describe('Digitakt II manifest', () => {
           numerics += 1
           expect(
             SHAPES.some((s) => s.min === param.range.min && s.max === param.range.max),
-            `${where}: ${param.range.min}..${param.range.max} is not one of the three printed ranges`,
+            `${where}: ${param.range.min}..${param.range.max} is not one of the four printed ranges`,
           ).toBe(true)
           expect(param.value, where).toBeGreaterThanOrEqual(param.range.min)
           expect(param.value, where).toBeLessThanOrEqual(param.range.max)
@@ -280,7 +282,8 @@ describe('Digitakt II manifest', () => {
   it('omits the parameters whose range the manual never states', () => {
     // The failure mode is inventing a 0-127 to hang a value on. ATK, DEC, PAN, VOL, cutoff and
     // resonance are all real, prominent controls with no printed scale anywhere.
-    const uncited = ['ATK', 'DEC', 'PAN', 'VOL', 'SUS', 'REL', 'CUTOFF', 'RESO', 'TUNE', 'STRT', 'LEN']
+    // `TUNE` is not on this list since #57: p.93 prints its range, and `dt2-impact-soft` authors it.
+    const uncited = ['ATK', 'DEC', 'PAN', 'VOL', 'SUS', 'REL', 'CUTOFF', 'RESO', 'STRT', 'LEN']
     for (const recipe of device.recipes) {
       const names = params(recipe).map((p) => p.name)
       for (const name of uncited) expect(names, `${recipe.id} / ${name}`).not.toContain(name)
@@ -615,14 +618,15 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
    * `vox-chop` part on the sliced recipe, where the note the manual prints is a slice address and
    * the model is right to say nothing. The total moves when a direction gains or loses a part or
    * this box gains a recipe; what must not move is that the blanks and the sliced recipe are the
-   * same set.
+   * same set. 384 since #57: Ambient Dub asks for a soft impact and this box authors the one in
+   * the library, six more trigger grids on `impact`.
    */
   it('leaves only the sliced parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(378)
+    expect(grid.length).toBe(384)
     expect(grid.filter((g) => g.kind === 'none').length).toBe(6)
-    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(342)
+    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(348)
 
     // Named rather than left to the count: all three arms are now in play on this box.
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
@@ -664,9 +668,9 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
       ['rim', 24],
       ['snare', 24],
       ['tom', 24],
+      ['impact', 18],
       ['metallic', 18],
       ['ride', 18],
-      ['impact', 12],
       ['noise', 12],
       ['arp', 6],
     ])
@@ -735,8 +739,8 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
         }
       }
     }
-    expect(seen).toBe(582)
-    expect(carrying).toBe(570)
+    expect(seen).toBe(588)
+    expect(carrying).toBe(576)
   })
 
   /**

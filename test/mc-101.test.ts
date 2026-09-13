@@ -650,8 +650,11 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // The parts this four-track box cannot take are §7.3 gaps, not blank grids: they never reach
     // phase 5, so none of them is among the 288. The MC-707 takes 48 more parts over this sweep.
     // 96 until #345 closed both pools' four unserved roles, which turned 18 shortfalls into parts;
-    // Hard Techno added none, because this box carries all ten of its parts.
-    expect(shortfalls).toBe(84)
+    // Hard Techno added none, because this box carries all ten of its parts. 90 since #57 gave
+    // Ambient Dub a `soft` impact: this box's one impact is `hard`, the opposite pole, so the
+    // request is a `no-recipe` gap on all six seeds. The gap is in the library's coverage of
+    // this box.
+    expect(shortfalls).toBe(90)
   })
 
   /**
