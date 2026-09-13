@@ -7,8 +7,9 @@ import type { Riff } from '../core/riff'
  *
  * **Named after a factory patch, with a figure authored here** (§5A.5, #566). The reference is a
  * preset a box ships under that name, and it is the name a reader looks the technique up by. On
- * a rig that has the box, the patch supplies the sound, and the page says to load it; the hook
- * supplies the notes, and every one of them is this library's own. The reference is not the box:
+ * a rig that has the box, the patch supplies the sound, and the page says to load it, because
+ * `patchAffinities` names it (§5A.5, #585); the hook supplies the notes, and every one of them
+ * is this library's own. The reference is not the box:
  * the entry names no device (invariant 3), and the title carries the patch's name because that
  * is where §5A.5 puts every reference.
  *
@@ -38,6 +39,17 @@ export const museRunnerFloatingArrivalLead: Riff = {
   id: 'muse-runner-floating-arrival-lead',
   name: 'The Muse Runner floating-arrival lead',
   reference: { kind: 'patch', name: 'Muse Runner' },
+  /**
+   * §5A.5/#585. Named after the patch and written on it, so the affinity is the reference said
+   * again: the page prints the patch where the rig has it, and the reference alone would not.
+   */
+  patchAffinities: [
+    {
+      name: 'Muse Runner',
+      reason:
+        'the figure was written on this patch: the late arrival and the vibrato after the note settles are its sound',
+    },
+  ],
   /** The definition's own `bpm: 66` and `range: [58, 78]`, which is the tempo window (#569). */
   bpm: { min: 58, max: 78, default: 66 },
   key: 'D minor',

@@ -115,6 +115,57 @@ export const RiffReferenceSchema = z.strictObject({
   name: z.string().min(1),
 })
 
+/**
+ * §5A.5/#585. **A factory patch this figure's sound aligns with**, named by the riff. See
+ * `Riff.patchAffinities`.
+ *
+ * The same `(name, bank)` a recipe's `FactoryPatch` carries and nothing else: no evidence,
+ * because the riff does not claim the patch exists — the recipe that names it does, with a
+ * unit and a firmware in its `evidence` — and no device, because a riff names none (invariant 3).
+ * `reason` is the author's sonic judgement, the one thing nothing in the model could state and
+ * the reason the field exists.
+ */
+export type PatchAffinity = {
+  /** As it reads on the box's own screen — `FactoryPatch.name`, matched exactly. */
+  name: string
+  /**
+   * `FactoryPatch.bank`, matched exactly, **and absent means absent**: an affinity with no bank
+   * meets a patch with no bank and nothing else. A wildcard here would let one entry reach a
+   * patch in a bank the author never looked at.
+   */
+  bank?: string
+  /** Why the sounds align, as somebody would say it. Not rendered; scanned for device names. */
+  reason: string
+}
+
+export const PatchAffinitySchema = z.strictObject({
+  name: z.string().min(1),
+  bank: z.string().min(1).optional(),
+  reason: z.string().min(1, 'an affinity with no reason is a favourite nobody can weigh'),
+})
+
+/**
+ * §5A.5/#585. Whether a riff's authored affinities name this patch, by exact `(name, bank)`.
+ * `undefined` where the recipe carries no patch, where the riff authors no affinity, or where
+ * none matches — and that one `undefined` is what both renderers read, so a riff that reaches a
+ * patched recipe by role and character alone prints nothing about the patch.
+ */
+export function affinePatch(
+  riff: Pick<Riff, 'patchAffinities'>,
+  patch: FactoryPatch | undefined,
+): FactoryPatch | undefined {
+  if (patch === undefined) return undefined
+  const affine = (riff.patchAffinities ?? []).some(
+    (a) => a.name === patch.name && a.bank === patch.bank,
+  )
+  return affine ? patch : undefined
+}
+
+/** `name` alone, or `name` NUL `bank`: the key two affinities may not share. */
+function affinityKey(a: PatchAffinity): string {
+  return a.bank === undefined ? a.name : `${a.name}\u0000${a.bank}`
+}
+
 export type Riff = {
   /** Opens with `reference.name`, slugified — `RiffSchema` enforces it. See `reference`. */
   id: RiffId
@@ -144,6 +195,31 @@ export type Riff = {
    * separate fact that a *recipe's* parameters reach a sound a box also ships.
    */
   reference: RiffReference
+  /**
+   * §5A.5/#585. **The factory patches this figure's sound aligns with**, where somebody knows
+   * that it does. Optional, and absent on most entries.
+   *
+   * A riff reaches a recipe by role and character, and a recipe may name a factory patch that
+   * already reaches its sound (`Recipe.factoryPatch`, #553). That pair is the resolver's
+   * vocabulary for *which voice plays this*, and it was being read as *this is the same sound*:
+   * every `lead / bright` figure on the same box was told to load the same patch, and the
+   * Thriller riff is not a wide-vibrato CS-80 lead. The alignment is a fact somebody knows and
+   * nothing in the model can state, so it is authored here and inferred nowhere. **Absent, a riff
+   * page prints no patch**, however the recipe it lands on is labelled; a guide is untouched,
+   * because there the reader asked for a bright lead and a patch reaching one is the shortcut
+   * they wanted.
+   *
+   * **A list, so that one field does not quietly pick a favourite.** A figure may align with
+   * patches on several boxes, and each entry is matched on its own.
+   *
+   * **A narrow and deliberate exception to invariant 3, and this is its whole extent.** A patch
+   * belongs to exactly one box, so an entry here implies one without naming it. It carries no
+   * device id and no device name — `test/riff.test.ts` scans every `reason` and refuses a `name`
+   * that is a device outright — and the resolver never reads it to choose a voice: which box
+   * plays the figure is still the rig's answer. What it reads it for is one line on the page,
+   * after the voice is chosen.
+   */
+  patchAffinities?: readonly PatchAffinity[]
   /**
    * **What the technique is, in the words somebody would use teaching it.** One string per
    * paragraph, prose, and the only free text a riff carries.
@@ -380,6 +456,7 @@ export const RiffSchema = z
     id: z.string().min(1),
     name: z.string().min(1),
     reference: RiffReferenceSchema,
+    patchAffinities: z.array(PatchAffinitySchema).min(1).optional(),
     technique: z.array(z.string().min(1)).min(1, 'a riff is a technique: say what it is'),
     bpm: BpmSpecSchema,
     key: MusicalKeySchema,
@@ -409,6 +486,16 @@ export const RiffSchema = z
         code: 'custom',
         message: `the id must open with '${slug}', so the address carries the ${riff.reference.kind} too (§5A.5)`,
         path: ['id'],
+      })
+    }
+    // §5A.5/#585. Two entries with one key would be one alignment with two reasons, and a page
+    // that could only act on one of them.
+    const keys = (riff.patchAffinities ?? []).map(affinityKey)
+    if (new Set(keys).size !== keys.length) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'two patch affinities name the same patch (§5A.5/#585)',
+        path: ['patchAffinities'],
       })
     }
     // §4.1. The hook resolves against this key and there is no second one to fall back to, so a
@@ -673,7 +760,11 @@ export type RiffVoicing = {
    * sounds"* through a field meaning *go and find a file*.
    */
   soundSetup: ResolvedSoundSetup | undefined
-  /** §3/#553. The authored claim, evidence and all: a riff page shows one device at a time. */
+  /**
+   * §3/#553, §5A.5/#585. The recipe's authored claim, evidence and all, **where the riff authors
+   * an affinity with it** — `affinePatch` — and `undefined` otherwise, so that both renderers
+   * print nothing for a patch the figure reached by role and character alone.
+   */
   factoryPatch: FactoryPatch | undefined
   articulation: readonly BoundArticulation[]
   /** §2.1. The note that plays this voice as it is, on a box addressed by note. */
@@ -877,7 +968,7 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
       patch: resolvePatch(winner.recipe),
       sourceAudio: resolveSourceAudio(winner.recipe),
       soundSetup: resolveSoundSetup(winner.recipe),
-      factoryPatch: winner.recipe.factoryPatch,
+      factoryPatch: affinePatch(riff, winner.recipe.factoryPatch),
       articulation: bindArticulation(winner.recipe, riff.pattern),
       // §2.2/#86. Read off the first voice, which every member of a pool shares — a stack is one
       // pool on one device, so there is one answer rather than one per voice.
