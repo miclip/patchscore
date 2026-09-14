@@ -1,4 +1,4 @@
-import type { Device, ShippedPatch } from '@/lib/core'
+import type { Device } from '@/lib/core'
 import { deviceLabel } from './catalogue'
 import type { PresetSession } from './preset-session'
 
@@ -33,22 +33,19 @@ export const PRESET_LEAD =
 export const PRESET_HEADING = 'Explore your device'
 
 /**
- * §3/#553. **The recipe that reaches a patch, and the claim the guide already makes about it.**
+ * §3/#553/#593. **The recipe that reaches a patch, said once.**
  *
- * `PRESET_RECIPE` opens a line that names the recipe, and `factoryPatchClaim` closes it with
- * the guide's own sentence for `Recipe.factoryPatch` — *Factory patch — the box ships X, which
- * arrives here already* (`render.ts`, `phase-sound.tsx`) — word for word, so three surfaces say
- * one thing about one field. The guide's second sentence, about *the settings below*, is left
- * off: there are no settings below on this surface. Hand-matched to the guide's rather than
- * imported from it, for the reason the riff page's is: the guide's lives in `lib/core` and a
- * shared constant across that boundary is more machinery than one sentence earns.
+ * **The guide's own sentence is deliberately not reused here**, and the first version of this
+ * page proved why. It read *Factory patch — the box ships 3 Osc Bass Love, which arrives here
+ * already*, under a heading that is `3 Osc Bass Love`, on a page titled *factory patches*. It
+ * repeated the name from the line above it and then stated the premise of the whole surface.
+ *
+ * On a guide that sentence earns its place: the reader asked for a `bass-mid · dirty`, the patch
+ * is news, and naming it is the whole point. Here the patch is the heading and the only thing a
+ * reader does not already know is that **the box can make this sound from scratch**. So that is
+ * what the label says, and the line carries the recipe and nothing else.
  */
-export const PRESET_RECIPE = 'Recipe — '
-
-export function factoryPatchClaim(patch: ShippedPatch): string {
-  const where = patch.bank === undefined ? '' : ` in ${patch.bank}`
-  return `Factory patch — the box ships ${patch.name}${where}, which arrives here already.`
-}
+export const PRESET_RECIPE = 'Built by hand — '
 
 /** The label in front of the link to the riff written for a patch. */
 export const PRESET_FIGURE = 'Figure — '

@@ -7,7 +7,6 @@ import {
   PRESET_HEADING,
   PRESET_LEAD,
   PRESET_RECIPE,
-  factoryPatchClaim,
 } from '@/lib/studio/preset-text'
 
 /**
@@ -56,8 +55,7 @@ export function PresetBody({ entry }: { entry: PresetEntry }) {
         <p key={recipe.id} className="quiet preset-recipe">
           {PRESET_RECIPE}
           <strong>{recipe.title}</strong>,{' '}
-          <span className="mono">{`${recipe.role} · ${recipe.character}`}</span>.{' '}
-          {factoryPatchClaim(entry.patch)}
+          <span className="mono">{`${recipe.role} · ${recipe.character}`}</span>.
         </p>
       ))}
       {entry.riff === undefined ? null : (

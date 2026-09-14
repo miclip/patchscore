@@ -130,12 +130,13 @@ describe('the page says what the model says, every entry open', () => {
     expect(MUSE.match(/class="quiet preset-recipe"/g)?.length).toBe(5)
     for (const entry of session.entries) {
       for (const r of entry.recipes) {
-        expect(MUSE_TEXT, r.id).toContain(
-          `Factory patch — the box ships ${entry.patch.name}, which arrives here already.`,
-        )
+        expect(MUSE_TEXT, r.id).toContain(`Built by hand — ${r.title}`)
       }
     }
-    expect(MUSE_TEXT.split('Factory patch — the box ships').length - 1).toBe(5)
+    expect(MUSE_TEXT.split('Built by hand —').length - 1).toBe(5)
+    // #593. The patch is the heading and the page is titled for it, so the line restates neither.
+    expect(MUSE_TEXT).not.toContain('the box ships')
+    expect(MUSE_TEXT).not.toContain('arrives here already')
     expect(MUSE_TEXT).not.toContain('settings below')
   })
 
