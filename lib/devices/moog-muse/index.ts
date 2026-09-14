@@ -1,4 +1,4 @@
-import type { Device, Recipe, SustainClaim } from '../../core/device'
+import type { Device, PatchUse, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange, ParamScope } from '../../core/params'
 import { MUSE_PANEL } from './panel'
 
@@ -480,15 +480,16 @@ function factoryPatch(name: string) {
 /**
  * §2.6/#592. **The twelve factory patches this box is known to ship, by name.** The other half
  * of the split above: that a patch called *Aegean Organ* exists is a fact from the unit, and the
- * seven declined pairings threw it away with the judgement. This list is the fact alone, and no
- * page prints it yet (`ShippedPatch` in `device.ts` says why). The five that `factoryPatch()`
+ * seven declined pairings threw it away with the judgement. This list is the fact alone; what
+ * each patch is for is `PATCH_USES` below, keyed to it (#593). The five that `factoryPatch()`
  * pairs with a recipe are here too, because the box ships them whether or not a recipe reaches
  * them.
  *
  * Twelve and not 224: p.12 counts them and names none, and twelve is what was read off the
  * screen. No bank, because none was read; p.12's fourteen bank names are not enough to place a
- * patch in one. No description, because what a patch sounds like is a claim this file cannot
- * verify from a name. Same reading, same firmware, as `FACTORY_BANK` — one unit, one list.
+ * patch in one. No description on this list, because what a patch sounds like is a claim this
+ * file cannot verify from a name; that judgement has its own field. Same reading, same
+ * firmware, as `FACTORY_BANK` — one unit, one list.
  */
 const SHIPPED_PATCHES = [
   "'70s Electro Pno",
@@ -504,6 +505,41 @@ const SHIPPED_PATCHES = [
   'Soft Orchestra',
   'Vox Humana',
 ].map((name) => ({ name }))
+
+/**
+ * §2.6/#593. **What each of the twelve is for**, in the operator's words, off the same unit.
+ * `SHIPPED_PATCHES` is the fact and this is the judgement beside it, keyed by name so the two
+ * cannot drift: `DeviceSchema` refuses a line here for a patch the list above does not carry,
+ * and a patch above with no line here.
+ *
+ * **The order is editorial, and it is the reading order.** p.12 prints no patch list, so there
+ * is no order to follow, and alphabetical puts *Bellbounce* between *Aegean Organ* and *Detroit
+ * Funk*, three sounds nobody compares. This walks the roles instead, from the single low line up
+ * to the held chord: the bass, then the four leads, then the three struck keyboard sounds, then
+ * the two stabs, then the two string ensembles. Within a group the nearest pair sits together —
+ * the two Moog-lineage leads before the two Polymoog-era ones, the two electric pianos before
+ * the bell — so a reader choosing between *Moog 55 Strings* and *Soft Orchestra* finds them on
+ * adjacent rows. Change the order here and the page follows; nothing downstream sorts it.
+ */
+const PATCH_USES: PatchUse[] = [
+  // Bass
+  { name: '3 Osc Bass Love', use: 'Three-oscillator analogue bass, octave-driven' },
+  // Leads
+  { name: 'Moog Pro Solo', use: 'Minimoog lead, portamento-driven' },
+  { name: 'Muse Runner', use: 'CS-80 wide-vibrato lead writing' },
+  { name: 'Vox Humana', use: 'Polymoog preset as used in late-70s cold synth pop' },
+  { name: 'Aegean Organ', use: 'Greek modal writing in the Vangelis manner' },
+  // Keys and struck sounds
+  { name: "'70s Electro Pno", use: 'Rhodes comping with extended voicings' },
+  { name: 'Hamamatsu Tines', use: 'FM electric piano, mid-80s ballad voicing' },
+  { name: 'Bellbounce', use: 'Delay-driven bell pattern' },
+  // Stabs
+  { name: 'Detroit Funk', use: 'Detroit techno chord stabs' },
+  { name: 'Polyphonic Power', use: 'Analogue brass section stabs' },
+  // String ensembles
+  { name: 'Moog 55 Strings', use: 'Large modular string ensemble, orchestral pacing' },
+  { name: 'Soft Orchestra', use: 'Divide-down string ensemble' },
+]
 
 /**
  * §3/#506. **The VCA envelope holds**, on every recipe a shipped hook holds for a bar or more.
@@ -2925,6 +2961,7 @@ export const device: Device = {
   noteDuration: { kind: 'per-note-value', control: 'GATE' },
 
   factoryPatches: SHIPPED_PATCHES,
+  patchUses: PATCH_USES,
 
   /**
    * `MAIN OUT LEFT (MONO)` and `MAIN OUT RIGHT`, 1/4" TRS (p.117), and nothing else — the

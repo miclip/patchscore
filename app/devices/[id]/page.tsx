@@ -4,12 +4,14 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
 import { KitSection } from '@/components/catalogue/kit-section'
+import { PresetSection } from '@/components/catalogue/preset-section'
 import { citeText, ioText } from '@/components/guide/format'
 import { PanelFigure } from '@/components/rack/panel-figure'
 import type { Device } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel } from '@/lib/studio/catalogue'
 import { REPOSITORY_URL } from '@/lib/studio/feedback'
+import { presetSession } from '@/lib/studio/preset-session'
 import type {
   CapabilityFactDisclosure,
   CapabilityGap,
@@ -571,6 +573,14 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         nothing at all on a box that makes fewer than four of them.
       */}
       <KitSection device={device} kit={page.kit} />
+
+      {/*
+        §2.6/#593. **The factory patches this box ships**, beside the kit, for the same reason
+        the kit sits here: both are what the box offers on its own, told to a reader who has just
+        seen what it is. Renders nothing on a box that has not declared its patches and what each
+        is for, which is every box but one today.
+      */}
+      <PresetSection session={presetSession(device)} />
 
       {/*
         §3.2/#410. **Where one parameter's value and bounds were read off** — the question the
