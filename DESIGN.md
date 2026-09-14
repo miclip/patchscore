@@ -3251,6 +3251,39 @@ authoring — 212 rows nobody has read — which is the standing rule about rend
 broken in a new place. Operator decision, #593: no *twelve of 224* anywhere, and the tests hold
 it on both surfaces.
 
+**What the section is for, and what a figure written for a preset has to do.** Explore exists on a
+box that ships presets, and its reader **owns that box**. They are not choosing gear and they are
+not building a sound: they have the instrument in front of them, they can load any of these in a
+second, and what they do not have is a reason to. The section's whole job is to give them one.
+
+That decides the shape of everything on it. The preset is the subject; the settings fold away
+because a reader who can load the sound does not need it rebuilt (#612); the rig picker is absent
+because the box is known (#598); and the figure is the point, because a figure is the one thing a
+preset cannot supply for itself.
+
+**A figure earns its place by saying why the preset is here**, and how tightly depends on the
+preset:
+
+- **A preset that names something specific is a debt to pay.** *Muse Runner* is a CS-80 lead and
+  Blade Runner Blues is a CS-80 piece; a figure under that name that did not go there would be
+  answering a question nobody asked. Lean into it. The reference is the reason the preset was
+  worth highlighting, and the figure is where it gets honoured.
+- **A preset that names a broad thing still names something.** *Vox Humana* is a Polymoog voice
+  and a piece of late-70s synth pop; a preset named for a place or an era is an homage to a maker,
+  an instrument or a moment — a Roland, a DX7, whatever the name is reaching for. There is far
+  more creative runway, and the test is unchanged: the figure should be recognisably *of* the thing
+  the preset is nodding at, not merely playable on it.
+
+So the bar is not *this figure sounds good on this patch*. It is **this figure is why this patch is
+worth opening**. A pleasant line that would suit any bright lead teaches nothing about the preset it
+sits under, and a reader who owns the box will hear that immediately.
+
+**Two things this is not.** It is not transcription — §5A.5's rule holds, the figure is this
+library's own and a named reference is how a reader finds it rather than a claim about the notes.
+And it is not licence to invent a reference: where a preset's name says nothing anybody can place,
+the honest figure is one that suits the sound, and reaching for a story it does not have is the
+authoring equivalent of a weak patch pairing (#553).
+
 ### 3.8 Samples: the sound you asked for, on the box you already own
 
 §3.6 starts from a device and asks what it makes. This starts from **a sound** and asks which of
