@@ -30,6 +30,16 @@ import type { Riff } from '../core/riff'
  * withheld third is the technique's fifth paragraph, and the one rule in `constraints` is the
  * two-beat entry. What the data cannot say, `test/riff.test.ts` asserts on this entry instead:
  * each resolution lands in the second bar of its chord.
+ *
+ * ## The whole cycle, over a grid half its length
+ *
+ * The first published version carried bars 1 to 4 of the eight, the two suspensions, and left
+ * the held B and C of the definition's second half as prose, on the belief that a riff's grid
+ * capped the figure at four bars. The grid is capped; the hook is not (§5A.2, #603). So the
+ * hook is the definition's eight bars, all six of its notes, and the four-bar grid repeats
+ * beneath it, marking only what recurs on the same step of both passes: the entry two beats
+ * into each chord. The two resolutions land inside a hold on the second pass, so they are
+ * slurred, not struck, and live in the hook alone.
  */
 export const moog55StringsSuspensionWriting: Riff = {
   id: 'moog-55-strings-suspension-writing',
@@ -38,10 +48,13 @@ export const moog55StringsSuspensionWriting: Riff = {
   bpm: { min: 52, max: 70, default: 60 },
   key: 'C major',
   technique: [
-    'Bars 1 to 4 of the cycle, over the two suspended chords. Each one holds its suspension for ' +
-      'a bar and resolves in the second, and the line does the same.',
-    'Inside each chord, every move is a step. The D over the first chord steps up to E; the G ' +
-      'over the second steps up to A. Nothing leaps.',
+    'Four chords, eight bars, and the line covers all of them. The first two are suspended: ' +
+      'each holds its suspension for a bar and resolves in the second, and the line does the ' +
+      'same. The last two are held notes.',
+    'Inside each chord, every move is a step, and it is slurred, not struck. The D over the ' +
+      'first chord steps up to E; the G over the second steps up to A. Each resolution is ' +
+      'played off the held note without a new attack, so a chord gets one entry and the line ' +
+      'moves inside it.',
     'The suspension resolves inside the second bar of each chord, never the first. That is what ' +
       'makes eight bars feel like they are still arriving: the third is withheld for a bar and ' +
       'then given.',
@@ -88,32 +101,51 @@ export const moog55StringsSuspensionWriting: Riff = {
     ],
   },
   /**
-   * Four bars over the two suspensions. `baseOctave: 4` puts `C4` at degree 1, so the line is
-   * the octave above middle C. Each resolution lands on beat three of its chord's second bar and
-   * runs into the next chord, which is the seventh paragraph as data.
+   * Eight bars, six notes. `baseOctave: 4` puts `C4` at degree 1, so the suspensions are the
+   * octave above middle C and the two held notes sit around it.
+   *
+   * Each chord holds 32 steps: `I` 1–32, `IV` 33–64, `vi` 65–96, `V` 97–128. The entry is eight
+   * steps into each, and each resolution lands inside its chord's second bar, which is the one
+   * timing the definition fixes. **The lengths are not authored; they follow from the part.**
+   * The definition gives none, and a pad over two-bar chords sounds each note until the next
+   * one, so every note runs to the next note's step and the last runs to the end of the cycle.
+   * Nothing in the technique says so, because a length that needed a sentence would be one this
+   * library invented (#604).
    */
   hook: {
     id: 'moog-55-strings-suspension-writing-hook',
     forRole: 'lead',
-    bars: 4,
+    bars: 8,
     baseOctave: 4,
     notes: [
       // `I`, suspended: D5, the second, two beats in. E5, the resolution, on beat three of the
-      // second bar, held into the next chord.
+      // second bar, sounding until the G enters.
       { step: 9, degree: 2, octave: 1, len: 16 },
       { step: 25, degree: 3, octave: 1, len: 16 },
       // `IV`, suspended: G5, its second, two beats in. A5, the resolution, on beat three of the
-      // second bar, held past the figure into the `vi`.
+      // second bar, sounding until the B enters.
       { step: 41, degree: 5, octave: 1, len: 16 },
-      { step: 57, degree: 6, octave: 1, len: 12 },
+      { step: 57, degree: 6, octave: 1, len: 16 },
+      // `vi`: B4, the second, until the C enters. `octave: 0` is the definition's own register,
+      // a seventh below the A before it.
+      { step: 73, degree: 7, octave: 0, len: 32 },
+      // `V`: C5, the suspended fourth, to the end of the cycle.
+      { step: 105, degree: 1, octave: 1, len: 24 },
     ],
   },
+  /**
+   * §5A.2. A four-bar grid under an eight-bar line, so it repeats twice, and it marks only what
+   * recurs on the same step of both passes: the entry two beats into each chord, at 9 and 41.
+   * Across the two passes that is steps 9, 41, 73 and 105 of the cycle, the four onsets the hook
+   * enters a chord on. The resolutions at 25 and 57 are slurred: on the second pass those steps
+   * fall inside the held B and C, and a strike there would re-articulate a note the line holds.
+   */
   pattern: variant(
     'moog-55-strings-suspension-writing-grid',
     'lead',
     0,
     64,
     at('accent', 72, 9),
-    on('downbeat', 25, 41, 57),
+    on('downbeat', 41),
   ),
 }

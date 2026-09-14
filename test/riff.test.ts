@@ -1584,7 +1584,6 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       voxHumanaRigidColdPopLine,
       hamamatsuTinesBalladFigure,
       seventiesElectroPnoRhodesTurnaround,
-      moog55StringsSuspensionWriting,
       aegeanOrganPhrygianFigure,
       moogProSoloGlideLead,
       softOrchestraSlowChanges,
@@ -1592,6 +1591,9 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       const onsets = [...new Set(entry.hook.notes.map((n) => n.step))]
       expect(entry.pattern.hits.map((h) => h.step), entry.id).toEqual(onsets)
     }
+    // The suspension writing is not in that list: its grid repeats under an eight-bar hook and
+    // strikes the chord entries only, with the resolutions slurred (§5A.2). Its own test below
+    // holds the strikes to the entries across both passes.
   })
 
   it('the cold-pop line lands every note on a beat and none across a bar line', () => {
@@ -1639,7 +1641,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     ])
     const [d, e, g, a] = riff.hook.notes
     if (d === undefined || e === undefined || g === undefined || a === undefined) {
-      throw new Error('four notes expected')
+      throw new Error('six notes expected')
     }
     expect([e.degree, a.degree]).toEqual([3, 6])
     expect([e.degree, a.degree]).toEqual([d.degree + 1, g.degree + 1])
@@ -1652,6 +1654,96 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       if (n.step < e.step) expect(n.degree, `step ${String(n.step)}`).not.toBe(3)
       if (n.step >= e.step && n.step < a.step) expect(n.degree, `step ${String(n.step)}`).not.toBe(6)
     }
+  })
+
+  /**
+   * §5A.2/#604. **The suspension writing is the whole eight-bar cycle**, restored from the four
+   * bars it was first published as. The grid stays four bars and repeats, marking the entry into
+   * each chord and nothing a held note is slurred through.
+   */
+  describe('the suspension writing covers its eight-bar cycle over a four-bar grid (#604)', () => {
+    const riff = moog55StringsSuspensionWriting
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const notes = resolved.hook.notes
+    const CHORDS = ['I', 'IV', 'vi', 'V'] as const
+    /** The cycle step a chord begins on, two bars each: `I` 1, `IV` 33, `vi` 65, `V` 97. */
+    const startOf = (chord: string): number =>
+      CHORDS.indexOf(chord as (typeof CHORDS)[number]) * 2 * STEPS_PER_BAR + 1
+
+    it('carries all eight bars from bar 1, in six notes', () => {
+      expect(riff.figureStartsAtBar).toBe(1)
+      expect(riff.harmony?.cycleBars).toBe(8)
+      expect(riff.hook.bars).toBe(8)
+      expect(riff.hook.notes).toHaveLength(6)
+    })
+
+    it('resolves to the definition’s pitches, each over the chord it was written for', () => {
+      // `D5 E5` over the Csus2, `G5 A5` over the Fsus2, `B4` held over the Am7, `C5` held over
+      // the G6sus4: the B and C are the second half that used to be prose.
+      expect(notes.map((n) => [n.note, chordAtStep(riff, n.step)])).toEqual([
+        ['D5', 'I'],
+        ['E5', 'I'],
+        ['G5', 'IV'],
+        ['A5', 'IV'],
+        ['B4', 'vi'],
+        ['C5', 'V'],
+      ])
+      expect(notes.map((n) => n.midi)).toEqual([74, 76, 79, 81, 71, 72])
+      // The B is a seventh below the A, the definition's own register, and a step below the C.
+      const [a, b, c] = notes.slice(3)
+      if (a === undefined || b === undefined || c === undefined) throw new Error('three notes expected')
+      expect(a.midi - b.midi).toBe(10)
+      expect(c.midi - b.midi).toBe(1)
+    })
+
+    it('enters every chord two beats late, the held notes included', () => {
+      expect(riff.constraints?.onsetOffset?.minSteps).toBe(8)
+      const arrivals = entries(riff).map((n) => n.step)
+      expect(arrivals).toEqual([9, 41, 73, 105])
+      for (const step of arrivals) expect(step - startOf(chordAtStep(riff, step) ?? '')).toBe(8)
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('strikes the four entries across two passes of the grid, and slurs the resolutions', () => {
+      expect(riff.pattern.length).toBe(64)
+      expect(riff.pattern.hits.map((h) => h.step)).toEqual([9, 41])
+      expect(gridStrikes(riff)).toEqual([9, 41, 73, 105])
+      expect(gridStrikes(riff)).toEqual(entries(riff).map((n) => n.step))
+      // The resolutions at 25 and 57 recur on the second pass at 89 and 121, inside the held B
+      // and C: a strike there would re-articulate a note the line holds, so neither is marked.
+      for (const step of [89, 121]) {
+        const held = riff.hook.notes.filter((n) => step > n.step && step < n.step + n.len)
+        expect(held, `step ${String(step)}`).toHaveLength(1)
+      }
+      expect(riff.technique.some((p) => p.includes('slurred, not struck'))).toBe(true)
+    })
+
+    it('sounds each note until the next, and the last to the end of the cycle', () => {
+      // Derived, not authored: the definition fixes no lengths and the part is a pad over two-bar
+      // chords, so a note sounds until the next one does. The technique says nothing about it,
+      // and must not (#604).
+      expect(riff.technique.join(' ')).not.toMatch(/until the next entry|holds .* past the change/)
+      for (let i = 1; i < riff.hook.notes.length; i += 1) {
+        const prev = riff.hook.notes[i - 1]
+        const next = riff.hook.notes[i]
+        if (prev === undefined || next === undefined) throw new Error('unreachable')
+        expect(prev.step + prev.len, `note ${String(i)}`).toBe(next.step)
+      }
+      const last = riff.hook.notes.at(-1)
+      if (last === undefined) throw new Error('no notes')
+      expect(last.step + last.len - 1).toBe(8 * STEPS_PER_BAR)
+      // One voice, so `polyphony` is absent and the resolved line never overlaps itself.
+      expect(riff.request.polyphony).toBeUndefined()
+      // Which puts each chord's last note over the change and the next chord's entry after it.
+      const lastEnd = (chord: string): number => {
+        const over = riff.hook.notes.filter((n) => chordAtStep(riff, n.step) === chord)
+        const last = over.at(-1)
+        if (last === undefined) throw new Error(chord)
+        return last.step + last.len - 1
+      }
+      expect(CHORDS.map(lastEnd)).toEqual([40, 72, 104, 128])
+    })
   })
 
   it('the machine loop never strikes on a beat, and enters every bar on the "and" of one', () => {
@@ -1804,9 +1896,9 @@ const FIDELITY: readonly FidelityRow[] = [
     key: 'C major',
     bpm: 60,
     progression: [['I', 2], ['IV', 2], ['vi', 2], ['V', 2]],
-    // Bars 1-4 of eight: the two suspensions. The B4 over the `vi` and the C5 over the `V` are
-    // the definition's second half, and are prose.
-    pitches: ['D5', 'E5', 'G5', 'A5'],
+    // The whole eight bars: the two suspensions resolving, then the held B4 and C5 of the
+    // definition's second half, which were prose until #604 (§5A.2).
+    pitches: ['D5', 'E5', 'G5', 'A5', 'B4', 'C5'],
   },
   {
     riff: detroitFunkAeolianMachineLoop,
