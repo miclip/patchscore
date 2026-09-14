@@ -272,9 +272,9 @@ describe('the web guide and the Markdown guide draw one routing (#33/#511)', () 
     .replace(/<[^>]+>/g, ' ')
     .replace(/&#x27;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
 
   /** The routing lines the Markdown prints, stripped of the punctuation only Markdown has. */
@@ -436,9 +436,9 @@ describe('the riff page draws a routing on both of its surfaces (#511)', () => {
     .replace(/<[^>]+>/g, ' ')
     .replace(/&#x27;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
 
   it('renders the routing in Markdown, controls and all', () => {

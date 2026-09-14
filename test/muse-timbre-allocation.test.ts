@@ -116,8 +116,8 @@ function pageText(result: ResolveResult): string {
   return renderToStaticMarkup(createElement(Guide, { result, seed: 1 }))
     .replace(/<[^>]+>/g, ' ')
     .replace(/&#x27;/g, "'")
-    .replace(/&amp;/g, '&')
     .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
 }
 
