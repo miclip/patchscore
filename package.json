@@ -33,7 +33,7 @@
     "samples:wav": "tsx scripts/gen-reference-samples.ts"
   },
   "devDependencies": {
-    "@types/node": "^20.19.43",
+    "@types/node": "^26.5.1",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "tsx": "^4.23.13",
