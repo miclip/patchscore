@@ -26,6 +26,7 @@ import {
   heldLabel,
   midiLabel,
   chordRows,
+  chordLabel,
   noteRows,
   riffChordSummary,
   riffCitation,
@@ -112,7 +113,7 @@ function leadLine(riff: Riff): string {
 // The notes
 // ---------------------------------------------------------------------------
 
-function noteLines(resolution: RiffResolution): string[] {
+function noteLines(riff: Riff, resolution: RiffResolution): string[] {
   const unresolved = riffNotesUnresolved(resolution)
   if (unresolved !== undefined) return ['## The notes', '', `*${unresolved}*`]
   if (resolution.notes.outcome !== 'resolved') return []
@@ -122,11 +123,14 @@ function noteLines(resolution: RiffResolution): string[] {
     '',
     riffNoteSummary(hook),
     '',
-    ...noteRows(hook).map(
-      (row) =>
-        `- step ${num(row.step)} · \`${spellingLabel(row)}\`` +
-        ` · ${degreeLabel(row)} · ${midiLabel(row)} · ${heldLabel(row)}`,
-    ),
+    ...noteRows(hook, riff).map((row) => {
+      const chord = chordLabel(row)
+      return (
+        `- step ${num(row.step)}${chord === undefined ? '' : ` · ${chord}`}` +
+        ` · \`${spellingLabel(row)}\`` +
+        ` · ${degreeLabel(row)} · ${midiLabel(row)} · ${heldLabel(row)}`
+      )
+    }),
   ]
 }
 
@@ -441,7 +445,7 @@ export function renderRiff(resolution: RiffResolution): string {
     out.push(...chords)
     out.push('')
   }
-  out.push(...noteLines(resolution))
+  out.push(...noteLines(riff, resolution))
   out.push('')
   const grid = gridLines(riff)
   if (grid.length > 0) {

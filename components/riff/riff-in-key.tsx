@@ -6,6 +6,7 @@ import type { HookResolution, Riff, RiffResolution } from '@/lib/core'
 import { chordNotesText, num, resolveHook, transposableKeys } from '@/lib/core'
 import { KeySelect } from '@/components/harmony/key-select'
 import {
+  chordLabel,
   RIFF_CHORDS_SUPPLIED,
   chordRows,
   degreeLabel,
@@ -109,7 +110,7 @@ export function RiffFigureView({
         <header>
           <h2>The notes</h2>
         </header>
-        <Notes resolution={{ ...resolution, notes }} />
+        <Notes riff={riff} resolution={{ ...resolution, notes }} />
       </section>
 
       {grid}
@@ -138,7 +139,7 @@ function Sep() {
  * reason: a labelled line survives wrapping on a phone, where a table's header scrolls away from
  * its body (#21).
  */
-function Notes({ resolution }: { resolution: RiffResolution }) {
+function Notes({ riff, resolution }: { riff: Riff; resolution: RiffResolution }) {
   const unresolved = riffNotesUnresolved(resolution)
   if (unresolved !== undefined) return <p className="riff-unresolved">{unresolved}</p>
   if (resolution.notes.outcome !== 'resolved') return null
@@ -147,10 +148,16 @@ function Notes({ resolution }: { resolution: RiffResolution }) {
     <>
       <p className="riff-note-summary">{riffNoteSummary(hook)}</p>
       <ul className="riff-notes">
-        {noteRows(hook).map((row) => (
+        {noteRows(hook, riff).map((row) => (
           <li key={row.step} className="riff-note">
             <span className="riff-step mono">step {num(row.step)}</span>
             <Sep />
+            {chordLabel(row) === undefined ? null : (
+              <>
+                <span className="riff-note-chord mono">{chordLabel(row)}</span>
+                <Sep />
+              </>
+            )}
             <span className="mono riff-spelling">{spellingLabel(row)}</span>
             <Sep />
             <span className="riff-note-fact mono">{degreeLabel(row)}</span>

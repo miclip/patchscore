@@ -43,19 +43,19 @@ The figure is played over these chords; supply them separately if your rig allow
 
 12 bars in F# minor.
 
-- step 9 · `C#5` · degree 5 · MIDI 73 · in force 16 steps
-- step 25 · `A4` · degree 3 · MIDI 69 · in force 10 steps
-- step 41 · `F#5` · degree 1 · MIDI 78 · in force 12 steps
-- step 53 · `E5` · degree 7 · MIDI 76 · in force 4 steps
-- step 57 · `D5` · degree 6 · MIDI 74 · in force 10 steps
-- step 73 · `D5` · degree 6 · MIDI 74 · in force 12 steps
-- step 85 · `C#5` · degree 5 · MIDI 73 · in force 4 steps
-- step 89 · `D5` · degree 6 · MIDI 74 · in force 8 steps
-- step 105 · `A#4` · degree #3 · MIDI 70 · in force 26 steps
-- step 137 · `D#5` · degree #6 · MIDI 75 · in force 12 steps
-- step 149 · `F#5` · degree 1 · MIDI 78 · in force 14 steps
-- step 169 · `G#4` · degree 2 · MIDI 68 · in force 16 steps
-- step 185 · `E4` · degree 7 · MIDI 64 · in force 10 steps
+- step 9 · over i · `C#5` · degree 5 · MIDI 73 · in force 16 steps
+- step 25 · over i · `A4` · degree 3 · MIDI 69 · in force 10 steps
+- step 41 · over VI · `F#5` · degree 1 · MIDI 78 · in force 12 steps
+- step 53 · over VI · `E5` · degree 7 · MIDI 76 · in force 4 steps
+- step 57 · over VI · `D5` · degree 6 · MIDI 74 · in force 10 steps
+- step 73 · over iv · `D5` · degree 6 · MIDI 74 · in force 12 steps
+- step 85 · over iv · `C#5` · degree 5 · MIDI 73 · in force 4 steps
+- step 89 · over iv · `D5` · degree 6 · MIDI 74 · in force 8 steps
+- step 105 · over I · `A#4` · degree #3 · MIDI 70 · in force 26 steps
+- step 137 · over IV · `D#5` · degree #6 · MIDI 75 · in force 12 steps
+- step 149 · over IV · `F#5` · degree 1 · MIDI 78 · in force 14 steps
+- step 169 · over v · `G#4` · degree 2 · MIDI 68 · in force 16 steps
+- step 185 · over v · `E4` · degree 7 · MIDI 64 · in force 10 steps
 
 ## The grid
 

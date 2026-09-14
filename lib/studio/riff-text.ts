@@ -10,6 +10,7 @@ import type {
   RiffVoicing,
 } from '@/lib/core'
 import {
+  chordAtStep,
   STEPS_PER_BAR,
   citationSentence,
   count,
@@ -242,16 +243,43 @@ function ordinal(degree: number): string {
  * order the hook authored — nothing is sorted by pitch, because a voicing is an authored decision
  * and re-ordering it would show a chord the author did not write.
  */
-export type NoteRow = { step: number; notes: readonly ResolvedNote[] }
+export type NoteRow = {
+  step: number
+  notes: readonly ResolvedNote[]
+  /**
+   * #611. The chord this row lands in, where the riff carries harmony. Absent on an entry that
+   * carries none, which is most of them.
+   */
+  chord?: string
+}
 
-export function noteRows(hook: ResolvedHook): readonly NoteRow[] {
-  const rows: { step: number; notes: ResolvedNote[] }[] = []
+/**
+ * #611. **The chord is on the row, because otherwise the reader computes it.**
+ *
+ * The chord table gives bars and this list gives steps, and a bar is sixteen steps — so a reader
+ * checking which chord a note falls under was dividing by sixteen in their head, for every note.
+ * The operator did exactly that, on a figure that was correct, and could not tell whether it was:
+ * *"wouldn't C#5 to A4 be over the i chord? yet we have it at step 9 and step 25"*. Both are, and
+ * nothing on the page said so.
+ *
+ * `chordAtStep` already answers it and both renderers already share these rows, so the answer is
+ * computed once here rather than twice in ink (#33).
+ */
+export function noteRows(hook: ResolvedHook, riff?: Riff): readonly NoteRow[] {
+  const rows: { step: number; notes: ResolvedNote[]; chord?: string }[] = []
   for (const note of hook.notes) {
     const last = rows[rows.length - 1]
     if (last !== undefined && last.step === note.step) last.notes.push(note)
     else rows.push({ step: note.step, notes: [note] })
   }
-  return rows.sort((a, b) => a.step - b.step)
+  rows.sort((a, b) => a.step - b.step)
+  if (riff !== undefined) for (const row of rows) row.chord = chordAtStep(riff, row.step)
+  return rows
+}
+
+/** #611. `over VI` — the chord a note row lands in, or nothing where the riff carries no harmony. */
+export function chordLabel(row: NoteRow): string | undefined {
+  return row.chord === undefined ? undefined : `over ${row.chord}`
 }
 
 /** `2 bars in F minor.` — what the figure is, before the rows under it. */

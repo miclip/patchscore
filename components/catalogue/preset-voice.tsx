@@ -3,7 +3,11 @@
 import { VoiceBuild } from '@/components/riff/riff-voice'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { presetSession } from '@/lib/studio/preset-session'
-import { presetBoxHeading } from '@/lib/studio/preset-text'
+import {
+  PRESET_SETTINGS_SUMMARY,
+  presetBoxHeading,
+  presetSettingsNote,
+} from '@/lib/studio/preset-text'
 import { voiceHeading } from '@/lib/studio/riff-text'
 
 /**
@@ -46,7 +50,17 @@ export function PresetVoice({ deviceId, patch }: { deviceId: string; patch: stri
       <p className="riff-where">
         <span className="riff-box">{voiceHeading(voice)}</span>
       </p>
-      <VoiceBuild voice={voice} patchLine={null} />
+      {/*
+        #612. Closed by default. The reader owns the box and has loaded the preset; the settings
+        are an alternative path, and they are not the preset's values — see `presetSettingsNote`.
+      */}
+      <details className="preset-settings">
+        <summary>{PRESET_SETTINGS_SUMMARY}</summary>
+        <p className="riff-grid-lead">
+          {presetSettingsNote(voice.recipe.role, voice.character)}
+        </p>
+        <VoiceBuild voice={voice} patchLine={null} />
+      </details>
     </section>
   )
 }
