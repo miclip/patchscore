@@ -69,8 +69,8 @@ The grid is 4 bars and the figure is 12: play it round 3 times.
 33 ···· ···· x··· ····
 49 ···· ···· ···· ····
 ```
-- `accent` · 9
-- `downbeat` · 41
+- `accent` · 9, 73, 137
+- `downbeat` · 41, 105, 169
 
 ## Where it plays
 
