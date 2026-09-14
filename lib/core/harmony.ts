@@ -431,6 +431,54 @@ export function spellChord(degree: string, key: string): ChordResolution {
   return { outcome: 'resolved', chord: { degree: parsed, key, notes } }
 }
 
+// ---------------------------------------------------------------------------
+// #605 — a degree, as a pitch class
+// ---------------------------------------------------------------------------
+
+export type DegreeResolution =
+  | { outcome: 'resolved'; pitchClass: string; semitone: number }
+  | { outcome: 'unresolved'; reason: 'unparsed-key' | 'unspellable'; detail: string }
+
+/**
+ * #605. **One degree of a key with no octave**, so a rule written as a degree can be held
+ * against a chord spelt as notes. `degree 2, alter 1` in D phrygian is `E`; whether `C · E · G`
+ * contains it is then a question about two pitch classes, where a degree and a roman numeral
+ * have no arithmetic between them.
+ *
+ * Shares `spell` with hooks and chords, so the rule, the note it forbids and the chord tone it
+ * is held against are all spelt by the one function and cannot disagree about the letter.
+ * `semitone` is the pitch class as a number, C at 0, which is the form two spellings are
+ * compared in — see `pitchClassOf`.
+ */
+export function spellDegree(degree: number, alter: number | undefined, key: string): DegreeResolution {
+  const parsed = parseKey(key)
+  if (parsed === undefined) {
+    return {
+      outcome: 'unresolved',
+      reason: 'unparsed-key',
+      detail: `'${key}' is not '<A-G><#|b> <mode>' with a mode in ${MODES.join(', ')}`,
+    }
+  }
+  // The octave is immaterial to a pitch class; 4 is any octave the note can be written in.
+  const spelt = spell(parsed, 4, { step: 1, len: 1, degree, octave: 0, alter })
+  return 'unspellable' in spelt
+    ? { outcome: 'unresolved', reason: 'unspellable', detail: spelt.unspellable }
+    : { outcome: 'resolved', pitchClass: spelt.pitchClass, semitone: mod(spelt.midi, 12) }
+}
+
+/**
+ * #605. `Eb` → 3, `B#` → 0: the pitch class a spelt name denotes, C at 0, or `undefined` for a
+ * string that is not one. The inverse of what `spell` writes, and the form a chord check
+ * compares in — `E` and `Fb` are one pitch and two strings, and a check by string would pass
+ * the collision it exists to catch. Fixed ASCII tables and no locale (§7.2).
+ */
+export function pitchClassOf(name: string): number | undefined {
+  const match = /^([A-G])(#{1,2}|b{1,2})?$/.exec(name)
+  if (match === null) return undefined
+  const letterIndex = LETTERS.indexOf(match[1] as (typeof LETTERS)[number])
+  return mod((NATURAL_PITCH_CLASS[letterIndex] as number) + accidentalValue(match[2]), 12)
+}
+
 /**
  * One row of a progression table, on any of the surfaces that print one (#570).
  *

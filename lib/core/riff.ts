@@ -2,7 +2,15 @@ import { z } from 'zod'
 import type { Assignable, Device, FactoryPatch, Recipe, TriggerNote } from './device'
 import { realisationOf } from './device'
 import { comparePoolMembers, quantiseDistance } from './search'
-import { parseKey, resolveHook, type HookResolution } from './harmony'
+import {
+  chordNotesText,
+  parseKey,
+  pitchClassOf,
+  resolveHook,
+  spellChord,
+  spellDegree,
+  type HookResolution,
+} from './harmony'
 import type { RiffId } from './ids'
 import type { ResolvedParam } from './params'
 import {
@@ -328,9 +336,29 @@ export function referenceSlug(name: string): string {
  *
  * **Checked across a note's whole span, not at its onset.** A note held into the next chord is
  * sounding over it, which is how the same collision arrives a beat late.
+ *
+ * **Checked against the chords as well as the line** (§5A.8, #605). A rule forbids a pitch, and
+ * a chord built from that pitch breaks it as surely as a note does. The entry that motivated this
+ * forbade E natural in D phrygian and carried a C major, `C · E · G`, for two of its eight bars.
+ * The line never played an E, so every check passed, and the page printed the chord a few inches
+ * from the rule.
+ *
+ * **How far a rule reaches is decided by `alter`.** A forbidden degree with an `alter` names a
+ * pitch the key does not have (E in D phrygian, A natural in C minor). That is a fact about the
+ * key, so it is forbidden across the whole piece: every chord of the cycle and every note over
+ * any of them. `chord` still names the chord the rule is about, for the reason a reader sees, and
+ * narrows nothing. An unaltered degree is the key's own note, and the rule is an avoid-note over
+ * the chord it names and nowhere else. Blade Runner forbids the natural third over the borrowed
+ * `I` while its `i` is built on that third, and that is the whole point of the entry. A global
+ * check of an unaltered rule would fail every diatonic progression in the library, so the reach
+ * is the distinction.
  */
 export type ForbiddenDegree = {
-  /** The chord it applies during, as the degree string the progression uses. */
+  /**
+   * The chord it applies during, as the degree string the progression uses. The one chord the
+   * rule reaches where `alter` is absent; the chord the rule is about, and no limit on what is
+   * checked, where it is present (#605).
+   */
   chord: string
   /** 1-based scale degree, as `HookNote.degree`. */
   degree: number
@@ -407,17 +435,45 @@ export function riffConstraintViolations(riff: Riff): string[] {
   const lastStep = riff.hook.bars * STEPS_PER_BAR
 
   for (const rule of rules.forbiddenDegrees ?? []) {
+    // #605. See `ForbiddenDegree`: a pitch the key does not have is forbidden over every chord,
+    // and the key's own note over the one chord the rule names.
+    const wholePiece = (rule.alter ?? 0) !== 0
+    const reaches = (chord: string | undefined): chord is string =>
+      chord !== undefined && (wholePiece || chord === rule.chord)
+
     for (const note of resolved.hook.notes) {
       if (note.degree !== rule.degree) continue
       if ((note.alter ?? 0) !== (rule.alter ?? 0)) continue
       for (let step = note.step; step < note.step + note.len && step <= lastStep; step += 1) {
-        if (chordAtStep(riff, step) !== rule.chord) continue
+        const chord = chordAtStep(riff, step)
+        if (!reaches(chord)) continue
         out.push(
-          `${note.note} sounds over ${rule.chord} at step ${String(step)}, which this riff ` +
+          `${note.note} sounds over ${chord} at step ${String(step)}, which this riff ` +
             `forbids: ${rule.reason}`,
         )
         break
       }
+    }
+
+    // #605. The chords themselves. Compared as pitch classes, since a chord tone carries no
+    // degree; each distinct chord once, in cycle order, so a `i` that returns is named once.
+    const forbidden = spellDegree(rule.degree, rule.alter, riff.key)
+    if (forbidden.outcome !== 'resolved') continue
+    const checked = new Set<string>()
+    for (const { degree } of riff.harmony?.progression ?? []) {
+      if (checked.has(degree) || !reaches(degree)) continue
+      checked.add(degree)
+      const spelt = spellChord(degree, riff.key)
+      if (spelt.outcome !== 'resolved') continue
+      const tone = spelt.chord.notes.find((n) => pitchClassOf(n) === forbidden.semitone)
+      if (tone === undefined) continue
+      // `Fb` in the chord and `E` in the rule are one pitch, and the sentence says so only
+      // where the two spellings differ.
+      const named = tone === forbidden.pitchClass ? tone : `${tone}, the ${forbidden.pitchClass}`
+      out.push(
+        `${degree} is ${chordNotesText(spelt.chord.notes)}, which has the ${named} this riff ` +
+          `forbids: ${rule.reason}`,
+      )
     }
   }
 

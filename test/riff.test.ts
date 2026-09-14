@@ -6,10 +6,12 @@ import {
   STEPS_PER_BAR,
   affinePatch,
   chordAtStep,
+  pitchClassOf,
   resolveHook,
   resolveRiff,
   riffConstraintViolations,
   referenceSlug,
+  spellDegree,
   type FactoryPatch,
   type HookNote,
   type Riff,
@@ -1150,19 +1152,159 @@ describe('riff constraints are checked, not described (#554)', () => {
 
   it('checks a held note across its whole span, not only where it starts', () => {
     // The collision arriving a beat late: legal at its onset, forbidden by the time it is still
-    // sounding over the next chord. A rule checked at onset alone would pass this.
+    // sounding over the next chord. A rule checked at onset alone would pass this. The planted
+    // rule is unaltered so that it reaches one chord (#605): the key's own fifth, over the `VI`.
     const broken: Riff = {
       ...bladeRunnerBluesLead,
       constraints: {
-        forbiddenDegrees: [
-          { chord: 'IV', degree: 3, alter: 1, reason: 'invented for this test' },
-        ],
+        forbiddenDegrees: [{ chord: 'VI', degree: 5, reason: 'planted for this test' }],
       },
     }
-    // `A#4` enters at step 105 over the `I` and is still sounding at step 129, where `IV` begins.
+    // `C#5` enters at step 5 over the `i` and is still sounding at step 33, where `VI` begins.
     const found = riffConstraintViolations(broken)
     expect(found).toHaveLength(1)
-    expect(found[0]).toContain('A#4 sounds over IV')
+    expect(found[0]).toContain('C#5 sounds over VI at step 33')
+  })
+
+  /**
+   * #605. **The chords are checked too, and a raised or lowered degree reaches the whole piece.**
+   *
+   * The case that motivated it: the Phrygian figure forbade E natural over two chords and
+   * carried a C major, `C · E · G`, as its fourth. The line never played an E, so the check
+   * over the notes passed, and the page printed the chord beside the rule forbidding its third.
+   */
+  describe('a chord built on a forbidden pitch is a violation (#605)', () => {
+    it('spells a degree of a key as a pitch class, and reads one back', () => {
+      const e = spellDegree(2, 1, 'D phrygian')
+      expect(e).toEqual({ outcome: 'resolved', pitchClass: 'E', semitone: 4 })
+      const a = spellDegree(6, 1, 'C minor')
+      expect(a).toEqual({ outcome: 'resolved', pitchClass: 'A', semitone: 9 })
+      expect(spellDegree(3, undefined, 'F# minor')).toMatchObject({ pitchClass: 'A', semitone: 9 })
+      expect(spellDegree(1, undefined, 'H minor').outcome).toBe('unresolved')
+      // `E` and `Fb` are one pitch and two strings, which is why the comparison is numeric.
+      expect(pitchClassOf('Fb')).toBe(4)
+      expect(pitchClassOf('E')).toBe(4)
+      expect(pitchClassOf('B#')).toBe(0)
+      expect(pitchClassOf('Cb')).toBe(11)
+      expect(pitchClassOf('Ebb')).toBe(2)
+      expect(pitchClassOf('H')).toBeUndefined()
+      expect(pitchClassOf('E4')).toBeUndefined()
+    })
+
+    it('catches the C major the Phrygian figure shipped with, on every rule that forbids its third', () => {
+      // The entry as it was: `VII`, C major, with the raised second forbidden over `i` and `II`.
+      const broken: Riff = {
+        ...aegeanOrganPhrygianFigure,
+        harmony: {
+          cycleBars: 8,
+          progression: [
+            { degree: 'i', bars: 2 },
+            { degree: 'II', bars: 2 },
+            { degree: 'i', bars: 2 },
+            { degree: 'VII', bars: 2 },
+          ],
+        },
+      }
+      const found = riffConstraintViolations(broken)
+      // One sentence per rule the chord breaks, each carrying its author's reason. Neither rule
+      // names the `VII`; both reach it, because a raised degree is a fact about the key.
+      expect(found).toEqual([
+        'VII is C · E · G, which has the E this riff forbids: the raised second destroys the flat second the mode rests on',
+        'VII is C · E · G, which has the E this riff forbids: the same pitch class, a direct semitone against the chord’s root',
+      ])
+      // And it is a build failure rather than a report.
+      expect(RiffSchema.safeParse(broken).success).toBe(false)
+    })
+
+    it('reaches a note over any chord too, once the pitch is one the key does not have', () => {
+      // The C major restored and its E played over it: the line and the chord both break the rule.
+      const broken: Riff = {
+        ...aegeanOrganPhrygianFigure,
+        harmony: {
+          cycleBars: 8,
+          progression: [
+            { degree: 'i', bars: 2 },
+            { degree: 'II', bars: 2 },
+            { degree: 'i', bars: 2 },
+            { degree: 'VII', bars: 2 },
+          ],
+        },
+        hook: {
+          ...aegeanOrganPhrygianFigure.hook,
+          notes: aegeanOrganPhrygianFigure.hook.notes.map((n) =>
+            n.step === 41 ? { ...n, alter: 1 } : n,
+          ),
+        },
+      }
+      const found = riffConstraintViolations(broken)
+      expect(found).toHaveLength(4)
+      expect(found.filter((f) => f.startsWith('E5 sounds over VII at step 41'))).toHaveLength(2)
+      expect(found.filter((f) => f.startsWith('VII is C · E · G'))).toHaveLength(2)
+    })
+
+    it('names a chord once however often the cycle returns to it', () => {
+      // The `i` is bars 1-2 and 5-6. A rule it breaks produces one sentence, since the chord is
+      // one chord: forbidding the key's own third over it.
+      const broken: Riff = {
+        ...aegeanOrganPhrygianFigure,
+        constraints: {
+          forbiddenDegrees: [{ chord: 'i', degree: 3, reason: 'planted for this test' }],
+        },
+      }
+      expect(riffConstraintViolations(broken)).toEqual([
+        'i is D · F · A, which has the F this riff forbids: planted for this test',
+      ])
+    })
+
+    it('compares pitch classes, so a chord spelt one way meets a rule spelt another', () => {
+      // `Fb` is degree 3 lowered in D phrygian, and C major's third is spelt `E`. The rule
+      // reaches it because the two are one pitch.
+      const broken: Riff = {
+        ...aegeanOrganPhrygianFigure,
+        constraints: {
+          forbiddenDegrees: [{ chord: 'i', degree: 3, alter: -1, reason: 'planted for this test' }],
+        },
+        harmony: {
+          cycleBars: 8,
+          progression: [
+            { degree: 'i', bars: 2 },
+            { degree: 'II', bars: 2 },
+            { degree: 'i', bars: 2 },
+            { degree: 'VII', bars: 2 },
+          ],
+        },
+      }
+      const found = riffConstraintViolations(broken)
+      expect(found).toEqual([
+        'VII is C · E · G, which has the E, the Fb this riff forbids: planted for this test',
+      ])
+    })
+
+    it('holds an unaltered rule to the one chord it names, and checks that chord', () => {
+      // Blade Runner forbids the natural third over the borrowed `I`, and its `i` is built on
+      // that third. The rule reaches the `I` alone, so the entry is clean, and a `I` re-spelt as
+      // the minor `i` would be the chord the rule is about carrying the note it forbids.
+      expect(riffConstraintViolations(bladeRunnerBluesLead)).toEqual([])
+      const broken: Riff = {
+        ...bladeRunnerBluesLead,
+        constraints: {
+          forbiddenDegrees: [{ chord: 'i', degree: 3, reason: 'planted for this test' }],
+        },
+      }
+      const found = riffConstraintViolations(broken)
+      expect(found).toEqual([
+        'i is F# · A · C#, which has the A this riff forbids: planted for this test',
+      ])
+    })
+
+    it('finds every shipped entry clean, which is the sixteen diatonic ones staying legal', () => {
+      // The check that would have caught #605 must not fail the entries that were fine: a
+      // global check of an unaltered rule would flag every `i` under Blade Runner's third.
+      expect(RIFFS).toHaveLength(17)
+      for (const entry of RIFFS) {
+        expect(riffConstraintViolations(entry), entry.id).toEqual([])
+      }
+    })
   })
 
   it('refuses constraints that constrain nothing', () => {
@@ -1179,6 +1321,31 @@ describe('riff constraints are checked, not described (#554)', () => {
       'Over I, never the 3rd — the natural third against the raised one is the turn collapsing.',
     )
     expect(lines[2]).toContain('Enter each chord at least 4 steps after it lands')
+  })
+
+  it('says a raised or lowered degree is banned on every chord, and names the chord the reason is about (#605)', () => {
+    const lines = ruleLines(aegeanOrganPhrygianFigure)
+    expect(lines).toHaveLength(3)
+    expect(lines[0]).toBe(
+      'Never the raised 2nd, on any chord — over i, the raised second destroys the flat second the mode rests on.',
+    )
+    expect(lines[1]).toBe(
+      'Never the raised 2nd, on any chord — over II, the same pitch class, a direct semitone against the chord’s root.',
+    )
+    // The reach the line states is the reach the check has: the same rule, global, catches a
+    // chord the rule does not name.
+    expect(riffConstraintViolations({
+      ...aegeanOrganPhrygianFigure,
+      harmony: {
+        cycleBars: 8,
+        progression: [
+          { degree: 'i', bars: 2 },
+          { degree: 'II', bars: 2 },
+          { degree: 'i', bars: 2 },
+          { degree: 'VII', bars: 2 },
+        ],
+      },
+    })).toHaveLength(2)
   })
 })
 
@@ -1206,7 +1373,7 @@ type ConstraintCase = {
    * One added note per rule, in the same order, and the opening of the sentence it produces.
    * `over` moves the figure where a rule's chord is not under it as shipped.
    */
-  breaks: readonly { note: HookNote; says: string; over?: Partial<Riff> }[]
+  breaks: readonly { note: HookNote; says: string; over?: Partial<Riff>; count?: number }[]
   /** The first entry's step and the sentence moving it onto the chord's first step produces. */
   early?: { step: number; says: string }
 }
@@ -1257,22 +1424,21 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
       ['II', 2, 1],
     ],
     onset: 4,
+    // Both rules forbid one pitch the key does not have, so each reaches the whole piece
+    // (#605) and a planted E breaks both: two sentences, one per reason.
     breaks: [
-      { note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 }, says: 'E5 sounds over i' },
+      {
+        note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 },
+        says: 'E5 sounds over i',
+        count: 2,
+      },
       // The `II` is bars 3-4 and the figure ships over bars 5-8, so the figure is moved to bar
-      // 3 for this one: the rule holds wherever the figure sits. Moving it also puts the legal
-      // E over the `VII` onto the `i`, so that note is dropped first and the one violation left
-      // is the one this case adds.
+      // 3 for this one: the rule holds wherever the figure sits.
       {
         note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 },
         says: 'E5 sounds over II',
-        over: {
-          figureStartsAtBar: 3,
-          hook: {
-            ...aegeanOrganPhrygianFigure.hook,
-            notes: aegeanOrganPhrygianFigure.hook.notes.filter((n) => n.alter === undefined),
-          },
-        },
+        over: { figureStartsAtBar: 3 },
+        count: 2,
       },
     ],
     early: { step: 9, says: 'i is entered at step 1, 0 steps in' },
@@ -1348,10 +1514,11 @@ describe('the eleven factory-patch entries keep their rules as data (#569, #554)
         it(`catches the forbidden ${c.rules[i]?.[0] ?? ''} note, and refuses to parse it`, () => {
           const broken = withNote(c.riff, b.note, b.over)
           const found = riffConstraintViolations(broken)
-          expect(found).toHaveLength(1)
-          expect(found[0]).toContain(b.says)
+          // One sentence, unless the note breaks more than one rule (#605).
+          expect(found).toHaveLength(b.count ?? 1)
           // The author's reason is carried into the message (#554).
-          expect(found[0]).toContain(c.riff.constraints?.forbiddenDegrees?.[i]?.reason ?? 'x')
+          const reason = c.riff.constraints?.forbiddenDegrees?.[i]?.reason ?? 'x'
+          expect(found.some((f) => f.includes(b.says) && f.includes(reason)), found.join('\n')).toBe(true)
           expect(RiffSchema.safeParse(broken).success).toBe(false)
         })
       }
@@ -1497,17 +1664,18 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     for (const step of [3, 19, 35, 51]) expect(sounding(riff, step)).toHaveLength(3)
   })
 
-  it('the Phrygian figure is in a mode the engine reads, and sounds E only over the C major', () => {
+  it('the Phrygian figure is in a mode the engine reads, and never sounds E', () => {
     const riff = aegeanOrganPhrygianFigure
     expect(riff.key).toBe('D phrygian')
     const resolved = resolveHook(riff.hook, riff.key)
     if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
-    expect(resolved.hook.notes.map((n) => n.note)).toEqual(['D5', 'Eb5', 'D5', 'E5', 'D5'])
+    expect(resolved.hook.notes.map((n) => n.note)).toEqual(['D5', 'Eb5', 'D5', 'Eb5', 'D5'])
     expect(riff.figureStartsAtBar).toBe(5)
-    expect(riff.harmony?.progression.map((p) => p.degree)).toEqual(['i', 'II', 'i', 'VII'])
-    // The one E is over the `VII`, the chord whose third it is, and it is the raised second.
-    const e = resolved.hook.notes.filter((n) => n.note === 'E5')
-    expect(e.map((n) => [chordAtStep(riff, n.step), n.alter])).toEqual([['VII', 1]])
+    // #605. The fourth chord is C minor: the operator's correction of a C major whose third was
+    // the E the entry forbids. No note of the line is altered, and no chord carries an E.
+    expect(riff.harmony?.progression.map((p) => p.degree)).toEqual(['i', 'II', 'i', 'vii'])
+    expect(riff.hook.notes.every((n) => n.alter === undefined)).toBe(true)
+    expect(chordAtStep(riff, 41)).toBe('vii')
   })
 
   it('the glide lead never sounds two notes at once', () => {
@@ -1653,10 +1821,9 @@ const FIDELITY: readonly FidelityRow[] = [
     riff: aegeanOrganPhrygianFigure,
     key: 'D phrygian',
     bpm: 76,
-    progression: [['i', 2], ['II', 2], ['i', 2], ['VII', 2]],
-    // Bars 5-8 of eight: the neighbour figure and the C major line. The F5 Eb5 over the opening
-    // `i` and the G5 over the `II` are the definition's first half, and are prose.
-    pitches: ['D5', 'Eb5', 'D5', 'E5', 'D5'],
+    progression: [['i', 2], ['II', 2], ['i', 2], ['vii', 2]],
+    // Bars 5-8 of eight: the neighbour figure and the fall from Eb to D over the C minor (#605).
+    pitches: ['D5', 'Eb5', 'D5', 'Eb5', 'D5'],
   },
   {
     riff: moogProSoloGlideLead,
