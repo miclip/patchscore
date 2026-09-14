@@ -35,16 +35,16 @@ The figure is played over these chords; supply them separately if your rig allow
 
 ## The notes
 
-8 bars in D phrygian.
+8 bars in D phrygian. Each note is in force across the steps shown.
 
-- step 1 · over i · `F5` · degree 3 · MIDI 77 · in force 12 steps
-- step 17 · over i · `Eb5` · degree 2 · MIDI 75 · in force 16 steps
-- step 33 · over II · `G5` · degree 4 · MIDI 79 · in force 32 steps
-- step 65 · over i · `D5` · degree 1 · MIDI 74 · in force 8 steps
-- step 73 · over i · `Eb5` · degree 2 · MIDI 75 · in force 8 steps
-- step 81 · over i · `D5` · degree 1 · MIDI 74 · in force 16 steps
-- step 97 · over vii · `Eb5` · degree 2 · MIDI 75 · in force 24 steps
-- step 121 · over vii · `D5` · degree 1 · MIDI 74 · in force 8 steps
+- steps 1–12 · over i · `F5` · degree 3 · MIDI 77
+- steps 17–32 · over i · `Eb5` · degree 2 · MIDI 75
+- steps 33–64 · over II · `G5` · degree 4 · MIDI 79
+- steps 65–72 · over i · `D5` · degree 1 · MIDI 74
+- steps 73–80 · over i · `Eb5` · degree 2 · MIDI 75
+- steps 81–96 · over i · `D5` · degree 1 · MIDI 74
+- steps 97–120 · over vii · `Eb5` · degree 2 · MIDI 75
+- steps 121–128 · over vii · `D5` · degree 1 · MIDI 74
 
 ## The grid
 

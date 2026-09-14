@@ -14,10 +14,10 @@ Voice the three notes close together, above the bass and below the melody. A tig
 
 ## The notes
 
-2 bars in A minor.
+2 bars in A minor. Each note is in force across the steps shown.
 
-- step 1 · `A4 C5 E5` · degrees 1 3 5 · MIDI 69 72 76 · in force 16 steps
-- step 17 · `D5 F5 A5` · degrees 4 6 8 · MIDI 74 77 81 · in force 16 steps
+- steps 1–16 · `A4 C5 E5` · degrees 1 3 5 · MIDI 69 72 76
+- steps 17–32 · `D5 F5 A5` · degrees 4 6 8 · MIDI 74 77 81
 
 ## The grid
 

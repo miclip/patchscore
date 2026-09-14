@@ -14,11 +14,11 @@ Let it repeat unchanged. When a fill starts to suggest itself, cut to a differen
 
 ## The notes
 
-2 bars in F minor.
+2 bars in F minor. Each note is in force across the steps shown.
 
-- step 1 · `F2` · degree 1 · MIDI 41 · in force 16 steps
-- step 17 · `Ab2` · degree 3 · MIDI 44 · in force 8 steps
-- step 25 · `G2` · degree 2 · MIDI 43 · in force 8 steps
+- steps 1–16 · `F2` · degree 1 · MIDI 41
+- steps 17–24 · `Ab2` · degree 3 · MIDI 44
+- steps 25–32 · `G2` · degree 2 · MIDI 43
 
 ## The grid
 

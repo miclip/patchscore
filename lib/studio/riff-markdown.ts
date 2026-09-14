@@ -23,7 +23,7 @@ import {
   degreeLabel,
   gridRepeatSentence,
   gridRows,
-  heldLabel,
+  stepSpanLabel,
   midiLabel,
   chordRows,
   chordLabel,
@@ -126,9 +126,9 @@ function noteLines(riff: Riff, resolution: RiffResolution): string[] {
     ...noteRows(hook, riff).map((row) => {
       const chord = chordLabel(row)
       return (
-        `- step ${num(row.step)}${chord === undefined ? '' : ` · ${chord}`}` +
+        `- ${stepSpanLabel(row)}${chord === undefined ? '' : ` · ${chord}`}` +
         ` · \`${spellingLabel(row)}\`` +
-        ` · ${degreeLabel(row)} · ${midiLabel(row)} · ${heldLabel(row)}`
+        ` · ${degreeLabel(row)} · ${midiLabel(row)}`
       )
     }),
   ]
