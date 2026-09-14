@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   CAPABILITY_FACTS,
+  FACTORY_PATCHES_FACT,
   CONTENT_FACT,
   DAW_TRANSPORT_FACT,
   PATTERN_ENTRY_FACT,
@@ -176,7 +177,11 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
                   ? // §4.1/#571. The fifth: where a box puts middle C is a positive claim about
                     // it, and a page with no declaration is refused (`test/middle-c.test.ts`).
                     { middleC: { kind: 'fixed', octave: 3 } as const }
-                  : {}
+                  : fact === FACTORY_PATCHES_FACT
+                    ? // §2.6/#592. The sixth: that a box ships a named patch is a positive claim
+                      // read off the unit (`test/factory-patches.test.ts`).
+                      { factoryPatches: [{ name: 'Aegean Organ' }] }
+                    : {}
       /**
        * §3.1/#324 is the one path that refuses a citation rather than requiring one: what it
        * declares is that no page maps a panel mark to a value, and no page asserts an absence.
@@ -185,7 +190,11 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
       const found =
         fact === CONTROL_POSITION_FACT
           ? ({ kind: 'unknown', reason: 'the drawings mark it and the CC table values it' } as const)
-          : CITE
+          : fact === FACTORY_PATCHES_FACT
+            ? // §2.6/#592 refuses a manual page here: no manual names a factory patch, so the
+              // evidence is the unit.
+              ({ kind: 'observed', source: 'A unit, firmware 1.0' } as const)
+            : CITE
       const parsed = DeviceSchema.safeParse(
         patchable({
           ...declaring,

@@ -1331,6 +1331,72 @@ export function middleCNotice(device: Device | undefined): MiddleCNotice | undef
   return { state: 'setting', control: declared.control, options: declared.options, evidence }
 }
 
+/**
+ * §2.6/#592. **The factory patches a box ships, by name, as a device-level fact.**
+ *
+ * `Recipe.factoryPatch` (§3/#553) says *this recipe's parameters reach a sound the box also
+ * ships*. That is a judgement, and #563 declined it for seven of the twelve Muse patches this
+ * library names riffs after, correctly: no recipe's settings reach *Aegean Organ* closely enough,
+ * and a weak pairing sends a reader to the wrong preset with nothing to check it against. But the
+ * decline recorded nothing, because two facts were sharing one field. That the box *ships* a
+ * patch called Aegean Organ is not a judgement; the operator owns the unit and read the name off
+ * its screen. This is the slot for that fact alone.
+ *
+ * **A name and an optional bank, nothing else.** No per-entry evidence: one reading of one unit
+ * produced the whole list, so the evidence is one entry at `factoryPatches` in
+ * `capabilityEvidence`, and `DeviceSchema` requires it to be `observed` — no maker in this library
+ * prints its factory patch names, so a manual citation here would be a page that does not say
+ * what it is cited for. Never a slot number, for `FactoryPatch`'s reason: slots move across
+ * firmware and across any owner who has reordered a bank. **No description**, deliberately: what
+ * a patch sounds like is a sonic claim, and the only verifiable thing about a factory patch from
+ * here is that it exists under that name.
+ *
+ * **The list is what somebody has read off a box, and nothing wider.** The Muse's manual counts
+ * 224 on p.12 and names none; twelve are declared, because twelve is what the operator named.
+ * A box with an empty list declares nothing rather than `[]`, and the schema refuses the empty
+ * list so that a declaration is always a claim.
+ *
+ * **Nothing renders it yet.** A preset belongs to exactly one box and a riff is rig-agnostic by
+ * design, so the surface this reaches a reader on is a device-page decision that is not designed
+ * yet. Until it is, the audit counts the fact and no page prints it.
+ */
+export const FACTORY_PATCHES_FACT = 'factoryPatches'
+
+export type ShippedPatch = {
+  /** As it reads on the box's own screen. */
+  name: string
+  /** Where it lives, in the words the box uses — a bank or a category, never a slot number. */
+  bank?: string
+}
+
+export const ShippedPatchSchema = z.strictObject({
+  name: z.string().min(1, 'a shipped patch is named as the box prints it'),
+  bank: z.string().min(1).optional(),
+})
+
+/** `name` alone, or `name` NUL `bank`: the key two shipped patches may not share. */
+export function shippedPatchKey(patch: ShippedPatch): string {
+  return patch.bank === undefined ? patch.name : `${patch.name}\u0000${patch.bank}`
+}
+
+export const ShippedPatchesSchema = z
+  .array(ShippedPatchSchema)
+  .min(1, 'a box that declares factory patches names at least one; omit the field otherwise')
+  .superRefine((patches, ctx) => {
+    const seen = new Set<string>()
+    patches.forEach((patch, i) => {
+      const key = shippedPatchKey(patch)
+      if (seen.has(key)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `factory patch '${patch.name}'${patch.bank === undefined ? '' : ` in ${patch.bank}`} is declared twice; a box ships each once`,
+          path: [i],
+        })
+      }
+      seen.add(key)
+    })
+  })
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -1352,6 +1418,7 @@ export const CAPABILITY_FACTS = [
   DAW_TRANSPORT_FACT,
   CONTROL_POSITION_FACT,
   MIDDLE_C_FACT,
+  FACTORY_PATCHES_FACT,
 ] as const
 
 export type CapabilityFact = (typeof CAPABILITY_FACTS)[number]
@@ -3908,6 +3975,12 @@ export type Device = {
    */
   middleC?: MiddleC
   /**
+   * §2.6/#592. The factory patches this box ships, by name — see `ShippedPatch`. Optional, and
+   * absent on every box nobody has read a list off; the evidence for the whole list sits at
+   * `factoryPatches` in the map below and must be `observed`.
+   */
+  factoryPatches?: ShippedPatch[]
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -4005,6 +4078,7 @@ export const DeviceSchema = z
     dawTransport: DawTransportSchema.optional(),
     controlPositions: ControlPositionsSchema.optional(),
     middleC: MiddleCSchema.optional(),
+    factoryPatches: ShippedPatchesSchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -4543,6 +4617,43 @@ export const DeviceSchema = z
         code: 'custom',
         message: `'${MIDDLE_C_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§4.1/#571)`,
         path: ['capabilityEvidence', MIDDLE_C_FACT],
+      })
+    }
+
+    /**
+     * §2.6/#592. **A shipped patch list is a positive claim about the box and its evidence is a
+     * reading of the unit**, in the same two directions as `middleC`, with one more rule: the
+     * citation must be `observed`. No maker in this library prints its factory patch names, so a
+     * `manual` or `maker` citation here names a document that does not say what it is cited for.
+     * `false` is refused as it is at `middleC`.
+     */
+    const patchesEvidence = evidence[FACTORY_PATCHES_FACT]
+    if (device.factoryPatches !== undefined) {
+      if (patchesEvidence === undefined || !isCite(patchesEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `factoryPatches is declared with no citation at '${FACTORY_PATCHES_FACT}'; a patch list is read off the unit, so cite it 'observed' with the firmware (§2.6/#592)`,
+          path: ['capabilityEvidence', FACTORY_PATCHES_FACT],
+        })
+      } else if (patchesEvidence.kind !== 'observed') {
+        ctx.addIssue({
+          code: 'custom',
+          message: `'${FACTORY_PATCHES_FACT}' is cited '${patchesEvidence.kind}', but no manual or maker page in this library names a factory patch; the only honest evidence is 'observed' on a unit, with its firmware (§2.6/#592)`,
+          path: ['capabilityEvidence', FACTORY_PATCHES_FACT],
+        })
+      }
+    } else if (patchesEvidence !== undefined && isCite(patchesEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${FACTORY_PATCHES_FACT}' carries a citation but no factoryPatches is declared; a reading that supports no claim is 'cited-against' (§2.6/#592)`,
+        path: ['capabilityEvidence', FACTORY_PATCHES_FACT],
+      })
+    }
+    if (patchesEvidence === false) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${FACTORY_PATCHES_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§2.6/#592)`,
+        path: ['capabilityEvidence', FACTORY_PATCHES_FACT],
       })
     }
 
