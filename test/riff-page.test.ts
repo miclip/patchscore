@@ -17,6 +17,7 @@ import { DEVICES } from '../lib/devices/registry.generated'
 import { RECORD_RIFFS, RIFFS, blueMondayBass } from '../lib/riffs'
 import { riffHref } from '../lib/studio/catalogue'
 import { renderRiff } from '../lib/studio/riff-markdown'
+import { RIFF_GRID_LEAD, gridRepeatSentence } from '../lib/studio/riff-text'
 import { SITE_ORIGIN } from '../lib/studio/site'
 
 /**
@@ -297,6 +298,40 @@ describe('the chord table says the chords are supplied separately', () => {
     expect(BLUE_MD).not.toContain(SENTENCE)
     expect(BLUE_TEXT).not.toContain(SENTENCE)
     expect(BLUE_TEXT).not.toContain('The chords')
+  })
+})
+
+/**
+ * §5A.2/#603. **A grid shorter than the figure says how many times it goes round.** The Blade
+ * Runner line is twelve bars over a four-bar grid, and a page that printed the grid once under
+ * the lead sentence alone left the reader to work out that it repeats. Pinned as a string on
+ * both renderers, for the reason the sentence above is: parity would pass on both omitting it.
+ */
+describe('the grid says how many times it repeats under a longer figure (#603)', () => {
+  const blade = RIFFS.find((r) => r.id === 'blade-runner-blues-lead') as (typeof RIFFS)[number]
+  const REPEAT = 'The grid is 4 bars and the figure is 12: play it round 3 times.'
+
+  it('prints the repeat sentence once, after the lead, on both renderers', async () => {
+    expect(gridRepeatSentence(blade)).toBe(REPEAT)
+    const md = renderRiff(resolveRiff(blade, []))
+    const page = text(await markupFor('blade-runner-blues-lead'))
+    for (const doc of [md, page]) {
+      expect(doc).toContain(RIFF_GRID_LEAD)
+      expect(doc.split(REPEAT).length - 1).toBe(1)
+      expect(doc.indexOf(REPEAT)).toBeGreaterThan(doc.indexOf(RIFF_GRID_LEAD))
+    }
+    // Before the rows, so it is read before the grid is counted.
+    expect(md.indexOf(REPEAT)).toBeLessThan(md.indexOf('```'))
+  })
+
+  it('says nothing where the figure and the grid are the same length', () => {
+    expect(gridRepeatSentence(blueMondayBass)).toBeUndefined()
+    expect(BLUE_MD).not.toContain('play it round')
+    expect(BLUE_TEXT).not.toContain('play it round')
+    for (const riff of RIFFS) {
+      const same = riff.hook.bars * 16 === riff.pattern.length
+      expect(gridRepeatSentence(riff) === undefined, riff.id).toBe(same)
+    }
   })
 })
 

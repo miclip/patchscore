@@ -1,7 +1,7 @@
 import type { Riff, RiffResolution } from '@/lib/core'
 import { SlotList } from '@/components/pattern/slot-list'
 import { StepGrid } from '@/components/pattern/step-grid'
-import { RIFF_GRID_LEAD, ruleLines } from '@/lib/studio/riff-text'
+import { RIFF_GRID_LEAD, gridRepeatSentence, ruleLines } from '@/lib/studio/riff-text'
 import { RiffInKey } from './riff-in-key'
 
 /**
@@ -67,12 +67,14 @@ function Rules({ riff }: { riff: Riff }) {
  * line, and #457's definition trigger on the slot word.
  */
 function Grid({ riff }: { riff: Riff }) {
+  const repeat = gridRepeatSentence(riff)
   return (
     <section className="panel riff-panel">
       <header>
         <h2>The grid</h2>
       </header>
       <p className="riff-grid-lead">{RIFF_GRID_LEAD}</p>
+      {repeat === undefined ? null : <p className="riff-grid-lead">{repeat}</p>}
       <StepGrid pattern={riff.pattern} />
       <SlotList pattern={riff.pattern} />
     </section>

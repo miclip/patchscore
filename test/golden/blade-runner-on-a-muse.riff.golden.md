@@ -1,20 +1,20 @@
 # The Blade Runner Blues lead
 
-`lead` · `bright` · 64 BPM (56–72) · F# minor · 4 bars · 64 steps
+`lead` · `bright` · 64 BPM (56–72) · F# minor · 12 bars · 64 steps
 
 ## The technique
 
-Bars 7 to 10 of the cycle, which is the pair of chords the key does not own. The four minor chords either side are the setting; these two are the turn.
+Six chords, twelve bars, one note each. Three minor chords, then the pair the key does not own, then the minor fifth to take it back. The line is the arrival on each chord and nothing between.
 
-Come in late on every chord. Both entries land a beat or more after the pad has already changed under them, which is what makes the line sound played rather than programmed. The third note is not an entry — it is the same chord, continued.
+Come in late on every chord. The entries alternate: a beat after the first chord of each pair, two beats after the second, so the line never lands on the change itself. That is what makes it sound played rather than programmed.
 
-The two entries are the major third of the chord beneath them, each a semitone above what the key gives you. That semitone is the whole sound. Play the note the key expects and the turn disappears.
+The two entries over the borrowed chords are the major third of the chord beneath them, each a semitone above what the key gives you. That semitone is the whole sound. Play the note the key expects and the turn disappears.
 
 Never play the key’s own third or sixth while these two chords are sounding. A natural third against the raised one is the move collapsing, and it is the one mistake this figure can make.
 
-Hold each entry until the next chord is already sounding, then release. The overlap is where the two chords blur into each other.
+Hold each entry until the next chord is already sounding, then release. The overlap is where the two chords blur into each other. The one exception is going into the F# major: the D over the third chord stops at the bar line, so the raised third arrives on air.
 
-Over the four minor chords either side, do the same thing with the plain third or fifth: one note, late, held. The shape is what repeats; only these two are raised.
+Over the four minor chords the note is a chord tone, held: the fifth of the first chord, the third of the second and of the third, the fifth of the last. The shape is what repeats; only the two over the turn are raised.
 
 ## The rules
 
@@ -24,40 +24,44 @@ Over the four minor chords either side, do the same thing with the plain third o
 
 ## The chords
 
-6 chords over 12 bars, in F# minor. The figure is bars 7–10.
+6 chords over 12 bars, in F# minor.
 
 | Degree | Notes | Bars | Under the figure |
 | --- | --- | ---: | :---: |
-| i | F# · A · C# | 1–2 |  |
-| VI | D · F# · A | 3–4 |  |
-| iv | B · D · F# | 5–6 |  |
+| i | F# · A · C# | 1–2 | ● |
+| VI | D · F# · A | 3–4 | ● |
+| iv | B · D · F# | 5–6 | ● |
 | I | F# · A# · C# | 7–8 | ● |
 | IV | B · D# · F# | 9–10 | ● |
-| v | C# · E · G# | 11–12 |  |
+| v | C# · E · G# | 11–12 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 
 ## The notes
 
-4 bars in F# minor.
+12 bars in F# minor.
 
-- step 9 · `A#4` · degree #3 · MIDI 70 · in force 26 steps
-- step 37 · `D#5` · degree #6 · MIDI 75 · in force 12 steps
-- step 49 · `F#5` · degree 1 · MIDI 78 · in force 16 steps
+- step 5 · `C#5` · degree 5 · MIDI 73 · in force 30 steps
+- step 41 · `F#5` · degree 1 · MIDI 78 · in force 26 steps
+- step 69 · `D5` · degree 6 · MIDI 74 · in force 28 steps
+- step 105 · `A#4` · degree #3 · MIDI 70 · in force 26 steps
+- step 133 · `D#5` · degree #6 · MIDI 75 · in force 30 steps
+- step 169 · `G#4` · degree 2 · MIDI 68 · in force 26 steps
 
 ## The grid
 
 Every step below strikes the note in force at that point. The grid is where the figure is played.
 
+The grid is 4 bars and the figure is 12: play it round 3 times.
+
 ```
- 1 ···· ···· x··· ····
+ 1 ···· x··· ···· ····
 17 ···· ···· ···· ····
-33 ···· x··· ···· ····
-49 x··· ···· ···· ····
+33 ···· ···· x··· ····
+49 ···· ···· ···· ····
 ```
-- `accent` · 9
-- `offbeat` · 37
-- `downbeat` · 49
+- `downbeat` · 5
+- `accent` · 41
 
 ## Where it plays
 

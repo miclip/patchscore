@@ -21,6 +21,7 @@ import {
   RIFF_CHORDS_SUPPLIED,
   RIFF_GRID_LEAD,
   degreeLabel,
+  gridRepeatSentence,
   gridRows,
   heldLabel,
   midiLabel,
@@ -159,10 +160,12 @@ function chordLines(riff: Riff): string[] {
 // ---------------------------------------------------------------------------
 
 function gridLines(riff: Riff): string[] {
+  const repeat = gridRepeatSentence(riff)
   return [
     '## The grid',
     '',
     RIFF_GRID_LEAD,
+    ...(repeat === undefined ? [] : ['', repeat]),
     '',
     '```',
     ...gridRows(riff),

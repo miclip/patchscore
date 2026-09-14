@@ -1,64 +1,76 @@
 # The Muse Runner floating-arrival lead
 
-`lead` · `bright` · 66 BPM (58–78) · D minor · 4 bars · 64 steps
+`lead` · `bright` · 66 BPM (58–78) · F# minor · 12 bars · 64 steps
 
 ## The technique
 
-Bars 3 to 6 of the cycle, over the second and third chords. The chords either side are the setting; these two are where the line leans.
+Six chords, twelve bars, and the line covers all of them. Three minor chords, then the pair the key does not own, then the minor fifth to take it back.
 
 One late entry per chord. Let the pad move first, then arrive: every entry lands two beats after the chord has changed under it, and the wait is what makes the note sound placed rather than programmed.
 
-The two entries are the tension notes. The E over the second chord and the B over the third are each the raised eleventh of the chord under them. Everything else in the figure is consonant and exists to make those two land.
+The moves inside a chord are slurred, not struck. The drop to A late in the first chord, the step down through E to D in the second, the neighbour C# and back in the third, the lift to F# in the fifth: each is played off the held note without a new attack, so the chord gets one arrival and the line keeps moving.
 
-The third note continues the chord. The B lifts to C while the same chord is still sounding, so it is a step within the held line and the chord gets no second arrival.
+The fourth and fifth chords are where the key turns major, and the line goes with it: A# over the F# major and D# over the B, each a semitone above what the key gives you. Play the natural note and the turn disappears.
 
-Hold each entry until the next chord is already sounding, then release. The E is still ringing when the third chord arrives, and the C is still ringing when the fourth does.
+Hold each chord’s last note until the next chord is already sounding, then release, except into the F# major. There the D closing the third chord clears before the bar line, so the raised third arrives on air.
 
-Never play Bb while the third chord is sounding, and never Eb while the second is. Each is the natural fourth of its chord, a semitone above the third, and either one cancels the raised fourth the line is built on.
-
-Over the first and fourth chords, do the same thing with a chord tone: one note, two beats late, held past the change. The A over the first chord and the A falling to G over the fourth are the plain version of the gesture.
+The last chord resolves down: G# held, then E a major third below it, still ringing when the cycle comes round. Leaving the line on the G# unresolved is the other ending, and it works when the pad is going round again; take the E when it is the last time through.
 
 Wide vibrato, arriving after the note has settled. The note should be still for a moment before it starts to move.
 
 ## The rules
 
-- Over VI, never the lowered 2nd — the chord’s natural fourth sits a semitone above its third and cancels the raised one the line plays.
-- Over III, never the 6th — the chord’s natural fourth cancels the raised one it exists for.
+- Over I, never the 3rd — the natural third against the raised one is the turn collapsing.
+- Over IV, never the 6th — the same move one chord later, and the natural sixth cancels the chord.
 - Enter each chord at least 8 steps after it lands — the pad moves first and the note arrives after it; an entry on the change pins it.
 
 ## The chords
 
-4 chords over 8 bars, in D minor. The figure is bars 3–6.
+6 chords over 12 bars, in F# minor.
 
 | Degree | Notes | Bars | Under the figure |
 | --- | --- | ---: | :---: |
-| i | D · F · A | 1–2 |  |
-| VI | Bb · D · F | 3–4 | ● |
-| III | F · A · C | 5–6 | ● |
-| iv | G · Bb · D | 7–8 |  |
+| i | F# · A · C# | 1–2 | ● |
+| VI | D · F# · A | 3–4 | ● |
+| iv | B · D · F# | 5–6 | ● |
+| I | F# · A# · C# | 7–8 | ● |
+| IV | B · D# · F# | 9–10 | ● |
+| v | C# · E · G# | 11–12 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 
 ## The notes
 
-4 bars in D minor.
+12 bars in F# minor.
 
-- step 9 · `E5` · degree 2 · MIDI 76 · in force 26 steps
-- step 41 · `B4` · degree #6 · MIDI 71 · in force 12 steps
-- step 53 · `C5` · degree 7 · MIDI 72 · in force 20 steps
+- step 9 · `C#5` · degree 5 · MIDI 73 · in force 16 steps
+- step 25 · `A4` · degree 3 · MIDI 69 · in force 10 steps
+- step 41 · `F#5` · degree 1 · MIDI 78 · in force 12 steps
+- step 53 · `E5` · degree 7 · MIDI 76 · in force 4 steps
+- step 57 · `D5` · degree 6 · MIDI 74 · in force 10 steps
+- step 73 · `D5` · degree 6 · MIDI 74 · in force 12 steps
+- step 85 · `C#5` · degree 5 · MIDI 73 · in force 4 steps
+- step 89 · `D5` · degree 6 · MIDI 74 · in force 8 steps
+- step 105 · `A#4` · degree #3 · MIDI 70 · in force 26 steps
+- step 137 · `D#5` · degree #6 · MIDI 75 · in force 12 steps
+- step 149 · `F#5` · degree 1 · MIDI 78 · in force 14 steps
+- step 169 · `G#4` · degree 2 · MIDI 68 · in force 16 steps
+- step 185 · `E4` · degree 7 · MIDI 64 · in force 10 steps
 
 ## The grid
 
 Every step below strikes the note in force at that point. The grid is where the figure is played.
 
+The grid is 4 bars and the figure is 12: play it round 3 times.
+
 ```
  1 ···· ···· x··· ····
 17 ···· ···· ···· ····
 33 ···· ···· x··· ····
-49 ···· x··· ···· ····
+49 ···· ···· ···· ····
 ```
 - `accent` · 9
-- `downbeat` · 41, 53
+- `downbeat` · 41
 
 ## Where it plays
 

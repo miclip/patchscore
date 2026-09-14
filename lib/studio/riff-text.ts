@@ -10,6 +10,7 @@ import type {
   RiffVoicing,
 } from '@/lib/core'
 import {
+  STEPS_PER_BAR,
   citationSentence,
   count,
   num,
@@ -334,6 +335,27 @@ export function stepList(steps: readonly number[]): string {
 export const RIFF_GRID_LEAD =
   'Every step below strikes the note in force at that point. The grid is where the figure is ' +
   'played.'
+
+/**
+ * §5A.2/#603. **How many times the grid goes round under the figure**, said where the figure is
+ * longer than the grid, and nothing where they are the same length.
+ *
+ * `The grid is 4 bars and the figure is 12: play it round 3 times.` A twelve-bar line over a
+ * 64-step grid is played with the grid repeating beneath it, and a page that printed the grid
+ * once under `RIFF_GRID_LEAD` alone left that for the reader to work out. Both renderers print it
+ * straight after the lead. Whole numbers only: every riff's hook is a whole number of passes
+ * (§5A.2), and `test/riff.test.ts` holds it there, so nothing here rounds. `num` throughout, so
+ * no locale is involved (§7.2).
+ */
+export function gridRepeatSentence(riff: Riff): string | undefined {
+  const gridBars = riff.pattern.length / STEPS_PER_BAR
+  if (riff.hook.bars <= gridBars) return undefined
+  const passes = riff.hook.bars / gridBars
+  return (
+    `The grid is ${count(gridBars, 'bar')} and the figure is ${num(riff.hook.bars)}: ` +
+    `play it round ${count(passes, 'time')}.`
+  )
+}
 
 // ---------------------------------------------------------------------------
 // The voice

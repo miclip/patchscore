@@ -20,7 +20,7 @@ import { presetFigureHref, presetsHref } from '../lib/studio/catalogue'
 import type { PresetEntry, PresetFigure } from '../lib/studio/preset-session'
 import { presetSession } from '../lib/studio/preset-session'
 import { renderRiff } from '../lib/studio/riff-markdown'
-import { riffSubstitution } from '../lib/studio/riff-text'
+import { RIFF_GRID_LEAD, riffSubstitution } from '../lib/studio/riff-text'
 import { SITE_ORIGIN } from '../lib/studio/site'
 
 /**
@@ -332,6 +332,25 @@ describe('every page carries the figure and the Muse’s block for it', () => {
       'Detroit Funk',
       'Muse Runner',
     ])
+  })
+
+  /**
+   * §5A.2/#603. The Muse Runner line is twelve bars over a four-bar grid, and this surface draws
+   * the grid through the same component a riff page does, so the sentence saying it goes round
+   * three times has to reach here too. Pinned as a string rather than left to the parity test
+   * above, which would pass on both surfaces omitting it.
+   */
+  it('says the grid goes round three times under the Muse Runner line', () => {
+    const page = text(MUSE_RUNNER)
+    const REPEAT = 'The grid is 4 bars and the figure is 12: play it round 3 times.'
+    expect(page).toContain(RIFF_GRID_LEAD)
+    expect(page.split(REPEAT).length - 1).toBe(1)
+    expect(page.indexOf(REPEAT)).toBeGreaterThan(page.indexOf(RIFF_GRID_LEAD))
+    // And on no other preset page: every other figure is as long as its grid.
+    for (const { entry } of FIGURED) {
+      if (entry.slug === 'muse-runner') continue
+      expect(text(PAGES.get(entry.slug) as string), entry.patch.name).not.toContain('play it round')
+    }
   })
 })
 

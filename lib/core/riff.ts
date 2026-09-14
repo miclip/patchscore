@@ -673,6 +673,20 @@ export const RiffSchema = z
         path: ['pattern', 'hits'],
       })
     }
+    // §5A.2/#603. The grid is capped at 64 steps and the hook is not; a longer hook is played
+    // with the grid repeating beneath it, so the hook has to be a whole number of passes. A
+    // twelve-bar line over a four-bar grid is three passes; a ten-bar line over the same grid
+    // would have the grid cut off mid-pass at the end of the figure, and nothing on the page
+    // could say where.
+    if ((hook.bars * STEPS_PER_BAR) % pattern.length !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          `a ${String(hook.bars)}-bar hook is ${String(hook.bars * STEPS_PER_BAR)} steps, which ` +
+          `is not a whole number of passes of a ${String(pattern.length)}-step grid (§5A.2)`,
+        path: ['hook', 'bars'],
+      })
+    }
     if (hook.notes.length === 0) {
       ctx.addIssue({
         code: 'custom',
