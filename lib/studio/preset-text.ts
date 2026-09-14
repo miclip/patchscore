@@ -1,4 +1,4 @@
-import type { Device, ShippedPatch } from '@/lib/core'
+import type { Device } from '@/lib/core'
 import { deviceLabel } from './catalogue'
 import type { PresetFigure, PresetSession } from './preset-session'
 
@@ -33,19 +33,16 @@ export const PRESET_LEAD =
 export const PRESET_HEADING = 'Explore your device'
 
 /**
- * §3/#553/#593. **The recipe that reaches a patch, said once.**
- *
- * **The guide's own sentence is deliberately not reused here**, and the first version of this
- * page proved why. It read *Factory patch — the box ships 3 Osc Bass Love, which arrives here
- * already*, under a heading that is `3 Osc Bass Love`, on a page titled *factory patches*. It
- * repeated the name from the line above it and then stated the premise of the whole surface.
- *
- * On a guide that sentence earns its place: the reader asked for a `bass-mid · dirty`, the patch
- * is news, and naming it is the whole point. Here the patch is the heading and the only thing a
- * reader does not already know is that **the box can make this sound from scratch**. So that is
- * what the label says, and the line carries the recipe and nothing else.
+ * §2.6/#593/#598. **Nothing about a recipe, on any preset surface.** Two attempts at a line
+ * about `Recipe.factoryPatch` stood here and both failed the same way: *Factory patch — the box
+ * ships X, which arrives here already* under a heading that is X, then *Built by hand — <recipe
+ * title>*, which on a page about presets reads as an instruction to assemble the thing the page
+ * just said to load, with the recipe's title sitting where a description of the patch belongs.
+ * A sentence about the recipe/patch relationship is meaningful on a guide, where the reader
+ * asked for a `lead / bright` and the patch is the shortcut; here the patch is the subject, and
+ * a preset is a thing you load. Operator decision, #598: a preset entry is the name, what it is
+ * for, and the figure. `Recipe.factoryPatch` itself is untouched and still renders on a guide.
  */
-export const PRESET_RECIPE = 'Built by hand — '
 
 /** The label in front of the link to the riff written for a patch. */
 export const PRESET_FIGURE = 'Figure — '
@@ -93,17 +90,6 @@ export function presetFigureDescription(device: Device, figure: PresetFigure): s
  */
 export function presetBoxHeading(device: Device): string {
   return `On the ${deviceLabel(device)}`
-}
-
-/**
- * §3/#553/#598. **Said only where `PresetFigure.byHand` holds**: the recipe the figure landed
- * on names this patch, so the settings under it build the patch from scratch. The guide's and
- * the riff page's sentence, with the patch named in the first clause: on those surfaces a
- * *Factory patch — X* line stands above it and *it* has a referent, and here the line above is
- * the figure's title, so the sentence carries the name itself.
- */
-export function presetByHand(patch: ShippedPatch): string {
-  return `Load ${patch.name} and the settings below are already dialled. They build the same sound by hand.`
 }
 
 /** The link from a figure page back to the index that lists it. */

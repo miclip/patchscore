@@ -3161,12 +3161,27 @@ for §5A.5's reason. `DeviceSchema` refuses a use for a patch the box does not d
 declared twice, and a declared patch with no use: a box describes all of its declared patches or
 none of them, since a row with a name and nothing under it is a list the reader can already get
 off the box. `presetSession` (`lib/studio/preset-session.ts`) answers `undefined` for a box
-without both, and for the box with both adds the two joins the folder does not carry: **the
-recipes whose `factoryPatch` names the patch** (§3/#553, five of the Muse's twelve) and **the riff
-whose `reference` is of kind `patch` and names it** (§5A.5, twelve of twelve). Both are matched on
-the name the box prints, and the riff join is a name join rather than a device join: a second box
-shipping a patch called *Vox Humana* would reach the same figure, which is right, because the
-figure is named for the patch.
+without both, and for the box with both adds the join the folder does not carry: **the riff
+whose `reference` is of kind `patch` and names it** (§5A.5, twelve of twelve), resolved on this
+box (#598, below). It is a name join rather than a device join: a second box shipping a patch
+called *Vox Humana* would reach the same figure, which is right, because the figure is named for
+the patch.
+
+**Nothing about a recipe, on any preset surface** (operator decision, #598). `Recipe.factoryPatch`
+(§3/#553) names five of the Muse's twelve, and the session used to join those recipes so the
+surfaces could print a line about them. Two wordings shipped and both failed the same way:
+*Factory patch — the box ships X, which arrives here already*, under a heading that is X, on a
+page titled factory patches; then *Built by hand — <recipe title>, lead · bright*, which reads as
+an instruction to assemble the thing the entry has just said to load, with the recipe's title in
+the place a description of the patch belongs. A sentence about the recipe/patch relationship is
+meaningful on a **guide**, where the reader asked for a `lead / bright` and the patch is the
+shortcut, and meaningless where the patch is the subject — a preset is a thing you load. So a
+preset entry is **the name, what it is for, and the figure**; the session carries no recipe
+field, since a field nothing reads is a field that comes back; `test/preset-section.test.ts`,
+`test/preset-page.test.ts` and `test/preset-figure-page.test.ts` assert that no recipe line, under
+any wording it had, and no recipe title appears on the panel, the index or any of the twelve
+pages. `Recipe.factoryPatch` itself is untouched and renders on a guide, the surface it was
+written for.
 
 **The join points from the device page to the riff and never back.** That direction is the whole
 architectural fix. A riff carries nothing about a box and gained no field; a box knows its own
@@ -3197,11 +3212,11 @@ outcome narrows: **a figure the box cannot play is an authoring error and throws
 fails where a riff page would render a gap at somebody standing at the box who cannot act on
 it. `PresetFigure.resolution` is `played` by construction. A §3.5 substitution is not a gap and
 does not throw; the page prints no sentence about it, by operator decision, so six of the twelve
-render the Muse's nearest recipe for the part under that recipe's title with no notice. **What
-the page says about the patch it reads off the recipe**, not off an affinity: `byHand` holds
-where the recipe the figure landed on names this patch as its `factoryPatch`, and only then does
-the block say the settings build the sound by hand — three of the twelve today. The other nine
-say nothing about a patch, which is #586's rule on the one surface that knows which patch it is.
+render the Muse's nearest recipe for the part with no notice. **The settings block names the
+voice and prints the settings, and says nothing else**: no recipe title, no line about whether
+that recipe reaches the patch (the rule above). The settings are there because a reader may want
+to see or tweak what the preset does, which is not a claim about a recipe and needs no sentence
+arguing for it.
 
 **The order is the folder's, and it is editorial.** No maker prints a patch list, so there is no
 order to follow. Alphabetical puts *Bellbounce* between *Aegean Organ* and *Detroit Funk*, three
@@ -3228,12 +3243,6 @@ the machine: cables, values, a record action per sound. A preset page is a linke
 name, a line, a link — and the figure it links to is the document. Markdown of a list of links
 is a worse copy of the page, so the route has no client boundary at all and
 `test/preset-page.test.ts` holds that.
-
-**The recipe claim is the guide's sentence, verbatim.** The guide prints `Recipe.factoryPatch`
-as *Factory patch — the box ships X, which arrives here already. The settings below build the
-same sound from scratch*. The preset entry names the recipe and then prints the first of those
-two sentences word for word, hand-matched as the riff page's is, so three surfaces say one thing
-about one field; the second is left off, because there are no settings below on this surface.
 
 **It lists the twelve and says nothing about the rest.** The Muse ships 224 (p.12) and the count
 is recorded in the manifest's evidence, where a reader who wants it can find it. As a denominator
@@ -4701,9 +4710,9 @@ was collected for.
 Since #598 an affinity is read by one rendered surface: a riff page, which the five record-named
 entries have and the twelve patch-named ones do not. Blade Runner Blues on a Muse rig is the one
 page that prints a patch through it. The Muse Runner entry's own affinity reaches nothing a
-reader sees — its figure page reads `byHand` off the recipe (§3.7) — and survives only in the
-Markdown renderer's bytes (`test/golden/muse-runner-on-a-muse.riff.golden.md`). Whether the field
-and the riff page's sentence stay is a separate decision and is not made here.
+reader sees — its figure page says nothing about a recipe or a patch at all (§3.7) — and survives
+only in the Markdown renderer's bytes (`test/golden/muse-runner-on-a-muse.riff.golden.md`).
+Whether the field and the riff page's sentence stay is a separate decision and is not made here.
 
 A field rather than a convention, because a convention is something two authors disagree about by
 Tuesday, and because it is *both* surfaces: a title that carries the reference and an address bar

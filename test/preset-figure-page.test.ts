@@ -20,7 +20,6 @@ import { RECORD_RIFFS, RIFFS } from '../lib/riffs'
 import { presetFigureHref, presetsHref } from '../lib/studio/catalogue'
 import type { PresetEntry, PresetFigure } from '../lib/studio/preset-session'
 import { presetSession } from '../lib/studio/preset-session'
-import { presetByHand } from '../lib/studio/preset-text'
 import { renderRiff } from '../lib/studio/riff-markdown'
 import { riffSubstitution } from '../lib/studio/riff-text'
 import { SITE_ORIGIN } from '../lib/studio/site'
@@ -33,9 +32,8 @@ import { SITE_ORIGIN } from '../lib/studio/site'
  * on the twelve's old `/riffs/` ids; every page carries the figure a riff page would (the
  * technique, the rules, the chords, the notes, the grid) and the block a riff page shows with
  * the Muse alone ticked, checked fact for fact against the Markdown renderer's reading of the
- * same resolution; nothing on it is rig machinery; the by-hand sentence is on exactly the three
- * whose recipe names the patch; and nothing on any of the affected surfaces links to or lists
- * an address that 404s.
+ * same resolution; nothing on it is rig machinery; nothing on it is about a recipe (#598); and
+ * nothing on any of the affected surfaces links to or lists an address that 404s.
  */
 
 const CSS = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
@@ -212,17 +210,20 @@ describe('every page carries the figure and the Muse’s block for it', () => {
       const facts = markdownFacts(md)
       expect(facts.length, entry.patch.name).toBeGreaterThan(20)
       /*
-       * Three lines are this page's stated differences from a riff page, and each is dropped
+       * Four lines are this page's stated differences from a riff page, and each is dropped
        * on purpose rather than asserted absent by accident:
        *  - `Where it plays` is the riff page's heading over the block; here it is the box's name.
+       *  - The recipe's title, which on a page about a preset reads as a description of the
+       *    patch and is not one (#598, operator decision).
        *  - §3.5's substitution sentence, which a riff page prints because the rig was the
        *    reader's choice; here the box is the address (#598, operator decision).
-       *  - The affinity's `Factory patch — X` line and its second sentence, which this page
-       *    reads off the recipe instead (`byHand`), in a sentence that names the patch.
+       *  - The affinity's `Factory patch — X` line and its second sentence: nothing on this
+       *    surface says anything about a recipe reaching the patch (#598).
        */
       const substituted = riffSubstitution(figure.riff, figure.voice)
       const dropped = new Set([
         'Where it plays',
+        figure.voice.recipe.title,
         'Load it and the settings below are already dialled. They build the same sound by hand.',
         ...(substituted === undefined ? [] : [substituted]),
       ])
@@ -278,7 +279,6 @@ describe('every page carries the figure and the Muse’s block for it', () => {
       expect(markup, entry.patch.name).toContain('class="param-name"')
       expect(markup).toContain('<h2>On the Moog Muse</h2>')
       expect(page).toContain(`Muse · ${figure.voice.assignables[0]?.label ?? ''}`)
-      expect(page).toContain(figure.voice.recipe.title)
       expect((markup.match(/class="riff-cites"/g) ?? []).length, entry.patch.name).toBe(1)
       // Invariant 4 in ink: one sentence for the block and nothing beside a value.
       expect(markup).not.toContain('prov-mark')
@@ -288,25 +288,44 @@ describe('every page carries the figure and the Muse’s block for it', () => {
   })
 
   /**
-   * §3.7/#598. The by-hand sentence is read off the recipe the figure landed on and names the
-   * patch, on exactly the three whose recipe names it. Never *Factory patch — X*: the patch is
-   * the page, and a line restating it is #593's redundancy. Never for the nine whose settings
-   * are the box's nearest recipe for the part and not the patch (#586).
+   * #598, operator decision. **Nothing about a recipe on any of the twelve**: no recipe title,
+   * no `Factory patch —`, no *by hand*, no line arguing that the settings reach the patch. The
+   * settings are on the page because a reader may want to see or tweak what the preset does,
+   * and that claim needs no sentence. Asserted by every wording the line ever had and by every
+   * recipe title on the box, on every page, so it cannot return in another coat.
    */
-  it('says the settings build the patch by hand on exactly the three whose recipe names it', () => {
-    const said: string[] = []
-    for (const { entry, figure } of FIGURED) {
-      const page = text(PAGES.get(entry.slug) as string)
-      const sentence = presetByHand(entry.patch)
-      if (page.includes(sentence)) said.push(entry.patch.name)
-      expect(page.includes(sentence), entry.patch.name).toBe(figure.byHand)
-      expect(page).not.toContain('Factory patch —')
-      expect(page).not.toContain('Load it and')
+  it('prints no recipe title and no sentence about a recipe or the patch, on any of the twelve', () => {
+    for (const { entry } of FIGURED) {
+      const markup = PAGES.get(entry.slug) as string
+      const page = text(markup)
+      expect(markup, entry.patch.name).not.toContain('riff-recipe')
+      expect(markup, entry.patch.name).not.toContain('preset-recipe')
+      for (const phrase of [
+        'Built by hand',
+        'Factory patch',
+        'the box ships',
+        'arrives here already',
+        'already dialled',
+        'by hand',
+        'Load it',
+      ]) {
+        expect(page, `${entry.patch.name}: ${phrase}`).not.toContain(phrase)
+      }
+      for (const r of MUSE.recipes) {
+        expect(page, `${entry.patch.name}: ${r.id}`).not.toContain(r.title)
+      }
     }
-    expect(said.sort()).toEqual(['3 Osc Bass Love', 'Detroit Funk', 'Muse Runner'])
-    expect(MUSE_RUNNER_TEXT).toContain(
-      'Load Muse Runner and the settings below are already dialled. They build the same sound by hand.',
+    // Not vacuous: five recipes on the box name one of these patches, and three of the twelve
+    // figures land on the very recipe that names theirs. None of it reaches the page.
+    expect(MUSE.recipes.filter((r) => r.factoryPatch !== undefined)).toHaveLength(5)
+    const onOwn = FIGURED.filter(
+      ({ entry, figure }) => figure.voice.recipe.factoryPatch?.name === entry.patch.name,
     )
+    expect(onOwn.map(({ entry }) => entry.patch.name).sort()).toEqual([
+      '3 Osc Bass Love',
+      'Detroit Funk',
+      'Muse Runner',
+    ])
   })
 })
 

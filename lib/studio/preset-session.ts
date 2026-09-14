@@ -1,7 +1,6 @@
 import type {
   Device,
   PatchUse,
-  Recipe,
   Riff,
   RiffResolution,
   RiffVoicing,
@@ -13,21 +12,26 @@ import { presetSlug } from './catalogue'
 
 /**
  * §2.6/#593, §3.7/#598. **A preset session: the factory patches one box ships, what each is
- * for, where this library already reaches it, and the figure written for it, resolved on this
- * box.**
+ * for, and the figure written for it, resolved on this box.**
  *
  * Pure, and a view model rather than a renderer, on the pattern of `kitSession` (§3.7/#478):
  * nothing here draws anything. A device folder has already declared the fact
  * (`Device.factoryPatches`, #592) and the judgement beside it (`Device.patchUses`), and this
- * adds the joins a reader looking down that list needs and the folder does not carry:
+ * adds the two joins a reader looking down that list needs and the folder does not carry:
  *
- *  - **which recipes reach the patch** — `Recipe.factoryPatch` (§3/#553), read off the same
- *    folder, matched on the shipped name and bank exactly. Five of the Muse's twelve today.
  *  - **which figure was written for it** — the riff whose `reference` is of kind `patch` and
  *    names it (§5A.5). Twelve of twelve today.
  *  - **where that figure lands on this box** — `resolveRiff` against this one device (#598),
  *    which is the one thing here that resolves, and it resolves so the page at
  *    `presetFigureHref` can render the box's settings with no rig in the reader's hands.
+ *
+ * **No recipe join, by operator decision (#598).** `Recipe.factoryPatch` says a recipe's
+ * parameters reach a sound the box also ships, and the session used to carry the recipes
+ * naming each patch so the surfaces could print a line about them. Every wording of that line
+ * read as an instruction to build the thing the page had just said to load, so the surfaces
+ * print nothing about a recipe and the session carries none: a field nothing reads is a field
+ * that comes back. The claim itself stays on the recipe and renders on a guide, which is the
+ * surface it was written for.
  *
  * **The riff join points from the device to the riff and never back.** A riff names no box
  * (invariant 3) and gains no field here; it names a patch, and a box that ships a patch by that
@@ -59,24 +63,17 @@ import { presetSlug } from './catalogue'
  *
  * `resolution` is `resolveRiff` against this device alone and is `played` by construction; see
  * `presetSession`. `voice` is the same object as `resolution.voice`, named so a renderer does
- * not narrow a union that never widens.
- *
- * `byHand` is the one fact this surface reads off the recipe that a riff page reads off an
- * affinity (§5A.5/#585): whether the recipe the figure landed on names *this* patch as its
- * `factoryPatch`, so the settings build the patch from scratch. Matched on `shippedPatchKey`,
- * the same exact `(name, bank)` the recipe join above uses. A riff page cannot know which
- * patch a reader means and asks the riff; this page is the patch, and asks the recipe. Where
- * the figure lands on a recipe that names some *other* patch, or none, this is `false` and the
- * page says nothing about a patch — the rule #586 settled, kept.
+ * not narrow a union that never widens. Nothing here says whether the recipe the figure landed
+ * on names this patch: the page prints the settings because a reader may want to see or tweak
+ * what the preset does, and that needs no sentence arguing for it (#598).
  */
 export type PresetFigure = {
   riff: Riff
   resolution: RiffResolution & { outcome: 'played' }
   voice: RiffVoicing
-  byHand: boolean
 }
 
-/** §2.6/#593. One shipped patch: the fact, the judgement, and where the library reaches it. */
+/** §2.6/#593. One shipped patch: the fact, the judgement, and the figure written for it. */
 export type PresetEntry = {
   /** The name and bank as the box prints them — `Device.factoryPatches`' own object. */
   patch: ShippedPatch
@@ -84,12 +81,6 @@ export type PresetEntry = {
   slug: string
   /** What it is for, in the folder's words — `PatchUse.use`. */
   use: string
-  /**
-   * Recipes on this box whose `factoryPatch` names this patch, in manifest order. Often empty:
-   * #563 declined seven of the Muse's twelve because no recipe's settings reach them, and an
-   * empty list here is that decline kept, not a gap to fill.
-   */
-  recipes: readonly Recipe[]
   /** The figure written for this patch, where a riff's `reference` names it, on this box. */
   figure?: PresetFigure
 }
@@ -143,11 +134,7 @@ function figureFor(device: Device, patch: ShippedPatch, riff: Riff): PresetFigur
       `${device.id}: '${riff.id}' is written for factory patch '${patch.name}' and the box cannot play it (${resolution.gap.reason}); a preset figure has to land on the box that ships the patch`,
     )
   }
-  const { voice } = resolution
-  const key = shippedPatchKey(patch)
-  const byHand =
-    voice.recipe.factoryPatch !== undefined && shippedPatchKey(voice.recipe.factoryPatch) === key
-  return { riff, resolution, voice, byHand }
+  return { riff, resolution, voice: resolution.voice }
 }
 
 /**
@@ -181,17 +168,12 @@ export function presetSession(
     const key = shippedPatchKey(use)
     // `patchUseIssues` has already refused a key with no patch behind it.
     const patch = byKey.get(key) as ShippedPatch
-    const recipes = device.recipes.filter(
-      (recipe) =>
-        recipe.factoryPatch !== undefined && shippedPatchKey(recipe.factoryPatch) === key,
-    )
     const riff = riffFor(patch, riffs)
     const figure = riff === undefined ? undefined : figureFor(device, patch, riff)
     return {
       patch,
       slug: presetSlug(patch),
       use: use.use,
-      recipes,
       ...(figure === undefined ? {} : { figure }),
     }
   })

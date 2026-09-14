@@ -17,11 +17,11 @@ import { PresetVoice } from './preset-voice'
  * is no picker, nothing reads the studio, and the block is headed *On the Moog Muse* rather
  * than *Where it plays* (#598, operator decision).
  *
- * **Nothing about a patch unless the settings build it.** `PresetFigure.byHand` is read off the
- * recipe the figure landed on, and only where it names this page's patch does the block say
- * the settings reach the sound; a figure that lands on the box's nearest recipe for the part
- * prints that recipe's settings under its title and no sentence naming a patch it does not
- * build (#586's rule, on the surface that knows which patch it is).
+ * **Nothing about a recipe, and nothing arguing for the settings** (operator decision, #598).
+ * The block names the voice and prints the settings, because a reader may want to see or tweak
+ * what the preset does. It does not print the recipe's title and it says nothing about whether
+ * that recipe reaches this patch: on a page about a preset either reads as an instruction to
+ * build the thing the page just said to load. See `preset-text.ts`.
  *
  * **Two islands, both the riff page's kind.** `RiffInKey` holds the key the reader wants the
  * figure spelt in (#570), and `PresetVoice` exists so the settings block builds at all (see that

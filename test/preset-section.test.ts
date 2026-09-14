@@ -18,8 +18,8 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *
  * What is pinned: the panel is on the one box with a session and on no other; every entry is a
  * closed disclosure whose summary carries the name and what it is for; the body carries the
- * recipe claim where a recipe reaches the patch and the link to the figure written for it; the
- * order is the folder's; and nothing on the panel counts the patches it does not list.
+ * link to the figure written for it and nothing about a recipe (#598); the order is the
+ * folder's; and nothing on the panel counts the patches it does not list.
  */
 
 const byId = (id: string): Device => {
@@ -115,34 +115,35 @@ describe('each entry says what the model says', () => {
   })
 
   /**
-   * #593. **The recipe line names the recipe and restates nothing.**
-   *
-   * The first version closed each line with the guide's own sentence — *Factory patch — the box
-   * ships 3 Osc Bass Love, which arrives here already* — under a heading that is `3 Osc Bass
-   * Love`, on a page titled *factory patches*. It repeated the line above it and then stated the
-   * premise of the surface. On a guide that sentence earns its place, because there the patch is
-   * news; here the only thing a reader does not already know is that the box can make the sound
-   * from scratch, which is what the label now says.
-   *
-   * So both halves are asserted: the recipe is named, and neither the patch name nor the shipping
-   * claim is said a second time inside the line.
+   * #598, operator decision. **Nothing about a recipe, on either surface.** A line about
+   * `Recipe.factoryPatch` stood here twice — *Factory patch — the box ships X, which arrives here
+   * already*, then *Built by hand — <recipe title>* — and both read as an instruction to
+   * assemble the thing the entry had just said to load, with a recipe's title where a
+   * description of the patch belongs. A preset entry is the name, what it is for, and the
+   * figure. So this asserts the absence, by every wording it had and by every recipe title on
+   * the box, so it cannot return in another coat.
    */
-  it('names the recipe on the five and restates neither the patch nor the shipping claim', () => {
-    expect(MUSE.match(/class="quiet preset-recipe"/g)?.length).toBe(5)
-    let claims = 0
-    for (const entry of session.entries) {
-      for (const r of entry.recipes) {
-        claims += 1
-        expect(MUSE, r.id).toContain(`<strong>${r.title}</strong>`)
-        expect(MUSE, r.id).toContain(`<span class="mono">${r.role} · ${r.character}</span>`)
-        expect(MUSE_TEXT, r.id).toContain(`Built by hand — ${r.title}`)
-      }
+  it('prints no recipe line and no recipe title, under any wording it ever had', () => {
+    // The panel's own markup: the device page around it lists every recipe under `Parameter
+    // sources`, which is that panel's job and not this one's.
+    expect(PANEL).not.toContain('preset-recipe')
+    for (const phrase of [
+      'Built by hand',
+      'Factory patch',
+      'the box ships',
+      'arrives here already',
+      'settings below',
+      'by hand',
+    ]) {
+      expect(PANEL_TEXT, phrase).not.toContain(phrase)
     }
-    expect(claims).toBe(5)
-    expect(MUSE_TEXT.split('Built by hand —').length - 1).toBe(5)
-    expect(MUSE_TEXT).not.toContain('the box ships')
-    expect(MUSE_TEXT).not.toContain('arrives here already')
-    expect(MUSE_TEXT).not.toContain('settings below')
+    // No recipe title from the folder, patched or not, and no `role · character` pair of one.
+    for (const r of byId('moog-muse').recipes) {
+      expect(PANEL_TEXT, r.id).not.toContain(r.title)
+    }
+    expect(PANEL).not.toMatch(/<span class="mono">[a-z-]+ · [a-z]+<\/span>/)
+    // Not vacuous: the box has recipes naming five of these patches, and none of them shows.
+    expect(byId('moog-muse').recipes.filter((r) => r.factoryPatch !== undefined)).toHaveLength(5)
   })
 
   it('says nothing about the patches it does not list', () => {

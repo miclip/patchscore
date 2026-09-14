@@ -1427,12 +1427,6 @@ body {
   }
 }
 
-.preset-entry .disclosure-body > .quiet,
-.preset-card > .quiet {
-  margin: 0 0 8px;
-  max-width: 66ch;
-}
-
 .preset-figure {
   margin: 0;
   max-width: 66ch;

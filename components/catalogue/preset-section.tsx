@@ -3,16 +3,11 @@ import type { Device } from '@/lib/core'
 import { shippedPatchKey } from '@/lib/core'
 import { presetFigureHref, presetsHref } from '@/lib/studio/catalogue'
 import type { PresetEntry, PresetSession } from '@/lib/studio/preset-session'
-import {
-  PRESET_FIGURE,
-  PRESET_HEADING,
-  PRESET_LEAD,
-  PRESET_RECIPE,
-} from '@/lib/studio/preset-text'
+import { PRESET_FIGURE, PRESET_HEADING, PRESET_LEAD } from '@/lib/studio/preset-text'
 
 /**
  * §2.6/#593. **The factory patches a box ships, what each is for, and the figure written for
- * it.**
+ * it.** Nothing about a recipe (#598).
  *
  * A preset belongs to one box and a riff is rig-agnostic, and six issues came out of pushing
  * the first through the second. On a device page it is no exception to anything: a Muse page
@@ -46,9 +41,13 @@ function PatchName({ entry }: { entry: PresetEntry }) {
 }
 
 /**
- * What is inside one patch: the recipe that reaches it and the figure written for it. Shared by
- * the folded panel and the open page, on `KitBody`'s pattern (§3.7): one React reading of an
- * entry, so a reader moving between the two never finds the same fact described two ways.
+ * What is inside one patch: the figure written for it, and nothing else. Shared by the folded
+ * panel and the open page, on `KitBody`'s pattern (§3.7): one React reading of an entry, so a
+ * reader moving between the two never finds the same fact described two ways.
+ *
+ * **No line about a recipe** (#598, operator decision). One stood here twice, and both times
+ * it read as an instruction to build the thing the entry had just said to load; see
+ * `preset-text.ts`. A preset entry is the name, what it is for, and the figure.
  *
  * The figure link goes to the page under this box (#598), which carries the figure and this
  * box's settings for it. `device` is the session's, passed so the href is built by the one
@@ -57,13 +56,6 @@ function PatchName({ entry }: { entry: PresetEntry }) {
 export function PresetBody({ device, entry }: { device: Device; entry: PresetEntry }) {
   return (
     <>
-      {entry.recipes.map((recipe) => (
-        <p key={recipe.id} className="quiet preset-recipe">
-          {PRESET_RECIPE}
-          <strong>{recipe.title}</strong>,{' '}
-          <span className="mono">{`${recipe.role} · ${recipe.character}`}</span>.
-        </p>
-      ))}
       {entry.figure === undefined ? null : (
         <p className="preset-figure">
           {PRESET_FIGURE}
@@ -75,8 +67,8 @@ export function PresetBody({ device, entry }: { device: Device; entry: PresetEnt
 }
 
 /**
- * One patch in the panel: closed, it is the name and what it is for; open, it is where the
- * library reaches it.
+ * One patch in the panel: closed, it is the name and what it is for; open, it is the figure
+ * written for it.
  *
  * **A native `<details>`, closed by default, on every entry** — the shape #593 specifies, for
  * the kit's reason (§3.7/#478): twelve of these open is a page nobody skims, and native means

@@ -3,12 +3,17 @@
 import { VoiceBuild } from '@/components/riff/riff-voice'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { presetSession } from '@/lib/studio/preset-session'
-import { presetBoxHeading, presetByHand } from '@/lib/studio/preset-text'
+import { presetBoxHeading } from '@/lib/studio/preset-text'
 import { voiceHeading } from '@/lib/studio/riff-text'
 
 /**
- * §3.7/#598. **The box's block on a preset figure page: which voice, which recipe, and
- * everything needed to build it there.**
+ * §3.7/#598. **The box's block on a preset figure page: which voice, and the settings on it.**
+ *
+ * **No recipe title and no sentence about the patch** (operator decision, #598). The settings
+ * are here because a reader may want to see or tweak what the preset does; that is not a claim
+ * about a recipe reaching the patch and needs no sentence arguing for it. A riff page opens the
+ * same block with the recipe's title and, where the riff authors an affinity, a line about the
+ * patch, because there the reader is deciding what to build; here they have loaded it.
  *
  * **A client island, for the build's reason and not the reader's.** `VoiceBuild` draws the
  * settings through `resolved-body.tsx`, whose `Value` reaches `components/guide/nav.ts`, and
@@ -40,12 +45,8 @@ export function PresetVoice({ deviceId, patch }: { deviceId: string; patch: stri
       </header>
       <p className="riff-where">
         <span className="riff-box">{voiceHeading(voice)}</span>
-        <span className="riff-recipe">{voice.recipe.title}</span>
       </p>
-      <VoiceBuild
-        voice={voice}
-        patchLine={figure.byHand ? <p className="quiet">{presetByHand(entry.patch)}</p> : null}
-      />
+      <VoiceBuild voice={voice} patchLine={null} />
     </section>
   )
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DeviceSchema, FACTORY_PATCHES_FACT, resolveRiff, shippedPatchKey } from '@/lib/core'
+import { DeviceSchema, FACTORY_PATCHES_FACT, resolveRiff } from '@/lib/core'
 import type { Device, PatchUse, Riff, ShippedPatch } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS } from '@/lib/riffs'
@@ -16,10 +16,9 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    declared patch with no use are all refused by the schema and by the session;
  *  - the session answers **`undefined` for a box without both declarations**, so a box with
  *    the fact alone shows nothing;
- *  - the Muse's session carries **the twelve in the folder's order**, joins **five** of them to
- *    a recipe through `Recipe.factoryPatch`, joins **all twelve** to the riff whose reference
- *    names them, **resolves all twelve on the Muse** as `played`, and every other box has no
- *    session;
+ *  - the Muse's session carries **the twelve in the folder's order**, joins **all twelve** to
+ *    the riff whose reference names them, **resolves all twelve on the Muse** as `played`,
+ *    carries **nothing about a recipe** (#598), and every other box has no session;
  *  - a figure the box **cannot play throws** rather than becoming a gap on a page (#598), and
  *    two patches slugging to one address throw too.
  */
@@ -133,9 +132,7 @@ describe('the session answers undefined without both declarations (§2.6/#593)',
     expect(session?.entries.map((e) => e.patch.name)).toEqual(['Bellbounce', 'Aegean Organ'])
     expect(session?.entries.map((e) => e.use)).toEqual([BELL_USE.use, ORGAN_USE.use])
     expect(session?.entries[0]?.patch).toBe(device.factoryPatches?.[1])
-    expect(session?.entries.every((e) => e.recipes.length === 0 && e.figure === undefined)).toBe(
-      true,
-    )
+    expect(session?.entries.every((e) => e.figure === undefined)).toBe(true)
     expect(session?.entries.map((e) => e.slug)).toEqual(['bellbounce', 'aegean-organ'])
   })
 
@@ -172,7 +169,7 @@ describe('the session answers undefined without both declarations (§2.6/#593)',
 
 const muse = DEVICES.find((d) => d.id === 'moog-muse') as Device
 
-describe('the Muse session: twelve entries, five recipes, twelve figures (#593)', () => {
+describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #598)', () => {
   const session = presetSession(muse)
 
   it('carries the twelve, one per shipped patch, in the order the folder authored them', () => {
@@ -192,25 +189,19 @@ describe('the Muse session: twelve entries, five recipes, twelve figures (#593)'
     }
   })
 
-  it('joins exactly the five patches a recipe reaches, and no other', () => {
-    const reached = (session?.entries ?? [])
-      .filter((e) => e.recipes.length > 0)
-      .map((e) => [e.patch.name, e.recipes.map((r) => r.id)] as const)
-    expect(reached.map(([name]) => name).sort()).toEqual(
-      ['3 Osc Bass Love', 'Detroit Funk', 'Moog 55 Strings', 'Muse Runner', 'Polyphonic Power'].sort(),
-    )
-    // Each recipe on an entry names that entry's patch, and every patched recipe is on one.
-    for (const entry of session?.entries ?? []) {
-      for (const r of entry.recipes) {
-        expect(r.factoryPatch && shippedPatchKey(r.factoryPatch), r.id).toBe(
-          shippedPatchKey(entry.patch),
-        )
-      }
-    }
-    const onEntries = (session?.entries ?? []).flatMap((e) => e.recipes.map((r) => r.id)).sort()
-    const patched = muse.recipes.filter((r) => r.factoryPatch !== undefined).map((r) => r.id).sort()
-    expect(onEntries).toEqual(patched)
+  /**
+   * #598, operator decision. The session carries no recipe join. `Recipe.factoryPatch` still
+   * names five of these patches on the box, and that claim renders on a guide; no preset
+   * surface prints it, so no entry carries it, and this pins the absence of the field rather
+   * than an empty list nothing reads.
+   */
+  it('carries nothing about a recipe, though five recipes on the box name a patch', () => {
+    const patched = muse.recipes.filter((r) => r.factoryPatch !== undefined)
     expect(patched).toHaveLength(5)
+    for (const entry of session?.entries ?? []) {
+      expect(Object.keys(entry).sort()).toEqual(['figure', 'patch', 'slug', 'use'])
+      expect(Object.keys(entry.figure ?? {}).sort()).toEqual(['resolution', 'riff', 'voice'])
+    }
   })
 
   it('links all twelve to the riff whose reference names the patch', () => {
@@ -244,29 +235,6 @@ describe('the Muse session: twelve entries, five recipes, twelve figures (#593)'
       )
       expect(figure.voice.params.length, entry.patch.name).toBeGreaterThan(0)
     }
-  })
-
-  /**
-   * §3.7/#598. `byHand` is read off the recipe the figure landed on, not off an affinity:
-   * three of the twelve land on the recipe that names their own patch. Polyphonic Power does
-   * not, because its recipe is a unison stack that plays one note (#383) and the figure is a
-   * two-note stab, so §3.5 substitutes the polyphonic bright one, which names Detroit Funk;
-   * Moog 55 Strings does not, because its recipe is a `pad` and the figure is filed as `lead`.
-   * Both are the case #586 settled: a page says nothing about a patch its settings do not build.
-   */
-  it('says the settings build the patch by hand on exactly the three whose recipe names it', () => {
-    const byHand = (session?.entries ?? []).filter((e) => e.figure?.byHand).map((e) => e.patch.name)
-    expect(byHand.sort()).toEqual(['3 Osc Bass Love', 'Detroit Funk', 'Muse Runner'])
-    for (const entry of session?.entries ?? []) {
-      const figure = entry.figure
-      if (figure === undefined) throw new Error(entry.patch.name)
-      const named = figure.voice.recipe.factoryPatch?.name
-      expect(figure.byHand, entry.patch.name).toBe(named === entry.patch.name)
-    }
-    // The two whose recipe names the patch and whose figure lands elsewhere, by name.
-    const landed = new Map((session?.entries ?? []).map((e) => [e.patch.name, e.figure?.voice.recipe.id]))
-    expect(landed.get('Polyphonic Power')).toBe('muse-stab-bright')
-    expect(landed.get('Moog 55 Strings')).toBe('muse-lead-bright')
   })
 
   it('addresses each of the twelve by the slug of the name the box prints', () => {
