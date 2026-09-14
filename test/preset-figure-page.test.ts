@@ -14,7 +14,6 @@ import RiffRoute from '../app/riffs/[id]/page'
 import RiffIndexPage from '../app/riffs/page'
 import sitemap from '../app/sitemap'
 import type { Device } from '../lib/core/index'
-import { resolveRiff } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RECORD_RIFFS, RIFFS } from '../lib/riffs'
 import { presetFigureHref, presetsHref } from '../lib/studio/catalogue'
@@ -57,15 +56,23 @@ async function markupFor(id: string, patch: string): Promise<string> {
   return renderToStaticMarkup(await PresetFigureRoute({ params: Promise.resolve({ id, patch }) }))
 }
 
-/** `test/riff-page.test.ts`' normaliser: tags to spaces, entities back, space collapsed. */
+/**
+ * `test/riff-page.test.ts`' normaliser: tags to spaces, entities back, space collapsed.
+ *
+ * **`&amp;` is undone last, and the twenty-two copies of this helper that undo it first are
+ * wrong** (`js/double-escaping`, #599). Unescaping the ampersand before the angle brackets turns
+ * `&amp;lt;` into `&lt;` and then into `<`, so markup that correctly escaped a literal
+ * `&lt;` comes out as a tag. No fixture reaches that today; the ordering costs nothing and the
+ * rule is right.
+ */
 function text(markup: string): string {
   return markup
     .replace(/<[^>]+>/g, ' ')
     .replace(/&#x27;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
     .replace(/\s+([.,;:])/g, '$1')
     .trim()
@@ -124,7 +131,6 @@ const PAGES = new Map<string, string>()
 for (const { entry } of FIGURED) PAGES.set(entry.slug, await markupFor('moog-muse', entry.slug))
 
 const MUSE_RUNNER = PAGES.get('muse-runner') as string
-const MUSE_RUNNER_TEXT = text(MUSE_RUNNER)
 
 describe('the figure page exists exactly where a figure does, and nowhere it used to (#598)', () => {
   it('is prerendered for the twelve, under the Muse, in the folder’s order', () => {
