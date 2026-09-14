@@ -38,7 +38,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: github/codeql-action/init@v3
+      - uses: github/codeql-action/init@v4
         with:
           languages: javascript-typescript
           # `security-and-quality` over the default `security-extended`: this is a small codebase
@@ -48,6 +48,6 @@ jobs:
 
       # No build step. `javascript-typescript` is an interpreted-language analysis and CodeQL
       # reads the source directly; `npm ci` here would add four minutes and change nothing.
-      - uses: github/codeql-action/analyze@v3
+      - uses: github/codeql-action/analyze@v4
         with:
           category: '/language:javascript-typescript'
