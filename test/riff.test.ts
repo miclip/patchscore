@@ -11,6 +11,7 @@ import {
   resolveRiff,
   riffConstraintViolations,
   referenceSlug,
+  spellChord,
   spellDegree,
   type FactoryPatch,
   type HookNote,
@@ -1206,11 +1207,10 @@ describe('riff constraints are checked, not described (#554)', () => {
         },
       }
       const found = riffConstraintViolations(broken)
-      // One sentence per rule the chord breaks, each carrying its author's reason. Neither rule
-      // names the `VII`; both reach it, because a raised degree is a fact about the key.
+      // One sentence per rule the chord breaks, carrying its author's reason. The rule names the
+      // `i` and reaches the `VII`, because a raised degree is a fact about the key.
       expect(found).toEqual([
         'VII is C · E · G, which has the E this riff forbids: the raised second destroys the flat second the mode rests on',
-        'VII is C · E · G, which has the E this riff forbids: the same pitch class, a direct semitone against the chord’s root',
       ])
       // And it is a build failure rather than a report.
       expect(RiffSchema.safeParse(broken).success).toBe(false)
@@ -1232,14 +1232,14 @@ describe('riff constraints are checked, not described (#554)', () => {
         hook: {
           ...aegeanOrganPhrygianFigure.hook,
           notes: aegeanOrganPhrygianFigure.hook.notes.map((n) =>
-            n.step === 41 ? { ...n, alter: 1 } : n,
+            n.step === 97 ? { ...n, alter: 1 } : n,
           ),
         },
       }
       const found = riffConstraintViolations(broken)
-      expect(found).toHaveLength(4)
-      expect(found.filter((f) => f.startsWith('E5 sounds over VII at step 41'))).toHaveLength(2)
-      expect(found.filter((f) => f.startsWith('VII is C · E · G'))).toHaveLength(2)
+      expect(found).toHaveLength(2)
+      expect(found.filter((f) => f.startsWith('E5 sounds over VII at step 97'))).toHaveLength(1)
+      expect(found.filter((f) => f.startsWith('VII is C · E · G'))).toHaveLength(1)
     })
 
     it('names a chord once however often the cycle returns to it', () => {
@@ -1251,9 +1251,12 @@ describe('riff constraints are checked, not described (#554)', () => {
           forbiddenDegrees: [{ chord: 'i', degree: 3, reason: 'planted for this test' }],
         },
       }
-      expect(riffConstraintViolations(broken)).toEqual([
+      // The line opens on that F, which is its own sentence; the chord's is the one under test.
+      const found = riffConstraintViolations(broken)
+      expect(found.filter((f) => f.startsWith('i is'))).toEqual([
         'i is D · F · A, which has the F this riff forbids: planted for this test',
       ])
+      expect(found.filter((f) => f.startsWith('F5 sounds over i at step 1'))).toHaveLength(1)
     })
 
     it('compares pitch classes, so a chord spelt one way meets a rule spelt another', () => {
@@ -1325,12 +1328,10 @@ describe('riff constraints are checked, not described (#554)', () => {
 
   it('says a raised or lowered degree is banned on every chord, and names the chord the reason is about (#605)', () => {
     const lines = ruleLines(aegeanOrganPhrygianFigure)
-    expect(lines).toHaveLength(3)
+    // One rule and no offset (#604): the entries are on the beat, which the hook says.
+    expect(lines).toHaveLength(1)
     expect(lines[0]).toBe(
       'Never the raised 2nd, on any chord — over i, the raised second destroys the flat second the mode rests on.',
-    )
-    expect(lines[1]).toBe(
-      'Never the raised 2nd, on any chord — over II, the same pitch class, a direct semitone against the chord’s root.',
     )
     // The reach the line states is the reach the check has: the same rule, global, catches a
     // chord the rule does not name.
@@ -1345,7 +1346,7 @@ describe('riff constraints are checked, not described (#554)', () => {
           { degree: 'VII', bars: 2 },
         ],
       },
-    })).toHaveLength(2)
+    })).toHaveLength(1)
   })
 })
 
@@ -1419,29 +1420,13 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
   },
   {
     riff: aegeanOrganPhrygianFigure,
-    rules: [
-      ['i', 2, 1],
-      ['II', 2, 1],
-    ],
-    onset: 4,
-    // Both rules forbid one pitch the key does not have, so each reaches the whole piece
-    // (#605) and a planted E breaks both: two sentences, one per reason.
+    rules: [['i', 2, 1]],
+    // No offset: the operator's line enters on the beat (#604). The one rule forbids a pitch
+    // the key does not have, so it reaches the whole piece (#605): a planted E over the `II`,
+    // which the rule does not name, is caught as surely as one over the `i`.
     breaks: [
-      {
-        note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 },
-        says: 'E5 sounds over i',
-        count: 2,
-      },
-      // The `II` is bars 3-4 and the figure ships over bars 5-8, so the figure is moved to bar
-      // 3 for this one: the rule holds wherever the figure sits.
-      {
-        note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 },
-        says: 'E5 sounds over II',
-        over: { figureStartsAtBar: 3 },
-        count: 2,
-      },
+      { note: { step: 9, degree: 2, octave: 1, len: 4, alter: 1 }, says: 'E5 sounds over i' },
     ],
-    early: { step: 9, says: 'i is entered at step 1, 0 steps in' },
   },
   {
     riff: threeOscBassLoveRootOctaveFigure,
@@ -1584,16 +1569,15 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       voxHumanaRigidColdPopLine,
       hamamatsuTinesBalladFigure,
       seventiesElectroPnoRhodesTurnaround,
-      aegeanOrganPhrygianFigure,
       moogProSoloGlideLead,
       softOrchestraSlowChanges,
     ]) {
       const onsets = [...new Set(entry.hook.notes.map((n) => n.step))]
       expect(entry.pattern.hits.map((h) => h.step), entry.id).toEqual(onsets)
     }
-    // The suspension writing is not in that list: its grid repeats under an eight-bar hook and
-    // strikes the chord entries only, with the resolutions slurred (§5A.2). Its own test below
-    // holds the strikes to the entries across both passes.
+    // The suspension writing and the Phrygian figure are not in that list: each grid repeats
+    // under an eight-bar hook and strikes what recurs on both passes, with the other moves
+    // slurred (§5A.2). Their own tests below hold the strikes across both passes.
   })
 
   it('the cold-pop line lands every note on a beat and none across a bar line', () => {
@@ -1761,13 +1745,102 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     expect(riff.key).toBe('D phrygian')
     const resolved = resolveHook(riff.hook, riff.key)
     if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
-    expect(resolved.hook.notes.map((n) => n.note)).toEqual(['D5', 'Eb5', 'D5', 'Eb5', 'D5'])
-    expect(riff.figureStartsAtBar).toBe(5)
+    expect(resolved.hook.notes.map((n) => n.note)).toEqual([
+      'F5', 'Eb5', 'G5', 'D5', 'Eb5', 'D5', 'Eb5', 'D5',
+    ])
+    expect(resolved.hook.notes.some((n) => n.note.startsWith('E5'))).toBe(false)
     // #605. The fourth chord is C minor: the operator's correction of a C major whose third was
     // the E the entry forbids. No note of the line is altered, and no chord carries an E.
     expect(riff.harmony?.progression.map((p) => p.degree)).toEqual(['i', 'II', 'i', 'vii'])
     expect(riff.hook.notes.every((n) => n.alter === undefined)).toBe(true)
-    expect(chordAtStep(riff, 41)).toBe('vii')
+    for (const chord of riff.harmony?.progression ?? []) {
+      const spelt = spellChord(chord.degree, riff.key)
+      if (spelt.outcome !== 'resolved') throw new Error(chord.degree)
+      expect(spelt.chord.notes, chord.degree).not.toContain('E')
+    }
+    expect(riffConstraintViolations(riff)).toEqual([])
+  })
+
+  /**
+   * §5A.2/#604. **The Phrygian figure is the operator's whole eight-bar line**, entering on the
+   * beat, restored from the four late-entering bars it was first published as.
+   */
+  describe('the Phrygian figure covers its eight-bar cycle over a four-bar grid (#604)', () => {
+    const riff = aegeanOrganPhrygianFigure
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const notes = resolved.hook.notes
+    const CHORDS = ['i', 'II', 'i', 'vii'] as const
+    const startOf = (index: number): number => index * 2 * STEPS_PER_BAR + 1
+
+    it('carries all eight bars from bar 1, in eight notes', () => {
+      expect(riff.figureStartsAtBar).toBe(1)
+      expect(riff.harmony?.cycleBars).toBe(8)
+      expect(riff.hook.bars).toBe(8)
+      expect(riff.hook.notes).toHaveLength(8)
+    })
+
+    it('resolves to the operator’s pitches, each over the chord it was written for', () => {
+      expect(notes.map((n) => [n.note, chordAtStep(riff, n.step)])).toEqual([
+        ['F5', 'i'],
+        ['Eb5', 'i'],
+        ['G5', 'II'],
+        ['D5', 'i'],
+        ['Eb5', 'i'],
+        ['D5', 'i'],
+        ['Eb5', 'vii'],
+        ['D5', 'vii'],
+      ])
+      expect(notes.map((n) => n.midi)).toEqual([77, 75, 79, 74, 75, 74, 75, 74])
+    })
+
+    it('enters every chord on the beat, and states no offset', () => {
+      expect(riff.constraints?.onsetOffset).toBeUndefined()
+      // The `i` comes round twice, so the arrivals are read off the chord windows: the first
+      // note at or after each chord's first step is on that step.
+      const arrivals = CHORDS.map((_, i) => riff.hook.notes.find((n) => n.step >= startOf(i))?.step)
+      expect(arrivals).toEqual(CHORDS.map((_, i) => startOf(i)))
+      expect(riff.hook.notes.map((n) => n.step)).toEqual([1, 17, 33, 65, 73, 81, 97, 121])
+    })
+
+    it('cuts the F short before the fall, holds the G for both bars, and runs the rest to the next note', () => {
+      const [f, eb, g] = riff.hook.notes
+      if (f === undefined || eb === undefined || g === undefined) throw new Error('three notes expected')
+      // Released a beat before the Eb: the one length the operator fixes.
+      expect(f.len).toBe(12)
+      expect(f.step + f.len).toBeLessThan(eb.step)
+      expect(g.len).toBe(2 * STEPS_PER_BAR)
+      // Every other note sounds until the next, and the last to the end of the cycle.
+      for (let i = 2; i < riff.hook.notes.length; i += 1) {
+        const prev = riff.hook.notes[i - 1]
+        const next = riff.hook.notes[i]
+        if (prev === undefined || next === undefined) throw new Error('unreachable')
+        expect(prev.step + prev.len, `note ${String(i)}`).toBe(next.step)
+      }
+      const last = riff.hook.notes.at(-1)
+      if (last === undefined) throw new Error('no notes')
+      expect(last.step + last.len - 1).toBe(8 * STEPS_PER_BAR)
+      expect(riff.technique.some((p) => p.includes('Cut the F short'))).toBe(true)
+    })
+
+    it('strikes the four entries across two passes of the grid, and slurs every other move', () => {
+      expect(riff.pattern.length).toBe(64)
+      expect(riff.pattern.hits.map((h) => h.step)).toEqual([1, 33])
+      expect(gridStrikes(riff)).toEqual([1, 33, 65, 97])
+      expect(gridStrikes(riff)).toEqual(CHORDS.map((_, i) => startOf(i)))
+      // The release before the Eb is in the hook, as the F's length: nothing sounds at 13-16.
+      for (const step of [13, 14, 15, 16]) {
+        expect(riff.hook.notes.some((n) => step >= n.step && step < n.step + n.len)).toBe(false)
+      }
+      expect(riff.technique.some((p) => p.includes('played off the held note'))).toBe(true)
+    })
+
+    it('says the left hand in prose, since harmony carries chord identity and not a voicing', () => {
+      expect(riff.technique.some((p) => p.includes('root and fifth only'))).toBe(true)
+      expect(riff.technique.some((p) => p.includes('on the beat'))).toBe(true)
+      expect(riff.technique.some((p) => p.includes('never play E natural'))).toBe(true)
+      expect(riff.technique.join(' ')).not.toMatch(/Bars 5 to 8|Enter late/)
+    })
   })
 
   it('the glide lead never sounds two notes at once', () => {
@@ -1982,8 +2055,9 @@ const FIDELITY: readonly FidelityRow[] = [
     key: 'D phrygian',
     bpm: 76,
     progression: [['i', 2], ['II', 2], ['i', 2], ['vii', 2]],
-    // Bars 5-8 of eight: the neighbour figure and the fall from Eb to D over the C minor (#605).
-    pitches: ['D5', 'Eb5', 'D5', 'Eb5', 'D5'],
+    // The operator's whole eight bars (#604): the fall over the first `i`, the held G over the
+    // `II`, the neighbour figure over the second `i`, and Eb falling to D over the C minor (#605).
+    pitches: ['F5', 'Eb5', 'G5', 'D5', 'Eb5', 'D5', 'Eb5', 'D5'],
   },
   {
     riff: moogProSoloGlideLead,
