@@ -117,8 +117,19 @@ import { DIGITAKT_II_PANEL } from './panel'
  * what a parameter does and leaves the range to the screen.
  *
  * So this manifest is **enum-dominated**, and every uncited numeric is absent rather than given
- * an invented `0-127`. That is the CRAVE's rule meeting a much deeper box, and it is why a
- * recipe here reads as a chain of machine and mode choices rather than a list of values.
+ * an invented `0-127` — with the AMP page's stages as the exception, made on purpose and
+ * recorded at `stage()` (#547). That is the CRAVE's rule meeting a much deeper box, and it is
+ * why a recipe here reads as a chain of machine and mode choices rather than a list of values.
+ *
+ * **The exception is `AMP ATK`, `AMP DEC`, `AMP SUS` and `AMP REL`** (#547). p.56 ranges `HOLD`
+ * and describes the other four, and a recipe that authored the mode and the hold and stopped
+ * there left the reader with no decay on an `AHD` part and no envelope at all on an `ADSR` one.
+ * Each recipe now carries exactly the stages its `AMP MODE` has — `ATK`, `HOLD`, `DEC` under
+ * `AHD`; `ATK`, `DEC`, `SUS`, `REL` under `ADSR` — the four new ones with a range that says
+ * `verified: false` and a point that resolves provisional, which is what the model has for a
+ * value nobody checked, as against a silent hole. `HOLD` is untouched: its `0-126` is printed
+ * and it keeps its `density`. The trade is in `stage()`'s JSDoc; it is the Digitone II's repair
+ * on the box whose manual it shares the wording with.
  *
  * The `LFO WAVE` option set is omitted for a narrower reason: p.58 names the waveforms in prose
  * ("Triangle, Sine, Square, Sawtooth… Exponential and Ramp") while showing only `RND` as an
@@ -312,8 +323,9 @@ const play = (m: (typeof PLAY_MODES)[number]) => pick('PLAY', m, PLAY_MODES, 94)
 const fltr = (m: (typeof FLTR_MACHINES)[number]) => pick('FLTR MACHINE', m, FLTR_MACHINES, 104)
 /**
  * §3.1/#547. The switch decides which stages the AMP page even has (p.56): `HOLD` exists only
- * under `AHD`, and `SUS` and `REL` only under `ADSR`. A reader hunting for a sustain on an AHD
- * track is looking for a control the mode has taken away.
+ * under `AHD`, and `SUS` and `REL` only under `ADSR`; `ATK` and `DEC` are on the page under
+ * both. A reader hunting for a sustain on an AHD track is looking for a control the mode has
+ * taken away, and every recipe authors exactly its mode's set — the test holds it to that.
  */
 const ampMode = (m: (typeof AMP_MODES)[number]) =>
   pick('AMP MODE', m, AMP_MODES, 56, 'AHD has HOLD and no SUS or REL; ADSR has SUS and REL and no HOLD')
@@ -342,6 +354,75 @@ const hold = (v: number) =>
     mood: [{ axis: 'density', amount: -24 }],
     note: 'A fixed hold ignores Note Off and Trig Length — this value ends the note, not the key. NOTE hands it back',
   })
+/**
+ * AMP page, p.56 — the four stages authored off no printed scale, and the decision to do it.
+ *
+ * p.56 gives each a sentence and no number: `ATK` *"sets the length of the attack phase of the
+ * amp envelope"*, `DEC` *"the length of the decay phase"*, `SUS` *"the sustain level"*, `REL`
+ * *"the length of the release phase"*. `HOLD`, on the same page, gets *"(0–126)"* — which is what
+ * makes the silence on the other four a fact about the page rather than about the reader.
+ *
+ * **The range is unverified, explicitly, and that is the decision rather than an oversight.** The
+ * absence was checked by rendering the pages rather than grepping a text dump: p.56 itself;
+ * Appendix A (pp.93-108), whose machine pages name `DEC` only to say a loop is *"constrained by
+ * the AMP page envelope parameters HLD and DEC"* (pp.94-100) and whose filter pages print bare
+ * `ATK`, `DEC`, `SUS` and `REL` for the filter envelope (pp.105-108), and range none of them; and
+ * Appendix B's AMP table, B.5 on p.110, which gives Attack, Hold, Decay, Sustain and Release a
+ * CC (79-83) and an NRPN each and no value column. A 7-bit controller implies 128 positions and
+ * is still not a printed scale.
+ *
+ * **p.56's tip is corroboration, not a range.** *"the sound will be sustained (if DEC is set to
+ * less than 127)"* describes what a held key does while the decay is below 127, and that is the
+ * whole of what it says: it names one boundary, on one side, and gives no behaviour for 127
+ * itself, nothing for the bottom, and no scale between. Every decay authored below is kept on
+ * the side of it the page describes, and the range stays `verified: false`.
+ *
+ * **The older Digitakt is not a source either.** OS1.51's p.44 prints `ATK (0–127)` and `REL
+ * (0–126, INF)` and that manifest cites them; a range copied across a generation is
+ * `CLAUDE.md`'s cited-wrong-scale trap with an extra step, so what is taken from it is the
+ * spelling and nothing else.
+ *
+ * So `0-127` is carried unverified and the point resolves provisional. What that costs is settled
+ * by §3.2's legality gate: **mood may not move a value inside bounds nobody checked**, so none of
+ * the four carries `mood`, and `density` stays on `HOLD`, which p.56 does range. Declaring an
+ * offset here would be the audit's `mood-inert` finding seventy times over, on a library whose
+ * count is zero. The day somebody with the box reads the two ends off its screen, these become
+ * `observed` ranges and the `mood` question reopens on its own terms.
+ *
+ * **Page-qualified, and `HOLD` is not, and both follow the same rule.** pp.105-108 print `ATK`,
+ * `DEC`, `SUS` and `REL` on the filter envelope, so the bare names would be ambiguous on this
+ * box; `HOLD` is printed on one page for one control, so it stays the ink. `AMP` is the panel's
+ * button and the qualifier `AMP MODE` already uses, and it is the spelling the older Digitakt
+ * settled on for the same page — `AMP ATK`, `HOLD`, `AMP DEC` — so nothing is invented and the
+ * two generations read the same.
+ */
+function stage(name: 'AMP ATK' | 'AMP DEC' | 'AMP SUS' | 'AMP REL', v: number, note: string): AuthoredParam {
+  return {
+    kind: 'numeric',
+    name,
+    value: v,
+    range: { min: 0, max: 127, verified: false },
+    verified: false,
+    note,
+  }
+}
+
+/** AMP `ATK`, p.56: the attack time, under either mode. */
+const atk = (v: number) => stage('AMP ATK', v, 'The amp envelope on the AMP page, not the filter envelope')
+
+/**
+ * AMP `DEC`, p.56: the decay time, under either mode. Under `AHD` it is what ends the note after
+ * the hold, and pp.94-100 say a loop is constrained by it; under `ADSR` it is the fall to `SUS`.
+ * p.56 describes a held key's sustain only while this is below 127, so every value here is.
+ */
+const dec = (v: number) => stage('AMP DEC', v, 'The amp envelope; p.56 describes the sustain only while this is below 127')
+
+/** AMP `SUS`, p.56: the sustain level, `ADSR` only. A level, where the other three are times. */
+const sus = (v: number) => stage('AMP SUS', v, 'A level, not a time; only on the AMP page while MODE is ADSR')
+
+/** AMP `REL`, p.56: the release time, `ADSR` only. */
+const rel = (v: number) => stage('AMP REL', v, 'Only on the AMP page while MODE is ADSR')
+
 /**
  * Oneshot `TUNE`, p.93: *"The knob works in a bipolar fashion, and a value of 0 leaves the pitch
  * unchanged. The range is +/- 5 octaves."* Sixty semitones either side, in the library's one
@@ -385,12 +466,12 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'track',
     mode: 'whole-sample',
-    title: 'One-shot kick, played forward and left alone',
+    title: 'One-shot kick, played forward under a short decay',
     verified: false,
     sourceAudio: {
       need: 'A dry kick one-shot with a defined attack and no room on it',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(24)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), atk(0), hold(24), dec(36)],
     articulation: [art('downbeat', { velocity: 120 }, 'trig-params')],
   },
   {
@@ -406,7 +487,7 @@ const recipes: Recipe[] = [
         'A kick one-shot with grit already in it — off tape, off vinyl, through an overdriven ' +
         'bus',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('COMB-'), ampMode('AHD'), hold(8)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('COMB-'), ampMode('AHD'), atk(0), hold(8), dec(12)],
     articulation: [art('accent', { velocity: 127 }, 'trig-params')],
   },
   {
@@ -453,7 +534,7 @@ const recipes: Recipe[] = [
         },
       },
     },
-    params: [src('REPITCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(96)],
+    params: [src('REPITCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), atk(4), hold(96), dec(64)],
     articulation: [art('downbeat', { 'note-length': 32 }, 'trig-params')],
   },
   {
@@ -469,7 +550,7 @@ const recipes: Recipe[] = [
         'A short bass note with harmonics above the fundamental; a filtered sine repitches into ' +
         'nothing to bite on',
     },
-    params: [src('REPITCH'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('ADSR'), lfoMode('TRG'), fade(-20)],
+    params: [src('REPITCH'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('ADSR'), atk(0), dec(40), sus(72), rel(20), lfoMode('TRG'), fade(-20)],
     articulation: [art('downbeat', { velocity: 112, 'note-length': 12 }, 'trig-params')],
   },
   {
@@ -483,7 +564,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A snare one-shot, crack intact and dry',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(20)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), atk(0), hold(20), dec(28)],
     articulation: [art('backbeat', { velocity: 124 }, 'trig-params')],
   },
   {
@@ -497,7 +578,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A snare one-shot with body for WERP to chew — a thin sample warps into a thinner one',
     },
-    params: [src('WERP'), play('FORWARD'), fltr('COMB+'), ampMode('AHD'), hold(16), vfad(-32)],
+    params: [src('WERP'), play('FORWARD'), fltr('COMB+'), ampMode('AHD'), atk(0), hold(16), dec(24), vfad(-32)],
     articulation: [
       art('backbeat', { velocity: 118 }, 'trig-params'),
       art('fill', { retrig: true, 'retrig-rate': '1/32' }, 'retrig'),
@@ -514,7 +595,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A stereo hand-clap one-shot, several hands rather than one',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(28)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), atk(0), hold(28), dec(32)],
     articulation: [art('backbeat', { velocity: 110 }, 'trig-params')],
   },
   {
@@ -528,7 +609,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A rimshot or cross-stick one-shot under 80 ms, close and dry, with no room on it',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(2)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), atk(0), hold(2), dec(6)],
     articulation: [
       art('backbeat', { velocity: 102 }, 'trig-params'),
       art('ghost', { velocity: 44, probability: 70 }, 'trig-params'),
@@ -545,7 +626,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A closed hat one-shot under 150 ms, dry',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), hold(4)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), atk(0), hold(4), dec(10)],
     articulation: [art('offbeat', { velocity: 84, 'micro-timing': -2 }, 'micro-timing')],
   },
   {
@@ -561,7 +642,7 @@ const recipes: Recipe[] = [
         'A closed hat one-shot that is already lo-fi — a sampled machine hat, not a studio ' +
         'recording',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('COMB-'), ampMode('AHD'), hold(3)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('COMB-'), ampMode('AHD'), atk(0), hold(3), dec(8)],
     articulation: [
       art('offbeat', { velocity: 88 }, 'trig-params'),
       art('ghost', { velocity: 48, probability: 60 }, 'trig-params'),
@@ -578,7 +659,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'An open hat one-shot with a real tail to hold open',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(72)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), atk(0), hold(72), dec(64)],
     articulation: [art('offbeat', { velocity: 108, 'note-length': 16 }, 'trig-params')],
   },
   {
@@ -594,7 +675,7 @@ const recipes: Recipe[] = [
         'A ride cymbal one-shot with the bow ring left on it, two seconds or longer; a gated ' +
         'ride has nothing for HOLD to hold',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(88)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), atk(0), hold(88), dec(80)],
     articulation: [art('offbeat', { velocity: 96, 'note-length': 24 }, 'trig-params')],
   },
   {
@@ -608,7 +689,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A shaker, tick or brushed one-shot under 100 ms',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), hold(6)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), atk(0), hold(6), dec(10)],
     articulation: [art('ghost', { velocity: 40, probability: 50 }, 'trig-params')],
   },
   {
@@ -622,7 +703,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A struck metal one-shot — bell, spring, pipe, anvil; inharmonic is the point',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('COMB+'), ampMode('AHD'), hold(40)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('COMB+'), ampMode('AHD'), atk(0), hold(40), dec(48)],
     articulation: [art('offbeat', { velocity: 96 }, 'trig-params')],
   },
   {
@@ -642,7 +723,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A low tom one-shot with the pitch drop already recorded into it, skin and all',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(44), vfad(-32)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), atk(0), hold(44), dec(48), vfad(-32)],
     articulation: [
       art('accent', { velocity: 116 }, 'trig-params'),
       art('fill', { retrig: true, 'retrig-rate': '1/24' }, 'retrig'),
@@ -665,7 +746,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A mid or high tom one-shot recorded close, with the stick attack intact',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(26)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), atk(0), hold(26), dec(30)],
     articulation: [
       art('offbeat', { velocity: 104 }, 'trig-params'),
       art('fill', { velocity: 120 }, 'trig-params'),
@@ -692,7 +773,7 @@ const recipes: Recipe[] = [
         'A noise recording with movement in it, such as tape hiss, a vinyl run-out or a cymbal ' +
         'wash; flat white noise gives the filter nothing to reveal',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('LEGACY'), ampMode('AHD'), hold(10)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LEGACY'), ampMode('AHD'), atk(0), hold(10), dec(12)],
     articulation: [
       art('offbeat', { velocity: 90 }, 'trig-params'),
       art('accent', { velocity: 112 }, 'trig-params'),
@@ -712,7 +793,7 @@ const recipes: Recipe[] = [
         'rather than between them. You can record one on a phone in a quiet room: one voice, ' +
         'close to the mic so it stays dry, nothing playing behind it',
     },
-    params: [src('SLICE'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), hold(18)],
+    params: [src('SLICE'), play('FORWARD'), fltr('EQ'), ampMode('AHD'), atk(0), hold(18), dec(16)],
     // The obvious articulation here is a per-step sample or slice lock, and it is exactly what
     // this model cannot carry: see `PER_STEP`. What was left was a velocity bump on `first-hit`,
     // and #108's reachability check found that dead: only Industrial Techno emits `first-hit` at
@@ -757,7 +838,7 @@ const recipes: Recipe[] = [
         },
       },
     },
-    params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(24)],
+    params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), atk(72), dec(64), sus(108), rel(96), lfoMode('FRE'), fade(24)],
     articulation: [art('downbeat', { 'note-length': 64 }, 'trig-params')],
   },
   {
@@ -783,7 +864,7 @@ const recipes: Recipe[] = [
         'A single sustained tone of known pitch, one note only, with a clean start; every trig ' +
         'repitches this one file, so anything recorded into it transposes with it',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('ADSR')],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('ADSR'), atk(2), dec(48), sus(84), rel(24)],
     articulation: [art('downbeat', { velocity: 110, 'note-length': 12 }, 'trig-params')],
   },
   {
@@ -809,7 +890,7 @@ const recipes: Recipe[] = [
     sourceAudio: {
       need: 'A short plucked or struck tone of known pitch, one note, decaying inside one step',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), hold(8)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('AHD'), atk(0), hold(8), dec(18)],
     articulation: [
       art('offbeat', { velocity: 92, 'note-length': 4 }, 'trig-params'),
       art('ghost', { velocity: 56, probability: 80 }, 'trig-params'),
@@ -873,7 +954,9 @@ const recipes: Recipe[] = [
       play('FORWARD'),
       fltr('LOWPASS 4'),
       ampMode('AHD'),
+      atk(0),
       hold(6),
+      dec(20),
       portSlope('CONSTANT TIME'),
       portStyle('GLIDE'),
       portLegato('OFF'),
@@ -926,7 +1009,7 @@ const recipes: Recipe[] = [
       'cutoff is the destination the manual will not name:** p.114 prints it as `FILTER: ' +
       '(machine dependent parameters)`, and p.58\u2019s MOD page figure spells it `LP4 FREQ` only ' +
       'with the LOWPASS 4 machine loaded, not this one\u2019s multi-mode filter',
-    params: [src('ONESHOT'), play('REVERSE'), fltr('MULTI-MODE'), ampMode('ADSR'), lfoMode('ONE'), fade(-48)],
+    params: [src('ONESHOT'), play('REVERSE'), fltr('MULTI-MODE'), ampMode('ADSR'), atk(0), dec(64), sus(120), rel(12), lfoMode('ONE'), fade(-48)],
     articulation: [art('last-hit', { velocity: 127, 'note-length': 48 }, 'trig-params')],
   },
   {
@@ -935,12 +1018,12 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'track',
     mode: 'whole-sample',
-    title: 'One-shot impact on the change, nothing else touched',
+    title: 'One-shot impact on the change, held and decayed long',
     verified: false,
     sourceAudio: {
       need: 'A one-shot with a big front — a crash, a gated slam, a reversed hit',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('LEGACY'), ampMode('AHD'), hold(110)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('LEGACY'), ampMode('AHD'), atk(0), hold(110), dec(100)],
     articulation: [art('first-hit', { velocity: 127 }, 'trig-params')],
   },
   {
@@ -977,7 +1060,7 @@ const recipes: Recipe[] = [
         'as long as it was recorded (p.93). The trig below holds one bar, so a shorter file ' +
         'leaves silence before the intended arrival and a longer one is cut before it',
     },
-    params: [src('ONESHOT'), play('REVERSE'), tune(0), ampMode('ADSR')],
+    params: [src('ONESHOT'), play('REVERSE'), tune(0), ampMode('ADSR'), atk(0), dec(64), sus(120), rel(12)],
     articulation: [
       art('first-hit', { velocity: 104, 'note-length': 16 }, 'trig-params'),
       art('offbeat', { velocity: 88, 'note-length': 16 }, 'trig-params'),
@@ -1024,7 +1107,7 @@ const recipes: Recipe[] = [
         'Chord sample(s) — one per chord shape the hook plays; see Hook for which and for the ' +
         'transposition on each trigger',
     },
-    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), hold(22)],
+    params: [src('ONESHOT'), play('FORWARD'), fltr('MULTI-MODE'), ampMode('AHD'), atk(0), hold(22), dec(24)],
     articulation: [art('accent', { velocity: 120, 'note-length': 8 }, 'trig-params')],
   },
   {
@@ -1061,7 +1144,7 @@ const recipes: Recipe[] = [
         },
       },
     },
-    params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), lfoMode('FRE'), fade(32)],
+    params: [src('STRETCH'), play('FORWARD LOOP'), fltr('LOWPASS 4'), ampMode('ADSR'), atk(56), dec(64), sus(100), rel(72), lfoMode('FRE'), fade(32)],
     articulation: [art('downbeat', { 'note-length': 96 }, 'trig-params')],
   },
   {
@@ -1103,7 +1186,7 @@ const recipes: Recipe[] = [
         'A recording of a sweep, four bars or longer, that arrives at its top or bottom exactly ' +
         'at the end; BARS stretches it to the section, so where it ends is where the change is',
     },
-    params: [src('STRETCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('ADSR')],
+    params: [src('STRETCH'), play('FORWARD'), fltr('LOWPASS 4'), ampMode('ADSR'), atk(0), dec(64), sus(120), rel(16)],
   },
 ]
 

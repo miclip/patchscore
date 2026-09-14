@@ -7,6 +7,7 @@ import {
   expand,
   isSustainedPart,
   moodState,
+  resolveParams,
   noteInstruction,
   realisationOf,
   renderGuide,
@@ -30,8 +31,10 @@ import { auditDevice } from '../scripts/audit-verified'
  *
  * The other thing it is first at is scarcity of a particular kind. Elektron documents what a
  * parameter does and leaves its range to the screen, so a 118-page manual for a deep sampler
- * yields exactly three printed numeric ranges. Every recipe here is therefore a chain of cited
- * enum choices, and every uncited numeric is absent.
+ * yields four printed numeric ranges. Every recipe here is therefore a chain of cited enum
+ * choices, and every uncited numeric is absent — except the AMP page's four stages, which since
+ * #547 are authored with a range that says `verified: false`, so the claim is explicit rather
+ * than inherited, and which this file holds to being the only ones.
  */
 
 const MANUAL = 'Digitakt II User Manual OS 1.15A, p.'
@@ -240,13 +243,16 @@ describe('Digitakt II manifest', () => {
     // p.54, FADE (-64–63) p.58, HOLD (0–126) p.56, and the Oneshot machine's TUNE, "+/- 5
     // octaves" on p.93, authored as ±60 semitones in the library's spelling of the unit (#57).
     // Everything else is described in words with no scale. So a recipe here is a chain of machine
-    // and mode choices, and every numeric that survives is one of those four.
+    // and mode choices, and every numeric that survives is one of those four — or one of the AMP
+    // page's four stages, which #547 authors as `0-127` with `verified: false` on the range, and
+    // which is the only numeric allowed to carry no page.
     const SHAPES = [
       { min: -64, max: 64 },
       { min: -64, max: 63 },
       { min: 0, max: 126 },
       { min: -60, max: 60 },
     ]
+    const UNPRINTED = new Set(['AMP ATK', 'AMP DEC', 'AMP SUS', 'AMP REL'])
     let enums = 0
     let numerics = 0
     for (const recipe of device.recipes) {
@@ -264,7 +270,14 @@ describe('Digitakt II manifest', () => {
           expect(param.options.values.length, where).toBeGreaterThan(1)
         }
         if (param.kind === 'numeric') {
+          if (UNPRINTED.has(param.name)) {
+            expect(param.range, where).toEqual({ min: 0, max: 127, verified: false })
+            expect(param.value, where).toBeGreaterThanOrEqual(0)
+            expect(param.value, where).toBeLessThanOrEqual(127)
+            continue
+          }
           numerics += 1
+          expect(param.range.verified, where).toMatchObject({ kind: 'manual' })
           expect(
             SHAPES.some((s) => s.min === param.range.min && s.max === param.range.max),
             `${where}: ${param.range.min}..${param.range.max} is not one of the four printed ranges`,
@@ -275,14 +288,19 @@ describe('Digitakt II manifest', () => {
         }
       }
     }
-    // Enum-dominated, and by a wide margin. That ratio is the manual's shape, not a choice.
+    // Enum-dominated, and by a wide margin, counting the numerics the manual ranged. That ratio
+    // is the manual's shape, not a choice — and the unranged stages are the same fact stated the
+    // other way round, which is why they are not counted against it.
     expect(enums).toBeGreaterThan(numerics * 2)
   })
 
-  it('omits the parameters whose range the manual never states', () => {
-    // The failure mode is inventing a 0-127 to hang a value on. ATK, DEC, PAN, VOL, cutoff and
-    // resonance are all real, prominent controls with no printed scale anywhere.
+  it('omits the parameters whose range the manual never states, except the four amp stages', () => {
+    // The failure mode is inventing a 0-127 to hang a value on. PAN, VOL, cutoff and resonance
+    // are all real, prominent controls with no printed scale anywhere.
     // `TUNE` is not on this list since #57: p.93 prints its range, and `dt2-impact-soft` authors it.
+    // The bare `ATK`, `DEC`, `SUS` and `REL` stay on it since #547 for a different reason: the
+    // amp's are authored page-qualified, and a bare one would be the filter envelope's (pp.105-108)
+    // as easily as the amp's.
     const uncited = ['ATK', 'DEC', 'PAN', 'VOL', 'SUS', 'REL', 'CUTOFF', 'RESO', 'STRT', 'LEN']
     for (const recipe of device.recipes) {
       const names = params(recipe).map((p) => p.name)
@@ -295,13 +313,129 @@ describe('Digitakt II manifest', () => {
     }
   })
 
-  it('cites every range and option set, and no point (§3.2)', () => {
+  it('cites every range and option set but the four amp stages, and no point (§3.2)', () => {
     const counts = auditDevice(device).counts
     expect(counts.provisionalPoints).toBe(counts.params)
     expect(counts.manualPoints + counts.observedPoints).toBe(0)
-    expect(counts.unverifiedRanges).toBe(0)
+    // Two stages on each of the twenty-one AHD recipes, four on each of the seven ADSR.
+    expect(counts.unverifiedRanges).toBe(21 * 2 + 7 * 4)
     expect(counts.moodInert).toBe(0)
-    expect(counts.manualRanges).toBe(counts.numerics)
+    expect(counts.manualRanges).toBe(counts.numerics - counts.unverifiedRanges)
+  })
+
+  // -------------------------------------------------------------------------
+  // §3.1/#547 — the amp envelope, whole, under whichever mode the recipe chose
+  // -------------------------------------------------------------------------
+
+  describe('the amp envelope (§3.1/#547)', () => {
+    const AHD: readonly string[] = ['AMP MODE', 'AMP ATK', 'HOLD', 'AMP DEC']
+    const ADSR: readonly string[] = ['AMP MODE', 'AMP ATK', 'AMP DEC', 'AMP SUS', 'AMP REL']
+    const STAGES = ['AMP ATK', 'HOLD', 'AMP DEC', 'AMP SUS', 'AMP REL']
+    const named = (recipe: Recipe, name: string) => params(recipe).find((p) => p.name === name)
+
+    it('authors exactly the stages its mode has, in the order p.56 prints them, once each', () => {
+      // p.56: `HOLD` "is only available if MODE is set to AHD"; `SUS` and `REL` "only available
+      // if MODE is set to ADSR"; `ATK` and `DEC` carry no condition. A stage from the other mode
+      // would be a value the reader cannot find on the screen, and a missing one is the hole
+      // #547 is about. The block is contiguous and starts at the mode, which decides it.
+      let ahd = 0
+      let adsr = 0
+      for (const recipe of device.recipes) {
+        const names = params(recipe).map((p) => p.name)
+        const mode = named(recipe, 'AMP MODE')
+        expect(mode?.kind, recipe.id).toBe('enum')
+        if (mode?.kind !== 'enum') continue
+        const want = mode.value === 'AHD' ? AHD : ADSR
+        if (mode.value === 'AHD') ahd += 1
+        else adsr += 1
+        const at = names.indexOf('AMP MODE')
+        expect(names.slice(at, at + want.length), `${recipe.id} AMP block`).toEqual([...want])
+        for (const stage of STAGES) {
+          const count = names.filter((n) => n === stage).length
+          expect(count, `${recipe.id} ${stage}`).toBe(want.includes(stage) ? 1 : 0)
+        }
+      }
+      expect(ahd).toBe(21)
+      expect(adsr).toBe(7)
+    })
+
+    it('qualifies the four stages with the page and leaves HOLD bare, as the older Digitakt does', () => {
+      // pp.105-108 print `ATK`, `DEC`, `SUS` and `REL` on the filter envelope, so the amp's carry
+      // the page; `HOLD` is printed once, so it stays the ink. The older Digitakt settled the same
+      // spelling for the same page, so the two generations read alike.
+      const all = new Set(device.recipes.flatMap((r) => params(r).map((p) => p.name)))
+      for (const bare of ['ATK', 'DEC', 'SUS', 'REL', 'AMP HOLD']) expect(all).not.toContain(bare)
+      expect([...all].filter((n) => n.startsWith('AMP ')).sort()).toEqual([
+        'AMP ATK', 'AMP DEC', 'AMP MODE', 'AMP REL', 'AMP SUS',
+      ])
+      const older = DEVICES.find((d) => d.id === 'elektron-digitakt')
+      const olderNames = new Set(older?.recipes.flatMap((r) => r.params.map((p) => p.name)) ?? [])
+      for (const name of ['AMP ATK', 'HOLD', 'AMP DEC']) expect(olderNames, name).toContain(name)
+    })
+
+    it('carries the four new stages provisional on both claims and deaf to mood, and HOLD as it was', () => {
+      // The audit-facing half. §3.2's legality gate makes an unverified range deaf to mood, so an
+      // offset on any of the four would be the audit's `mood-inert` finding seventy times over.
+      // `density` stays on `HOLD`, whose `0-126` p.56 prints, so the axis is still answered by the
+      // one stage that can legally answer it.
+      for (const recipe of device.recipes) {
+        for (const name of ['AMP ATK', 'AMP DEC', 'AMP SUS', 'AMP REL']) {
+          const stage = named(recipe, name)
+          if (stage === undefined) continue
+          expect(stage.kind, `${recipe.id} ${name}`).toBe('numeric')
+          if (stage.kind !== 'numeric') continue
+          expect(stage.range, `${recipe.id} ${name} range`).toEqual({ min: 0, max: 127, verified: false })
+          expect(stage.verified, `${recipe.id} ${name} point`).toBe(false)
+          expect(stage.mood, `${recipe.id} ${name} mood`).toBeUndefined()
+          expect(stage.unit, `${recipe.id} ${name} unit`).toBeUndefined()
+          expect(stage.note, `${recipe.id} ${name} note`).toBeDefined()
+        }
+        const hold = named(recipe, 'HOLD')
+        if (hold === undefined) continue
+        expect(hold.kind).toBe('numeric')
+        if (hold.kind !== 'numeric') continue
+        expect(hold.range).toEqual({ min: 0, max: 126, verified: { kind: 'manual', source: `${MANUAL}56` } })
+        expect(hold.mood).toEqual([{ axis: 'density', amount: -24 }])
+      }
+      expect(auditDevice(device).counts.moodInert).toBe(0)
+    })
+
+    it('keeps every decay below 127 and every sustain above zero', () => {
+      // p.56's tip: the sound is sustained "if DEC is set to less than 127", which is behaviour
+      // and not a range — it names one boundary on one side, gives 127 itself no behaviour, and
+      // says nothing of the bottom or the scale. Every decay here stays on the side the page
+      // describes; and every ADSR sustain is above zero, since a level of nothing would make the
+      // mode's whole point moot.
+      for (const recipe of device.recipes) {
+        const dec = named(recipe, 'AMP DEC')
+        expect(dec?.kind === 'numeric' ? dec.value : undefined, `${recipe.id} AMP DEC`).toBeLessThan(127)
+        const sus = named(recipe, 'AMP SUS')
+        if (sus === undefined) continue
+        expect(sus.kind === 'numeric' ? sus.value : undefined, `${recipe.id} AMP SUS`).toBeGreaterThan(0)
+      }
+    })
+
+    it('resolves the stages provisional and leaves them where they were authored under full density', () => {
+      // The value the reader dials is the authored one, it wears the provisional badge, and
+      // turning density to either end moves `HOLD` and not a stage. One recipe of each mode.
+      const kick = device.recipes.find((r) => r.id === 'dt2-kick-hard')
+      const pad = device.recipes.find((r) => r.id === 'dt2-pad-soft')
+      expect(kick).toBeDefined()
+      expect(pad).toBeDefined()
+      if (kick === undefined || pad === undefined) return
+      for (const density of [0, 100]) {
+        const k = resolveParams(kick, moodState({ density }))
+        const find = (list: typeof k, name: string) => list.find((p) => p.name === name)
+        expect(find(k, 'AMP ATK')).toMatchObject({ value: 0, provenance: { state: 'provisional' } })
+        expect(find(k, 'AMP DEC')).toMatchObject({ value: 36, provenance: { state: 'provisional' } })
+        expect(find(k, 'AMP DEC')?.range).toEqual({ min: 0, max: 127, verified: false })
+        expect(find(k, 'HOLD')?.value, `HOLD at density ${String(density)}`).not.toBe(24)
+        const q = resolveParams(pad, moodState({ density }))
+        expect(find(q, 'AMP SUS')).toMatchObject({ value: 100, provenance: { state: 'provisional' } })
+        expect(find(q, 'AMP REL')).toMatchObject({ value: 72, provenance: { state: 'provisional' } })
+        expect(find(q, 'HOLD')).toBeUndefined()
+      }
+    })
   })
 
   // -------------------------------------------------------------------------

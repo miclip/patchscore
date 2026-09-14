@@ -52,6 +52,14 @@ Source — A short bass note with harmonics above the fundamental; a filtered si
 - **FLTR MACHINE** `MULTI-MODE`
 - **AMP MODE** `ADSR`
   - ↳ note: AHD has HOLD and no SUS or REL; ADSR has SUS and REL and no HOLD
+- **AMP ATK** `0` (0…127)
+  - ↳ note: The amp envelope on the AMP page, not the filter envelope
+- **AMP DEC** `40` (0…127)
+  - ↳ note: The amp envelope; p.56 describes the sustain only while this is below 127
+- **AMP SUS** `72` (0…127)
+  - ↳ note: A level, not a time; only on the AMP page while MODE is ADSR
+- **AMP REL** `20` (0…127)
+  - ↳ note: Only on the AMP page while MODE is ADSR
 - **LFO MODE** `TRG`
 - **FADE** `-20` (-64…63)
 
