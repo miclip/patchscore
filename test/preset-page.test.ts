@@ -13,7 +13,7 @@ import sitemap from '../app/sitemap'
 import type { Device } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS } from '../lib/riffs'
-import { deviceHref, presetsHref, riffHref } from '../lib/studio/catalogue'
+import { deviceHref, presetFigureHref, presetsHref, riffHref } from '../lib/studio/catalogue'
 import { presetSession } from '../lib/studio/preset-session'
 import { PRESET_LEAD, presetTitle } from '../lib/studio/preset-text'
 
@@ -116,17 +116,22 @@ describe('the page says what the model says, every entry open', () => {
     }
   })
 
-  it('links every entry to its figure and prints the five recipe claims', () => {
+  it('links every entry to its figure page under the device, and prints the five recipe claims', () => {
     for (const entry of session.entries) {
-      expect(entry.riff, entry.patch.name).toBeDefined()
-      if (entry.riff !== undefined) {
-        expect(MUSE, entry.patch.name).toContain(`href="${riffHref(entry.riff)}"`)
-        expect(MUSE_TEXT, entry.patch.name).toContain(entry.riff.name)
+      expect(entry.figure, entry.patch.name).toBeDefined()
+      if (entry.figure !== undefined) {
+        expect(MUSE, entry.patch.name).toContain(
+          `href="${presetFigureHref(byId('moog-muse'), entry.patch)}"`,
+        )
+        expect(MUSE_TEXT, entry.patch.name).toContain(entry.figure.riff.name)
       }
     }
-    for (const riff of RIFFS.filter((r) => r.reference.kind === 'record')) {
+    // §3.7/#598. Nothing into `/riffs`: the twelve have no page there, and the five that do are
+    // not this box's.
+    for (const riff of RIFFS) {
       expect(MUSE, riff.id).not.toContain(`href="${riffHref(riff)}"`)
     }
+    expect(MUSE).not.toContain('href="/riffs')
     expect(MUSE.match(/class="quiet preset-recipe"/g)?.length).toBe(5)
     for (const entry of session.entries) {
       for (const r of entry.recipes) {

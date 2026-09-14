@@ -13,9 +13,10 @@ import DirectionPageRoute from '../app/directions/[id]/page'
 import DrumMachinesPage from '../app/drum-machines/page'
 import RiffIndexPage from '../app/riffs/page'
 import RiffRoute from '../app/riffs/[id]/page'
+import PresetFigureRoute from '../app/devices/[id]/presets/[patch]/page'
 import Page from '../app/page'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { RIFFS } from '../lib/riffs'
+import { RECORD_RIFFS } from '../lib/riffs'
 import { TEMPLATES } from '../lib/templates/index'
 
 /**
@@ -48,7 +49,8 @@ async function shell(page: ReactElement): Promise<string> {
 async function routes(): Promise<{ name: string; markup: string }[]> {
   const device = DEVICES[0]
   const template = TEMPLATES[0]
-  const riff = RIFFS[0]
+  // A record-named entry: the ones with a page under `/riffs` (#598).
+  const riff = RECORD_RIFFS[0]
   if (device === undefined || template === undefined || riff === undefined) {
     throw new Error('empty registry')
   }
@@ -71,6 +73,15 @@ async function routes(): Promise<{ name: string; markup: string }[]> {
     {
       name: `/devices/${device.id}`,
       markup: await shell(await DevicePageRoute({ params: Promise.resolve({ id: device.id }) })),
+    },
+    // §3.7/#598. A preset figure page, in the route set for the reason the riff page is.
+    {
+      name: '/devices/moog-muse/presets/muse-runner',
+      markup: await shell(
+        await PresetFigureRoute({
+          params: Promise.resolve({ id: 'moog-muse', patch: 'muse-runner' }),
+        }),
+      ),
     },
     {
       name: `/directions/${template.id}`,

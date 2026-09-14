@@ -1,26 +1,46 @@
-import type { Device, PatchUse, Recipe, Riff, ShippedPatch } from '@/lib/core'
-import { patchUseIssues, shippedPatchKey } from '@/lib/core'
+import type {
+  Device,
+  PatchUse,
+  Recipe,
+  Riff,
+  RiffResolution,
+  RiffVoicing,
+  ShippedPatch,
+} from '@/lib/core'
+import { patchUseIssues, resolveRiff, shippedPatchKey } from '@/lib/core'
 import { RIFFS } from '@/lib/riffs'
+import { presetSlug } from './catalogue'
 
 /**
- * §2.6/#593. **A preset session: the factory patches one box ships, what each is for, and where
- * this library already reaches it.**
+ * §2.6/#593, §3.7/#598. **A preset session: the factory patches one box ships, what each is
+ * for, where this library already reaches it, and the figure written for it, resolved on this
+ * box.**
  *
  * Pure, and a view model rather than a renderer, on the pattern of `kitSession` (§3.7/#478):
- * nothing here draws anything and nothing here resolves. A device folder has already declared
- * the fact (`Device.factoryPatches`, #592) and the judgement beside it (`Device.patchUses`),
- * and this adds the two joins a reader looking down that list needs and the folder does not
- * carry:
+ * nothing here draws anything. A device folder has already declared the fact
+ * (`Device.factoryPatches`, #592) and the judgement beside it (`Device.patchUses`), and this
+ * adds the joins a reader looking down that list needs and the folder does not carry:
  *
  *  - **which recipes reach the patch** — `Recipe.factoryPatch` (§3/#553), read off the same
  *    folder, matched on the shipped name and bank exactly. Five of the Muse's twelve today.
  *  - **which figure was written for it** — the riff whose `reference` is of kind `patch` and
  *    names it (§5A.5). Twelve of twelve today.
+ *  - **where that figure lands on this box** — `resolveRiff` against this one device (#598),
+ *    which is the one thing here that resolves, and it resolves so the page at
+ *    `presetFigureHref` can render the box's settings with no rig in the reader's hands.
  *
- * **The second join points from the device to the riff and never back.** A riff names no box
+ * **The riff join points from the device to the riff and never back.** A riff names no box
  * (invariant 3) and gains no field here; it names a patch, and a box that ships a patch by that
- * name may link out to it. That is the whole architectural point of the surface (#593): a
- * preset belongs to one box, and the box is where it is listed.
+ * name is where the figure surfaces. That is the whole architectural point of the surface
+ * (#593, #598): a preset belongs to one box, and the box is where it is listed and read.
+ *
+ * **A figure the box cannot play is an authoring error, and it throws here** (#598). A riff
+ * page resolves against whatever the reader owns and reports §7.3's gap honestly, because the
+ * page cannot know the rig. This surface knows the box, since the box is the page: a figure
+ * written for a patch, on the box that ships the patch, landing nowhere on it is a fact about
+ * the library and not about the reader, and it is caught at the build rather than rendered as a
+ * gap nobody standing at the box can act on. `PresetFigure.resolution` is therefore `played`
+ * by construction, and the outcome never narrows again downstream.
  *
  * **What it is not**, and each is a boundary rather than an omission:
  *
@@ -34,10 +54,34 @@ import { RIFFS } from '@/lib/riffs'
  *    follow, and a sort here would overrule the one place that has thought about it.
  */
 
+/**
+ * §3.7/#598. **The figure written for a patch, on the box that ships it.**
+ *
+ * `resolution` is `resolveRiff` against this device alone and is `played` by construction; see
+ * `presetSession`. `voice` is the same object as `resolution.voice`, named so a renderer does
+ * not narrow a union that never widens.
+ *
+ * `byHand` is the one fact this surface reads off the recipe that a riff page reads off an
+ * affinity (§5A.5/#585): whether the recipe the figure landed on names *this* patch as its
+ * `factoryPatch`, so the settings build the patch from scratch. Matched on `shippedPatchKey`,
+ * the same exact `(name, bank)` the recipe join above uses. A riff page cannot know which
+ * patch a reader means and asks the riff; this page is the patch, and asks the recipe. Where
+ * the figure lands on a recipe that names some *other* patch, or none, this is `false` and the
+ * page says nothing about a patch — the rule #586 settled, kept.
+ */
+export type PresetFigure = {
+  riff: Riff
+  resolution: RiffResolution & { outcome: 'played' }
+  voice: RiffVoicing
+  byHand: boolean
+}
+
 /** §2.6/#593. One shipped patch: the fact, the judgement, and where the library reaches it. */
 export type PresetEntry = {
   /** The name and bank as the box prints them — `Device.factoryPatches`' own object. */
   patch: ShippedPatch
+  /** `presetSlug(patch)`: the segment the figure page is addressed by. Unique per session. */
+  slug: string
   /** What it is for, in the folder's words — `PatchUse.use`. */
   use: string
   /**
@@ -46,8 +90,8 @@ export type PresetEntry = {
    * empty list here is that decline kept, not a gap to fill.
    */
   recipes: readonly Recipe[]
-  /** The figure written for this patch, where a riff's `reference` names it. */
-  riff?: Riff
+  /** The figure written for this patch, where a riff's `reference` names it, on this box. */
+  figure?: PresetFigure
 }
 
 /** §2.6/#593. What one box offers somebody exploring the patches it ships. */
@@ -67,7 +111,7 @@ export type PresetSession = {
  * figure written for a patch, and which of two that should be is an authoring decision, so it
  * throws here and `test/preset-session.test.ts` sees it before a page does.
  */
-function figureFor(patch: ShippedPatch, riffs: readonly Riff[]): Riff | undefined {
+function riffFor(patch: ShippedPatch, riffs: readonly Riff[]): Riff | undefined {
   const matches = riffs.filter(
     (riff) => riff.reference.kind === 'patch' && riff.reference.name === patch.name,
   )
@@ -77,6 +121,33 @@ function figureFor(patch: ShippedPatch, riffs: readonly Riff[]): Riff | undefine
     )
   }
   return matches[0]
+}
+
+/**
+ * §3.7/#598. **One figure, on the one box.** `resolveRiff` is reused rather than forked: the
+ * candidates, the stack planning, §7.1's ranking and the parameter resolution are the same
+ * code a riff page runs, handed a rig of one. What narrows is the outcome. A riff page keeps
+ * both arms because the rig is the reader's; here a gap means the library wrote a figure for a
+ * patch on a box that has no voice for it, and that is thrown as an authoring error so the
+ * build fails rather than a page rendering §7.3's sentence at somebody who cannot act on it.
+ *
+ * A substitution (§3.5) is not a gap and does not throw: the box plays the figure, on the
+ * nearest character it authors, and the resolver records which. The page prints no sentence
+ * about it — operator decision, #598 — so the settings are the box's nearest recipe for the
+ * part, said as such and no more.
+ */
+function figureFor(device: Device, patch: ShippedPatch, riff: Riff): PresetFigure {
+  const resolution = resolveRiff(riff, [device])
+  if (resolution.outcome !== 'played') {
+    throw new Error(
+      `${device.id}: '${riff.id}' is written for factory patch '${patch.name}' and the box cannot play it (${resolution.gap.reason}); a preset figure has to land on the box that ships the patch`,
+    )
+  }
+  const { voice } = resolution
+  const key = shippedPatchKey(patch)
+  const byHand =
+    voice.recipe.factoryPatch !== undefined && shippedPatchKey(voice.recipe.factoryPatch) === key
+  return { riff, resolution, voice, byHand }
 }
 
 /**
@@ -114,9 +185,33 @@ export function presetSession(
       (recipe) =>
         recipe.factoryPatch !== undefined && shippedPatchKey(recipe.factoryPatch) === key,
     )
-    const riff = figureFor(patch, riffs)
-    return { patch, use: use.use, recipes, ...(riff === undefined ? {} : { riff }) }
+    const riff = riffFor(patch, riffs)
+    const figure = riff === undefined ? undefined : figureFor(device, patch, riff)
+    return {
+      patch,
+      slug: presetSlug(patch),
+      use: use.use,
+      recipes,
+      ...(figure === undefined ? {} : { figure }),
+    }
   })
+
+  /*
+   * §3.7/#598. Two patches slugging to one address would be one page over two entries, and
+   * which of them it showed would be whichever came first in the folder. The slug is the name
+   * alone (`presetSlug`), so this is the check that keeps it so, and it throws for the reason
+   * the riff-count check above does: before a page does.
+   */
+  const slugs = new Map<string, string>()
+  for (const entry of entries) {
+    const other = slugs.get(entry.slug)
+    if (other !== undefined) {
+      throw new Error(
+        `${device.id}: factory patches '${other}' and '${entry.patch.name}' share the address '${entry.slug}'`,
+      )
+    }
+    slugs.set(entry.slug, entry.patch.name)
+  }
 
   return { device, entries }
 }

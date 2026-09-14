@@ -1446,6 +1446,24 @@ body {
 }
 
 /*
+ * §3.7/#598. **The figure page's patch line**: the name as the box prints it and what it is
+ * for, under the figure's title, in the index card's shape. Flex so the name and the use keep
+ * a gap and wrap on a phone rather than running together or pushing the head sideways.
+ */
+.preset-figure-patch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 8px 0 0;
+  min-width: 0;
+}
+
+.preset-figure-patch .preset-use {
+  max-width: 66ch;
+}
+
+/*
  * §2.6/#593. **The standalone page: the same patches, every one of them open.** No disclosure
  * and no chrome: a head, a list of cards, and a link back to the device.
  */

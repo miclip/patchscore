@@ -2,13 +2,14 @@ import { createElement, isValidElement } from 'react'
 import type { ReactElement, ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveHook, resolveRiff, spellChord, transposableKeys } from '../lib/core'
+import { referenceSlug, resolveHook, resolveRiff, spellChord, transposableKeys } from '../lib/core'
 import type { Riff } from '../lib/core'
 import { RIFFS } from '../lib/riffs'
 import { RiffFigureView, RiffInKey } from '../components/riff/riff-in-key'
 import { RiffFigure } from '../components/riff/riff-figure'
 import { chordRows, noteRows } from '../lib/studio/riff-text'
 import RiffRoute from '../app/riffs/[id]/page'
+import PresetFigureRoute from '../app/devices/[id]/presets/[patch]/page'
 
 /**
  * §5A/#570. **A riff read in a key the reader chooses**, on the page and nowhere else.
@@ -80,8 +81,20 @@ function facts(markup: string) {
   }
 }
 
-async function markupFor(id: string): Promise<string> {
-  return renderToStaticMarkup(await RiffRoute({ params: Promise.resolve({ id }) }))
+/**
+ * The route that carries a riff (#598): a record-named entry is at `/riffs/<id>`, and a
+ * patch-named one is a page under the box that ships the patch, which is the Muse for all
+ * twelve today. Both draw the figure through the same `RiffFigure`, so both are held to #570.
+ */
+async function markupFor(riff: Riff): Promise<string> {
+  if (riff.reference.kind === 'record') {
+    return renderToStaticMarkup(await RiffRoute({ params: Promise.resolve({ id: riff.id }) }))
+  }
+  return renderToStaticMarkup(
+    await PresetFigureRoute({
+      params: Promise.resolve({ id: 'moog-muse', patch: referenceSlug(riff.reference.name) }),
+    }),
+  )
 }
 
 const WITH_HARMONY = RIFFS.filter((r) => r.harmony !== undefined)
@@ -207,8 +220,8 @@ describe('RiffFigureView moves the notes and the chords, and nothing else (#570)
 describe('the riff route prerenders the figure at its authored key, with the control (#570)', () => {
   it('carries the authored spellings and the select opened on the authored key', async () => {
     for (const riff of RIFFS) {
-      const markup = await markupFor(riff.id)
-      // One key control; the page's other select is the rig picker's, and it is not read here.
+      const markup = await markupFor(riff)
+      // One key control; a riff page's other select is the rig picker's, and it is not read here.
       const controls = markup.match(/<div class="song-row key-select">[\s\S]*?<\/select>/g) ?? []
       expect(controls.length, riff.id).toBe(1)
       const control = controls[0] as string

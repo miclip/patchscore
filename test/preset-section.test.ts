@@ -7,7 +7,7 @@ import { FACTORY_PATCHES_FACT } from '../lib/core/index'
 import type { Device } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS } from '../lib/riffs'
-import { riffHref } from '../lib/studio/catalogue'
+import { presetFigureHref, riffHref } from '../lib/studio/catalogue'
 import { presetSession } from '../lib/studio/preset-session'
 import { PRESET_HEADING, PRESET_LEAD } from '../lib/studio/preset-text'
 import { device as fixtureDevice, recipe } from './fixtures'
@@ -94,16 +94,24 @@ describe('each entry says what the model says', () => {
     expect(MUSE_TEXT).toContain(PRESET_LEAD)
   })
 
-  it('links every entry to the riff whose reference names the patch, and to no other riff', () => {
+  /**
+   * §3.7/#598. The figure link is to the page under this box, never into `/riffs`: the twelve
+   * have no page there, so a `riffHref` on this panel would be a link to a 404.
+   */
+  it('links every entry to its figure page under the device, and nowhere into /riffs', () => {
     const patchRiffs = RIFFS.filter((r) => r.reference.kind === 'patch')
     expect(patchRiffs.length).toBe(12)
-    for (const riff of patchRiffs) {
-      expect(MUSE).toContain(`href="${riffHref(riff)}"`)
-      expect(MUSE_TEXT).toContain(riff.name)
+    for (const entry of session.entries) {
+      expect(entry.figure, entry.patch.name).toBeDefined()
+      expect(MUSE, entry.patch.name).toContain(
+        `href="${presetFigureHref(byId('moog-muse'), entry.patch)}"`,
+      )
+      expect(MUSE_TEXT, entry.patch.name).toContain(entry.figure?.riff.name ?? '')
     }
-    for (const riff of RIFFS.filter((r) => r.reference.kind === 'record')) {
+    for (const riff of RIFFS) {
       expect(MUSE, riff.id).not.toContain(`href="${riffHref(riff)}"`)
     }
+    expect(MUSE).not.toContain('href="/riffs')
   })
 
   /**
@@ -148,8 +156,14 @@ describe('each entry says what the model says', () => {
 
 describe('every entry is a closed details, whatever is under it', () => {
   it('draws a closed expander for a patch no recipe and no riff reaches', () => {
+    // A box that plays the Bellbounce figure (an `arp`), since #598 resolves every figure on
+    // the box that ships its patch and refuses one it cannot play.
     const device = fixtureDevice({
-      recipes: [recipe()],
+      recipes: [recipe(), recipe({ id: 'fx-arp-bright', role: 'arp', character: 'bright', voice: 'lt' })],
+      voices: [
+        { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
+        { kind: 'fixed', id: 'lt', label: 'LT', roles: ['arp'], polyphony: 1 },
+      ],
       factoryPatches: [{ name: 'Nothing Reaches Me' }, { name: 'Bellbounce' }],
       patchUses: [
         { name: 'Nothing Reaches Me', use: 'A pad' },

@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 
 import { SITE_ORIGIN } from '@/lib/studio/site'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { RIFFS } from '@/lib/riffs'
+import { RECORD_RIFFS } from '@/lib/riffs'
 import { SAMPLE_TARGETS } from '@/lib/samples'
 import { TEMPLATES } from '@/lib/templates'
 import { kitSession } from '@/lib/studio/kit-session'
@@ -10,6 +10,7 @@ import { presetSession } from '@/lib/studio/preset-session'
 import {
   deviceHref,
   kitHref,
+  presetFigureHref,
   presetsHref,
   riffHref,
   sampleHref,
@@ -72,17 +73,35 @@ export default function sitemap(): MetadataRoute.Sitemap {
      * `generateStaticParams` enumerates too, so a folder that declares both appears in both
      * without an edit, and one that does not is absent from both.
      */
-    ...DEVICES.flatMap((device) =>
-      presetSession(device) === undefined
-        ? []
-        : [
-            {
-              url: `${SITE_ORIGIN}${presetsHref(device)}`,
-              changeFrequency: 'monthly' as const,
-              priority: 0.5,
-            },
-          ],
-    ),
+    ...DEVICES.flatMap((device) => {
+      const session = presetSession(device)
+      if (session === undefined) return []
+      return [
+        {
+          url: `${SITE_ORIGIN}${presetsHref(device)}`,
+          changeFrequency: 'monthly' as const,
+          priority: 0.5,
+        },
+        /*
+         * §3.7/#598. One per patch with a figure written for it, under the index that lists
+         * it, by the same test: there is a page at it whose canonical is itself. The session's
+         * entries are what the route's `generateStaticParams` walks too, so a riff whose
+         * reference names a declared patch appears in both without an edit, and a patch with no
+         * figure is absent from both.
+         */
+        ...session.entries.flatMap((entry) =>
+          entry.figure === undefined
+            ? []
+            : [
+                {
+                  url: `${SITE_ORIGIN}${presetFigureHref(device, entry.patch)}`,
+                  changeFrequency: 'monthly' as const,
+                  priority: 0.6,
+                },
+              ],
+        ),
+      ]
+    }),
     {
       url: `${SITE_ORIGIN}/directions`,
       changeFrequency: 'weekly' as const,
@@ -96,14 +115,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
     /*
      * §5A/#503. The third catalogue, listed by the same test this file states above: there is a
      * page at each of these whose canonical is itself. Derived from `lib/riffs`, so authoring an
-     * entry adds its page here without an edit.
+     * entry adds its page here without an edit. **The record-named entries** (§5A.7/#598): a
+     * patch-named figure's page is under its box, listed above with the presets, and
+     * `/riffs/<its id>` is a 404 this file must not name.
      */
     {
       url: `${SITE_ORIGIN}/riffs`,
       changeFrequency: 'weekly' as const,
       priority: 0.8,
     },
-    ...RIFFS.map((riff) => ({
+    ...RECORD_RIFFS.map((riff) => ({
       url: `${SITE_ORIGIN}${riffHref(riff)}`,
       changeFrequency: 'monthly' as const,
       priority: 0.6,

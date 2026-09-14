@@ -34,7 +34,9 @@ import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
  * named one reference and filed itself under another cannot parse. Five entries are `record`
- * references and twelve are `patch` references.
+ * references and twelve are `patch` references, and the kind decides where an entry surfaces
+ * (#598): the five are `/riffs`, and each of the twelve is a page under the box that ships its
+ * patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
  * the reference stands for. A reader who wants the record should go and listen to the record.
@@ -123,6 +125,16 @@ export {
   thrillerSynthRiff,
   voxHumanaRigidColdPopLine,
 }
+
+/**
+ * §5A.7/#598. **The entries `/riffs` lists: the five named for a record.** A figure named for a
+ * factory patch surfaces on the box that ships the patch, at `/devices/<id>/presets/<patch>`,
+ * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
+ * catalogue, its static routes, the search and the sitemap cannot disagree about which twelve
+ * left. Not a second content type: the twelve stay in this folder, under the same schema and
+ * the same tests, and `presetSession` finds each by the patch its `reference` names.
+ */
+export const RECORD_RIFFS: readonly Riff[] = RIFFS.filter((r) => r.reference.kind === 'record')
 
 const BY_ID: ReadonlyMap<RiffId, Riff> = new Map(RIFFS.map((r) => [r.id, r]))
 

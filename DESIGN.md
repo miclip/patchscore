@@ -3168,9 +3168,40 @@ the name the box prints, and the riff join is a name join rather than a device j
 shipping a patch called *Vox Humana* would reach the same figure, which is right, because the
 figure is named for the patch.
 
-**The link points from the device page to the riff and never back.** That direction is the whole
+**The join points from the device page to the riff and never back.** That direction is the whole
 architectural fix. A riff carries nothing about a box and gained no field; a box knows its own
-presets and may link out.
+presets and finds the figure by the patch its reference names.
+
+**A preset figure is a page under the box, and the box is where it surfaces**
+([#598](https://github.com/miclip/patchscore/issues/598)). #593 linked each entry out to
+`/riffs/<id>`, which put a figure written for one box on a surface that asks what boxes the
+reader owns. The operator's intent was for the figures themselves to move: *those riffs only
+appear in device explore and not riffs, which also means we dont need the rig selection on the
+preset explore*. So each of the twelve is `/devices/<id>/presets/<patch>`, where `<patch>` is
+`referenceSlug` of the name the box prints (`presetSlug`) — the same slugging the riff's own id
+opens with, so the address of a patch and the figure written for it agree by construction. The
+page carries the technique, the rules, the chords, the notes, the grid and **the settings on
+that box**, drawn by the riff page's own components (`RiffFigure`, `VoiceBuild`), and the index
+at `/devices/<id>/presets` stays a skimmable list linking to them. `/riffs/<a patch-named id>`
+is a 404 and `/riffs` lists the five record-named entries: `RECORD_RIFFS` in `lib/riffs` is the
+one filter, shared by the route, the catalogue search and the sitemap. The twelve stay in
+`lib/riffs/` under one schema and one set of tests; the split is a filter on where a figure
+surfaces, not a second content type, and `reference.kind` already separates them.
+
+**No rig picker anywhere in the preset flow, and none of what the picker brought.** A riff
+page's rig machinery — §5A.6's borrowed rig, the picker, §7.3's `no-capable-voice` and
+`no-recipe` gaps, the substitution sentence, the empty-rig offer — exists because a riff does not
+know what box it will land on. A preset figure does: the box is the address. `presetSession`
+resolves every figure with `resolveRiff(riff, [device])`, reused rather than forked, and the
+outcome narrows: **a figure the box cannot play is an authoring error and throws**, so the build
+fails where a riff page would render a gap at somebody standing at the box who cannot act on
+it. `PresetFigure.resolution` is `played` by construction. A §3.5 substitution is not a gap and
+does not throw; the page prints no sentence about it, by operator decision, so six of the twelve
+render the Muse's nearest recipe for the part under that recipe's title with no notice. **What
+the page says about the patch it reads off the recipe**, not off an affinity: `byHand` holds
+where the recipe the figure landed on names this patch as its `factoryPatch`, and only then does
+the block say the settings build the sound by hand — three of the twelve today. The other nine
+say nothing about a patch, which is #586's rule on the one surface that knows which patch it is.
 
 **The order is the folder's, and it is editorial.** No maker prints a patch list, so there is no
 order to follow. Alphabetical puts *Bellbounce* between *Aegean Organ* and *Detroit Funk*, three
@@ -3179,14 +3210,17 @@ struck keyboard sounds, the stabs, the string ensembles — with the nearest pai
 reader choosing between *Moog 55 Strings* and *Soft Orchestra* finds them on adjacent rows. The
 session and both renderers walk the list as written and sort nothing.
 
-**Two surfaces, the kit's shape.** `PresetSection`, headed *Explore your device* on the device
+**Three surfaces, the kit's shape.** `PresetSection`, headed *Explore your device* on the device
 page, folds every patch into a native `<details>`, closed — every entry, whatever is under it —
-with the name and the use on the summary line and the recipe claim and the figure link inside. The page at `/devices/<id>/presets` lays every entry open.
-`generateStaticParams` enumerates the boxes `presetSession` answers for — one today — and
-`dynamicParams` is off, so every other box 404s rather than rendering a page with a claim in its
-title and nothing under it. A folder that declares both halves gets the panel, the page and the
-sitemap entry with no UI edit (invariant 2). `lib/studio/preset-text.ts` holds every sentence the
-two share, on `kit-text.ts`'s pattern, and `PresetBody` is the one React reading of an entry.
+with the name and the use on the summary line and the recipe claim and the figure link inside.
+The page at `/devices/<id>/presets` lays every entry open, and the page at
+`/devices/<id>/presets/<patch>` is the figure itself (#598). `generateStaticParams` enumerates
+the boxes `presetSession` answers for — one today — and, for the figure route, the entries with a
+figure; `dynamicParams` is off on both, so every other box and every patch nobody wrote a figure
+for 404s rather than rendering a page with a claim in its title and nothing under it. A folder
+that declares both halves gets the panel, the index, the figure pages and the sitemap entries
+with no UI edit (invariant 2). `lib/studio/preset-text.ts` holds every sentence the surfaces
+share, on `kit-text.ts`'s pattern, and `PresetBody` is the one React reading of an entry.
 
 **No export, and the difference from the kit page is the reason.** The kit page carries Download
 Markdown and Print behind one client boundary because a kit is a build document somebody takes to
@@ -4468,6 +4502,13 @@ the key string is the one §4.1 already parses, and the vocabulary is `Role`, `C
 shared vocabulary is added**. A riff names no device, for the reason a template does not: which box
 plays it is the rig's answer, not the author's.
 
+**Where a riff surfaces follows its reference** (#598). A record-named riff is at `/riffs/<id>`,
+resolved against whatever the reader owns, and everything below about the rig is about it. A
+patch-named riff is a page under the box that ships the patch, at `/devices/<id>/presets/<patch>`
+(§3.7), resolved on that box alone with no picker, and `/riffs/<its id>` is a 404. The riff
+itself is the same shape either way and still names no device: the box found the figure by the
+patch its reference names, not the other way round.
+
 ### 5A.1 Why it is neither a `Template` nor an `Inspiration`
 
 The question is worth answering in writing because both alternatives look cheaper than they are,
@@ -4657,6 +4698,13 @@ were printing their own patch by inheritance before #585. Suppressing everything
 after its own patch would have deleted the Blade Runner pairing, which is the case the patch list
 was collected for.
 
+Since #598 an affinity is read by one rendered surface: a riff page, which the five record-named
+entries have and the twelve patch-named ones do not. Blade Runner Blues on a Muse rig is the one
+page that prints a patch through it. The Muse Runner entry's own affinity reaches nothing a
+reader sees — its figure page reads `byHand` off the recipe (§3.7) — and survives only in the
+Markdown renderer's bytes (`test/golden/muse-runner-on-a-muse.riff.golden.md`). Whether the field
+and the riff page's sentence stay is a separate decision and is not made here.
+
 A field rather than a convention, because a convention is something two authors disagree about by
 Tuesday, and because it is *both* surfaces: a title that carries the reference and an address bar
 that does not is a page nobody can link to by name.
@@ -4772,9 +4820,18 @@ Above them, three surfaces and one shared voice:
 ```
 lib/studio/riff-text.ts       every sentence, and the rows both renderings walk
 lib/studio/riff-markdown.ts   the export            -> test/golden/*.riff.golden.md
-components/riff/*             the page              -> /riffs/[id]
-components/catalogue/riff-index.tsx                 -> /riffs
+components/riff/*             the page              -> /riffs/[id]          (record-named, RECORD_RIFFS)
+components/catalogue/riff-index.tsx                 -> /riffs               (record-named, RECORD_RIFFS)
+components/catalogue/preset-figure.tsx              -> /devices/[id]/presets/[patch]  (patch-named, §3.7)
 ```
+
+The preset figure page (#598) is the riff page's components with the box settled: `RiffFigure`
+and `VoiceBuild` are shared outright, and what it does not import is the rig — `RiffRig`,
+`RigPicker`, `loadStudio` — because there is no rig to ask about. The Markdown renderer is its
+sibling too: `test/preset-figure-page.test.ts` holds each of the twelve pages fact for fact
+against `renderRiff(resolveRiff(riff, [muse]))`, minus the three lines that surface deliberately
+does not print, so the three Muse riff goldens (`muse-runner-on-a-muse`, `brass-stab-cycle-on-a-muse`,
+`aegean-organ-on-a-muse`) pin the bytes a preset figure page renders from.
 
 **The page renders from the model, never from parsed Markdown** (#495). The two are siblings in
 §8's sense, not stages: parsing one renderer's output to produce another's is how two surfaces come
@@ -4783,9 +4840,12 @@ to disagree about something neither of them decided. What they share is `riff-te
 character for character, because there the alignment *is* the content.
 
 `/riffs` is a peer of `/devices` and `/directions` in `NAV_LINKS`, not a page under either: a
-device is a box, a direction is a song, and a riff is one figure. Each entry is prerendered at its
-own address with its own canonical, listed in the sitemap on this repository's standing test —
-there is a page at it whose canonical is itself.
+device is a box, a direction is a song, and a riff is one figure. Each record-named entry is
+prerendered at its own address with its own canonical, listed in the sitemap on this repository's
+standing test — there is a page at it whose canonical is itself. Each patch-named entry is
+prerendered under its box on the same test, and nothing lists or links the address it left:
+`test/preset-figure-page.test.ts` walks every internal href on every surface the move touched
+against the sitemap.
 
 Both renderings read like a guide on purpose. §10's monospace values, #385's module boxes,
 `SUBORDINATE`'s tags, `paramLabel`'s trimmed names, `recipeRouting`, `CableMark`'s patch line and

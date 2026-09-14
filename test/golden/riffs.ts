@@ -33,6 +33,14 @@ import type { Riff } from '@/lib/core'
  *    between them is *a pool*, and before #503's second fix the second of them reported the
  *    first's gap.
  *
+ * **Three of the fixtures are patch-named riffs on the Muse** (`muse-runner-on-a-muse`,
+ * `brass-stab-cycle-on-a-muse`, `aegean-organ-on-a-muse`). Since #598 those figures have no riff
+ * page; they are pages under the Muse (§3.7), rendered from the same `resolveRiff(riff, [muse])`
+ * these bytes pin, and `test/preset-figure-page.test.ts` holds each page fact for fact against
+ * this renderer's reading of it. So the three did not move and are not orphaned: they are the
+ * preset figure page's goldens, minus the substitution sentence, the affinity's patch line and
+ * the `Where it plays` heading, which that surface deliberately does not print.
+ *
  * **Never regenerate a golden to make a test pass.** The diff is the review.
  */
 

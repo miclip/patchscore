@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import type { Device } from '@/lib/core'
 import { shippedPatchKey } from '@/lib/core'
-import { presetsHref, riffHref } from '@/lib/studio/catalogue'
+import { presetFigureHref, presetsHref } from '@/lib/studio/catalogue'
 import type { PresetEntry, PresetSession } from '@/lib/studio/preset-session'
 import {
   PRESET_FIGURE,
@@ -15,8 +16,9 @@ import {
  *
  * A preset belongs to one box and a riff is rig-agnostic, and six issues came out of pushing
  * the first through the second. On a device page it is no exception to anything: a Muse page
- * listing Muse patches is a box describing itself, which is what a device page is for. The link
- * runs from here to the riff and never back — the riff carries nothing about a box (invariant 3).
+ * listing Muse patches is a box describing itself, which is what a device page is for. The
+ * figure is a page under this box (`presetFigureHref`, #598), and the riff behind it carries
+ * nothing about the box (invariant 3): the session found it by the patch its reference names.
  *
  * **Rendered from `presetSession` and nothing else.** The session is `undefined` on every box
  * that has not declared both the patch list and what each is for, and this renders nothing for
@@ -47,8 +49,12 @@ function PatchName({ entry }: { entry: PresetEntry }) {
  * What is inside one patch: the recipe that reaches it and the figure written for it. Shared by
  * the folded panel and the open page, on `KitBody`'s pattern (§3.7): one React reading of an
  * entry, so a reader moving between the two never finds the same fact described two ways.
+ *
+ * The figure link goes to the page under this box (#598), which carries the figure and this
+ * box's settings for it. `device` is the session's, passed so the href is built by the one
+ * function the sitemap and the page's canonical use.
  */
-export function PresetBody({ entry }: { entry: PresetEntry }) {
+export function PresetBody({ device, entry }: { device: Device; entry: PresetEntry }) {
   return (
     <>
       {entry.recipes.map((recipe) => (
@@ -58,10 +64,10 @@ export function PresetBody({ entry }: { entry: PresetEntry }) {
           <span className="mono">{`${recipe.role} · ${recipe.character}`}</span>.
         </p>
       ))}
-      {entry.riff === undefined ? null : (
+      {entry.figure === undefined ? null : (
         <p className="preset-figure">
           {PRESET_FIGURE}
-          <Link href={riffHref(entry.riff)}>{entry.riff.name}</Link>
+          <Link href={presetFigureHref(device, entry.patch)}>{entry.figure.riff.name}</Link>
         </p>
       )}
     </>
@@ -79,7 +85,7 @@ export function PresetBody({ entry }: { entry: PresetEntry }) {
  * `<summary>` lays the native one on the first line box of its content, which a grid child is
  * not — `.kit-summary` measured this and this row is the same shape.
  */
-function PresetRow({ entry }: { entry: PresetEntry }) {
+function PresetRow({ device, entry }: { device: Device; entry: PresetEntry }) {
   return (
     <li>
       <details className="disclosure preset-entry">
@@ -91,7 +97,7 @@ function PresetRow({ entry }: { entry: PresetEntry }) {
           </span>
         </summary>
         <div className="disclosure-body">
-          <PresetBody entry={entry} />
+          <PresetBody device={device} entry={entry} />
         </div>
       </details>
     </li>
@@ -113,7 +119,7 @@ export function PresetSection({ session }: { session: PresetSession | undefined 
       </header>
       <ul className="preset-list">
         {session.entries.map((entry) => (
-          <PresetRow key={shippedPatchKey(entry.patch)} entry={entry} />
+          <PresetRow key={shippedPatchKey(entry.patch)} device={session.device} entry={entry} />
         ))}
       </ul>
       {/*

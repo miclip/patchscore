@@ -5,7 +5,7 @@ import { RiffFigure } from '@/components/riff/riff-figure'
 import { RiffRig } from '@/components/riff/riff-rig'
 import type { Riff } from '@/lib/core'
 import { resolveRiff } from '@/lib/core'
-import { RIFFS, riffById } from '@/lib/riffs'
+import { RECORD_RIFFS } from '@/lib/riffs'
 import { riffPage } from '@/lib/studio/riff-page'
 import { riffLength, riffTempo } from '@/lib/studio/riff-text'
 
@@ -15,6 +15,11 @@ import { riffLength, riffTempo } from '@/lib/studio/riff-text'
  * Prerendered per entry, canonical to itself, and `dynamicParams` off so `/riffs/nothing` is a
  * 404 rather than an empty page — the same three rules a device page and a direction page have,
  * for the same reasons.
+ *
+ * **Per record-named entry** (§5A.7/#598). A figure named for a factory patch is a page under
+ * the box that ships the patch, at `presetFigureHref`, and has no page here: `RECORD_RIFFS` is
+ * what this route enumerates and what `find` answers from, so `/riffs/<a patch-named id>` is a
+ * 404 by the same `dynamicParams` rule, and nothing in this file knows the twelve exist.
  *
  * **Mostly a server component.** The technique, the notes and the grid are properties of the
  * entry, so they are in the prerendered HTML where a crawler, a reader with no JavaScript and a
@@ -37,11 +42,11 @@ import { riffLength, riffTempo } from '@/lib/studio/riff-text'
 export const dynamicParams = false
 
 export function generateStaticParams(): { id: string }[] {
-  return RIFFS.map((riff) => ({ id: riff.id }))
+  return RECORD_RIFFS.map((riff) => ({ id: riff.id }))
 }
 
 function find(id: string): Riff | undefined {
-  return riffById(id)
+  return RECORD_RIFFS.find((riff) => riff.id === id)
 }
 
 export async function generateMetadata({

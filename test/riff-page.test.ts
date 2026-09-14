@@ -14,7 +14,7 @@ import { hintText } from '../components/guide/format'
 import type { DeviceId, RiffVoicing } from '../lib/core'
 import { MAX_RIG_DEVICES, resolveRiff, spellChord } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { RIFFS, blueMondayBass } from '../lib/riffs'
+import { RECORD_RIFFS, RIFFS, blueMondayBass } from '../lib/riffs'
 import { riffHref } from '../lib/studio/catalogue'
 import { renderRiff } from '../lib/studio/riff-markdown'
 import { SITE_ORIGIN } from '../lib/studio/site'
@@ -149,7 +149,9 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
   it('does so for every entry in the library', async () => {
     // Not one riff: the shapes that differ between entries are chords sharing a step, a hook that
     // spans four notes and a grid that strikes every sixteenth, and no one entry has all of them.
-    for (const riff of RIFFS) {
+    // The record-named entries, which are the ones with a page here (#598); the twelve
+    // patch-named figures are held to the same parity in `test/preset-figure-page.test.ts`.
+    for (const riff of RECORD_RIFFS) {
       const page = text(await markupFor(riff.id))
       for (const fact of markdownFacts(renderRiff(resolveRiff(riff, [])))) {
         expect(page, `${riff.id}: ${fact}`).toContain(fact)
@@ -163,7 +165,7 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
     // under it as hidden text, so a selection still copies `1 xxxx xxxx xxxx xxxx`. The step
     // number is `.step-index` here and the padding that right-aligns it in a `<pre>` is CSS, so
     // the rows are compared with that padding trimmed and nothing else.
-    for (const riff of RIFFS) {
+    for (const riff of RECORD_RIFFS) {
       const md = renderRiff(resolveRiff(riff, []))
       const rows = md.slice(md.indexOf('```') + 4, md.lastIndexOf('```')).trimEnd().split('\n')
       const markup = await markupFor(riff.id)
@@ -190,7 +192,7 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
   it('puts the velocity and #457’s definition trigger on every slot row (#528)', async () => {
     // The export's row is a bare list of steps. The page's is the guide's: the slot word is a
     // button that opens its definition, and a velocity the reader has to dial is on the line.
-    for (const riff of RIFFS) {
+    for (const riff of RECORD_RIFFS) {
       const md = renderRiff(resolveRiff(riff, []))
       const exported = [...md.matchAll(new RegExp(SLOT_ROW.source, 'gm'))]
       expect(exported.length, riff.id).toBeGreaterThan(0)
@@ -254,7 +256,7 @@ describe('the chord table says the chords are supplied separately', () => {
     // progression rather than against the other renderer: parity alone would pass on both
     // surfaces printing the wrong notes, or none.
     let withHarmony = 0
-    for (const riff of RIFFS) {
+    for (const riff of RECORD_RIFFS) {
       if (riff.harmony === undefined) continue
       withHarmony++
       const md = renderRiff(resolveRiff(riff, []))
@@ -298,9 +300,16 @@ describe('the chord table says the chords are supplied separately', () => {
   })
 })
 
-describe('the riff page exists exactly where an entry does', () => {
-  it('is prerendered for every entry, and for no others', () => {
-    expect(generateStaticParams().map((p) => p.id)).toEqual(RIFFS.map((riff) => riff.id))
+describe('the riff page exists exactly where a record-named entry does (#598)', () => {
+  it('is prerendered for every record-named entry, and for no others', () => {
+    expect(generateStaticParams().map((p) => p.id)).toEqual(RECORD_RIFFS.map((riff) => riff.id))
+    expect(RECORD_RIFFS.map((riff) => riff.id)).toEqual([
+      'acid-tracks-line',
+      'blade-runner-blues-lead',
+      'blue-monday-bass',
+      'show-me-love-organ-stab',
+      'thriller-synth-riff',
+    ])
     expect(dynamicParams).toBe(false)
   })
 
@@ -308,11 +317,32 @@ describe('the riff page exists exactly where an entry does', () => {
     await expect(markupFor('no-such-riff')).rejects.toThrow(/404/)
   })
 
+  /**
+   * §5A.7/#598. A figure named for a factory patch is a page under the box that ships the
+   * patch and has no page here. Every one of the twelve, so a thirteenth added to `lib/riffs`
+   * with a `patch` reference 404s here without an edit.
+   */
+  it('404s on every patch-named id, which is a page under its box instead', async () => {
+    const patches = RIFFS.filter((r) => r.reference.kind === 'patch')
+    expect(patches).toHaveLength(12)
+    for (const riff of patches) {
+      await expect(markupFor(riff.id), riff.id).rejects.toThrow(/404/)
+      expect(await generateMetadata({ params: Promise.resolve({ id: riff.id }) }), riff.id).toEqual(
+        {},
+      )
+    }
+  })
+
   it('has one address, which the card, the canonical and the sitemap all use', async () => {
     const urls = sitemap().map((entry) => entry.url)
-    for (const riff of RIFFS) {
+    for (const riff of RECORD_RIFFS) {
       expect(riffHref(riff)).toBe(`/riffs/${riff.id}`)
       expect(urls, riff.id).toContain(`${SITE_ORIGIN}${riffHref(riff)}`)
+    }
+    // And the sitemap names no `/riffs/` address this route would 404 on.
+    const params = new Set(generateStaticParams().map((p) => `${SITE_ORIGIN}/riffs/${p.id}`))
+    for (const url of urls.filter((u) => u.startsWith(`${SITE_ORIGIN}/riffs/`))) {
+      expect(params.has(url), url).toBe(true)
     }
     expect(urls).toContain(`${SITE_ORIGIN}/riffs`)
 
@@ -324,19 +354,12 @@ describe('the riff page exists exactly where an entry does', () => {
       'Build the Blue Monday bass-mid sound on the boxes you own, then practise the technique ' +
         'against a figure written here.',
     )
-    // §5A.5/#566. The same sentence over a patch reference, unchanged in form: the name in that
-    // slot is a sound to build whichever kind of thing it names.
-    const patch = await generateMetadata({
-      params: Promise.resolve({ id: 'muse-runner-floating-arrival-lead' }),
-    })
-    expect(patch.title).toBe('The Muse Runner floating-arrival lead — Patchscore')
-    expect(patch.description).toBe(
-      'Build the Muse Runner lead sound on the boxes you own, then practise the technique ' +
-        'against a figure written here.',
-    )
     // An id with no page has no metadata to give, and says so with nothing rather than a title
-    // for a page that 404s.
+    // for a page that 404s. A patch-named id is one of those here (#598).
     expect(await generateMetadata({ params: Promise.resolve({ id: 'nope' }) })).toEqual({})
+    expect(
+      await generateMetadata({ params: Promise.resolve({ id: 'muse-runner-floating-arrival-lead' }) }),
+    ).toEqual({})
   })
 
   it('is a peer of Devices and Directions in the nav, on every riff route', async () => {
@@ -358,15 +381,23 @@ describe('the riff page exists exactly where an entry does', () => {
     }
   })
 
-  it('the index lists every entry and links each to its own page', () => {
+  it('the index lists the five record-named entries, links each to its own page, and lists no other', () => {
     const markup = renderToStaticMarkup(createElement(RiffIndexPage))
-    for (const riff of RIFFS) {
+    for (const riff of RECORD_RIFFS) {
       expect(markup, riff.id).toContain(`href="/riffs/${riff.id}"`)
       expect(text(markup), riff.id).toContain(riff.name)
       // §5A.5. The reference is on the card too: a list of only our own titles is a list of
       // things nobody has heard of.
       expect(text(markup), riff.reference.name).toContain(`From ${riff.reference.name}`)
     }
+    // §5A.7/#598. The twelve are the box's, and a card here would link to a 404.
+    for (const riff of RIFFS.filter((r) => r.reference.kind === 'patch')) {
+      expect(markup, riff.id).not.toContain(`href="/riffs/${riff.id}"`)
+      expect(text(markup), riff.id).not.toContain(riff.name)
+    }
+    expect(markup.match(/href="\/riffs\//g)?.length).toBe(5)
+    expect(text(markup)).toContain('5 techniques.')
+    expect(text(markup)).toContain('5 riffs')
   })
 })
 
