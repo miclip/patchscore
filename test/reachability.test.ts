@@ -822,9 +822,16 @@ describe('#57 Industrial Techno asks for a dark sweep, and the boxes that wrote 
  *     wrote it, because the box's voice is spent above the role. That is a content finding for
  *     #57, recorded as such, and not a reason to bend any direction that exists.
  *
- * Where a recipe has no musical owner the record recommends deletion **later**: nothing is
- * deleted here, since that removes cited work and is the operator's call, and the audit's
- * dead-recipe line keeps them visible until it is made.
+ * Where a recipe has no musical owner the record used to recommend deletion **later**. **The
+ * operator has now decided, and the answer is to keep them** (#538): the work is correct and
+ * cited, a direction or a device that has not been written yet could reach any of it, and a
+ * ledger that says plainly *nobody reaches this* is the honest version of the same fact. What
+ * deletion would buy is a tidier audit; what it would cost is authored work and the evidence
+ * behind it.
+ *
+ * So the twenty-two are kept and this file is their record. The price is stated rather than
+ * hidden: `npm run audit` counts recipes no guide reaches, and #57's coverage table is that much
+ * more optimistic than a reader's rig will be.
  */
 // The per-pair decision records below share one helper set. `outcome` is the whole method:
 // one request, one box solo, every seed, and one answer or a thrown seed-variance.
@@ -1036,7 +1043,7 @@ describe('#538 the eight pairs no decision had been written for, declined with t
     ])
     // Verdicts. `bass-mid / soft`: a triangle bass with a slow attack is Ambient Dub's shape,
     // and Ambient Dub's bass is p2 on a box whose voice the p1 sub takes; asking `soft` at p1
-    // would trade the sub for it. No owner — recommend deletion later. `bass-mid / clean`:
+    // would trade the sub for it. No owner — kept, and the ledger is the record (#538). `bass-mid / clean`:
     // retained, because the grit knob reaches it (below), which is the one thing on this list
     // that the neutral sweep cannot see.
   })
@@ -1085,7 +1092,7 @@ describe('#538 the eight pairs no decision had been written for, declined with t
     expect(noir.roles.find((r) => r.id === 'r-pad')?.priority).toBe(1)
     expect(noir.roles.find((r) => r.id === 'r-lead')?.priority).toBe(1)
     // Verdict: a direction whose lead is soft and ranked above its pad does not exist; if one
-    // arrives, these are its recipes. Until then no owner — recommend deletion later.
+    // arrives, these are its recipes. Until then no owner — kept, and the ledger is the record (#538).
   })
 
   it('`noise / dark` and `noise / hard`: both noise requests sit below a part that takes the whole box', () => {
@@ -1144,7 +1151,7 @@ describe('#538 the eight pairs no decision had been written for, declined with t
       'slow-noir:soft:p1',
     ])
     // Verdict: opposite of every pad the library asks for but one, and that one never reaches
-    // this box. No owner — recommend deletion later.
+    // this box. No owner — kept, and the ledger is the record (#538).
   })
 
   it('`sub / hard` and `sub / soft`: the dark sub wins exactly on seven directions; the other two spend the voice above the sub', () => {
@@ -1164,7 +1171,7 @@ describe('#538 the eight pairs no decision had been written for, declined with t
     // transient and none should be. `sub / soft`, the swell with no transient: Ambient Dub's
     // shape, and Ambient Dub's sub is `dark` at p1 with the Minitaur's dark sub answering it
     // exactly, so the request that would want it is the one it loses to. No owner for either —
-    // recommend deletion later.
+    // kept, and the ledger is the record (#538).
   })
 
   it('no mood knob reaches `hard` or `soft` from any character a direction pins these roles at', () => {
@@ -1777,7 +1784,7 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
     expect(arps.sort()).toEqual(['generative-drift:bright:p2', 'major-key-electro:clean:p3'])
     // Verdict: a damped harmonic arpeggio is a real part, and a direction that wants it dark
     // and ranks it above its pad does not exist; on a one-voice box nothing below p1 lands.
-    // No owner — recommend deletion later.
+    // No owner — kept, and the ledger is the record (#538).
   })
 
   it('`bass-mid / bright`: retained — darkness at 0 re-pins the three landed basses to `bright`, and the Subsequent 37 plays it', () => {
@@ -1815,7 +1822,7 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
     expect(outcome('behringer-neutron', 'industrial-techno', 'r-noise', darkest)).toBe('no-recipe held:r-sub')
     // Verdict: filtered white noise with the oscillators out of the mix is a part any of the
     // two noise directions could carry, and both rank the noise where a one-voice box never
-    // reaches it. No owner — recommend deletion later.
+    // reaches it. No owner — kept, and the ledger is the record (#538).
   })
 
   it('`pad / bright`: retained — darkness at 0 re-pins every p1 soft pad to `bright`, and all four boxes play theirs', () => {
@@ -2013,7 +2020,7 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
     // measurement holds — the request exists, the geometry defeats it, and moving Hip-Hop's
     // stab above its sub to reach a recipe is the change #538 ruled out. The minilogue xd's
     // recipe is dark by the rig and stays; the Subsequent 37's cannot answer any stab the
-    // library asks for. No owner for the pair — recommend deletion of the Subsequent 37's
+    // library asks for. No owner for the pair — the Subsequent 37's is kept, and the ledger is the record (#538) for
     // later, and the minilogue xd's stays as the answer to a rig with a voice to spare.
   })
 })
@@ -2435,7 +2442,7 @@ describe('#538 the five grit-axis pairs, decided with the evidence: two retained
     // request exists and every box that could answer it is a one-voice box with its voice spent
     // at p1. Moving Lydian House's stab above its pad to reach a recipe is the change #538 ruled
     // out. The minilogue xd's and the Matriarch's are dark by the rig and stay; the Crave's and
-    // the MicroFreak's cannot answer any stab the library asks for — recommend deletion of
+    // the MicroFreak's cannot answer any stab the library asks for — keep, and the ledger is the record (#538), for
     // those two later.
   })
 
@@ -2474,7 +2481,7 @@ describe('#538 the five grit-axis pairs, decided with the evidence: two retained
     expect(characterDistanceSq('clean', 'bright')).toBe(2)
     // Verdict: no owner. The minilogue xd's and the Subharmonicon's are dark by the rig and
     // stay; the Minitaur's and the Muse's cannot answer any stab the library asks for —
-    // recommend deletion of those two later.
+    // those two are kept, and the ledger is the record (#538).
   })
 
   it('`sub / dirty`: declined — the dark sub wins exactly on seven directions, and no knob moves a sub request to `dirty`', () => {
@@ -2498,7 +2505,7 @@ describe('#538 the five grit-axis pairs, decided with the evidence: two retained
     expect(subs.filter((s) => !s.endsWith(':dark'))).toEqual(['acid-lineage:clean'])
     // Verdict: a sub with the ladder driven into itself is a sound, and not one any direction's
     // sub is or should be — the dark sub is the exact answer wherever the box gets the part.
-    // No owner — recommend deletion later.
+    // No owner — kept, and the ledger is the record (#538).
   })
 
   it('`texture / dirty`: retained — grit at 100 re-pins the soft textures to `dirty`, and both boxes play it where the texture lands', () => {
@@ -2795,7 +2802,7 @@ describe('#538 the three force-axis pairs, decided with the evidence: one retain
     }
     // Verdict: a hard lead is a real part — Hard Techno's is `dirty` because grit is the point
     // there, and the other three want a lead that cuts by being bright, not by hitting. No
-    // owner, and no knob position on any box hands it the part — recommend deletion later.
+    // owner, and no knob position on any box hands it the part — kept, and the ledger is the record (#538).
   })
 
   it('`metallic / hard`: declined — both boxes are one voice, spent at p1 under all three directions at every knob position', () => {
@@ -2826,6 +2833,6 @@ describe('#538 the three force-axis pairs, decided with the evidence: one retain
     // Verdict: a struck, inharmonic hit is Industrial Techno's shape and it asks `dark` at p3,
     // which on a one-voice box is two ranks below the voice. The Cascadia's dark metallic would
     // answer that request exactly if it ever reached the box, and never does either. No owner
-    // for `hard` — recommend deletion later.
+    // for `hard` — kept, and the ledger is the record (#538).
   })
 })
