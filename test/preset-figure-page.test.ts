@@ -335,16 +335,18 @@ describe('every page carries the figure and the Muse’s block for it', () => {
   })
 
   /**
-   * §5A.2/#603/#604. The Muse Runner line is twelve bars over a four-bar grid and the Moog 55
-   * Strings line eight over four, and this surface draws the grid through the same component a
-   * riff page does, so the sentence saying how many times it goes round has to reach here too.
+   * §5A.2/#603/#604. The Muse Runner line is twelve bars over a four-bar grid, the Moog 55
+   * Strings line and the Bellbounce pattern eight over four, and this surface draws the grid
+   * through the same component a riff page does, so the sentence saying how many times it goes
+   * round has to reach here too.
    * Pinned as strings rather than left to the parity test above, which would pass on both
    * surfaces omitting them.
    */
-  it('says how many times the grid goes round under the two figures longer than it', () => {
+  it('says how many times the grid goes round under the figures longer than it', () => {
     const REPEATS: Record<string, string> = {
       'muse-runner': 'The grid is 4 bars and the figure is 12: play it round 3 times.',
       'moog-55-strings': 'The grid is 4 bars and the figure is 8: play it round 2 times.',
+      bellbounce: 'The grid is 4 bars and the figure is 8: play it round 2 times.',
     }
     for (const [slug, REPEAT] of Object.entries(REPEATS)) {
       const page = text(PAGES.get(slug) as string)

@@ -1798,16 +1798,84 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     expect(walk.map((n) => n.degree)).toEqual([7, 1, 2])
   })
 
-  it('the bell pattern strikes at most twice a bar', () => {
+  it('the bell pattern strikes at most twice a bar, across both passes of its grid', () => {
     const riff = bellbounceSparseBellPattern
+    const strikes = gridStrikes(riff)
     for (let bar = 0; bar < riff.hook.bars; bar += 1) {
-      const inBar = riff.pattern.hits.filter(
-        (h) => h.step > bar * STEPS_PER_BAR && h.step <= (bar + 1) * STEPS_PER_BAR,
+      const inBar = strikes.filter(
+        (step) => step > bar * STEPS_PER_BAR && step <= (bar + 1) * STEPS_PER_BAR,
       )
       expect(inBar.length, `bar ${String(bar + 1)}`).toBeLessThanOrEqual(2)
-      expect(inBar.length, `bar ${String(bar + 1)}`).toBeGreaterThan(0)
     }
     expect(riff.request.role).toBe('arp')
+  })
+
+  /**
+   * §5A.2/#604. **The bell pattern is the whole eight-bar cycle**, restored from the four bars
+   * it was first published as, which struck each note twice a bar. The definition places one
+   * entry a chord on beat three; the grid stays four bars and repeats, marking those entries.
+   */
+  describe('the bell pattern covers its eight-bar cycle over a four-bar grid (#604)', () => {
+    const riff = bellbounceSparseBellPattern
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const notes = resolved.hook.notes
+    const CHORDS = ['I', 'vi', 'IV', 'V'] as const
+    /** The cycle step a chord begins on, two bars each: `I` 1, `vi` 33, `IV` 65, `V` 97. */
+    const startOf = (chord: string): number =>
+      CHORDS.indexOf(chord as (typeof CHORDS)[number]) * 2 * STEPS_PER_BAR + 1
+
+    it('carries all eight bars from bar 1, in five notes', () => {
+      expect(riff.figureStartsAtBar).toBe(1)
+      expect(riff.harmony?.cycleBars).toBe(8)
+      expect(riff.hook.bars).toBe(8)
+      expect(riff.hook.notes).toHaveLength(5)
+    })
+
+    it('resolves to the definition’s pitches, each over the chord it was written for', () => {
+      // `B5` over the Amaj7, `C#6` over the F#m7, `C#6` stepping down to `B5` over the Dmaj7,
+      // `A5` over the E6sus4.
+      expect(notes.map((n) => [n.note, chordAtStep(riff, n.step)])).toEqual([
+        ['B5', 'I'],
+        ['C#6', 'vi'],
+        ['C#6', 'IV'],
+        ['B5', 'IV'],
+        ['A5', 'V'],
+      ])
+      expect(notes.map((n) => n.midi)).toEqual([83, 85, 85, 83, 81])
+    })
+
+    it('enters every chord on beat three, and steps down on beat three of the IV’s second bar', () => {
+      expect(riff.constraints?.onsetOffset?.minSteps).toBe(8)
+      const arrivals = entries(riff).map((n) => n.step)
+      expect(arrivals).toEqual([9, 41, 73, 105])
+      for (const step of arrivals) expect(step - startOf(chordAtStep(riff, step) ?? '')).toBe(8)
+      // The B over the `IV` is a continuation, a bar after the C#, on the same beat.
+      expect(riff.hook.notes.map((n) => n.step)).toEqual([9, 41, 73, 89, 105])
+      expect(89 - startOf('IV')).toBe(STEPS_PER_BAR + 8)
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('keeps every note one beat long, so the delay is what sustains it', () => {
+      // The definition fixes no lengths; on this patch a strike is short and the delay is long.
+      expect(riff.hook.notes.every((n) => n.len === 4)).toBe(true)
+    })
+
+    it('strikes the four entries across two passes of the grid, and not the step down', () => {
+      expect(riff.pattern.length).toBe(64)
+      expect(riff.pattern.hits.map((h) => h.step)).toEqual([9, 41])
+      expect(gridStrikes(riff)).toEqual([9, 41, 73, 105])
+      expect(gridStrikes(riff)).toEqual(entries(riff).map((n) => n.step))
+      // The B at 89 is step 25 of the second pass, and nothing sounds at 25 on the first, so
+      // the grid cannot mark it (§5A.2): it is in the hook alone.
+      expect(riff.hook.notes.some((n) => 25 >= n.step && 25 < n.step + n.len)).toBe(false)
+    })
+
+    it('says nothing of two strikes a bar or of repeated notes', () => {
+      const ink = riff.technique.join(' ')
+      expect(ink).not.toMatch(/twice a bar|two strikes|struck twice|"and" of four/)
+      expect(ink).toContain('Two notes a bar at most')
+    })
   })
 
   it('the slow changes sustain every note past the chord change under it', () => {
@@ -1936,9 +2004,9 @@ const FIDELITY: readonly FidelityRow[] = [
     key: 'A major',
     bpm: 96,
     progression: [['I', 2], ['vi', 2], ['IV', 2], ['V', 2]],
-    // Bars 1-4 of eight: the definition's held B5 and held C#6, each struck twice a bar. The
-    // C#6 B5 over the `IV` and the A5 over the `V` are its second half, and are prose.
-    pitches: ['B5', 'B5', 'B5', 'B5', 'C#6', 'C#6', 'C#6', 'C#6'],
+    // The whole eight bars, one note a chord on beat three and the step down over the `IV`:
+    // the second half was prose until #604 (§5A.2).
+    pitches: ['B5', 'C#6', 'C#6', 'B5', 'A5'],
   },
   {
     riff: softOrchestraSlowChanges,
