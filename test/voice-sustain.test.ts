@@ -465,18 +465,18 @@ describe('the shipped library (#506)', () => {
     'elektron-analog-rytm-mkii': {
       unestablished: ['rytm-sub-dark', 'rytm-texture-soft'],
     },
-    // **The three Elektrons whose recipes set the envelope's shape and leave its levels.** All
-    // twelve are read and left, and the reason is one reason, which is why they sit together:
-    // each recipe authors the machine and the envelope *mode* and stops there, so the parameter
-    // that would decide sustain is the reader's. It is the Digitakt's own bar (`dt-texture-soft`
-    // above), applied to the boxes that turned out to be entirely on the far side of it.
+    // **The two Elektrons whose manuals share the AMP page's wording.** Digitakt II p.56 and
+    // Digitone II p.61 carry identical text: `SUS` is *"only available if MODE is set to ADSR"*,
+    // a fixed `HOLD` *"ignores Note Off events such as Trig Length"*, and the sound is sustained
+    // *"if DEC is set to less than 127"*. Until #547 each recipe authored the machine and the
+    // envelope *mode* and stopped there, so the parameter that would decide sustain was the
+    // reader's — the Digitakt's own bar (`dt-texture-soft` above), applied to the boxes that
+    // turned out to be entirely on the far side of it.
     //
-    // Digitakt II p.56 and Digitone II p.61 carry identical wording. `SUS` is *"only available
-    // if MODE is set to ADSR"*, so the `ADSR` recipes could sustain — but none of them authors
-    // `SUS`, and the level could be zero. The `AHD` recipes author a fixed `HOLD`, which *"ignores
-    // Note Off events such as Trig Length"* and so does not follow a hook's hold at all; but the
-    // tip that the sound sustains *"if DEC is set to less than 127"* is what makes `DEC` load-
-    // bearing, and none of them authors `DEC` either.
+    // Since #547 both author their stages: `AMP DEC` on the `AHD` recipes, `AMP SUS` above zero
+    // on the `ADSR` ones. Still read and left here, because the claim would rest on values whose
+    // range is `verified: false` — the level is authored, the scale it sits on is not — and
+    // whether a provisional stage may carry a `sustains` claim is #506's question.
     'elektron-digitakt-ii': {
       unestablished: ['dt2-sub-dark', 'dt2-texture-soft', 'dt2-acid-hard', 'dt2-pad-soft'],
     },
@@ -484,9 +484,12 @@ describe('the shipped library (#506)', () => {
       unestablished: ['dn2-sub-dark', 'dn2-pad-soft', 'dn2-acid-dirty', 'dn2-texture-soft'],
     },
     // p.59: `AMP` (`ANLG`/`RTRG`/`R+T`/`TTRG`) sets where the attack *starts* — *"from the current
-    // envelope level"* or *"from zero"* — and says nothing about whether the note holds. That is
-    // the one amp parameter these four author; `HOLD` and `REL`, which would decide it, are left.
-    // A claim read off `AMP` would be a citation off the wrong parameter.
+    // envelope level"* or *"from zero"* — and says nothing about whether the note holds. Since
+    // #547 these four author `HOLD` and `REL` too, and that settles it the Rytm's way rather than
+    // either claim's: p.58's hold is a fixed count of sequencer steps, an audio trig carries no
+    // length for it to follow (p.66), and the range behind the value is one nobody checked. A
+    // hold that runs its steps regardless of any hook is a third thing this vocabulary does not
+    // carry. Read, and left.
     'elektron-octatrack-mkii': {
       unestablished: ['ot-sub-dark', 'ot-texture-soft', 'ot-pad-soft', 'ot-acid-hard'],
     },

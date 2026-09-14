@@ -9,6 +9,7 @@ import {
   receiveTransports,
   renderGuide,
   resolve,
+  resolveParams,
   resolveRecipe,
   sendTransports,
   type AuthoredParam,
@@ -32,6 +33,10 @@ import { auditDevice } from '../scripts/audit-verified'
  *  2. `ALGO` as the switch every FM value hangs off — and FM DRUM, where the switch cannot be
  *     authored at all and the values go with it;
  *  3. micro timing printed on two scales, so a lane the box has stays unreachable.
+ *
+ * And one thing it guards since #547: **the AMP page's four unranged stages are the only numerics
+ * authored off no printed scale**, each recipe carries exactly the set its `AMP MODE` has, and
+ * `AMP HOLD` — the one stage p.61 does range — is untouched, mood included.
  */
 
 const MANUAL = 'Digitone II User Manual OS 1.10'
@@ -268,7 +273,11 @@ describe('Digitone II manifest', () => {
   // -------------------------------------------------------------------------
 
   describe('provenance (§3.1, §3.2)', () => {
-    it('cites the option set of every enum and the range of every numeric', () => {
+    it('cites the option set of every enum and the range of every numeric, except the four amp stages', () => {
+      // #547 made the AMP page's `ATK`, `DEC`, `SUS` and `REL` the one exception, and this is
+      // where it is held to being one: `0-127` with `verified: false`, not omitted, so the claim
+      // is explicit rather than inherited — and nothing else may follow them without landing here.
+      const UNPRINTED = new Set(['AMP ATK', 'AMP DEC', 'AMP SUS', 'AMP REL'])
       for (const recipe of device.recipes) {
         for (const param of params(recipe)) {
           if (param.kind === 'enum') {
@@ -277,6 +286,10 @@ describe('Digitone II manifest', () => {
             })
           }
           if (param.kind === 'numeric') {
+            if (UNPRINTED.has(param.name)) {
+              expect(param.range, `${recipe.id} ${param.name}`).toEqual({ min: 0, max: 127, verified: false })
+              continue
+            }
             expect(param.range.verified, `${recipe.id} ${param.name}`).toMatchObject({
               kind: 'manual',
             })
@@ -342,10 +355,114 @@ describe('Digitone II manifest', () => {
       expect(counts.uncheckedCapabilities, 'an unchecked capability fact').toBe(0)
       expect(counts.unreadCapabilities, 'a capability fact blocked on a document').toBe(0)
       expect(counts.capabilityFacts).toBeGreaterThan(15)
-      // Every point provisional and every range cited, which is this manual's shape twice over.
+      // Every point provisional, and every range cited but the amp stages #547 authored off
+      // no printed scale: two on each of the seventeen AHD recipes, four on each of the five ADSR.
       expect(counts.provisionalPoints).toBe(counts.params)
-      expect(counts.unverifiedRanges).toBe(0)
+      expect(counts.unverifiedRanges).toBe(17 * 2 + 5 * 4)
       expect(counts.moodInert).toBe(0)
+    })
+  })
+
+  // -------------------------------------------------------------------------
+  // §3.1/#547 — the amp envelope, whole, under whichever mode the recipe chose
+  // -------------------------------------------------------------------------
+
+  describe('the amp envelope (§3.1/#547)', () => {
+    const AHD: readonly string[] = ['AMP MODE', 'AMP ATK', 'AMP HOLD', 'AMP DEC']
+    const ADSR: readonly string[] = ['AMP MODE', 'AMP ATK', 'AMP DEC', 'AMP SUS', 'AMP REL']
+    const STAGES = ['AMP ATK', 'AMP HOLD', 'AMP DEC', 'AMP SUS', 'AMP REL']
+
+    it('authors exactly the stages its mode has, in the order p.61 prints them, once each', () => {
+      // p.61: `HOLD` "is only available if MODE is set to AHD"; `SUS` and `REL` "only available
+      // if MODE is set to ADSR"; `ATK` and `DEC` carry no condition. A stage from the other mode
+      // would be a value the reader cannot find on the screen, and a missing one is the hole
+      // #547 is about. The block is contiguous and starts at the mode, which decides it.
+      let ahd = 0
+      let adsr = 0
+      for (const recipe of device.recipes) {
+        const names = params(recipe).map((p) => p.name)
+        const mode = named(recipe, 'AMP MODE')
+        expect(mode?.kind, recipe.id).toBe('enum')
+        if (mode?.kind !== 'enum') continue
+        const want = mode.value === 'AHD' ? AHD : ADSR
+        if (mode.value === 'AHD') ahd += 1
+        else adsr += 1
+        const at = names.indexOf('AMP MODE')
+        expect(names.slice(at, at + want.length), `${recipe.id} AMP block`).toEqual([...want])
+        for (const stage of STAGES) {
+          const count = names.filter((n) => n === stage).length
+          expect(count, `${recipe.id} ${stage}`).toBe(want.includes(stage) ? 1 : 0)
+        }
+      }
+      expect(ahd).toBe(17)
+      expect(adsr).toBe(5)
+    })
+
+    it('carries the four new stages provisional on both claims and deaf to mood, and HOLD as it was', () => {
+      // The audit-facing half. §3.2's legality gate makes an unverified range deaf to mood, so an
+      // offset on any of the four would be the audit's `mood-inert` finding fifty-four times
+      // over. `density` stays on `AMP HOLD`, whose `0-126` p.61 prints, so the axis is still
+      // answered by the one stage that can legally answer it.
+      for (const recipe of device.recipes) {
+        for (const name of ['AMP ATK', 'AMP DEC', 'AMP SUS', 'AMP REL']) {
+          const stage = named(recipe, name)
+          if (stage === undefined) continue
+          expect(stage.kind, `${recipe.id} ${name}`).toBe('numeric')
+          if (stage.kind !== 'numeric') continue
+          expect(stage.range, `${recipe.id} ${name} range`).toEqual({ min: 0, max: 127, verified: false })
+          expect(stage.verified, `${recipe.id} ${name} point`).toBe(false)
+          expect(stage.mood, `${recipe.id} ${name} mood`).toBeUndefined()
+          expect(stage.unit, `${recipe.id} ${name} unit`).toBeUndefined()
+          expect(stage.note, `${recipe.id} ${name} note`).toBeDefined()
+          expect(stage.value, `${recipe.id} ${name} in range`).toBeGreaterThanOrEqual(0)
+          expect(stage.value, `${recipe.id} ${name} in range`).toBeLessThanOrEqual(127)
+        }
+        const hold = named(recipe, 'AMP HOLD')
+        if (hold === undefined) continue
+        expect(hold.kind).toBe('numeric')
+        if (hold.kind !== 'numeric') continue
+        expect(hold.range).toEqual({ min: 0, max: 126, verified: { kind: 'manual', source: `${MANUAL}, p.61` } })
+        expect(hold.mood).toEqual([{ axis: 'density', amount: -24 }])
+      }
+      expect(auditDevice(device).counts.moodInert).toBe(0)
+    })
+
+    it('keeps a decay short of 127 and a sustain above zero where the note is meant to end or hold', () => {
+      // p.61's tip: the sound is sustained "if DEC is set to less than 127", which is behaviour
+      // and not a range — it names one boundary on one side, gives 127 itself no behaviour, and
+      // says nothing of the bottom or the scale. Every decay here stays on the side the page
+      // describes; and every ADSR sustain is above zero, since a level of nothing would make the
+      // mode's whole point moot.
+      for (const recipe of device.recipes) {
+        const dec = named(recipe, 'AMP DEC')
+        expect(dec?.kind === 'numeric' ? dec.value : undefined, `${recipe.id} AMP DEC`).toBeLessThan(127)
+        const sus = named(recipe, 'AMP SUS')
+        if (sus === undefined) continue
+        expect(sus.kind === 'numeric' ? sus.value : undefined, `${recipe.id} AMP SUS`).toBeGreaterThan(0)
+      }
+    })
+
+    it('resolves the stages provisional and leaves them where they were authored under full density', () => {
+      // What the two claims come to in a guide: the value the reader dials is the authored one, it
+      // wears the provisional badge, and turning density to either end moves `AMP HOLD` and not
+      // a stage. One recipe of each mode, so both blocks are exercised.
+      const kick = device.recipes.find((r) => r.id === 'dn2-kick-hard')
+      const pad = device.recipes.find((r) => r.id === 'dn2-pad-soft')
+      expect(kick).toBeDefined()
+      expect(pad).toBeDefined()
+      if (kick === undefined || pad === undefined) return
+      for (const density of [0, 100]) {
+        const k = resolveParams(kick, moodState({ density }))
+        const find = (list: typeof k, name: string) => list.find((p) => p.name === name)
+        expect(find(k, 'AMP ATK')).toMatchObject({ value: 0, provenance: { state: 'provisional' } })
+        expect(find(k, 'AMP DEC')).toMatchObject({ value: 40, provenance: { state: 'provisional' } })
+        expect(find(k, 'AMP DEC')?.range).toEqual({ min: 0, max: 127, verified: false })
+        expect(find(k, 'AMP HOLD')?.value, `AMP HOLD at density ${String(density)}`).not.toBe(22)
+        const q = resolveParams(pad, moodState({ density }))
+        expect(find(q, 'AMP SUS')).toMatchObject({ value: 100, provenance: { state: 'provisional' } })
+        expect(find(q, 'AMP REL')).toMatchObject({ value: 72, provenance: { state: 'provisional' } })
+        expect(find(q, 'AMP HOLD')).toBeUndefined()
+      }
     })
   })
 
@@ -711,6 +828,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
  * names are page-qualified. `DeviceSchema` refuses the collision library-wide; what this file adds
  * is that the qualifiers are **this manual's own page names** rather than a scheme somebody
  * invented, which is the constraint `behringer-crave` states for the same repair.
+ *
+ * #547 added four more under the same rule: Appendix A prints bare `ATK`, `DEC`, `SUS` and `REL`
+ * on the operator, drum, noise and filter envelopes (pp.90, 94-95, 98, 102-105), so the amp's are
+ * `AMP ATK`, `AMP DEC`, `AMP SUS` and `AMP REL`, spelled the way `AMP HOLD` already was.
  */
 describe('Digitone II page-qualified names (#548)', () => {
   const byId = (id: string) => device.recipes.find((r) => r.id === id)
@@ -727,6 +848,13 @@ describe('Digitone II page-qualified names (#548)', () => {
     )
     expect(new Set(all.filter((n) => n.endsWith('HOLD')))).toEqual(
       new Set(['AMP HOLD', 'SYN HOLD']),
+    )
+    // The four stages #547 added: no bare one anywhere, and every `AMP`-prefixed name is one of
+    // the page's own six words — so a seventh could not arrive unqualified or under a made-up
+    // qualifier without landing here.
+    for (const bare of ['ATK', 'DEC', 'SUS', 'REL']) expect(all).not.toContain(bare)
+    expect(new Set(all.filter((n) => n.startsWith('AMP ')))).toEqual(
+      new Set(['AMP MODE', 'AMP ATK', 'AMP HOLD', 'AMP DEC', 'AMP SUS', 'AMP REL']),
     )
   })
 
