@@ -1,11 +1,14 @@
 import type { Metadata } from 'next'
 import { RiffIndex } from '@/components/catalogue/riff-index'
 import { Footer } from '@/components/footer'
-import { RIFFS } from '@/lib/riffs'
+import { RECORD_RIFFS } from '@/lib/riffs'
 
 /**
  * §5A. The riff half of the catalogue, and the same shape as `/devices` and `/directions`: a
  * server component that exports the metadata and hands its client island nothing at all.
+ *
+ * The count is `RECORD_RIFFS`' (§5A.7/#598): the entries with a page under this route. A figure
+ * named for a factory patch is listed on the box that ships it and is not counted here.
  */
 export const metadata: Metadata = {
   title: 'Riffs — Patchscore',
@@ -24,7 +27,7 @@ export default function Page() {
       <header className="masthead">
         <h1>Riffs</h1>
         <p>
-          {RIFFS.length} techniques. Choose one, build its sound on the boxes you own, and play
+          {RECORD_RIFFS.length} techniques. Choose one, build its sound on the boxes you own, and play
           the figure written here.
         </p>
       </header>

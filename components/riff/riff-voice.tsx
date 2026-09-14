@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { hintText } from '@/components/guide/format'
 import { Articulation } from '@/components/pattern/articulation'
 import { PatchList } from '@/components/recipe/patch-list'
@@ -43,18 +44,23 @@ function VoiceArticulation({ voice }: { voice: RiffVoicing }) {
   )
 }
 
-export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
-  const substituted = riffSubstitution(riff, voice)
+/**
+ * §5A/§3.7/#598. **Everything needed to build the voice, after the page has said which voice.**
+ *
+ * Shared between a riff page, where the voice is whichever the reader's rig had, and a preset
+ * figure page (`components/catalogue/preset-figure.tsx`), where it is the box the page is
+ * under. The two differ only above this block and in one line inside it: a riff page prints
+ * §3.5's substitution sentence and the patch the riff authors an affinity with (§5A.5/#585),
+ * and a preset page prints neither, since the patch is its heading and the box is settled.
+ * `patchLine` is that one line, handed in so the shape of the block is decided once and each
+ * surface supplies only what it knows.
+ */
+export function VoiceBuild({ voice, patchLine }: { voice: RiffVoicing; patchLine: ReactNode }) {
   const routing = recipeRouting(voice.recipe)
   const cites = riffCitation(voice)
   const patch = voice.recipe.patch
   return (
     <>
-      <p className="riff-where">
-        <span className="riff-box">{voiceHeading(voice)}</span>
-        <span className="riff-recipe">{voice.recipe.title}</span>
-      </p>
-      {substituted === undefined ? null : <p className="riff-substituted">{substituted}</p>}
       {riffStack(voice).map((sentence) => (
         <p className="riff-stack" key={sentence.slice(0, 24)}>
           {sentence}
@@ -73,6 +79,8 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
           )}
         </>
       )}
+      {/* §3/#553. The shortcut, above the settings it makes optional; each surface's own line. */}
+      {patchLine}
       {/*
         §3/#516. Which of the box's own sounds, and the gesture that reaches it — the sibling of
         the block in `lib/studio/riff-markdown.ts`, hand-written to match it.
@@ -81,17 +89,6 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
         `resolved-body.tsx` gives about every jog on this page: §8.1's toggle is what fills that
         column and this page has no toggle, so a hint put there would be invisible.
       */}
-      {voice.factoryPatch === undefined ? null : (
-        <>
-          <p className="quiet">
-            Factory patch — <strong>{voice.factoryPatch.name}</strong>
-            {voice.factoryPatch.bank === undefined ? '' : ` in ${voice.factoryPatch.bank}`}
-          </p>
-          <p className="quiet">
-            Load it and the settings below are already dialled. They build the same sound by hand.
-          </p>
-        </>
-      )}
       {voice.soundSetup === undefined ? null : (
         <>
           <p className="quiet">Sound — {voice.soundSetup.sound}</p>
@@ -139,6 +136,36 @@ export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
       )}
       <VoiceArticulation voice={voice} />
       {cites === undefined ? null : <p className="riff-cites">{cites}</p>}
+    </>
+  )
+}
+
+export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
+  const substituted = riffSubstitution(riff, voice)
+  return (
+    <>
+      <p className="riff-where">
+        <span className="riff-box">{voiceHeading(voice)}</span>
+        <span className="riff-recipe">{voice.recipe.title}</span>
+      </p>
+      {substituted === undefined ? null : <p className="riff-substituted">{substituted}</p>}
+      <VoiceBuild
+        voice={voice}
+        patchLine={
+          voice.factoryPatch === undefined ? null : (
+            <>
+              <p className="quiet">
+                Factory patch — <strong>{voice.factoryPatch.name}</strong>
+                {voice.factoryPatch.bank === undefined ? '' : ` in ${voice.factoryPatch.bank}`}
+              </p>
+              <p className="quiet">
+                Load it and the settings below are already dialled. They build the same sound by
+                hand.
+              </p>
+            </>
+          )
+        }
+      />
     </>
   )
 }

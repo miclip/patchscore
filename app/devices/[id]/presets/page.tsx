@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
 import { PresetBody } from '@/components/catalogue/preset-section'
+import type { Device } from '@/lib/core'
 import { shippedPatchKey } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel, presetsHref } from '@/lib/studio/catalogue'
@@ -72,9 +73,10 @@ export async function generateMetadata({
 /**
  * One patch, open. The heading is the name as the box prints it, the line under it is what it
  * is for, and the body is the same `PresetBody` the panel folds away — one React reading of an
- * entry (§3.7's rule for the kit, kept here).
+ * entry (§3.7's rule for the kit, kept here). The figure it links to is a page under this box
+ * (#598), which is where the technique, the notes, the grid and this box's settings are.
  */
-function Entry({ entry }: { entry: PresetEntry }) {
+function Entry({ device, entry }: { device: Device; entry: PresetEntry }) {
   return (
     <li className="preset-card">
       <h3 className="preset-card-head">
@@ -84,7 +86,7 @@ function Entry({ entry }: { entry: PresetEntry }) {
         )}
       </h3>
       <p className="preset-use">{entry.use}</p>
-      <PresetBody entry={entry} />
+      <PresetBody device={device} entry={entry} />
     </li>
   )
 }
@@ -108,7 +110,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
 
       <ol className="preset-cards">
         {session.entries.map((entry) => (
-          <Entry key={shippedPatchKey(entry.patch)} entry={entry} />
+          <Entry key={shippedPatchKey(entry.patch)} device={session.device} entry={entry} />
         ))}
       </ol>
 

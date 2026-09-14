@@ -1,6 +1,6 @@
 import type { Device } from '@/lib/core'
 import { deviceLabel } from './catalogue'
-import type { PresetSession } from './preset-session'
+import type { PresetFigure, PresetSession } from './preset-session'
 
 /**
  * §2.6/#593. **The words a preset session says, in one place, because two surfaces say them.**
@@ -33,19 +33,16 @@ export const PRESET_LEAD =
 export const PRESET_HEADING = 'Explore your device'
 
 /**
- * §3/#553/#593. **The recipe that reaches a patch, said once.**
- *
- * **The guide's own sentence is deliberately not reused here**, and the first version of this
- * page proved why. It read *Factory patch — the box ships 3 Osc Bass Love, which arrives here
- * already*, under a heading that is `3 Osc Bass Love`, on a page titled *factory patches*. It
- * repeated the name from the line above it and then stated the premise of the whole surface.
- *
- * On a guide that sentence earns its place: the reader asked for a `bass-mid · dirty`, the patch
- * is news, and naming it is the whole point. Here the patch is the heading and the only thing a
- * reader does not already know is that **the box can make this sound from scratch**. So that is
- * what the label says, and the line carries the recipe and nothing else.
+ * §2.6/#593/#598. **Nothing about a recipe, on any preset surface.** Two attempts at a line
+ * about `Recipe.factoryPatch` stood here and both failed the same way: *Factory patch — the box
+ * ships X, which arrives here already* under a heading that is X, then *Built by hand — <recipe
+ * title>*, which on a page about presets reads as an instruction to assemble the thing the page
+ * just said to load, with the recipe's title sitting where a description of the patch belongs.
+ * A sentence about the recipe/patch relationship is meaningful on a guide, where the reader
+ * asked for a `lead / bright` and the patch is the shortcut; here the patch is the subject, and
+ * a preset is a thing you load. Operator decision, #598: a preset entry is the name, what it is
+ * for, and the figure. `Recipe.factoryPatch` itself is untouched and still renders on a guide.
  */
-export const PRESET_RECIPE = 'Built by hand — '
 
 /** The label in front of the link to the riff written for a patch. */
 export const PRESET_FIGURE = 'Figure — '
@@ -56,4 +53,46 @@ export function presetDescription(session: PresetSession): string {
     `Factory patches on the ${deviceLabel(session.device)} worth knowing, what each is for, ` +
     'and the figure written for it.'
   )
+}
+
+// ---------------------------------------------------------------------------
+// §3.7/#598. The figure page
+// ---------------------------------------------------------------------------
+
+/**
+ * `The Muse Runner floating-arrival lead on the Moog Muse`. The figure's own name, which
+ * carries the patch's verbatim (§5A.5), and then the box, because the page is under the box
+ * and a search result has to say which one before the reader opens it.
+ */
+export function presetFigureTitle(device: Device, figure: PresetFigure): string {
+  return `${figure.riff.name} on the ${deviceLabel(device)}`
+}
+
+/**
+ * The one sentence a search result shows. Opens with a verb, on `riffDescription`'s rule
+ * (§5A.5): something to do rather than a table of contents. It names the box outright where a
+ * riff's says *the boxes you own*, since here the box is known and is the whole point of the
+ * page, and the figure is one **written here**, so nothing suggests the patch ships with notes.
+ */
+export function presetFigureDescription(device: Device, figure: PresetFigure): string {
+  return (
+    `Load ${figure.riff.reference.name} on the ${deviceLabel(device)} and practise the technique ` +
+    'against a figure written here, with the settings on that box.'
+  )
+}
+
+/**
+ * `On the Moog Muse`: the heading over the box's block on the figure page, after *The
+ * technique*, *The chords*, *The notes* and *The grid*. A riff page heads the same block *Where
+ * it plays*, a question with one answer here, already in the title and the address bar. Not
+ * *The settings*, because the block's own `Settings` sub-heading sits inside it and a heading
+ * that restates the one under it is the copy #593 took off this surface.
+ */
+export function presetBoxHeading(device: Device): string {
+  return `On the ${deviceLabel(device)}`
+}
+
+/** The link from a figure page back to the index that lists it. */
+export function presetFigureBack(device: Device): string {
+  return `Every patch on the ${deviceLabel(device)}`
 }

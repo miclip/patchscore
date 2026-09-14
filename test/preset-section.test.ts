@@ -7,7 +7,7 @@ import { FACTORY_PATCHES_FACT } from '../lib/core/index'
 import type { Device } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS } from '../lib/riffs'
-import { riffHref } from '../lib/studio/catalogue'
+import { presetFigureHref, riffHref } from '../lib/studio/catalogue'
 import { presetSession } from '../lib/studio/preset-session'
 import { PRESET_HEADING, PRESET_LEAD } from '../lib/studio/preset-text'
 import { device as fixtureDevice, recipe } from './fixtures'
@@ -18,8 +18,8 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *
  * What is pinned: the panel is on the one box with a session and on no other; every entry is a
  * closed disclosure whose summary carries the name and what it is for; the body carries the
- * recipe claim where a recipe reaches the patch and the link to the figure written for it; the
- * order is the folder's; and nothing on the panel counts the patches it does not list.
+ * link to the figure written for it and nothing about a recipe (#598); the order is the
+ * folder's; and nothing on the panel counts the patches it does not list.
  */
 
 const byId = (id: string): Device => {
@@ -94,47 +94,56 @@ describe('each entry says what the model says', () => {
     expect(MUSE_TEXT).toContain(PRESET_LEAD)
   })
 
-  it('links every entry to the riff whose reference names the patch, and to no other riff', () => {
+  /**
+   * §3.7/#598. The figure link is to the page under this box, never into `/riffs`: the twelve
+   * have no page there, so a `riffHref` on this panel would be a link to a 404.
+   */
+  it('links every entry to its figure page under the device, and nowhere into /riffs', () => {
     const patchRiffs = RIFFS.filter((r) => r.reference.kind === 'patch')
     expect(patchRiffs.length).toBe(12)
-    for (const riff of patchRiffs) {
-      expect(MUSE).toContain(`href="${riffHref(riff)}"`)
-      expect(MUSE_TEXT).toContain(riff.name)
+    for (const entry of session.entries) {
+      expect(entry.figure, entry.patch.name).toBeDefined()
+      expect(MUSE, entry.patch.name).toContain(
+        `href="${presetFigureHref(byId('moog-muse'), entry.patch)}"`,
+      )
+      expect(MUSE_TEXT, entry.patch.name).toContain(entry.figure?.riff.name ?? '')
     }
-    for (const riff of RIFFS.filter((r) => r.reference.kind === 'record')) {
+    for (const riff of RIFFS) {
       expect(MUSE, riff.id).not.toContain(`href="${riffHref(riff)}"`)
     }
+    expect(MUSE).not.toContain('href="/riffs')
   })
 
   /**
-   * #593. **The recipe line names the recipe and restates nothing.**
-   *
-   * The first version closed each line with the guide's own sentence — *Factory patch — the box
-   * ships 3 Osc Bass Love, which arrives here already* — under a heading that is `3 Osc Bass
-   * Love`, on a page titled *factory patches*. It repeated the line above it and then stated the
-   * premise of the surface. On a guide that sentence earns its place, because there the patch is
-   * news; here the only thing a reader does not already know is that the box can make the sound
-   * from scratch, which is what the label now says.
-   *
-   * So both halves are asserted: the recipe is named, and neither the patch name nor the shipping
-   * claim is said a second time inside the line.
+   * #598, operator decision. **Nothing about a recipe, on either surface.** A line about
+   * `Recipe.factoryPatch` stood here twice — *Factory patch — the box ships X, which arrives here
+   * already*, then *Built by hand — <recipe title>* — and both read as an instruction to
+   * assemble the thing the entry had just said to load, with a recipe's title where a
+   * description of the patch belongs. A preset entry is the name, what it is for, and the
+   * figure. So this asserts the absence, by every wording it had and by every recipe title on
+   * the box, so it cannot return in another coat.
    */
-  it('names the recipe on the five and restates neither the patch nor the shipping claim', () => {
-    expect(MUSE.match(/class="quiet preset-recipe"/g)?.length).toBe(5)
-    let claims = 0
-    for (const entry of session.entries) {
-      for (const r of entry.recipes) {
-        claims += 1
-        expect(MUSE, r.id).toContain(`<strong>${r.title}</strong>`)
-        expect(MUSE, r.id).toContain(`<span class="mono">${r.role} · ${r.character}</span>`)
-        expect(MUSE_TEXT, r.id).toContain(`Built by hand — ${r.title}`)
-      }
+  it('prints no recipe line and no recipe title, under any wording it ever had', () => {
+    // The panel's own markup: the device page around it lists every recipe under `Parameter
+    // sources`, which is that panel's job and not this one's.
+    expect(PANEL).not.toContain('preset-recipe')
+    for (const phrase of [
+      'Built by hand',
+      'Factory patch',
+      'the box ships',
+      'arrives here already',
+      'settings below',
+      'by hand',
+    ]) {
+      expect(PANEL_TEXT, phrase).not.toContain(phrase)
     }
-    expect(claims).toBe(5)
-    expect(MUSE_TEXT.split('Built by hand —').length - 1).toBe(5)
-    expect(MUSE_TEXT).not.toContain('the box ships')
-    expect(MUSE_TEXT).not.toContain('arrives here already')
-    expect(MUSE_TEXT).not.toContain('settings below')
+    // No recipe title from the folder, patched or not, and no `role · character` pair of one.
+    for (const r of byId('moog-muse').recipes) {
+      expect(PANEL_TEXT, r.id).not.toContain(r.title)
+    }
+    expect(PANEL).not.toMatch(/<span class="mono">[a-z-]+ · [a-z]+<\/span>/)
+    // Not vacuous: the box has recipes naming five of these patches, and none of them shows.
+    expect(byId('moog-muse').recipes.filter((r) => r.factoryPatch !== undefined)).toHaveLength(5)
   })
 
   it('says nothing about the patches it does not list', () => {
@@ -148,8 +157,14 @@ describe('each entry says what the model says', () => {
 
 describe('every entry is a closed details, whatever is under it', () => {
   it('draws a closed expander for a patch no recipe and no riff reaches', () => {
+    // A box that plays the Bellbounce figure (an `arp`), since #598 resolves every figure on
+    // the box that ships its patch and refuses one it cannot play.
     const device = fixtureDevice({
-      recipes: [recipe()],
+      recipes: [recipe(), recipe({ id: 'fx-arp-bright', role: 'arp', character: 'bright', voice: 'lt' })],
+      voices: [
+        { kind: 'fixed', id: 'bd', label: 'BD', roles: ['kick'], polyphony: 1 },
+        { kind: 'fixed', id: 'lt', label: 'LT', roles: ['arp'], polyphony: 1 },
+      ],
       factoryPatches: [{ name: 'Nothing Reaches Me' }, { name: 'Bellbounce' }],
       patchUses: [
         { name: 'Nothing Reaches Me', use: 'A pad' },

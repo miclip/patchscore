@@ -13,7 +13,7 @@ import sitemap from '../app/sitemap'
 import type { Device } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS } from '../lib/riffs'
-import { deviceHref, presetsHref, riffHref } from '../lib/studio/catalogue'
+import { deviceHref, presetFigureHref, presetsHref, riffHref } from '../lib/studio/catalogue'
 import { presetSession } from '../lib/studio/preset-session'
 import { PRESET_LEAD, presetTitle } from '../lib/studio/preset-text'
 
@@ -24,7 +24,8 @@ import { PRESET_LEAD, presetTitle } from '../lib/studio/preset-text'
  * no client boundary at all, so everything a crawler and a reader with no JavaScript get is in
  * this string. What is pinned is that the page exists exactly where a session does, that it
  * says what the model says with every entry open, that it links to the device and to every
- * figure, and that it carries no export and no count of what it does not list.
+ * figure, that nothing on it is about a recipe (#598), and that it carries no export and no
+ * count of what it does not list.
  */
 
 const byId = (id: string): Device => {
@@ -116,28 +117,42 @@ describe('the page says what the model says, every entry open', () => {
     }
   })
 
-  it('links every entry to its figure and prints the five recipe claims', () => {
+  it('links every entry to its figure page under the device, and prints nothing about a recipe', () => {
     for (const entry of session.entries) {
-      expect(entry.riff, entry.patch.name).toBeDefined()
-      if (entry.riff !== undefined) {
-        expect(MUSE, entry.patch.name).toContain(`href="${riffHref(entry.riff)}"`)
-        expect(MUSE_TEXT, entry.patch.name).toContain(entry.riff.name)
+      expect(entry.figure, entry.patch.name).toBeDefined()
+      if (entry.figure !== undefined) {
+        expect(MUSE, entry.patch.name).toContain(
+          `href="${presetFigureHref(byId('moog-muse'), entry.patch)}"`,
+        )
+        expect(MUSE_TEXT, entry.patch.name).toContain(entry.figure.riff.name)
       }
     }
-    for (const riff of RIFFS.filter((r) => r.reference.kind === 'record')) {
+    // §3.7/#598. Nothing into `/riffs`: the twelve have no page there, and the five that do are
+    // not this box's.
+    for (const riff of RIFFS) {
       expect(MUSE, riff.id).not.toContain(`href="${riffHref(riff)}"`)
     }
-    expect(MUSE.match(/class="quiet preset-recipe"/g)?.length).toBe(5)
-    for (const entry of session.entries) {
-      for (const r of entry.recipes) {
-        expect(MUSE_TEXT, r.id).toContain(`Built by hand — ${r.title}`)
-      }
+    expect(MUSE).not.toContain('href="/riffs')
+    /*
+     * #598, operator decision. No recipe line under any wording it had, and no recipe title:
+     * a preset is a thing you load, and a line about the recipe that reaches it reads as an
+     * instruction to build it. `test/preset-section.test.ts` holds the panel to the same.
+     */
+    expect(MUSE).not.toContain('preset-recipe')
+    for (const phrase of [
+      'Built by hand',
+      'Factory patch',
+      'the box ships',
+      'arrives here already',
+      'settings below',
+      'by hand',
+    ]) {
+      expect(MUSE_TEXT, phrase).not.toContain(phrase)
     }
-    expect(MUSE_TEXT.split('Built by hand —').length - 1).toBe(5)
-    // #593. The patch is the heading and the page is titled for it, so the line restates neither.
-    expect(MUSE_TEXT).not.toContain('the box ships')
-    expect(MUSE_TEXT).not.toContain('arrives here already')
-    expect(MUSE_TEXT).not.toContain('settings below')
+    for (const r of byId('moog-muse').recipes) {
+      expect(MUSE_TEXT, r.id).not.toContain(r.title)
+    }
+    expect(byId('moog-muse').recipes.filter((r) => r.factoryPatch !== undefined)).toHaveLength(5)
   })
 
   it('carries no export, no song controls, and no count of what it does not list', () => {

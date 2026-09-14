@@ -1,7 +1,7 @@
-import type { Device, DeviceKind, Riff, SampleTarget, Template } from '@/lib/core'
-import { devicePagePath } from '@/lib/core'
+import type { Device, DeviceKind, Riff, SampleTarget, ShippedPatch, Template } from '@/lib/core'
+import { devicePagePath, referenceSlug } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
-import { RIFFS } from '@/lib/riffs'
+import { RECORD_RIFFS } from '@/lib/riffs'
 import { TEMPLATES } from '@/lib/templates'
 import { ANY_KIND, NO_DEVICE_FILTER, deviceView, kindsPresent, riffView, templateView } from './picker'
 import type { DeviceFilter, PickerView } from './picker'
@@ -84,11 +84,16 @@ export const DIRECTION_CATALOGUE: CatalogueSource<Template> = {
  * §5A. The third catalogue, and the narrowest search of the three: a riff is found by what it is
  * named for or by the part it is, and it has no maker and no key list to match on.
  *
+ * **The record-named entries only** (§5A.7, #598). A figure named for a factory patch is listed
+ * on the box that ships the patch and has no page here, so searching it here would find a
+ * card with a 404 behind it. `RECORD_RIFFS` is the one filter, shared with the route and the
+ * sitemap.
+ *
  * **The label names neither kind of reference, and that is deliberate** (§5A.5, #566). It said
  * *record* until a riff arrived named for a factory patch, and the repair is not to list both:
- * `RiffSchema` requires the reference verbatim inside `name`, so somebody typing *Blue Monday* or
- * *Muse Runner* matches the title without the label having promised it. A label enumerating the
- * kinds goes stale the next time one is added, and this one already did.
+ * `RiffSchema` requires the reference verbatim inside `name`, so somebody typing *Blue Monday*
+ * matches the title without the label having promised it. A label enumerating the kinds goes
+ * stale the next time one is added, and this one already did.
  */
 export const RIFF_CATALOGUE: CatalogueSource<Riff> = {
   id: 'riffs',
@@ -97,7 +102,7 @@ export const RIFF_CATALOGUE: CatalogueSource<Riff> = {
   placeholder: 'Search name, part',
   kinds: [],
   empty: 'No riff matches that.',
-  search: (filter) => riffView(RIFFS, filter.query),
+  search: (filter) => riffView(RECORD_RIFFS, filter.query),
   keyOf: (riff) => riff.id,
 }
 
@@ -157,6 +162,26 @@ export function presetsHref(device: Device): string {
   return `${devicePagePath(device.id)}/presets`
 }
 
+/**
+ * §3.7/#598. `muse-runner`: the segment a shipped patch is addressed by under `presetsHref`.
+ * `referenceSlug` of the name the box prints, which is the same slugging a riff's id opens with,
+ * so the address of a patch and the opening of the figure written for it agree by construction.
+ * The bank is not in it: none has been read on any box, and `presetSession` refuses two patches
+ * whose slugs collide rather than letting a bank decide an address nobody can type.
+ */
+export function presetSlug(patch: ShippedPatch): string {
+  return referenceSlug(patch.name)
+}
+
+/**
+ * §3.7/#598. `/devices/moog-muse/presets/muse-runner` — one preset figure, on the box that
+ * ships the patch, under the index that lists it. One place, for `presetsHref`'s reason: the
+ * index card, the sitemap and the page's own canonical cannot disagree.
+ */
+export function presetFigureHref(device: Device, patch: ShippedPatch): string {
+  return `${presetsHref(device)}/${presetSlug(patch)}`
+}
+
 /** `/directions/ambient-dub`. The device pages link here, so it lives beside `deviceHref`. */
 export function templateHref(template: Template): string {
   return `/directions/${template.id}`
@@ -165,6 +190,8 @@ export function templateHref(template: Template): string {
 /**
  * §5A. `/riffs/blue-monday-bass`. One place, so the index card, the sitemap and the page's own
  * canonical cannot disagree — the reason `templateHref` and `kitHref` are each one place.
+ * **Only a record-named riff has a page here** (#598); a patch-named one is addressed by
+ * `presetFigureHref`, and this returns an address that 404s for it.
  */
 export function riffHref(riff: Riff): string {
   return `/riffs/${riff.id}`
