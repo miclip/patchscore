@@ -80,9 +80,16 @@ export function riffTempo(riff: Riff): string {
   return `${num(bpm.default)} BPM${span}`
 }
 
-/** How long the figure is, and how many steps that is on §4.3's grid. */
+/**
+ * How long the figure is, and how many steps that is on §4.3's grid.
+ *
+ * **Bars alone on a held riff** (§5A.2/#608). A step count is a fact about a grid, and a riff
+ * on a held role has none; printing the hook's length in steps would name a grid the page then
+ * fails to draw.
+ */
 export function riffLength(riff: Riff): string {
-  return `${count(riff.hook.bars, 'bar')} · ${count(riff.pattern.length, 'step')}`
+  const bars = count(riff.hook.bars, 'bar')
+  return riff.pattern === undefined ? bars : `${bars} · ${count(riff.pattern.length, 'step')}`
 }
 
 /**
@@ -303,6 +310,13 @@ export function heldLabel(row: NoteRow): string {
 // The grid
 // ---------------------------------------------------------------------------
 
+/*
+ * §5A.2/#608. **A held riff has no grid, and no grid section.** Every function below answers
+ * with nothing where `riff.pattern` is absent — no rows, no slots, no repeat sentence — and both
+ * renderers omit the section rather than heading an empty one. The lead sentence is a sentence
+ * about a grid, so it goes with it.
+ */
+
 /**
  * §4.3's grid for this riff's pattern, drawn by `stepGridRows` in the marks every step grid in the
  * product uses — the guide's Markdown included.
@@ -314,7 +328,7 @@ export function heldLabel(row: NoteRow): string {
  * identical to the guide's and connected to it by nothing (#512).
  */
 export function gridRows(riff: Riff): readonly string[] {
-  return stepGridRows(riff.pattern)
+  return riff.pattern === undefined ? [] : stepGridRows(riff.pattern)
 }
 
 /** One entry per `PatternSlot` present, in the order the variant first reaches each. */
@@ -326,6 +340,7 @@ export type SlotRow = { slot: string; steps: readonly number[] }
  * the export's own row — a bare list of steps, joined by `stepList`.
  */
 export function slotRows(riff: Riff): readonly SlotRow[] {
+  if (riff.pattern === undefined) return []
   return slotGroups(riff.pattern).map(({ slot, hits }) => ({
     slot,
     steps: hits.map((hit) => hit.step),
@@ -341,7 +356,7 @@ export function stepList(steps: readonly number[]): string {
  *
  * Printed rather than left to be inferred: a page showing both a set of notes and a set of steps
  * has already raised the question #100 exists to answer, and the answer is `reArticulatesHook`,
- * which every riff carries by construction.
+ * which every riff with a grid carries by construction.
  */
 export const RIFF_GRID_LEAD =
   'Every step below strikes the note in force at that point. The grid is where the figure is ' +
@@ -359,6 +374,7 @@ export const RIFF_GRID_LEAD =
  * no locale is involved (§7.2).
  */
 export function gridRepeatSentence(riff: Riff): string | undefined {
+  if (riff.pattern === undefined) return undefined
   const gridBars = riff.pattern.length / STEPS_PER_BAR
   if (riff.hook.bars <= gridBars) return undefined
   const passes = riff.hook.bars / gridBars

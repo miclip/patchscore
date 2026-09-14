@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   ForbiddenDegreeSchema,
+  NON_PATTERN_BEARING_ROLES,
   RiffConstraintsSchema,
+  bearsPattern,
   RiffSchema,
   STEPS_PER_BAR,
   affinePatch,
@@ -19,6 +21,7 @@ import {
 } from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
 import { ruleLines } from '@/lib/studio/riff-text'
+import { gridOf } from './fixtures'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import {
   RIFFS,
@@ -78,11 +81,34 @@ function riff(over: Partial<Riff> = {}): Riff {
   }
 }
 
+/**
+ * §5A.2/#608. A riff on a held role: the fixture above with `pad` for its part, no grid and no
+ * `reArticulatesHook`, which is the whole of the other shape.
+ */
+function heldRiff(over: Partial<Riff> = {}): Riff {
+  const base = riff()
+  const { reArticulatesHook: _dropped, ...request } = base.request
+  const { pattern: _grid, ...rest } = base
+  return {
+    ...rest,
+    request: { ...request, role: 'pad', character: 'soft' },
+    hook: { ...base.hook, forRole: 'pad' },
+    ...over,
+  }
+}
+
 /** The first message on a failed parse, which is what an author actually reads. */
 function refusal(candidate: unknown): string {
   const parsed = RiffSchema.safeParse(candidate)
   expect(parsed.success, 'expected this riff to be refused').toBe(false)
   return parsed.success ? '' : (parsed.error.issues[0]?.message ?? '')
+}
+
+/** Every message on a failed parse, for a candidate that breaks more than one rule. */
+function refusals(candidate: unknown): string[] {
+  const parsed = RiffSchema.safeParse(candidate)
+  expect(parsed.success, 'expected this riff to be refused').toBe(false)
+  return parsed.success ? [] : parsed.error.issues.map((issue) => issue.message)
 }
 
 describe('RiffSchema (§5A)', () => {
@@ -217,15 +243,72 @@ describe('RiffSchema (§5A)', () => {
     expect(refusal({ ...r, request: bare })).toContain('re-articulates the hook')
   })
 
-  it('refuses a role that is held rather than struck (invariant 5)', () => {
-    const r = riff()
-    const pad = {
-      ...r,
-      request: { ...r.request, role: 'pad' as const },
-      hook: { ...r.hook, forRole: 'pad' as const },
-      pattern: { ...r.pattern, forRole: 'pad' as const },
-    }
-    expect(refusal(pad)).toContain('no grid to riff on')
+  /**
+   * §4.2/§5A.2/#608. **The role decides the shape.** A struck role carries a grid and the flag
+   * that joins it to the hook; a held role carries neither. Every combination of the two fields
+   * against the two kinds of role is here, so the schema is held to refusing exactly the three
+   * wrong ones on each side.
+   */
+  describe('a grid and `reArticulatesHook` go together, and only on a struck role (#608)', () => {
+    const struck = riff()
+    const { reArticulatesHook: _flag, ...unflagged } = struck.request
+    const { pattern: grid, ...ungridded } = struck
+    const held = heldRiff()
+
+    it('accepts a struck role with both, which is every riff before #608', () => {
+      expect(RiffSchema.safeParse(struck).success).toBe(true)
+      expect(NON_PATTERN_BEARING_ROLES).not.toContain(struck.request.role)
+    })
+
+    it('refuses a struck role with no grid: the part is struck, so the riff says where', () => {
+      expect(refusal(ungridded)).toContain('is struck: a riff on it says where, in a grid')
+    })
+
+    it('refuses a struck role with a grid and no flag', () => {
+      expect(refusal({ ...struck, request: unflagged })).toContain('re-articulates the hook')
+    })
+
+    it('refuses a struck role with neither, and names both', () => {
+      const messages = refusals({ ...ungridded, request: unflagged })
+      expect(messages.some((m) => m.includes('re-articulates the hook'))).toBe(true)
+      expect(messages.some((m) => m.includes('says where, in a grid'))).toBe(true)
+    })
+
+    it('accepts a held role with neither: the hook is the whole figure', () => {
+      expect(NON_PATTERN_BEARING_ROLES).toContain(held.request.role)
+      expect(held.pattern).toBeUndefined()
+      expect(held.request.reArticulatesHook).toBeUndefined()
+      const parsed = RiffSchema.safeParse(held)
+      expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+    })
+
+    it('refuses a held role with a grid: there is nothing to strike', () => {
+      const padGrid = { ...(grid as NonNullable<typeof grid>), forRole: 'pad' as const }
+      expect(refusal({ ...held, pattern: padGrid })).toContain('no grid to riff on')
+    })
+
+    it('refuses a held role with the flag: there is no grid to re-articulate the hook', () => {
+      expect(
+        refusal({ ...held, request: { ...held.request, reArticulatesHook: true as const } }),
+      ).toContain('no grid to re-articulate the hook')
+    })
+
+    it('refuses a held role with both, and names both', () => {
+      const padGrid = { ...(grid as NonNullable<typeof grid>), forRole: 'pad' as const }
+      const messages = refusals({
+        ...held,
+        pattern: padGrid,
+        request: { ...held.request, reArticulatesHook: true as const },
+      })
+      expect(messages.some((m) => m.includes('no grid to riff on'))).toBe(true)
+      expect(messages.some((m) => m.includes('no grid to re-articulate the hook'))).toBe(true)
+    })
+
+    it('holds a held riff to every rule that is not about the grid', () => {
+      expect(refusal(heldRiff({ key: 'H major' }))).toContain('not a key this engine reads')
+      expect(refusal({ ...held, hook: { ...held.hook, notes: [] } })).toContain('drum pattern')
+      expect(refusal({ ...held, hook: { ...held.hook, forRole: 'lead' } })).toContain('the hook is for')
+    })
   })
 
   it('refuses a hook or a grid authored for another role', () => {
@@ -481,6 +564,30 @@ describe('the riff library (§5A)', () => {
     }
   })
 
+  it('is six roles over seventeen entries, two of them pads since #608', () => {
+    // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
+    // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
+    // role, pinned so the spread above is known and not merely satisfied.
+    const counts = new Map<string, number>()
+    for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
+    expect(Object.fromEntries([...counts].sort())).toEqual({
+      acid: 1,
+      arp: 1,
+      'bass-mid': 2,
+      lead: 6,
+      pad: 2,
+      stab: 5,
+    })
+    expect(RIFFS).toHaveLength(17)
+    // And the two pads are the two held riffs: no grid, no flag, on both.
+    const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
+    expect(pads.sort()).toEqual(['moog-55-strings-suspension-writing', 'soft-orchestra-slow-changes'])
+    for (const r of RIFFS) {
+      expect(r.pattern === undefined, r.id).toBe(!bearsPattern(r.request.role))
+      expect(r.request.reArticulatesHook === undefined, r.id).toBe(!bearsPattern(r.request.role))
+    }
+  })
+
   /**
    * Invariant 3, enforced rather than reviewed. A riff that named a box would be the template
    * layer's one forbidden move made by a new content type, and it is the sort of thing that
@@ -674,10 +781,11 @@ function entries(riff: Riff): HookNote[] {
  * as arithmetic, so a test can hold a twelve-bar hook to a four-bar grid.
  */
 function gridStrikes(riff: Riff): number[] {
-  const passes = (riff.hook.bars * STEPS_PER_BAR) / riff.pattern.length
+  const grid = gridOf(riff)
+  const passes = (riff.hook.bars * STEPS_PER_BAR) / grid.length
   const out: number[] = []
   for (let pass = 0; pass < passes; pass += 1) {
-    for (const hit of riff.pattern.hits) out.push(hit.step + pass * riff.pattern.length)
+    for (const hit of grid.hits) out.push(hit.step + pass * grid.length)
   }
   return out
 }
@@ -738,8 +846,8 @@ describe('the Blade Runner Blues lead (§5A/§4.1/#603)', () => {
   it('strikes each arrival once across three passes of the grid, and nothing else', () => {
     // A four-bar grid under a twelve-bar line: steps 5 and 41 on each pass are the six onsets
     // and no held note is struck through.
-    expect(riff.pattern.length).toBe(64)
-    expect(riff.pattern.hits.map((h) => h.step)).toEqual([5, 41])
+    expect(gridOf(riff).length).toBe(64)
+    expect(gridOf(riff).hits.map((h) => h.step)).toEqual([5, 41])
     expect(gridStrikes(riff)).toEqual(riff.hook.notes.map((n) => n.step))
   })
 
@@ -955,8 +1063,8 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603)', () => {
     // A four-bar grid under a twelve-bar line, three passes: steps 9 and 41 of each are the
     // six arrivals. The seven moves inside a chord have no strike, because they are slurred
     // (§5A.2).
-    expect(riff.pattern.length).toBe(64)
-    expect(riff.pattern.hits.map((h) => h.step)).toEqual([9, 41])
+    expect(gridOf(riff).length).toBe(64)
+    expect(gridOf(riff).hits.map((h) => h.step)).toEqual([9, 41])
     expect(gridStrikes(riff)).toEqual(arrivals)
     expect(riff.technique.some((p) => p.includes('slurred, not struck'))).toBe(true)
   })
@@ -1078,8 +1186,8 @@ describe('the two F# minor entries are distinguishable by more than their titles
       entries(riff).map((n) => n.step - chordStart(chordAtStep(riff, n.step) ?? ''))
     expect(into(blade)).toEqual([4, 8, 4, 8, 4, 8])
     expect(into(muse)).toEqual([8, 8, 8, 8, 8, 8])
-    expect(blade.pattern.hits.map((h) => h.step)).toEqual([5, 41])
-    expect(muse.pattern.hits.map((h) => h.step)).toEqual([9, 41])
+    expect(gridOf(blade).hits.map((h) => h.step)).toEqual([5, 41])
+    expect(gridOf(muse).hits.map((h) => h.step)).toEqual([9, 41])
   })
 
   it('share no paragraph of technique', () => {
@@ -1443,7 +1551,7 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
   {
     riff: softOrchestraSlowChanges,
     rules: [['V', 7, undefined]],
-    breaks: [{ note: { step: 41, degree: 7, octave: -1, len: 4 }, says: 'F4 sounds over V' }],
+    breaks: [{ note: { step: 113, degree: 7, octave: -1, len: 4 }, says: 'F4 sounds over V' }],
   },
   {
     riff: polyphonicPowerBrassStabCycle,
@@ -1554,10 +1662,15 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // beneath it (§5A.2), so a hit is checked at every step it lands on across the hook, and the
     // hook has to be a whole number of passes for that reading to close.
     for (const entry of RIFFS) {
+      // A held riff has no grid to check (§5A.2/#608); the schema holds it to that shape.
+      if (entry.pattern === undefined) {
+        expect(bearsPattern(entry.request.role), entry.id).toBe(false)
+        continue
+      }
       const hookSteps = entry.hook.bars * STEPS_PER_BAR
-      expect(hookSteps % entry.pattern.length, entry.id).toBe(0)
-      for (const hit of entry.pattern.hits) {
-        for (let step = hit.step; step <= hookSteps; step += entry.pattern.length) {
+      expect(hookSteps % gridOf(entry).length, entry.id).toBe(0)
+      for (const hit of gridOf(entry).hits) {
+        for (let step = hit.step; step <= hookSteps; step += gridOf(entry).length) {
           expect(sounding(entry, step).length, `${entry.id} step ${String(step)}`).toBeGreaterThan(0)
         }
       }
@@ -1570,14 +1683,14 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       hamamatsuTinesBalladFigure,
       seventiesElectroPnoRhodesTurnaround,
       moogProSoloGlideLead,
-      softOrchestraSlowChanges,
     ]) {
       const onsets = [...new Set(entry.hook.notes.map((n) => n.step))]
-      expect(entry.pattern.hits.map((h) => h.step), entry.id).toEqual(onsets)
+      expect(gridOf(entry).hits.map((h) => h.step), entry.id).toEqual(onsets)
     }
-    // The suspension writing and the Phrygian figure are not in that list: each grid repeats
-    // under an eight-bar hook and strikes what recurs on both passes, with the other moves
-    // slurred (§5A.2). Their own tests below hold the strikes across both passes.
+    // The Phrygian figure is not in that list: its grid repeats under an eight-bar hook and
+    // strikes what recurs on both passes, with the other moves slurred (§5A.2). The two pads
+    // are not either: a held riff has no grid at all (#608), and their own tests below hold
+    // the onsets and the lengths instead.
   })
 
   it('the cold-pop line lands every note on a beat and none across a bar line', () => {
@@ -1641,11 +1754,11 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
   })
 
   /**
-   * §5A.2/#604. **The suspension writing is the whole eight-bar cycle**, restored from the four
-   * bars it was first published as. The grid stays four bars and repeats, marking the entry into
-   * each chord and nothing a held note is slurred through.
+   * §5A.2/#604/#608. **The suspension writing is the whole eight-bar cycle**, restored from the
+   * four bars it was first published as, and since #608 a `pad` with no grid, as the definition
+   * filed it. The pitches and lengths are exactly what #604 restored.
    */
-  describe('the suspension writing covers its eight-bar cycle over a four-bar grid (#604)', () => {
+  describe('the suspension writing covers its eight-bar cycle, as a pad with no grid (#604, #608)', () => {
     const riff = moog55StringsSuspensionWriting
     const resolved = resolveHook(riff.hook, riff.key)
     if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
@@ -1689,17 +1802,23 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       expect(riffConstraintViolations(riff)).toEqual([])
     })
 
-    it('strikes the four entries across two passes of the grid, and slurs the resolutions', () => {
-      expect(riff.pattern.length).toBe(64)
-      expect(riff.pattern.hits.map((h) => h.step)).toEqual([9, 41])
-      expect(gridStrikes(riff)).toEqual([9, 41, 73, 105])
-      expect(gridStrikes(riff)).toEqual(entries(riff).map((n) => n.step))
-      // The resolutions at 25 and 57 recur on the second pass at 89 and 121, inside the held B
-      // and C: a strike there would re-articulate a note the line holds, so neither is marked.
-      for (const step of [89, 121]) {
-        const held = riff.hook.notes.filter((n) => step > n.step && step < n.step + n.len)
-        expect(held, `step ${String(step)}`).toHaveLength(1)
-      }
+    it('is a pad with no grid and no flag, and keeps every pitch and length #604 restored', () => {
+      expect(riff.request.role).toBe('pad')
+      expect(riff.request.character).toBe('soft')
+      expect(riff.hook.forRole).toBe('pad')
+      expect(riff.pattern).toBeUndefined()
+      expect(riff.request.reArticulatesHook).toBeUndefined()
+      expect(RiffSchema.safeParse(riff).success).toBe(true)
+      // The six notes, step for step and length for length, as #604 left them.
+      expect(riff.hook.notes.map((n) => [n.step, n.degree, n.octave, n.len])).toEqual([
+        [9, 2, 1, 16],
+        [25, 3, 1, 16],
+        [41, 5, 1, 16],
+        [57, 6, 1, 16],
+        [73, 7, 0, 32],
+        [105, 1, 1, 24],
+      ])
+      // The resolutions are moves inside a hold and the technique still says so.
       expect(riff.technique.some((p) => p.includes('slurred, not struck'))).toBe(true)
     })
 
@@ -1732,7 +1851,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
 
   it('the machine loop never strikes on a beat, and enters every bar on the "and" of one', () => {
     const riff = detroitFunkAeolianMachineLoop
-    for (const hit of riff.pattern.hits) {
+    for (const hit of gridOf(riff).hits) {
       expect((hit.step - 1) % 4, `step ${String(hit.step)} is on a beat`).not.toBe(0)
     }
     expect([...new Set(riff.hook.notes.map((n) => n.step))]).toEqual([3, 19, 35, 51])
@@ -1824,8 +1943,8 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     })
 
     it('strikes the four entries across two passes of the grid, and slurs every other move', () => {
-      expect(riff.pattern.length).toBe(64)
-      expect(riff.pattern.hits.map((h) => h.step)).toEqual([1, 33])
+      expect(gridOf(riff).length).toBe(64)
+      expect(gridOf(riff).hits.map((h) => h.step)).toEqual([1, 33])
       expect(gridStrikes(riff)).toEqual([1, 33, 65, 97])
       expect(gridStrikes(riff)).toEqual(CHORDS.map((_, i) => startOf(i)))
       // The release before the Eb is in the hook, as the F's length: nothing sounds at 13-16.
@@ -1862,7 +1981,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
     for (const n of resolved.hook.notes) expect(n.midi, n.note).toBeLessThanOrEqual(48)
     expect(Math.max(...resolved.hook.notes.map((n) => n.midi))).toBe(45)
-    expect(riff.pattern.hits.map((h) => h.step)).toEqual(
+    expect(gridOf(riff).hits.map((h) => h.step)).toEqual(
       Array.from({ length: 32 }, (_, i) => 2 * i + 1),
     )
     // Roots and octaves for three bars: every note in bars 1-3 is a root or its octave, except
@@ -1935,8 +2054,8 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     })
 
     it('strikes the four entries across two passes of the grid, and not the step down', () => {
-      expect(riff.pattern.length).toBe(64)
-      expect(riff.pattern.hits.map((h) => h.step)).toEqual([9, 41])
+      expect(gridOf(riff).length).toBe(64)
+      expect(gridOf(riff).hits.map((h) => h.step)).toEqual([9, 41])
       expect(gridStrikes(riff)).toEqual([9, 41, 73, 105])
       expect(gridStrikes(riff)).toEqual(entries(riff).map((n) => n.step))
       // The B at 89 is step 25 of the second pass, and nothing sounds at 25 on the first, so
@@ -1951,38 +2070,99 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     })
   })
 
-  it('the slow changes sustain every note past the chord change under it', () => {
+  /**
+   * §5A.2/#604/#608. **The slow changes are the whole eight-bar cycle, and the tie is one note.**
+   * The figure that forced #608: its lesson is a D held while the harmony moves under it, and no
+   * four-bar grid could mark the later entries without striking that D again. As a `pad` with
+   * no grid the D is one 88-step note, and the checks below are what *tied* means as data.
+   */
+  describe('the slow changes hold one D across the changes, as a pad with no grid (#608)', () => {
     const riff = softOrchestraSlowChanges
-    expect(riff.figureStartsAtBar).toBe(5)
-    const [d, c, g, fSharp] = riff.hook.notes
-    if (d === undefined || c === undefined || g === undefined || fSharp === undefined) {
-      throw new Error('four notes expected')
-    }
-    // The D opens the figure, tied from the chord before.
-    expect(d.step).toBe(1)
-    // The C is still sounding when the suspended dominant arrives at step 33.
-    expect(c.step + c.len).toBeGreaterThan(33)
-    // The F# is the raised seventh and runs past the figure.
-    expect(fSharp.alter).toBe(1)
-    expect(fSharp.step + fSharp.len).toBeGreaterThan(64)
-    expect(chordAtStep(riff, g.step)).toBe('V')
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const notes = resolved.hook.notes
+
+    it('is a pad with no grid and no flag, from bar 1 of the cycle', () => {
+      expect(riff.request.role).toBe('pad')
+      expect(riff.request.character).toBe('soft')
+      expect(riff.hook.forRole).toBe('pad')
+      expect(riff.pattern).toBeUndefined()
+      expect(riff.request.reArticulatesHook).toBeUndefined()
+      expect(riff.figureStartsAtBar).toBe(1)
+      expect(riff.harmony?.cycleBars).toBe(8)
+      expect(riff.hook.bars).toBe(8)
+      expect(RiffSchema.safeParse(riff).success).toBe(true)
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('ties the D through the second chord and into the third: no onset at 33 or 65', () => {
+      const onsets = riff.hook.notes.map((n) => n.step)
+      expect(onsets).toEqual([1, 89, 105, 121])
+      for (const change of [33, 65]) {
+        expect(onsets, `an attack at step ${String(change)}`).not.toContain(change)
+        expect(sounding(riff, change).map((n) => n.degree), `step ${String(change)}`).toEqual([5])
+      }
+      // One D, not three sharing a pitch.
+      expect(riff.hook.notes.filter((n) => n.degree === 5)).toHaveLength(1)
+    })
+
+    it('puts every note over the chord it was written for', () => {
+      expect(notes.map((n) => [n.note, chordAtStep(riff, n.step)])).toEqual([
+        ['D5', 'i'],
+        ['C5', 'iv'],
+        ['G4', 'V'],
+        ['F#4', 'V'],
+      ])
+      // And the D is still the note in force when the `VI` and the `iv` arrive.
+      for (const step of [33, 65]) expect(sounding(riff, step).map((n) => n.degree)).toEqual([5])
+    })
+
+    it('sounds each note until the next, and the last to the end of the cycle', () => {
+      expect(riff.hook.notes.map((n) => n.len)).toEqual([88, 16, 16, 8])
+      for (let i = 1; i < riff.hook.notes.length; i += 1) {
+        const prev = riff.hook.notes[i - 1]
+        const next = riff.hook.notes[i]
+        if (prev === undefined || next === undefined) throw new Error('unreachable')
+        expect(prev.step + prev.len, `note ${String(i)}`).toBe(next.step)
+      }
+      const last = riff.hook.notes.at(-1)
+      if (last === undefined) throw new Error('no notes')
+      expect(last.step + last.len - 1).toBe(8 * STEPS_PER_BAR)
+      // Derived, not authored, so the technique does not state a sustain rule (#604).
+      expect(riff.technique.join(' ')).not.toMatch(
+        /until the next|past the chord change|across the bar line|released/,
+      )
+    })
+
+    it('moves late: the C on beat three of the iv’s second bar, the F# on beat three of the last', () => {
+      const [, c, g, fSharp] = riff.hook.notes
+      if (c === undefined || g === undefined || fSharp === undefined) throw new Error('four notes')
+      expect(c.step).toBe(65 + STEPS_PER_BAR + 8)
+      expect(g.step).toBe(97 + 8)
+      expect(fSharp.step).toBe(97 + STEPS_PER_BAR + 8)
+      expect(fSharp.alter).toBe(1)
+    })
   })
 
   it('the brass cycle stabs off the beat for three bars and lands the fourth on the downbeat', () => {
     const riff = polyphonicPowerBrassStabCycle
-    const early = riff.pattern.hits.filter((h) => h.step <= 48)
+    const early = gridOf(riff).hits.filter((h) => h.step <= 48)
     for (const hit of early) expect((hit.step - 1) % 4, `step ${String(hit.step)}`).not.toBe(0)
-    expect(riff.pattern.hits.filter((h) => h.step > 48).map((h) => h.step)).toEqual([49])
+    expect(gridOf(riff).hits.filter((h) => h.step > 48).map((h) => h.step)).toEqual([49])
     // Two notes per stab for three bars, one held note in the fourth.
     for (const step of [3, 19, 35]) expect(sounding(riff, step)).toHaveLength(2)
     expect(sounding(riff, 49)).toHaveLength(1)
     expect(sounding(riff, 64)).toHaveLength(1)
   })
 
-  it('the two top-voice lines are leads, because a pad has no grid to riff on', () => {
+  it('the two pad definitions are pads at soft, with no grid, as they were filed (#608)', () => {
+    // Both landed as `lead` while `RiffSchema` refused a held role. That was the workaround for a
+    // rule, not a reading of the music, and the rule is gone.
     for (const entry of [moog55StringsSuspensionWriting, softOrchestraSlowChanges]) {
-      expect(entry.request.role).toBe('lead')
-      expect(entry.request.character).toBe('soft')
+      expect(entry.request.role, entry.id).toBe('pad')
+      expect(entry.request.character, entry.id).toBe('soft')
+      expect(entry.pattern, entry.id).toBeUndefined()
+      expect(entry.request.reArticulatesHook, entry.id).toBeUndefined()
     }
   })
 })
@@ -2087,8 +2267,8 @@ const FIDELITY: readonly FidelityRow[] = [
     key: 'G minor',
     bpm: 64,
     progression: [['i', 2], ['VI', 2], ['iv', 2], ['V', 2]],
-    // Bars 5-8 of eight. The definition's first half is the one D5 held across the `i` and the
-    // `VI`; the figure opens on that D, still sounding, and carries the two moves.
+    // The whole eight bars. The definition writes the D5 three times, once a chord, and ties
+    // it: one note held across the `i`, the `VI` and into the `iv`, then the two moves.
     pitches: ['D5', 'C5', 'G4', 'F#4'],
   },
   {

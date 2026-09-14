@@ -49,7 +49,8 @@ import {
  *
  * §8's renderer needs a rig, a direction, a mood and a seed; §3.7's needs a device. This one needs
  * a riff and a rig, and prints `resolveRiff`'s model and nothing else: the technique, the notes,
- * the grid, and the one voice the rig has for it — or, honestly, that it has none.
+ * the grid where the part is struck, and the one voice the rig has for it — or, honestly, that
+ * it has none.
  *
  * **Every sentence on the page is `riff-text.ts`'** (#495). The React page at `/riffs/[id]` is
  * this document's sibling, and a sentence written twice is a sentence two people can edit half
@@ -159,7 +160,9 @@ function chordLines(riff: Riff): string[] {
 // The grid
 // ---------------------------------------------------------------------------
 
+/** Nothing at all on a held riff (§5A.2/#608): no grid, so no heading and no lead. */
 function gridLines(riff: Riff): string[] {
+  if (riff.pattern === undefined) return []
   const repeat = gridRepeatSentence(riff)
   return [
     '## The grid',
@@ -440,8 +443,11 @@ export function renderRiff(resolution: RiffResolution): string {
   }
   out.push(...noteLines(resolution))
   out.push('')
-  out.push(...gridLines(riff))
-  out.push('')
+  const grid = gridLines(riff)
+  if (grid.length > 0) {
+    out.push(...grid)
+    out.push('')
+  }
   if (resolution.outcome === 'played') {
     out.push(...voiceLines(riff, resolution.voice))
   } else {

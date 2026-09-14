@@ -3267,9 +3267,10 @@ the authored answer. This costs none of that, and a sample somebody makes on the
 
 The fourth authored kind (`lib/core/sample.ts`, catalogue in `lib/samples/`), and the smallest.
 It has no notes, no grid, no key and no tempo, because a one-shot has none of those — built as a
-`Riff` every one of them would be a fiction, and `RiffSchema` would refuse it twice over: it
-demands a pattern-bearing role, and this catalogue covers `pad`, which is held rather than struck,
-and all three transitional roles.
+`Riff` every one of them would be a fiction: a riff has a hook and a key by definition, and a
+one-shot has neither. (`RiffSchema` used to refuse `pad` outright as well; since
+[#608](https://github.com/miclip/patchscore/issues/608) a riff on a held role is a hook with no
+grid, §5A.2, which is still a hook a sample target does not have.)
 
 Nothing new crosses the template/device boundary. **A "wobble" is `bass-mid`, `dirty`, and four
 paragraphs about a filter** — the vocabulary says what part of the spectrum the sound occupies and
@@ -4161,6 +4162,18 @@ Assignment remains **static** in v1 — one request per assignable per section, 
 assignable occupied in *any* section counts as one occupied assignable for `comfortableVoices`
 (§12.4): the physical voice is committed for the whole build even if its part only plays in Build.
 
+**One role is held rather than struck, and that is a property of the role.** `pad` is a note
+held rather than a rhythm struck, on any box and in any genre, so an empty step grid is not
+something a direction has failed to author for it (invariant 5). `NON_PATTERN_BEARING_ROLES` in
+`lib/core/vocabulary.ts` is the closed list — `pad` alone, beside `TRANSITIONAL_ROLES` because it
+is the same kind of claim about the same list, adding no name a template or a device could not
+already utter (invariant 3). It is not per-template metadata, because seven templates could
+disagree about it and the first to forget would print `pad` under a heading saying its pattern is
+missing; and not per-device, because that would be a box naming what a genre wants. A guide reads
+it to drop the grid and the note line together; a riff reads it to decide its own shape
+([#608](https://github.com/miclip/patchscore/issues/608), §5A.2) — a riff on a held role carries
+no grid at all, and a riff on a struck one must.
+
 ### 4.3 Step patterns are template-owned, and density selects among them
 
 Step placement was originally authored inside device recipes (`steps.hits`). That was the wrong
@@ -4487,8 +4500,8 @@ keep valid. Absolute is also the number the musician is thinking in.
 *what do I build with the rig I own?* A kit session (§3.7) answers *what sounds does this box
 make?* A riff answers a question neither of them does: **how do I play this figure, on my rig?**
 
-A riff is one part — its notes, the rhythm they are struck on, and the words for what makes it
-that part — resolved against whatever boxes the reader has. Settled at
+A riff is one part — its notes, the rhythm they are struck on where the part is struck, and the
+words for what makes it that part — resolved against whatever boxes the reader has. Settled at
 [#503](https://github.com/miclip/patchscore/issues/503).
 
 ```ts
@@ -4499,9 +4512,9 @@ that part — resolved against whatever boxes the reader has. Settled at
   technique: [ /* prose. What makes it this part, in the words somebody teaching it would use */ ],
   bpm: { min: 118, max: 134, default: 128 },
   key: 'F minor',
-  request: { /* one RoleRequest: continuous, priority 1, reArticulatesHook */ },
+  request: { /* one RoleRequest: continuous, priority 1, reArticulatesHook where there is a grid */ },
   hook:    { /* Hook — the notes. Ours, always */ },
-  pattern: { /* Pattern — where they are struck. Band 0, no sections */ },
+  pattern: { /* Pattern — where they are struck. Band 0, no sections. Absent on a held role (§5A.2) */ },
 }
 ```
 
@@ -4552,14 +4565,51 @@ one rhythm. §4.3 already settled the single case where that is not true —
 `RoleRequest.reArticulatesHook`, where the hook holds a note and the variant says where it is
 struck again — and **that is what a riff is**.
 
-So `RiffSchema` *requires* the flag rather than offering it. A figure whose hook competed with its
-own grid is not something anybody could play, and the schema can refuse it here where
-`TemplateSchema` can only check that both halves exist — a riff holds its request and its hook in
-one object. The same locality settles two more of §4.1's rules the template layer has to leave to
-a test: `pitch` and `followsKey` are both refused, because the hook already names every note.
+So `RiffSchema` *requires* the flag beside the grid rather than offering it. A figure whose hook
+competed with its own grid is not something anybody could play, and the schema can refuse it here
+where `TemplateSchema` can only check that both halves exist — a riff holds its request and its
+hook in one object. The same locality settles two more of §4.1's rules the template layer has to
+leave to a test: `pitch` and `followsKey` are both refused, because the hook already names every
+note.
 
 The rendered page says it once, in a sentence above the grid, rather than leaving a reader to work
 out why a page shows both notes and steps.
+
+**A riff on a held role carries no grid, and the role decides which shape an entry has**
+([#608](https://github.com/miclip/patchscore/issues/608)). `pad` is held rather than struck
+(§4.2, `NON_PATTERN_BEARING_ROLES`), and a guide already prints no step grid for it. The first
+shape of `RiffSchema` refused the role outright, on the reasoning that a riff *is* a hook and a
+grid; so two figures an operator wrote as `part: pad` — a top line over suspended chords, a common
+tone held while the harmony moves under it — landed as `lead / soft`, and the second could not be
+expressed at all: eight bars over a four-bar grid, where the only strike the second pass shares
+with the first re-articulates the tied note the figure exists to teach. The grid was fighting the
+music because the role was wrong, and the role was wrong because riffs could not be pads.
+
+So `Riff.pattern` is optional, and the schema holds each kind of role to its own shape. **A struck
+role carries a `pattern` and `reArticulatesHook: true`, and is refused without either.** **A held
+role carries neither, and is refused with either**: a grid on a pad would be a pattern that says
+nothing, and the flag without a grid has nothing to join to the hook. Every combination is a test
+in `test/riff.test.ts`. What a held riff is, then, is its hook alone — the notes, each in force
+for as long as it says, played as written — and the words for the technique.
+
+Both entries went back to `pad`, on the operator's ruling that the deviation was the workaround
+and not a judgement: the definitions wrote `part: pad`, the id of one says *suspension writing*
+of a string pad, and leaving one a `lead` because its figure happened to fit a repeating grid
+would have had the library saying two things about one kind of figure. The suspension writing
+kept every pitch and length #604 restored and lost only its grid. The slow changes became the
+whole cycle from bar 1, and the tie is now data: one D of 88 steps across the `i`, the `VI` and
+into the `iv`, where three notes sharing a pitch would have been three attacks. On the box that
+ships both patches the figures now land on its soft pad, which is the recipe that names the
+strings patch, where as leads they had substituted to a bright mono lead.
+
+Downstream, the absence is an absence and not an empty section. `resolveRiff` binds no
+articulation, since articulation addresses a grid's slots and there is no grid; both renderers
+omit the grid section entirely — no heading, no lead sentence, no rows and no slots — and the
+header describes the figure's length in bars alone, because a step count is a fact about a grid.
+The two alternatives were both worse: widening `PATTERN_LENGTHS` to 128 would have changed a
+shared vocabulary every template and device articulation reasons about to work around a modelling
+mistake, and cutting the figure to fit a four-bar repeat is the truncation
+[#604](https://github.com/miclip/patchscore/issues/604) exists to undo.
 
 **The grid is capped and the hook is not, and a longer hook is played with the grid repeating
 beneath it** ([#603](https://github.com/miclip/patchscore/issues/603)). `PATTERN_LENGTHS` tops

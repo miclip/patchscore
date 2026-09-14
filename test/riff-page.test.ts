@@ -8,6 +8,7 @@ import RootLayout from '../app/layout'
 import sitemap from '../app/sitemap'
 import RiffIndexPage from '../app/riffs/page'
 import RiffRoute, { dynamicParams, generateMetadata, generateStaticParams } from '../app/riffs/[id]/page'
+import { RiffFigure } from '../components/riff/riff-figure'
 import { RigPicker } from '../components/rig/rig-picker'
 import { NAV_LINKS } from '../components/site-nav'
 import { hintText } from '../components/guide/format'
@@ -17,8 +18,9 @@ import { DEVICES } from '../lib/devices/registry.generated'
 import { RECORD_RIFFS, RIFFS, blueMondayBass } from '../lib/riffs'
 import { riffHref } from '../lib/studio/catalogue'
 import { renderRiff } from '../lib/studio/riff-markdown'
-import { RIFF_GRID_LEAD, gridRepeatSentence } from '../lib/studio/riff-text'
+import { RIFF_GRID_LEAD, gridRepeatSentence, gridRows, riffLength, slotRows } from '../lib/studio/riff-text'
 import { SITE_ORIGIN } from '../lib/studio/site'
+import { gridOf, heldRiff } from './fixtures'
 
 /**
  * §5A/#495. **The React page and the Markdown export carry the same facts**, plus the things
@@ -168,8 +170,14 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
     // the rows are compared with that padding trimmed and nothing else.
     for (const riff of RECORD_RIFFS) {
       const md = renderRiff(resolveRiff(riff, []))
-      const rows = md.slice(md.indexOf('```') + 4, md.lastIndexOf('```')).trimEnd().split('\n')
       const markup = await markupFor(riff.id)
+      // A held riff has no grid, and neither surface draws one (§5A.2/#608).
+      if (riff.pattern === undefined) {
+        expect(md, riff.id).not.toContain('```')
+        expect(markup, riff.id).not.toContain('class="step-index"')
+        continue
+      }
+      const rows = md.slice(md.indexOf('```') + 4, md.lastIndexOf('```')).trimEnd().split('\n')
       // The Markdown's ink is gone from the page: no `<pre>`, and no second treatment of it.
       expect(markup, riff.id).not.toContain('<pre class="riff-grid')
       const drawn = [
@@ -185,7 +193,7 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
       // And the boxes say what the text says: one cell per step, filled on every `x`.
       const cells = markup.match(/class="step(?: on)?(?: beat)?"/g) ?? []
       const filled = markup.match(/class="step on(?: beat)?"/g) ?? []
-      expect(cells.length, riff.id).toBe(riff.pattern.length)
+      expect(cells.length, riff.id).toBe(gridOf(riff).length)
       expect(filled.length, riff.id).toBe(rows.join('').split('x').length - 1)
     }
   })
@@ -196,8 +204,14 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
     for (const riff of RECORD_RIFFS) {
       const md = renderRiff(resolveRiff(riff, []))
       const exported = [...md.matchAll(new RegExp(SLOT_ROW.source, 'gm'))]
-      expect(exported.length, riff.id).toBeGreaterThan(0)
       const markup = await markupFor(riff.id)
+      // No grid, so no slots on either surface (§5A.2/#608).
+      if (riff.pattern === undefined) {
+        expect(exported.length, riff.id).toBe(0)
+        expect(markup, riff.id).not.toContain('class="vocab-term"')
+        continue
+      }
+      expect(exported.length, riff.id).toBeGreaterThan(0)
       const drawn = [
         ...markup.matchAll(
           /<button type="button" class="vocab-term"[^>]*>([a-z-]+)<\/button><\/span><span class="token-sep">—<\/span><span class="mono">([^<]*)<\/span>/g,
@@ -329,9 +343,62 @@ describe('the grid says how many times it repeats under a longer figure (#603)',
     expect(BLUE_MD).not.toContain('play it round')
     expect(BLUE_TEXT).not.toContain('play it round')
     for (const riff of RIFFS) {
-      const same = riff.hook.bars * 16 === riff.pattern.length
+      // A held riff has no grid to repeat, so it says nothing either (§5A.2/#608).
+      const same = riff.pattern === undefined || riff.hook.bars * 16 === riff.pattern.length
       expect(gridRepeatSentence(riff) === undefined, riff.id).toBe(same)
     }
+  })
+})
+
+/**
+ * §5A.2/#608. **A held riff has no grid, and both surfaces leave the section out entirely.** No
+ * heading, no lead sentence, no rows and no slots — not an empty panel — and the header says how
+ * long the figure is in bars alone, since a step count is a fact about a grid. No library entry
+ * has this shape yet, so the fixture stands in, rendered through the same figure component and
+ * the same export the route uses.
+ */
+describe('a held riff prints no grid section on either surface (#608)', () => {
+  const held = heldRiff()
+  const resolution = resolveRiff(held, [])
+  const md = renderRiff(resolution)
+  const figure = renderToStaticMarkup(createElement(RiffFigure, { riff: held, resolution }))
+  const page = text(figure)
+
+  it('describes its length by bars only', () => {
+    expect(riffLength(held)).toBe('2 bars')
+    expect(riffLength(blueMondayBass)).toMatch(/^\d+ bars? · \d+ steps$/)
+    // The lead line, whole: the note rows below it still count steps, since those are the hook's.
+    expect(md).toContain('`pad` · `soft` · 70 BPM (60–80) · C major · 2 bars\n')
+  })
+
+  it('omits the grid from the Markdown: no heading, no lead, no fence, no slots', () => {
+    expect(md).not.toContain('## The grid')
+    expect(md).not.toContain(RIFF_GRID_LEAD)
+    expect(md).not.toContain('```')
+    expect(md.match(new RegExp(SLOT_ROW.source, 'gm'))).toBeNull()
+    expect(gridRows(held)).toEqual([])
+    expect(slotRows(held)).toEqual([])
+    expect(gridRepeatSentence(held)).toBeUndefined()
+    // The notes are still there, and the sections either side of the gap run straight on.
+    expect(md).toContain('## The notes')
+    expect(md).toContain('## Where it plays')
+    expect(md).not.toContain('\n\n\n')
+  })
+
+  it('omits the grid panel from the page: no heading, no boxes, no slots', () => {
+    expect(page).not.toContain('The grid')
+    expect(page).not.toContain(RIFF_GRID_LEAD)
+    expect(figure).not.toContain('class="step-index"')
+    expect(figure).not.toContain('class="vocab-term"')
+    expect(page).toContain('The notes')
+  })
+
+  it('still carries every fact the Markdown prints about the figure', () => {
+    // The technique, the lead line and the gap are the route's, not the figure's, so the parity
+    // here is over the block the figure owns: from the notes heading on.
+    const facts = markdownFacts(md.slice(md.indexOf('## The notes'), md.indexOf('## Where it plays')))
+    expect(facts.length).toBeGreaterThan(2)
+    for (const fact of facts) expect(page, fact).toContain(fact)
   })
 })
 
