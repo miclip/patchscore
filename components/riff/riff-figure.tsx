@@ -1,4 +1,5 @@
 import type { Riff, RiffResolution } from '@/lib/core'
+import { STEPS_PER_BAR } from '@/lib/core'
 import { SlotList } from '@/components/pattern/slot-list'
 import { StepGrid } from '@/components/pattern/step-grid'
 import { RIFF_GRID_LEAD, gridRepeatSentence, ruleLines } from '@/lib/studio/riff-text'
@@ -81,7 +82,7 @@ function Grid({ riff }: { riff: Riff }) {
       <p className="riff-grid-lead">{RIFF_GRID_LEAD}</p>
       {repeat === undefined ? null : <p className="riff-grid-lead">{repeat}</p>}
       <StepGrid pattern={pattern} />
-      <SlotList pattern={pattern} />
+      <SlotList pattern={pattern} passes={(riff.hook.bars * STEPS_PER_BAR) / pattern.length} />
     </section>
   )
 }

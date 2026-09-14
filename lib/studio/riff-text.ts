@@ -366,12 +366,31 @@ export type SlotRow = { slot: string; steps: readonly number[] }
  * The grouping is `lib/core`'s (#528), for `gridRows`' reason: which hits belong to which slot is
  * shared data, and every surface listing them held its own copy of this loop. What stays here is
  * the export's own row — a bare list of steps, joined by `stepList`.
+ *
+ * **The steps are the figure's, not the grid's** (#613). Where the grid is shorter than the hook
+ * it repeats beneath it (§5A.2), so a mark at grid step 9 under a twelve-bar figure strikes at 9,
+ * 73 and 137 — and the page printed `9`, leaving the reader to add 64 twice. The operator read a
+ * correct grid as a wrong one for exactly that reason: two marks, six arrivals, and no way to see
+ * the six.
+ *
+ * This expands rather than reduces the grid on purpose. Three of these figures could carry one
+ * mark on a shorter grid instead, and two of those marks differ in slot and velocity — the
+ * arrivals alternate accent and downbeat — so collapsing them would flatten an emphasis the author
+ * wrote to fix a number nobody could read. The numbers were the problem.
+ *
+ * Only the four multi-pass figures expand; everywhere else the hook is one pass and this is what
+ * it always was.
  */
 export function slotRows(riff: Riff): readonly SlotRow[] {
   if (riff.pattern === undefined) return []
+  const passes = (riff.hook.bars * STEPS_PER_BAR) / riff.pattern.length
   return slotGroups(riff.pattern).map(({ slot, hits }) => ({
     slot,
-    steps: hits.map((hit) => hit.step),
+    steps: hits
+      .flatMap((hit) =>
+        Array.from({ length: passes }, (_, pass) => hit.step + pass * riff.pattern!.length),
+      )
+      .sort((a, b) => a - b),
   }))
 }
 
