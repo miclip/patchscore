@@ -465,14 +465,45 @@ function cite(page: number): Cite {
  * Humana`, `Hamamatsu Tines`, `'70s Electro Pno`, `Aegean Organ`, `Moog Pro Solo`, `Bellbounce`
  * and `Soft Orchestra` each name an idiom no recipe below builds — formant, electric piano,
  * organ, portamento lead, bell, divide-down ensemble — and a pairing that is merely the nearest
- * recipe would send a reader to load a sound the guide then contradicts.
+ * recipe would send a reader to load a sound the guide then contradicts. That the box ships them
+ * is a different fact and is recorded below in `SHIPPED_PATCHES` (#592).
  */
+const FACTORY_BANK = 'Moog Muse unit, firmware 1.4.0 factory bank'
+
 function factoryPatch(name: string) {
   return {
     name,
-    evidence: { kind: 'observed' as const, source: 'Moog Muse unit, firmware 1.4.0 factory bank' },
+    evidence: { kind: 'observed' as const, source: FACTORY_BANK },
   }
 }
+
+/**
+ * §2.6/#592. **The twelve factory patches this box is known to ship, by name.** The other half
+ * of the split above: that a patch called *Aegean Organ* exists is a fact from the unit, and the
+ * seven declined pairings threw it away with the judgement. This list is the fact alone, and no
+ * page prints it yet (`ShippedPatch` in `device.ts` says why). The five that `factoryPatch()`
+ * pairs with a recipe are here too, because the box ships them whether or not a recipe reaches
+ * them.
+ *
+ * Twelve and not 224: p.12 counts them and names none, and twelve is what was read off the
+ * screen. No bank, because none was read; p.12's fourteen bank names are not enough to place a
+ * patch in one. No description, because what a patch sounds like is a claim this file cannot
+ * verify from a name. Same reading, same firmware, as `FACTORY_BANK` — one unit, one list.
+ */
+const SHIPPED_PATCHES = [
+  "'70s Electro Pno",
+  '3 Osc Bass Love',
+  'Aegean Organ',
+  'Bellbounce',
+  'Detroit Funk',
+  'Hamamatsu Tines',
+  'Moog 55 Strings',
+  'Moog Pro Solo',
+  'Muse Runner',
+  'Polyphonic Power',
+  'Soft Orchestra',
+  'Vox Humana',
+].map((name) => ({ name }))
 
 /**
  * §3/#506. **The VCA envelope holds**, on every recipe a shipped hook holds for a bar or more.
@@ -2804,6 +2835,12 @@ export const device: Device = {
     voices: { kind: 'manual', source: `${MANUAL}, pp.8, 106, 116` },
     'features.lfo': { kind: 'manual', source: `${MANUAL}, pp.52, 57-58, 63` },
     /**
+     * §2.6/#592. `observed`, and the schema accepts nothing else here: p.12 counts 224 patches
+     * and names none, so the names in `factoryPatches` come off the unit's screen and the
+     * firmware is the citation's load-bearing half.
+     */
+    factoryPatches: { kind: 'observed', source: FACTORY_BANK },
+    /**
      * §2.6/#111. **`cited-against`, and the reason is that this field asks a question about audio
      * that this box does not answer yes to.**
      *
@@ -2886,6 +2923,8 @@ export const device: Device = {
    * the `arp` recipes carry it as an ordinary param and this field cites the sequencer instead.
    */
   noteDuration: { kind: 'per-note-value', control: 'GATE' },
+
+  factoryPatches: SHIPPED_PATCHES,
 
   /**
    * `MAIN OUT LEFT (MONO)` and `MAIN OUT RIGHT`, 1/4" TRS (p.117), and nothing else — the
