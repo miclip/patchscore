@@ -11,11 +11,25 @@ name: codeql
 # The scan is deliberately not part of `verify`. That workflow is the gate, it runs six jobs on
 # every push, and a security scan that can block a merge on a finding nobody has triaged is how
 # a team learns to click past it. This reports; `verify` gates.
+#
+# **And it did not report, it gated, until #600.** The first pull request it saw was a content
+# move with 5,722 passing tests, and it blocked on three alerts in one new test file: a real but
+# unreachable double-unescape, and two unused declarations. On `main` behind it sat 55 more, every
+# one predating the day this workflow was switched on, and each would have blocked the next pull
+# request touching its file.
+#
+# `github/codeql-action/analyze` publishes a check that fails on any new alert, and for a
+# workflow-based setup the threshold that would soften it is a repository setting with no API —
+# a switch somebody has to remember, off in a menu, invisible from here. **So there is no
+# `pull_request` trigger.** No pull request check exists to fail, alerts land in the Security tab
+# on every push to `main` and once a week besides, and the comment above is true again.
+#
+# What that costs is the per-pull-request annotation: a finding shows up after a branch lands
+# rather than beside the diff that introduced it. That is the trade the sentence above already
+# made — this reports, and the thing that stops a merge is the suite.
 
 on:
   push:
-    branches: [main]
-  pull_request:
     branches: [main]
   # A weekly run is the point of the schedule rather than a belt-and-braces repeat: CodeQL's
   # queries are updated continuously, so the interesting result is the one that appears on code
