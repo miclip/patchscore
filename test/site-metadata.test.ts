@@ -6,6 +6,7 @@ import { metadata } from '../app/layout'
 import { SITE_ORIGIN } from '../lib/studio/site'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { kitSession } from '../lib/studio/kit-session'
+import { presetSession } from '../lib/studio/preset-session'
 import { RIFFS } from '../lib/riffs'
 import { SAMPLE_TARGETS } from '../lib/samples'
 import { TEMPLATES } from '../lib/templates/index'
@@ -40,6 +41,13 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
     const kits = DEVICES.filter((d) => kitSession(d) !== undefined)
     expect(kits.length).toBe(24)
     /*
+     * §2.6/#593 adds one entry per box that declares its factory patches and what each is for —
+     * one of the 46 today — by the same test. Derived from `presetSession`, which is also what
+     * prerenders those pages.
+     */
+    const presets = DEVICES.filter((d) => presetSession(d) !== undefined)
+    expect(presets.map((d) => d.id)).toEqual(['moog-muse'])
+    /*
      * §5A/#503 adds `/riffs` and one entry per authored figure, on the same test as everything
      * else here: there is a page at each whose canonical is itself. Derived from `lib/riffs`, so
      * authoring an entry lists it without an edit — the hand-written count is now five, the four
@@ -51,7 +59,13 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
      * hand-written count is now six, the five it was plus the samples index.
      */
     expect(entries).toHaveLength(
-      6 + DEVICES.length + kits.length + TEMPLATES.length + RIFFS.length + SAMPLE_TARGETS.length,
+      6 +
+        DEVICES.length +
+        kits.length +
+        presets.length +
+        TEMPLATES.length +
+        RIFFS.length +
+        SAMPLE_TARGETS.length,
     )
 
     // Derived rather than listed, and in source order: authoring a manifest or a template adds its
@@ -62,6 +76,7 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
       `${SITE_ORIGIN}/devices`,
       ...DEVICES.map((d) => `${SITE_ORIGIN}/devices/${d.id}`),
       ...kits.map((d) => `${SITE_ORIGIN}/devices/${d.id}/kit`),
+      ...presets.map((d) => `${SITE_ORIGIN}/devices/${d.id}/presets`),
       `${SITE_ORIGIN}/directions`,
       ...TEMPLATES.map((t) => `${SITE_ORIGIN}/directions/${t.id}`),
       `${SITE_ORIGIN}/riffs`,
