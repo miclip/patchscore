@@ -126,8 +126,8 @@ function text(html: string): string {
     .replace(/&quot;/g, '"')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
     .replace(/&#x2014;/g, '—')
+    .replace(/&amp;/g, '&')
 }
 
 /** Both renderers reading one result, which is the only way two hand-written copies stay level. */

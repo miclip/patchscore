@@ -50,9 +50,9 @@ function text(markup: string): string {
     .replace(/<[^>]+>/g, ' ')
     .replace(/&#x27;/g, "'")
     .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
     .replace(/\s+/g, ' ')
     /*
      * A period that follows an element closes up against it. The page ends a record line with a
