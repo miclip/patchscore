@@ -239,13 +239,17 @@ describe('Digitone manifest', () => {
       // documents rather than a change of house style.** OS 1.10's manual leaves the range to the
       // screen; OS 1.41's prints one for very nearly every parameter it defines. Guarded as a
       // ratio rather than a count, so adding or dropping a recipe does not move it.
+      //
+      // On the sibling the ratio is over numerics *with a printed range*, because since #547 it
+      // also carries the AMP page's stages off no scale at all, with `verified: false` on each —
+      // and those are this fact stated the other way round, not a reason to count against it.
       const numerics = device.recipes.flatMap((r) => params(r)).filter((p) => p.kind === 'numeric')
       const all = device.recipes.flatMap((r) => params(r))
       expect(numerics.length / all.length).toBeGreaterThan(0.6)
       const sibling = DEVICES.find((d) => d.id === 'elektron-digitone-ii')
       const siblingParams = sibling?.recipes.flatMap((r) => r.params) ?? []
-      const siblingNumerics = siblingParams.filter((p) => p.kind === 'numeric')
-      expect(siblingNumerics.length / siblingParams.length).toBeLessThan(0.4)
+      const siblingRanged = siblingParams.filter((p) => p.kind === 'numeric' && p.range.verified !== false)
+      expect(siblingRanged.length / siblingParams.length).toBeLessThan(0.4)
     })
 
     it('claims no point value, because this manual prints values for none of them', () => {

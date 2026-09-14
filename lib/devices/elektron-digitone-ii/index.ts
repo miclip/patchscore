@@ -132,7 +132,19 @@ import { DIGITONE_II_PANEL } from './panel'
  * is a CC and NRPN table and prints no values at all.
  *
  * This manifest is therefore **enum-dominated** like its sibling, and every uncited numeric is
- * absent rather than given an invented `0-127`.
+ * absent rather than given an invented `0-127` — with the AMP page's stages as the exception,
+ * made on purpose and recorded at `stage()` (#547).
+ *
+ * **The exception is `AMP ATK`, `AMP DEC`, `AMP SUS` and `AMP REL`** (#547). p.61 ranges `HOLD`
+ * and describes the other four, and a recipe that authored the mode and the hold and stopped
+ * there left the reader with no decay on an `AHD` part and no envelope at all on an `ADSR` one.
+ * Each recipe now carries exactly the stages its `AMP MODE` has — `ATK`, `HOLD` and `DEC` under
+ * `AHD`; `ATK`, `DEC`, `SUS` and `REL` under `ADSR` — the four new ones with a range that says
+ * `verified: false` and a point that resolves provisional, which is what the model has for a
+ * value nobody checked, as against a silent hole. `AMP HOLD` is untouched: its `0-126` is
+ * printed and it keeps its `density`. The trade is in `stage()`'s JSDoc; it is the Analog Rytm
+ * MKII's `DEC` and the Octatrack's three stages, on the box whose switch decides which stages
+ * there are.
  *
  * `RATIO B` is the one printed range deliberately left unused. The parameter displays as a *pair*
  * — the p.89 screenshot shows `4.00` over `1.00` — because *"B2 increases until it reaches the
@@ -353,7 +365,9 @@ const syn = (m: (typeof SYN_MACHINES)[number]) => pick('SYN MACHINE', m, SYN_MAC
 const fltr = (m: (typeof FLTR_MACHINES)[number]) => pick('FLTR MACHINE', m, FLTR_MACHINES, 101)
 /**
  * §3.1/#547. The switch decides which stages the AMP page has (p.61): `HOLD` exists only under
- * `AHD`, and `SUS` and `REL` only under `ADSR`.
+ * `AHD`, and `SUS` and `REL` only under `ADSR`; `ATK` and `DEC` are on the page under both. Every
+ * recipe authors exactly its mode's set, and the test holds it to that — a stage from the other
+ * mode would be a value the reader cannot find on the screen.
  */
 const ampMode = (m: (typeof AMP_MODES)[number]) =>
   pick('AMP MODE', m, AMP_MODES, 61, 'AHD has HOLD and no SUS or REL; ADSR has SUS and REL and no HOLD')
@@ -401,6 +415,72 @@ const hold = (v: number) =>
     mood: [{ axis: 'density', amount: -24 }],
     note: 'A fixed hold ignores Note Off and Trig Length — this value ends the note, not the key. NOTE hands it back',
   })
+
+/**
+ * AMP page, p.61 — the four stages authored off no printed scale, and the decision to do it.
+ *
+ * p.61 gives each a sentence and no number: `ATK` *"sets the length of the attack phase of the
+ * amp envelope"*, `DEC` *"the length of the decay phase"*, `SUS` *"the sustain level"*, `REL`
+ * *"the length of the release phase"*. `HOLD`, on the same page, gets *"(0–126)"* — which is what
+ * makes the silence on the other four a fact about the page rather than about the reader.
+ *
+ * **The range is unverified, explicitly, and that is the decision rather than an oversight.** The
+ * absence was checked by rendering the pages rather than grepping a text dump: p.61 itself;
+ * Appendix A (pp.89-105), whose machine pages print bare `ATK`, `DEC`, `HOLD`, `SUS` and `REL`
+ * for the operator envelopes (p.90), the FM DRUM and noise envelopes (pp.94-95, p.98) and the
+ * filter envelopes (pp.102-105), and range none of them either; and Appendix C's AMP table on
+ * p.113, which gives Attack, Hold, Decay, Sustain and Release a CC and an NRPN each and no value
+ * column (it prints Sustain Level's CC as 86, the same number as Decay's, while the two NRPNs
+ * differ; the page proves the duplication and nothing about why). A 7-bit controller implies
+ * 128 positions and is still not a printed scale.
+ *
+ * **p.61's tip is corroboration, not a range.** *"the sound will be sustained (if DEC is set to
+ * less than 127)"* describes what a held key does while the decay is below 127, and that is the
+ * whole of what it says: it names one boundary, on one side, and gives no behaviour for 127
+ * itself, nothing for the bottom, and no scale between. A range read off it would be
+ * `CLAUDE.md`'s trap about a range that looks cited and is not, so the sentence is recorded
+ * here, every decay authored below is kept on the side of it the page describes, and the range
+ * stays `verified: false`.
+ *
+ * So `0-127` is carried unverified and the point resolves provisional. What that costs is settled
+ * by §3.2's legality gate: **mood may not move a value inside bounds nobody checked**, so none of
+ * the four carries `mood`, and `density` stays on `AMP HOLD`, which p.61 does range. Declaring an
+ * offset here would be the audit's `mood-inert` finding fifty-four times over, on a library whose
+ * count is zero. The day somebody with the box reads the two ends off its screen, these become
+ * `observed` ranges and the `mood` question reopens on its own terms.
+ *
+ * **Page-qualified, for the reason the holds and resets are (#548).** Appendix A prints the bare
+ * names on three other envelopes, so `DEC` alone would be the operator's on p.90, the drum's on
+ * p.94 or the filter's on p.102 as easily as the amp's; `AMP` is the panel's button and this
+ * manifest's existing qualifier, so nothing is invented, and `AMP HOLD` already sits beside them
+ * spelled the same way.
+ */
+function stage(name: 'AMP ATK' | 'AMP DEC' | 'AMP SUS' | 'AMP REL', v: number, note: string): AuthoredParam {
+  return {
+    kind: 'numeric',
+    name,
+    value: v,
+    range: { min: 0, max: 127, verified: false },
+    verified: false,
+    note,
+  }
+}
+
+/** AMP `ATK`, p.61: the attack time, under either mode. */
+const atk = (v: number) => stage('AMP ATK', v, 'The amp envelope on the AMP page, not an operator or filter envelope')
+
+/**
+ * AMP `DEC`, p.61: the decay time, under either mode. Under `AHD` it is what ends the note after
+ * the hold; under `ADSR` it is the fall to `SUS`. p.61 describes a held key's sustain only while
+ * this is below 127, so every value here is.
+ */
+const dec = (v: number) => stage('AMP DEC', v, 'The amp envelope; p.61 describes the sustain only while this is below 127')
+
+/** AMP `SUS`, p.61: the sustain level, `ADSR` only. A level, where the other three are times. */
+const sus = (v: number) => stage('AMP SUS', v, 'A level, not a time; only on the AMP page while MODE is ADSR')
+
+/** AMP `REL`, p.61: the release time, `ADSR` only. */
+const rel = (v: number) => stage('AMP REL', v, 'Only on the AMP page while MODE is ADSR')
 
 /** WAVETONE noise-envelope `HOLD`, p.97 — its own parameter on SYN page 3, not the AMP page's. */
 const noiseHold = (v: number) =>
@@ -474,7 +554,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('LOWPASS 4'),
       ampMode('AHD'),
+      atk(0),
       hold(22),
+      dec(40),
       bitReduction(16),
       swing(52),
     ],
@@ -492,7 +574,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('EQUALIZER'),
       ampMode('AHD'),
+      atk(0),
       hold(18),
+      dec(24),
       bitReduction(16),
       vfad(-32),
       swing(52),
@@ -514,7 +598,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('EQUALIZER'),
       ampMode('AHD'),
+      atk(0),
       hold(4),
+      dec(14),
       bitReduction(16),
       swing(56),
     ],
@@ -535,7 +621,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('LOWPASS 4'),
       ampMode('AHD'),
+      atk(0),
       hold(68),
+      dec(60),
       bitReduction(16),
       swing(56),
     ],
@@ -553,7 +641,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('LOWPASS 4'),
       ampMode('AHD'),
+      atk(0),
       hold(46),
+      dec(48),
       bitReduction(16),
     ],
     articulation: [art('accent', { velocity: 116 }, 'trig-params')],
@@ -570,7 +660,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('MULTI-MODE'),
       ampMode('AHD'),
+      atk(0),
       hold(5),
+      dec(10),
       bitReduction(14),
       swing(58),
     ],
@@ -588,7 +680,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('LEGACY LP/HP'),
       ampMode('AHD'),
+      atk(0),
       hold(104),
+      dec(96),
       bitReduction(8),
       odRouting('POST'),
     ],
@@ -614,7 +708,9 @@ const recipes: Recipe[] = [
       phaseReset('ALL'),
       fltr('LOWPASS 4'),
       ampMode('AHD'),
+      atk(6),
       hold(88),
+      dec(56),
       bitReduction(16),
     ],
     articulation: [art('downbeat', { 'note-length': '1/4' }, 'trig-params')],
@@ -635,7 +731,9 @@ const recipes: Recipe[] = [
       phaseReset('A+B'),
       fltr('COMB+'),
       ampMode('AHD'),
+      atk(0),
       hold(36),
+      dec(44),
       bitReduction(16),
     ],
     articulation: [art('offbeat', { velocity: 96 }, 'trig-params')],
@@ -657,6 +755,10 @@ const recipes: Recipe[] = [
       fltr('MULTI-MODE'),
       envReset('ON'),
       ampMode('ADSR'),
+      atk(4),
+      dec(48),
+      sus(80),
+      rel(28),
       lfoMode('TRIG'),
       lfoWave('TRI'),
       fade(-24),
@@ -680,7 +782,9 @@ const recipes: Recipe[] = [
       phaseReset('ALL'),
       fltr('LOWPASS 4'),
       ampMode('AHD'),
+      atk(0),
       hold(9),
+      dec(20),
       lfoMode('TRIG'),
       lfoWave('SAW'),
       fade(18),
@@ -713,7 +817,9 @@ const recipes: Recipe[] = [
       fltr('MULTI-MODE'),
       envReset('ON'),
       ampMode('AHD'),
+      atk(0),
       hold(20),
+      dec(28),
       bitReduction(16),
     ],
     articulation: [art('accent', { velocity: 118, 'note-length': '1/8' }, 'trig-params')],
@@ -735,6 +841,10 @@ const recipes: Recipe[] = [
       fltr('LOWPASS 4'),
       envReset('OFF'),
       ampMode('ADSR'),
+      atk(56),
+      dec(64),
+      sus(100),
+      rel(72),
       lfoMode('FREE'),
       lfoWave('SINE'),
       fade(30),
@@ -763,7 +873,9 @@ const recipes: Recipe[] = [
       fltr('LOWPASS 4'),
       envReset('ON'),
       ampMode('AHD'),
+      atk(0),
       hold(14),
+      dec(32),
       bitReduction(11),
       odRouting('POST'),
     ],
@@ -788,7 +900,9 @@ const recipes: Recipe[] = [
       fltr('LOWPASS 4'),
       envReset('ON'),
       ampMode('AHD'),
+      atk(0),
       hold(7),
+      dec(22),
       lfoMode('ONE'),
       lfoWave('EXPO'),
       fade(-32),
@@ -823,7 +937,9 @@ const recipes: Recipe[] = [
       noiseHold(16),
       fltr('EQUALIZER'),
       ampMode('AHD'),
+      atk(0),
       hold(24),
+      dec(30),
       bitReduction(16),
     ],
     articulation: [art('backbeat', { velocity: 112 }, 'trig-params')],
@@ -880,6 +996,10 @@ const recipes: Recipe[] = [
       fltr('MULTI-MODE'),
       envReset('OFF'),
       ampMode('ADSR'),
+      atk(96),
+      dec(64),
+      sus(112),
+      rel(20),
       lfoMode('ONE'),
       lfoWave('RAMP'),
       fade(-48),
@@ -905,6 +1025,10 @@ const recipes: Recipe[] = [
       fltr('LOWPASS 4'),
       envReset('OFF'),
       ampMode('ADSR'),
+      atk(80),
+      dec(64),
+      sus(108),
+      rel(96),
       lfoMode('FREE'),
       lfoWave('SINE'),
       fade(40),
@@ -926,6 +1050,10 @@ const recipes: Recipe[] = [
       fltr('MULTI-MODE'),
       envReset('OFF'),
       ampMode('ADSR'),
+      atk(40),
+      dec(64),
+      sus(96),
+      rel(64),
       lfoMode('HALF'),
       lfoWave('TRI'),
       fade(-40),
@@ -961,7 +1089,9 @@ const recipes: Recipe[] = [
       playMode('MONO'),
       fltr('EQUALIZER'),
       ampMode('AHD'),
+      atk(0),
       hold(6),
+      dec(8),
       bitReduction(16),
     ],
     articulation: [
@@ -996,7 +1126,9 @@ const recipes: Recipe[] = [
       noiseHold(110),
       fltr('COMB+'),
       ampMode('AHD'),
+      atk(0),
       hold(96),
+      dec(80),
       bitReduction(12),
     ],
     articulation: [
@@ -1038,7 +1170,9 @@ const recipes: Recipe[] = [
       noiseHold(30),
       fltr('MULTI-MODE'),
       ampMode('AHD'),
+      atk(0),
       hold(18),
+      dec(16),
       bitReduction(3),
     ],
     articulation: [

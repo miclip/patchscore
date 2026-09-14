@@ -480,6 +480,10 @@ describe('the shipped library (#506)', () => {
     'elektron-digitakt-ii': {
       unestablished: ['dt2-sub-dark', 'dt2-texture-soft', 'dt2-acid-hard', 'dt2-pad-soft'],
     },
+    // Since #547 the Digitone II authors its stages: `AMP DEC` on the two `AHD` recipes, `AMP SUS`
+    // above zero on the two `ADSR` ones. Still read and left here, because the claim would rest
+    // on values whose range is `verified: false` — the level is authored, the scale it sits on is
+    // not — and whether a provisional stage may carry a `sustains` claim is #506's question.
     'elektron-digitone-ii': {
       unestablished: ['dn2-sub-dark', 'dn2-pad-soft', 'dn2-acid-dirty', 'dn2-texture-soft'],
     },
