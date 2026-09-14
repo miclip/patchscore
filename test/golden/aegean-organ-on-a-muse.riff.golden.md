@@ -4,22 +4,18 @@
 
 ## The technique
 
-Bars 5 to 8 of the cycle, over the return to the D minor chord and the C major after it. The first half of the cycle is the same mode with less motion.
+Bars 5 to 8 of the cycle, over the return to the D minor chord and the C minor after it. The first half of the cycle is the same mode with less motion.
 
 One pitch class to watch across the whole piece: E natural. Never play it while the D minor or the Eb major is sounding. The Eb is the mode, and one E over either of those chords collapses it into ordinary D minor.
 
 Over the D minor chord, touch the Eb and come back: D, up a semitone, down again. That neighbour is the sound of the mode, and it is the only ornament the line has.
 
-The C major chord is the exception, and the only one. It has E as its third, so over it the line opens on E and falls to D, the chord’s ninth. The same note that breaks the mode over the other chords is the chord tone here; the harmony decides which it is.
-
 Enter late, a beat or more into each chord. The organ has no attack to speak of, so the entry is heard as the note arriving, and it should arrive after the chord has.
-
-Over the first half of the cycle, do the same kind of thing with the same rule: F falling to Eb over the opening D minor, then a held G over the Eb major. Every move is a step or a semitone, and no E until the C major.
 
 ## The rules
 
-- Over i, never the raised 2nd — the raised second destroys the flat second the mode rests on.
-- Over II, never the raised 2nd — the same pitch class, a direct semitone against the chord’s root.
+- Never the raised 2nd, on any chord — over i, the raised second destroys the flat second the mode rests on.
+- Never the raised 2nd, on any chord — over II, the same pitch class, a direct semitone against the chord’s root.
 - Enter each chord at least 4 steps after it lands — the organ has no attack and the note should arrive after the chord has.
 
 ## The chords
@@ -31,7 +27,7 @@ Over the first half of the cycle, do the same kind of thing with the same rule: 
 | i | D · F · A | 1–2 |  |
 | II | Eb · G · Bb | 3–4 |  |
 | i | D · F · A | 5–6 | ● |
-| VII | C · E · G | 7–8 | ● |
+| vii | C · Eb · G | 7–8 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 
@@ -42,7 +38,7 @@ The figure is played over these chords; supply them separately if your rig allow
 - step 9 · `D5` · degree 1 · MIDI 74 · in force 8 steps
 - step 17 · `Eb5` · degree 2 · MIDI 75 · in force 8 steps
 - step 25 · `D5` · degree 1 · MIDI 74 · in force 16 steps
-- step 41 · `E5` · degree #2 · MIDI 76 · in force 12 steps
+- step 41 · `Eb5` · degree 2 · MIDI 75 · in force 12 steps
 - step 53 · `D5` · degree 1 · MIDI 74 · in force 12 steps
 
 ## The grid

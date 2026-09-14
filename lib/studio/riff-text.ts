@@ -175,16 +175,27 @@ export const RIFF_CHORDS_SUPPLIED =
  * break the first time they take the figure somewhere else, and the `reason` an author had to
  * write is exactly the sentence that stops them. The build checks the notes; this tells the
  * person holding the box why the notes are what they are.
+ *
+ * **The line says how far the rule reaches** (§5A.8/#605). An unaltered degree is an avoid-note
+ * over the one chord the rule names, and the line opens on that chord. A raised or lowered one is
+ * a pitch the key does not have and is forbidden on every chord, which the line says first; the
+ * chord the rule names is where the reason is explained, and a reader who saw only *over `i`*
+ * would take the ban as scoped to it, which is the mismatch the check no longer has.
  */
 export function ruleLines(riff: Riff): readonly string[] {
   const rules = riff.constraints
   if (rules === undefined) return []
   const out: string[] = []
   for (const rule of rules.forbiddenDegrees ?? []) {
-    const spelling = rule.alter === undefined ? '' : rule.alter > 0 ? 'raised ' : 'lowered '
-    out.push(
-      `Over ${rule.chord}, never the ${spelling}${ordinal(rule.degree)} — ${rule.reason}.`,
-    )
+    const degree = ordinal(rule.degree)
+    if (rule.alter === undefined || rule.alter === 0) {
+      out.push(`Over ${rule.chord}, never the ${degree} — ${rule.reason}.`)
+    } else {
+      const spelling = rule.alter > 0 ? 'raised' : 'lowered'
+      out.push(
+        `Never the ${spelling} ${degree}, on any chord — over ${rule.chord}, ${rule.reason}.`,
+      )
+    }
   }
   if (rules.onsetOffset !== undefined) {
     out.push(

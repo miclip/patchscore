@@ -4895,6 +4895,48 @@ guide must not have to learn a second convention for the same fact. **Invariant 
 unchanged**: one citation sentence for the block, and no provenance mark and no page beside any
 value.
 
+### 5A.8 The rules a figure keeps are data, and a pitch the key does not have is forbidden everywhere
+
+A riff's `technique` says what makes the part that part, and nothing reads it. That is right for
+*"the gaps belong to the drums"* and wrong for *"never play the natural third over this chord"*:
+the second is checkable, and a rule nobody checks is a rule the next edit breaks. So
+`Riff.constraints` carries the checkable ones as data
+([#554](https://github.com/miclip/patchscore/issues/554)), `riffConstraintViolations` is the
+check, and `RiffSchema` fails the build on it. A `ForbiddenDegree` is written in the vocabulary
+the hook already uses, a degree and an optional `alter`, so that it holds in any key the figure is
+played in; an `onsetOffset` says how far into a chord its first note may enter. Each carries a
+`reason`, because the page prints the rule and a rule with no reason cannot be weighed.
+
+**A rule is checked against the chords as well as the line**
+([#605](https://github.com/miclip/patchscore/issues/605)). The check began as a scan of the hook's
+notes over the chord each rule named, and that let an entry contradict itself in print: the
+Phrygian figure forbade E natural over two of its chords and carried a C major, `C · E · G`, as
+its fourth. The line never played an E, so every check passed, and #573's chord table printed the
+chord a few inches from the rule forbidding its third. Now each rule's pitch is resolved in the
+riff's key (`spellDegree`), every chord the rule reaches is spelt (`spellChord`), and a chord
+carrying the pitch is a violation naming the chord, its notes and the note. The comparison is by
+pitch class and not by spelling, because `E` in a chord and `Fb` in a rule are one pitch.
+
+**How far a rule reaches is decided by `alter`.** A forbidden degree with an `alter` names a pitch
+the key does not have: E in D phrygian, A natural in C minor. That is a fact about the key, so the
+rule reaches the whole piece, every chord of the cycle and every note over any of them, and
+`chord` names the chord the rule is about for the reason a reader sees without narrowing what is
+checked. An unaltered degree is the key's own note, and the rule is an avoid-note over the one
+chord it names. The distinction is what keeps the library's diatonic harmony legal: Blade Runner
+forbids the natural third over its borrowed `I` while its `i` is built on that third, and that is
+the whole point of the entry. A whole-piece check of an unaltered rule would fail it and every
+entry like it, and a rule that flags entries which are fine is a rule to fix.
+
+The page says the reach the check has (`ruleLines`). An unaltered rule reads *Over I, never the
+3rd*, opening on the one chord it reaches. An altered one reads *Never the raised 2nd, on any
+chord — over i, …*, the ban first and the chord where the reason is explained after it, so a
+reader is not handed a whole-piece rule worded as if it stopped at one chord.
+
+The correction the check forced on the Phrygian figure was the minimum that makes the entry
+consistent: the C major became C minor, `vii`, the E over it became the Eb the chord is built on,
+and the two technique paragraphs that named C major as the exception went with it. The rest of
+that figure is #604's.
+
 ---
 
 ## 6. Mood controls
