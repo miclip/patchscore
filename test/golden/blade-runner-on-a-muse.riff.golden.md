@@ -41,12 +41,12 @@ The figure is played over these chords; supply them separately if your rig allow
 
 12 bars in F# minor.
 
-- step 5 · `C#5` · degree 5 · MIDI 73 · in force 30 steps
-- step 41 · `F#5` · degree 1 · MIDI 78 · in force 26 steps
-- step 69 · `D5` · degree 6 · MIDI 74 · in force 28 steps
-- step 105 · `A#4` · degree #3 · MIDI 70 · in force 26 steps
-- step 133 · `D#5` · degree #6 · MIDI 75 · in force 30 steps
-- step 169 · `G#4` · degree 2 · MIDI 68 · in force 26 steps
+- step 5 · over i · `C#5` · degree 5 · MIDI 73 · in force 30 steps
+- step 41 · over VI · `F#5` · degree 1 · MIDI 78 · in force 26 steps
+- step 69 · over iv · `D5` · degree 6 · MIDI 74 · in force 28 steps
+- step 105 · over I · `A#4` · degree #3 · MIDI 70 · in force 26 steps
+- step 133 · over IV · `D#5` · degree #6 · MIDI 75 · in force 30 steps
+- step 169 · over v · `G#4` · degree 2 · MIDI 68 · in force 26 steps
 
 ## The grid
 

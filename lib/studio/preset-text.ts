@@ -44,6 +44,29 @@ export const PRESET_HEADING = 'Explore your device'
  * for, and the figure. `Recipe.factoryPatch` itself is untouched and still renders on a guide.
  */
 
+/**
+ * #612. **The settings are folded away, because the reader already owns the sound.**
+ *
+ * Explore is for somebody holding the box who wants to know what to play. They load the preset;
+ * that is the whole surface. A hundred parameter values expanded under it is the page answering a
+ * question nobody on it is asking.
+ *
+ * **And they are not the preset's values.** A figure reaches a recipe by role and character, so
+ * eight of the twelve pages were showing settings for a different patch entirely — the Aegean
+ * Organ page built *Muse Runner*, the Polyphonic Power page built *Detroit Funk*. Even on the four
+ * that match, these are this library's own authored values for that role and character, arrived at
+ * from the manual; nothing has ever read the real patch data off a Muse, and no document publishes
+ * it. So the summary says what they are and the sentence inside says what they are not.
+ */
+export const PRESET_SETTINGS_SUMMARY = 'Settings for this voice'
+
+export function presetSettingsNote(role: string, character: string): string {
+  return (
+    `Settings for a ${role} · ${character} voice on this box, written here. They are not the ` +
+    'preset\u2019s own values: load the preset to hear it as it ships.'
+  )
+}
+
 /** The label in front of the link to the riff written for a patch. */
 export const PRESET_FIGURE = 'Figure — '
 

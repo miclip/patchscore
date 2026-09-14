@@ -1638,7 +1638,19 @@ body {
  * The technique is prose and is the one block on the page that is *only* prose, so it takes the
  * reading measure rather than the panel's full width. Four paragraphs at 100 characters is a
  * column nobody's eye returns from accurately.
+ *
+ * **The panel takes the measure too, and until #611 only the paragraphs did.** The section is not
+ * inside `.columns`, so it ran the shell's full 1180px while its prose stopped at 66ch — a bordered
+ * box a bit under half full, with the border drawing a line around the emptiness. Capping the panel
+ * puts the edge where the text ends, so the space to its right reads as page margin rather than as
+ * a box nobody finished filling. `66ch` plus the panel's own 16px of side padding, so the *content*
+ * box is the measure rather than the border box.
  */
+.riff-technique,
+.sample-technique {
+  max-width: calc(66ch + 32px);
+}
+
 .riff-technique p,
 .sample-technique p {
   margin: 0 0 12px;
