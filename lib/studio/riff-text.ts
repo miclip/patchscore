@@ -284,7 +284,7 @@ export function chordLabel(row: NoteRow): string | undefined {
 
 /** `2 bars in F minor.` — what the figure is, before the rows under it. */
 export function riffNoteSummary(hook: ResolvedHook): string {
-  return `${count(hook.bars, 'bar')} in ${hook.key}.`
+  return `${count(hook.bars, 'bar')} in ${hook.key}. Each note is in force across the steps shown.`
 }
 
 /**
@@ -323,15 +323,27 @@ export function spellingLabel(row: NoteRow): string {
 }
 
 /**
- * §4.1/#142. `len` is **sustain**, counted from the note's own step — so it reads as *in force
- * for*, the one wording that is neither a gap to the next note nor a gate value.
+ * §4.1/#142/#614. **The span the note is in force, as a range.**
  *
- * The phrase does real work on a riff rather than restating the field: the grid strikes the note
- * repeatedly *inside* this span, and a reader who took `len` for "how long you hold it" would
- * hold it through the strikes and play a drone.
+ * `len` is sustain counted from the note's own step, and this read *in force 16 steps* at the end
+ * of every row — three words and a unit, thirteen times down a page, long enough that one row
+ * wrapped the phrase onto a line of its own. The operator: *"seems silly to repeat in force for
+ * every step"*.
+ *
+ * A range says the same thing in the place the step number already was, and says more: where the
+ * note stops. `steps 105–130` shows an entry overrunning its chord, which `in force 26 steps`
+ * leaves the reader to add up. The wording it replaces is kept once, in `riffNoteSummary`.
+ *
+ * **The distinction that phrase protected still holds and still matters**: the grid strikes the
+ * note repeatedly *inside* this span, so it is not "how long you hold it", and a reader who held
+ * it through the strikes would play a drone. The grid's own lead says that where the grid is.
+ *
+ * A note of one step is `step 9`, not `steps 9–9`.
  */
-export function heldLabel(row: NoteRow): string {
-  return `in force ${count(row.notes[0]?.len ?? 0, 'step')}`
+export function stepSpanLabel(row: NoteRow): string {
+  const len = row.notes[0]?.len ?? 0
+  const last = row.step + Math.max(len, 1) - 1
+  return last === row.step ? `step ${num(row.step)}` : `steps ${num(row.step)}\u2013${num(last)}`
 }
 
 // ---------------------------------------------------------------------------

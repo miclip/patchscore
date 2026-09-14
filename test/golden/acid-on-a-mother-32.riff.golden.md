@@ -14,12 +14,12 @@ Sweep the filter by hand while it loops and leave everything else alone. This is
 
 ## The notes
 
-2 bars in C minor.
+2 bars in C minor. Each note is in force across the steps shown.
 
-- step 1 · `C2` · degree 1 · MIDI 36 · in force 12 steps
-- step 13 · `C3` · degree 1 · MIDI 48 · in force 8 steps
-- step 21 · `F3` · degree 4 · MIDI 53 · in force 6 steps
-- step 27 · `G3` · degree 5 · MIDI 55 · in force 6 steps
+- steps 1–12 · `C2` · degree 1 · MIDI 36
+- steps 13–20 · `C3` · degree 1 · MIDI 48
+- steps 21–26 · `F3` · degree 4 · MIDI 53
+- steps 27–32 · `G3` · degree 5 · MIDI 55
 
 ## The grid
 

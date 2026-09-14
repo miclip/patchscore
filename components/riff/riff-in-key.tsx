@@ -10,7 +10,7 @@ import {
   RIFF_CHORDS_SUPPLIED,
   chordRows,
   degreeLabel,
-  heldLabel,
+  stepSpanLabel,
   midiLabel,
   noteRows,
   riffChordSummary,
@@ -150,7 +150,7 @@ function Notes({ riff, resolution }: { riff: Riff; resolution: RiffResolution })
       <ul className="riff-notes">
         {noteRows(hook, riff).map((row) => (
           <li key={row.step} className="riff-note">
-            <span className="riff-step mono">step {num(row.step)}</span>
+            <span className="riff-step mono">{stepSpanLabel(row)}</span>
             <Sep />
             {chordLabel(row) === undefined ? null : (
               <>
@@ -163,8 +163,6 @@ function Notes({ riff, resolution }: { riff: Riff; resolution: RiffResolution })
             <span className="riff-note-fact mono">{degreeLabel(row)}</span>
             <Sep />
             <span className="riff-note-fact mono">{midiLabel(row)}</span>
-            <Sep />
-            <span className="riff-note-fact">{heldLabel(row)}</span>
           </li>
         ))}
       </ul>

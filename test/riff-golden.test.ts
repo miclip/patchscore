@@ -110,7 +110,12 @@ describe('what a riff page prints', () => {
 
   it('prints the notes with spelling, degree and MIDI — #32’s two representations', () => {
     expect(PLAYED).toContain('2 bars in F minor.')
-    expect(PLAYED).toContain('- step 1 · `F2` · degree 1 · MIDI 41 · in force 16 steps')
+    // #614. The span replaces the trailing `in force N steps`: it says where the note stops as
+    // well as where it starts, and the phrase it removes was on every row of every figure.
+    expect(PLAYED).toContain('- steps 1–16 · `F2` · degree 1 · MIDI 41')
+    // Not on any note row. `RIFF_GRID_LEAD` still says *strikes the note in force at that point*,
+    // which is the sentence the span's meaning now rests on, so the phrase survives once.
+    expect(PLAYED).not.toContain('· in force')
   })
 
   it('prints the grid, and says once what it is for beside a hook (#100/§4.3)', () => {
