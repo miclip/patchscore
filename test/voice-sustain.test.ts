@@ -484,9 +484,12 @@ describe('the shipped library (#506)', () => {
       unestablished: ['dn2-sub-dark', 'dn2-pad-soft', 'dn2-acid-dirty', 'dn2-texture-soft'],
     },
     // p.59: `AMP` (`ANLG`/`RTRG`/`R+T`/`TTRG`) sets where the attack *starts* — *"from the current
-    // envelope level"* or *"from zero"* — and says nothing about whether the note holds. That is
-    // the one amp parameter these four author; `HOLD` and `REL`, which would decide it, are left.
-    // A claim read off `AMP` would be a citation off the wrong parameter.
+    // envelope level"* or *"from zero"* — and says nothing about whether the note holds. Since
+    // #547 these four author `HOLD` and `REL` too, and that settles it the Rytm's way rather than
+    // either claim's: p.58's hold is a fixed count of sequencer steps, an audio trig carries no
+    // length for it to follow (p.66), and the range behind the value is one nobody checked. A
+    // hold that runs its steps regardless of any hook is a third thing this vocabulary does not
+    // carry. Read, and left.
     'elektron-octatrack-mkii': {
       unestablished: ['ot-sub-dark', 'ot-texture-soft', 'ot-pad-soft', 'ot-acid-hard'],
     },

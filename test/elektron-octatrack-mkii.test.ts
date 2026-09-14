@@ -12,6 +12,7 @@ import {
   realisationOf,
   renderGuide,
   resolve,
+  resolveParams,
   resolveRecipe,
   type AuthoredParam,
   type Recipe,
@@ -41,6 +42,10 @@ import { auditDevice } from '../scripts/audit-verified'
  *  - **The panel rise is derived, not printed.** p.116 gives a 340 mm width and a 184 mm depth
  *    quoted over protruding jacks and feet; the drawing's own aspect is what fixes the rise, and
  *    the arithmetic is asserted here rather than trusted.
+ *  - **Three numerics are authored off no printed scale, and only three** (#547). The AMP MAIN
+ *    page's `ATK`, `HOLD` and `REL` are carried on every recipe as `0-127` with `verified: false`
+ *    on the range, provisional on the point, and no mood — beside the cited `ATCK`, which is the
+ *    attack's shape and not its time. Anything else that follows them lands here.
  */
 
 const MANUAL = 'Octatrack MKII User Manual OS 1.40A, p.'
@@ -193,6 +198,11 @@ describe('Octatrack MKII manifest', () => {
     //   NUM     2..10      p.126, from "B.5 2-10 STAGE PHASER"
     //   TAPS    2..10      p.128, from "B.7 2-10 TAP CHORUS"
     //   TIME    1..128     p.133, the whole divide-ratio table
+    //
+    // #547 added three that are *not* printed and say so — the AMP MAIN page's `ATK`, `HOLD`
+    // and `REL`, `0-127` with `verified: false` on the range — and this is where they are held
+    // to being the only three. `UNPRINTED` is the exception list; a numeric outside both maps
+    // fails as one of the five it is not.
     const SHAPES = new Map<string, { min: number; max: number; unit?: string }>([
       ['PTCH', { min: -12, max: 12, unit: 'st' }],
       ['TUNE', { min: -2, max: 2, unit: 'st' }],
@@ -200,6 +210,7 @@ describe('Octatrack MKII manifest', () => {
       ['TAPS', { min: 2, max: 10 }],
       ['TIME', { min: 1, max: 128 }],
     ])
+    const UNPRINTED = new Set(['ATK', 'HOLD', 'REL'])
     let enums = 0
     let numerics = 0
     const seen = new Set<string>()
@@ -221,6 +232,14 @@ describe('Octatrack MKII manifest', () => {
         if (param.kind === 'numeric') {
           numerics += 1
           seen.add(param.name)
+          if (UNPRINTED.has(param.name)) {
+            expect(param.range, where).toEqual({ min: 0, max: 127, verified: false })
+            expect(param.unit, where).toBeUndefined()
+            expect(param.mood, where).toBeUndefined()
+            expect(param.value, where).toBeGreaterThanOrEqual(0)
+            expect(param.value, where).toBeLessThanOrEqual(127)
+            continue
+          }
           const shape = SHAPES.get(param.name)
           expect(shape, `${where} is not one of the five printed ranges`).toBeDefined()
           expect(param.range.min, where).toBe(shape?.min)
@@ -233,30 +252,101 @@ describe('Octatrack MKII manifest', () => {
         }
       }
     }
-    expect([...seen].sort()).toEqual(['NUM', 'PTCH', 'TAPS', 'TIME', 'TUNE'])
-    // Enum-dominated, and by a wide margin. That ratio is the manual's shape, not a choice.
+    expect([...seen].sort()).toEqual(['ATK', 'HOLD', 'NUM', 'PTCH', 'REL', 'TAPS', 'TIME', 'TUNE'])
+    // Enum-dominated still, with the three stages counted against it. That ratio is the
+    // manual's shape, not a choice.
     expect(enums).toBeGreaterThan(numerics * 2)
   })
 
-  it('omits the parameters whose range the manual never states', () => {
+  it('omits the parameters whose range the manual never states, except the three amp stages', () => {
     // The failure mode is inventing a 0-127 to hang a value on. All of these are real, prominent
-    // controls with no printed scale: the filter's BASE/WIDTH/Q/DEPTH, the amp's ATK/HOLD/REL/
-    // VOL/BAL, the LFO's SPD/DEP, the delay's FB.
-    const uncited = ['BASE', 'WIDTH', 'Q', 'DEPTH', 'ATK', 'HOLD', 'REL', 'VOL', 'BAL', 'SPD', 'DEP', 'FB', 'STRT']
+    // controls with no printed scale: the filter's BASE/WIDTH/Q/DEPTH, the amp's VOL/BAL, the
+    // LFO's SPD/DEP, the delay's FB. The amp's ATK/HOLD/REL used to be on this list and #547 took
+    // them off it, on purpose: they are the stages that end every sound on the box, and they are
+    // authored with a range that says nobody checked it rather than one that pretends p.58 did.
+    const uncited = ['BASE', 'WIDTH', 'Q', 'DEPTH', 'VOL', 'BAL', 'SPD', 'DEP', 'FB', 'STRT']
     for (const recipe of device.recipes) {
       const names = params(recipe).map((p) => p.name)
       for (const name of uncited) expect(names, `${recipe.id} / ${name}`).not.toContain(name)
     }
     // p.19 §5.2.2 mentions parameters "ranging from 0 to 127" and "from -64 to 63" in general.
     // It names two families and assigns no parameter to either, so it grounds nothing — and a
-    // range read off it would be invented however carefully it were cited.
+    // range read off it would be invented however carefully it were cited. The three stages are
+    // 0..127 and carry no citation at all, which is the other way of not reading it off p.19.
     for (const recipe of device.recipes) {
       for (const param of params(recipe)) {
         if (param.kind !== 'numeric') continue
         const shape = `${param.range.min}..${param.range.max}`
-        expect(shape, `${recipe.id} / ${param.name}`).not.toBe('0..127')
+        if (shape === '0..127') {
+          expect(['ATK', 'HOLD', 'REL'], `${recipe.id} / ${param.name}`).toContain(param.name)
+          expect(param.range.verified, `${recipe.id} / ${param.name}`).toBe(false)
+          continue
+        }
         expect(shape, `${recipe.id} / ${param.name}`).not.toBe('-64..63')
       }
+    }
+  })
+
+  it('carries ATK, HOLD and REL on every recipe, provisional on both claims and deaf to mood (#547)', () => {
+    // The reader-facing half: a part that names `AMP RTRG` and `ATCK LIN` and no stage time has
+    // no length, so every recipe carries all three, in the order p.58's AMP MAIN page prints
+    // them and directly ahead of the two AMP SETUP enums, since §11.4.5 comes before §11.4.6.
+    // `ATCK` stays exactly where and what it was: a cited shape, `LIN` or `LOG`.
+    for (const recipe of device.recipes) {
+      const names = params(recipe).map((p) => p.name)
+      const atk = names.indexOf('ATK')
+      expect(atk, `${recipe.id} ATK`).toBeGreaterThanOrEqual(0)
+      expect(names.slice(atk, atk + 5), `${recipe.id} AMP page order`).toEqual(['ATK', 'HOLD', 'REL', 'AMP', 'ATCK'])
+      for (const name of ['ATK', 'HOLD', 'REL', 'ATCK']) {
+        expect(names.filter((n) => n === name), `${recipe.id} one ${name}`).toHaveLength(1)
+      }
+      const atck = named(recipe, 'ATCK')
+      expect(atck?.kind).toBe('enum')
+      if (atck?.kind !== 'enum') continue
+      expect(atck.options.values).toEqual(['LIN', 'LOG'])
+      expect(atck.options.verified).toEqual({ kind: 'manual', source: `${MANUAL}59` })
+    }
+
+    // The audit-facing half. §3.2's legality gate makes an unverified range deaf to mood, so an
+    // offset on any of the three would be the audit's `mood-inert` finding seventy-five times
+    // over, on a library whose count is zero. `density` stays an axis this box declines.
+    const counts = auditDevice(device).counts
+    expect(counts.unverifiedRanges).toBe(device.recipes.length * 3)
+    expect(counts.moodInert).toBe(0)
+    for (const recipe of device.recipes) {
+      for (const name of ['ATK', 'HOLD', 'REL']) {
+        const stage = named(recipe, name)
+        expect(stage?.kind, `${recipe.id} ${name}`).toBe('numeric')
+        if (stage?.kind !== 'numeric') continue
+        expect(stage.range, `${recipe.id} ${name} range`).toEqual({ min: 0, max: 127, verified: false })
+        expect(stage.mood, `${recipe.id} ${name} mood`).toBeUndefined()
+        expect(stage.note, `${recipe.id} ${name} note`).toBeDefined()
+      }
+      // p.58: the attack runs inside the hold, so an attack of nothing on a one-shot drum and a
+      // hold that is not zero on anything — a zero hold would release before the sample sounded.
+      const hold = named(recipe, 'HOLD')
+      expect(hold?.kind === 'numeric' ? hold.value : undefined, `${recipe.id} HOLD`).toBeGreaterThan(0)
+    }
+    // The note is where the two attack names are told apart, since neither may be renamed
+    // (invariant 4: names are ink). `ATK` says it is the time and points at `ATCK` for the shape.
+    const atk = named(device.recipes[0] as Recipe, 'ATK')
+    expect(atk?.note).toContain('ATCK')
+  })
+
+  it('resolves the three stages provisional and leaves them where they were authored under any mood', () => {
+    // What the two claims come to in a guide: the value the reader dials is the authored one, it
+    // wears the provisional badge, and turning any axis to either end moves `PTCH` and not a stage.
+    const kick = device.recipes.find((r) => r.id === 'ot-kick-hard')
+    expect(kick).toBeDefined()
+    if (kick === undefined) return
+    for (const darkness of [0, 100]) {
+      const resolved = resolveParams(kick, moodState({ darkness, density: darkness, space: darkness }))
+      const byName = (name: string) => resolved.find((p) => p.name === name)
+      expect(byName('ATK')).toMatchObject({ value: 0, provenance: { state: 'provisional' } })
+      expect(byName('HOLD')).toMatchObject({ value: 4, provenance: { state: 'provisional' } })
+      expect(byName('REL')).toMatchObject({ value: 12, provenance: { state: 'provisional' } })
+      expect(byName('HOLD')?.range).toEqual({ min: 0, max: 127, verified: false })
+      expect(byName('PTCH')?.value, `PTCH at darkness ${String(darkness)}`).not.toBe(0)
     }
   })
 
@@ -352,13 +442,13 @@ describe('Octatrack MKII manifest', () => {
     expect([...axes].sort()).toEqual(['darkness', 'space'])
   })
 
-  it('cites every range and option set, and no point (§3.2)', () => {
+  it('cites every range and option set but the three stages, and no point (§3.2)', () => {
     const counts = auditDevice(device).counts
     expect(counts.provisionalPoints).toBe(counts.params)
     expect(counts.manualPoints + counts.observedPoints).toBe(0)
-    expect(counts.unverifiedRanges).toBe(0)
+    expect(counts.unverifiedRanges).toBe(device.recipes.length * 3)
     expect(counts.moodInert).toBe(0)
-    expect(counts.manualRanges).toBe(counts.numerics)
+    expect(counts.manualRanges).toBe(counts.numerics - device.recipes.length * 3)
   })
 
   // -------------------------------------------------------------------------

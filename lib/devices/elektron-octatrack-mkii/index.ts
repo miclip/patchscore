@@ -63,7 +63,8 @@ import { OCTATRACK_MKII_PANEL } from './panel'
  * rest have no printed range anywhere in the document.
  *
  * So this manifest is **enum-dominated**, like the Digitakt II's and for the same reason, and
- * every uncited numeric is absent rather than given an invented `0-127`. What is here:
+ * every uncited numeric is absent rather than given an invented `0-127` — with three exceptions,
+ * made on purpose and recorded at `atk()`, `hold()` and `rel()`. What is cited:
  *
  *  - `PTCH`, -12 to +12 semitones. Two independent pages: pp.118-119 give it in prose (*"The max
  *    setting pitches the sample up an octave, a min setting pitches the sample down an octave.
@@ -80,6 +81,16 @@ import { OCTATRACK_MKII_PANEL } from './panel'
  * Two of those carry mood, and the two axes this box declares are `darkness` (on `PTCH`) and
  * `space` (on the delay's `TIME`). It declines the other three by having no param that declares
  * them, which is §6's mechanism and not a capability check.
+ *
+ * **The exceptions are the AMP MAIN page's `ATK`, `HOLD` and `REL`** (#547). They are the three
+ * stages that decide how long every sound on the box lasts, p.58 describes each one and ranges
+ * none of them, and a part authored without them is one a reader cannot reproduce: `AMP` says
+ * where the attack *starts* and `ATCK` what shape it takes, and until #547 that was the whole of
+ * what a recipe here said about its envelope. Each is carried on every recipe with a range that
+ * says `verified: false` and a point that resolves provisional, which is what the model has for
+ * a value nobody checked, as against a silent hole. The trade, and why these are the only three,
+ * is in `atk()`'s JSDoc. It is the Analog Rytm MKII's `DEC` three times over, on the box whose
+ * envelope has three unranged stages rather than one.
  *
  * ## The FX slots are two different lists, and the recipe carries which
  *
@@ -489,15 +500,107 @@ const delayTime = (v: number) =>
   })
 
 /**
- * §3.1/#547. **`AMP` is the most mis-readable control on this box's amp page**, because its name
+ * §3.1/#547. **`AMP` is the most mis-readable control on this box's amp pages**, because its name
  * says amplitude and its effect is retriggering. p.59: `ANLG` makes *"the envelope attack start
  * from the current envelope level when a sample is trigged"* and `RTRG` makes it *"start from
- * zero every time"*. It chooses where the attack begins; how long the note lasts is `ATCK`,
- * `HOLD` and `REL` on the same page.
+ * zero every time"*. It chooses where the attack begins; how long the note lasts is `ATK`, `HOLD`
+ * and `REL` on the AMP MAIN page (p.58), one page back.
+ *
+ * **It does not choose which stages exist.** That is the difference from `AMP MODE` on the
+ * Digitakt II and the Digitone II, where `ADSR` and `AHD` are two envelopes with different
+ * pages. Here p.58 draws four envelopes and every one of them has an attack, a hold and a
+ * release; what the four `AMP` values change is whether a trig restarts that envelope from zero
+ * or picks it up from wherever it is, and whether a trigless trig counts. So a recipe's stages
+ * never contradict its mode. What the mode does decide is what a stage *sounds like* under
+ * overlapping trigs, and the values below are chosen with that in mind: a one-shot drum under
+ * `RTRG` wants an attack of nothing, since every hit starts from silence anyway; a looped pad or
+ * texture under `ANLG` can afford a slow one, because a trig landing inside the previous hold
+ * continues from the current level rather than dipping to zero and climbing back.
  */
 const ampMode = (m: (typeof AMP_MODES)[number]) =>
   pick('AMP', m, AMP_MODES, cite(59), 'Where the attack starts, not how long the note lasts — ANLG from the current level, RTRG from zero')
+
+/**
+ * AMP SETUP, `ATCK`. **The attack's shape, and not its time** — p.59: *"sets how the attack of
+ * the envelope should behave"*, `LIN` linear and `LOG` exponential, *"for more smooth fade
+ * ins"*. The time is `ATK` on the MAIN page, one letter shorter and one page back, and the two
+ * names are the manual's own; neither is renamed here, because a reader arrives at the box
+ * holding the ink (invariant 4). `atk()`'s note says which is which, and this one stays a cited
+ * enum exactly as it was.
+ */
 const attack = (m: (typeof ATTACK_SHAPES)[number]) => pick('ATCK', m, ATTACK_SHAPES, cite(59))
+
+/**
+ * AMP MAIN, p.58 — the three stages, and the decision to author them off no printed scale.
+ *
+ * p.58 gives each one a sentence and no number. `ATK` *"sets the time it will take for the
+ * amplitude envelope to reach its full level"*; `HOLD` *"sets the hold time of the amplitude
+ * envelope"*, and then the two facts that shape every value below: *"The Attack time is included
+ * in the hold phase. If the Attack length exceeds the hold time, then Release is delayed until
+ * the attack is completed"*, and *"The hold phase is by default dependent on the BPM. The
+ * parameter is expressed in the amount of sequencer steps the hold phase will last"*; `REL`
+ * *"sets the time it will take for the signal to fade out"*. That is the whole of it.
+ *
+ * **The range is unverified, explicitly, and that is the decision rather than an oversight.** The
+ * absence was checked by rendering the pages rather than grepping a text dump: p.58 itself,
+ * whose AMP MAIN figure shows the three knobs and no scale; p.59, which distinguishes `AMP` and
+ * `ATCK` and adds nothing about time; Appendix A (pp.117-121), which is SRC-page machine
+ * reference and never reaches the AMP page at all; and Appendix C's table on p.140, which gives
+ * `Amp param #1 (Attack)`, `#2 (Hold)` and `#3 (Release)` as CC 22, 23 and 24 and no value
+ * column. A 7-bit CC implies 128 positions and is still not a printed scale, which is
+ * `CLAUDE.md`'s trap about a range that looks cited and is not.
+ *
+ * So `0-127` is carried as `verified: false` on the range and the point resolves provisional.
+ * What that costs is settled by §3.2's legality gate: **mood may not move a value inside bounds
+ * nobody checked**, so none of the three carries `mood`, and `density` stays an axis this box
+ * declines. Declaring an offset anyway would be the audit's `mood-inert` finding seventy-five
+ * times over, on a library whose count is zero. The other way — leaving the stages unauthored —
+ * is what the first author of this file did and what #547 is about: a reproducible envelope the
+ * page says nobody checked beats a silent hole the reader fills from whatever the last part left
+ * on the track. The day somebody with the box reads the two ends off its screen, these become
+ * `observed` ranges and the `mood` question reopens on its own terms.
+ *
+ * **Two things p.58 says that a numeric cannot carry, recorded rather than modelled.** `HOLD` is
+ * in sequencer steps only while AMP SETUP's `SYNC` is on, which is where p.59's figure shows it
+ * and the manifest's reading of *"by default"*; `SYNC` itself is not authored, for the reason
+ * `LOOP` and `TSTR` are not (the module note) — the figure prints one value and an option set of
+ * two would be a legality claim off one screen — so `hold()`'s note names the switch, the way
+ * `LOOP MODE`'s names `AUTO`. And p.58's tip that a hold *"set to infinite length"* sustains under
+ * a held key names an infinite setting without saying where it sits relative to the numbers, so
+ * the numeric does not carry it and does not claim to; a sequenced part has no held key, so no
+ * recipe wants it. The values are steps, **at the default `1X` tempo multiplier**: `4` is a beat
+ * and `16` a bar there, and p.79's `TEMPO MULTIPLIER` (`1/8X` to `2X`, per track in PER TRACK
+ * mode) changes what a step lasts, so the same `HOLD` is half as long at `2X`. `ATK` and `REL`
+ * are on whatever scale the box has, which no page states.
+ *
+ * Named as the MAIN page prints them, in its order — `ATK`, `HOLD`, `REL` — and placed ahead of
+ * `AMP` and `ATCK` because §11.4.5 comes before §11.4.6. `ATK` sits four lines above `ATCK` in a
+ * guide and directly beside it on the device page, where names sort by code unit; the note on
+ * `ATK` says which is the time and which the shape.
+ */
+function stage(name: 'ATK' | 'HOLD' | 'REL', v: number, note: string): AuthoredParam {
+  return {
+    kind: 'numeric',
+    name,
+    value: v,
+    range: { min: 0, max: 127, verified: false },
+    verified: false,
+    note,
+  }
+}
+
+/** AMP MAIN `ATK`, the attack *time*. `ATCK` on the SETUP page is its shape. */
+const atk = (v: number) => stage('ATK', v, 'The attack time, on AMP MAIN; ATCK on AMP SETUP is its shape')
+
+/**
+ * AMP MAIN `HOLD`, in sequencer steps while `SYNC` is on. The attack runs inside it (p.58), and a
+ * step is as long as the track's tempo multiplier makes it (p.79).
+ */
+const hold = (v: number) =>
+  stage('HOLD', v, 'Sequencer steps while SYNC is ON in AMP SETUP — at 1X, 4 is a beat and 16 a bar; the attack runs inside it')
+
+/** AMP MAIN `REL`, from the end of the hold, or of a longer attack (p.58). */
+const rel = (v: number) => stage('REL', v, 'Starts when the hold ends, or when an attack longer than the hold completes')
 
 const lfoTrig = (m: (typeof LFO_TRIG_MODES)[number]) =>
   pick(
@@ -628,6 +731,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(4),
+      rel(12),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('FILTER'),
@@ -640,7 +746,7 @@ const recipes: Recipe[] = [
     role: 'kick',
     character: 'dirty',
     voice: 'track',
-    title: 'Kick through the lo-fi collection, tail left where it lands',
+    title: 'Kick through the lo-fi collection, release long enough to let the tail through',
     verified: false,
     sourceAudio: {
       need: 'A kick one-shot with grit already in it — off tape, off vinyl, through an overdriven bus',
@@ -653,6 +759,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(8),
+      rel(32),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('LO-FI'),
@@ -699,6 +808,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('ON'),
       timestretch('OFF'),
+      atk(8),
+      hold(4),
+      rel(16),
       ampMode('ANLG'),
       attack('LOG'),
       fx1('FILTER'),
@@ -726,6 +838,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(3),
+      rel(12),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('COMB FILTER'),
@@ -749,6 +864,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(2),
+      rel(16),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -773,6 +891,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(3),
+      rel(24),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -795,6 +916,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(1),
+      rel(6),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('FILTER'),
@@ -817,6 +941,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(6),
+      rel(40),
       ampMode('ANLG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -838,6 +965,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(6),
+      hold(1),
+      rel(12),
       ampMode('RTRG'),
       attack('LOG'),
       fx1('FILTER'),
@@ -863,6 +993,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(2),
+      rel(20),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('COMB FILTER'),
@@ -936,6 +1069,9 @@ const recipes: Recipe[] = [
       lenSliced('SLIC'),
       loopMode('OFF'),
       timestretch('BEAT'),
+      atk(0),
+      hold(2),
+      rel(8),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -991,6 +1127,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('PINGPONG'),
       timestretch('NORMAL'),
+      atk(96),
+      hold(64),
+      rel(96),
       ampMode('ANLG'),
       attack('LOG'),
       lfoTrig('FREE'),
@@ -1029,6 +1168,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('ON'),
       timestretch('OFF'),
+      atk(96),
+      hold(16),
+      rel(8),
       ampMode('R+T'),
       attack('LOG'),
       lfoTrig('ONE'),
@@ -1067,6 +1209,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(32),
+      rel(64),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -1092,6 +1237,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('NORMAL'),
+      atk(64),
+      hold(32),
+      rel(64),
       ampMode('ANLG'),
       attack('LOG'),
       lfoTrig('HALF'),
@@ -1142,6 +1290,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(2),
+      rel(12),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -1202,6 +1353,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('ON'),
       timestretch('NORMAL'),
+      atk(48),
+      hold(32),
+      rel(80),
       ampMode('ANLG'),
       attack('LOG'),
       lfoTrig('FREE'),
@@ -1240,6 +1394,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('ON'),
       timestretch('OFF'),
+      atk(4),
+      hold(4),
+      rel(20),
       ampMode('RTRG'),
       attack('LOG'),
       fx1('PHASER'),
@@ -1301,6 +1458,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(1),
+      rel(8),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -1337,6 +1497,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(8),
+      rel(48),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('FILTER'),
@@ -1372,6 +1535,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(3),
+      rel(24),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('EQUALIZER'),
@@ -1404,6 +1570,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(4),
+      hold(4),
+      rel(32),
       ampMode('RTRG'),
       attack('LOG'),
       fx1('FILTER'),
@@ -1443,6 +1612,9 @@ const recipes: Recipe[] = [
       lenUnsliced('OFF'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(2),
+      rel(12),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('LO-FI'),
@@ -1498,6 +1670,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('OFF'),
       timestretch('OFF'),
+      atk(0),
+      hold(1),
+      rel(10),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('FILTER'),
@@ -1578,6 +1753,9 @@ const recipes: Recipe[] = [
       lenUnsliced('TIME'),
       loopMode('ON'),
       timestretch('OFF'),
+      atk(0),
+      hold(2),
+      rel(8),
       ampMode('RTRG'),
       attack('LIN'),
       fx1('FILTER'),
