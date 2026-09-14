@@ -99,9 +99,17 @@ import { NEUTRAL_MOOD, bearsPattern, type Character } from './vocabulary'
  * #100's rule is that a resolved hook *is* the part's pattern, so a part carrying both is two
  * authorities over one rhythm. §4.3 already settled the one case where that is not true —
  * `reArticulatesHook`, where the hook holds a note and the variant says where it is struck again
- * — and that is what a riff is. `RiffSchema` therefore **requires** the flag rather than offering
- * it: a figure whose hook competed with its own grid is not a riff anybody could play, and this
- * is checkable here where `TemplateSchema` could only check that both halves exist.
+ * — and that is what a riff on a struck part is. `RiffSchema` therefore **requires** the flag
+ * beside the grid rather than offering it: a figure whose hook competed with its own grid is not
+ * a riff anybody could play, and this is checkable here where `TemplateSchema` could only check
+ * that both halves exist.
+ *
+ * **A riff on a held part carries no grid at all** (§5A.2, #608). `pad` is held rather than
+ * struck (`NON_PATTERN_BEARING_ROLES`), and a guide already prints no step grid for it; a riff on
+ * it is the hook alone, played as the hook says, with no `pattern` and no `reArticulatesHook` to
+ * join it to one. The role decides which shape an entry has, and the schema refuses the other:
+ * a grid on a pad would be a pattern that says nothing, and a struck part without one would be
+ * a figure with no rhythm.
  */
 
 // ---------------------------------------------------------------------------
@@ -301,8 +309,15 @@ export type Riff = {
    */
   constraints?: RiffConstraints
   hook: Hook
-  /** Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them. */
-  pattern: Pattern
+  /**
+   * Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them.
+   *
+   * **Present exactly where the role bears a pattern** (`bearsPattern`), and absent on a held
+   * role, where the hook is the whole figure. Optional in the type because the role decides; the
+   * schema holds each role to its own shape, so a `Riff` that parsed has a grid if and only if
+   * its part is struck.
+   */
+  pattern?: Pattern
 }
 
 /**
@@ -521,7 +536,7 @@ export const RiffSchema = z
     figureStartsAtBar: z.int().min(1).optional(),
     constraints: RiffConstraintsSchema.optional(),
     hook: HookSchema,
-    pattern: PatternSchema,
+    pattern: PatternSchema.optional(),
   })
   .superRefine((riff, ctx) => {
     const { request, hook, pattern } = riff
@@ -620,17 +635,6 @@ export const RiffSchema = z
         path: ['request', 'followsKey'],
       })
     }
-    // See the header. The flag is what says the grid places strikes *inside* the hook rather than
-    // competing with it, and a riff carries both by construction, so it is required rather than
-    // offered.
-    if (request.reArticulatesHook !== true) {
-      ctx.addIssue({
-        code: 'custom',
-        message:
-          'a riff carries a hook and a grid: it must say the grid re-articulates the hook (§4.3)',
-        path: ['request', 'reArticulatesHook'],
-      })
-    }
     /*
      * §5A/#552. The offset is meaningless without a cycle to be an offset into, has to land on a
      * chord boundary, and has to leave room for the figure. Each is checked separately so the
@@ -683,15 +687,6 @@ export const RiffSchema = z
     for (const violation of riffConstraintViolations(riff as Riff)) {
       ctx.addIssue({ code: 'custom', message: violation, path: ['constraints'] })
     }
-    // Invariant 5's list, read the other way: a role that is held rather than struck has no grid
-    // to be missing, so a riff on one would be authoring a pattern that says nothing.
-    if (!bearsPattern(request.role)) {
-      ctx.addIssue({
-        code: 'custom',
-        message: `\`${request.role}\` is held rather than struck: it has no grid to riff on (§4.2)`,
-        path: ['request', 'role'],
-      })
-    }
     if (hook.forRole !== request.role) {
       ctx.addIssue({
         code: 'custom',
@@ -699,49 +694,93 @@ export const RiffSchema = z
         path: ['hook', 'forRole'],
       })
     }
-    if (pattern.forRole !== request.role) {
-      ctx.addIssue({
-        code: 'custom',
-        message: `the grid is for \`${pattern.forRole}\`, and the part is \`${request.role}\``,
-        path: ['pattern', 'forRole'],
-      })
+    /*
+     * §4.2/§5A.2/#608. **The role decides whether there is a grid.** A held role
+     * (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on one
+     * is its hook and nothing else: no `pattern`, and no `reArticulatesHook`, since there is no
+     * grid for the flag to join to the hook. A struck role has both, and the flag is required
+     * rather than offered — see the header. Each half refuses the other's shape, so an entry
+     * cannot half-change role.
+     */
+    if (!bearsPattern(request.role)) {
+      if (pattern !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `\`${request.role}\` is held rather than struck: it has no grid to riff on (§4.2)`,
+          path: ['pattern'],
+        })
+      }
+      if (request.reArticulatesHook !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            `\`${request.role}\` is held rather than struck: there is no grid to re-articulate ` +
+            'the hook (§4.2)',
+          path: ['request', 'reArticulatesHook'],
+        })
+      }
+    } else {
+      if (request.reArticulatesHook !== true) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'a riff carries a hook and a grid: it must say the grid re-articulates the hook (§4.3)',
+          path: ['request', 'reArticulatesHook'],
+        })
+      }
+      if (pattern === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `\`${request.role}\` is struck: a riff on it says where, in a grid (§4.3)`,
+          path: ['pattern'],
+        })
+      }
     }
-    // §4.3. Bands exist so density can select among variants (§6.3). A riff has one variant and
-    // no density knob, so every band but the base one would be a choice nothing can make.
-    if (pattern.band !== 0) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff has one variant and no density to select with: its band is 0 (§6.3)',
-        path: ['pattern', 'band'],
-      })
-    }
-    if (pattern.sections !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff has no sections for a variant to be eligible in (§4.2)',
-        path: ['pattern', 'sections'],
-      })
-    }
-    if (pattern.hits.length === 0) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff whose grid strikes nothing is a held note, not a riff (§4.3)',
-        path: ['pattern', 'hits'],
-      })
-    }
-    // §5A.2/#603. The grid is capped at 64 steps and the hook is not; a longer hook is played
-    // with the grid repeating beneath it, so the hook has to be a whole number of passes. A
-    // twelve-bar line over a four-bar grid is three passes; a ten-bar line over the same grid
-    // would have the grid cut off mid-pass at the end of the figure, and nothing on the page
-    // could say where.
-    if ((hook.bars * STEPS_PER_BAR) % pattern.length !== 0) {
-      ctx.addIssue({
-        code: 'custom',
-        message:
-          `a ${String(hook.bars)}-bar hook is ${String(hook.bars * STEPS_PER_BAR)} steps, which ` +
-          `is not a whole number of passes of a ${String(pattern.length)}-step grid (§5A.2)`,
-        path: ['hook', 'bars'],
-      })
+    if (pattern !== undefined) {
+      if (pattern.forRole !== request.role) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `the grid is for \`${pattern.forRole}\`, and the part is \`${request.role}\``,
+          path: ['pattern', 'forRole'],
+        })
+      }
+      // §4.3. Bands exist so density can select among variants (§6.3). A riff has one variant
+      // and no density knob, so every band but the base one would be a choice nothing can make.
+      if (pattern.band !== 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'a riff has one variant and no density to select with: its band is 0 (§6.3)',
+          path: ['pattern', 'band'],
+        })
+      }
+      if (pattern.sections !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'a riff has no sections for a variant to be eligible in (§4.2)',
+          path: ['pattern', 'sections'],
+        })
+      }
+      if (pattern.hits.length === 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message: 'a riff whose grid strikes nothing is a held note, not a riff (§4.3)',
+          path: ['pattern', 'hits'],
+        })
+      }
+      // §5A.2/#603. The grid is capped at 64 steps and the hook is not; a longer hook is played
+      // with the grid repeating beneath it, so the hook has to be a whole number of passes. A
+      // twelve-bar line over a four-bar grid is three passes; a ten-bar line over the same grid
+      // would have the grid cut off mid-pass at the end of the figure, and nothing on the page
+      // could say where.
+      if ((hook.bars * STEPS_PER_BAR) % pattern.length !== 0) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            `a ${String(hook.bars)}-bar hook is ${String(hook.bars * STEPS_PER_BAR)} steps, which ` +
+            `is not a whole number of passes of a ${String(pattern.length)}-step grid (§5A.2)`,
+          path: ['hook', 'bars'],
+        })
+      }
     }
     if (hook.notes.length === 0) {
       ctx.addIssue({
@@ -1039,7 +1078,10 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
       sourceAudio: resolveSourceAudio(winner.recipe),
       soundSetup: resolveSoundSetup(winner.recipe),
       factoryPatch: affinePatch(riff, winner.recipe.factoryPatch),
-      articulation: bindArticulation(winner.recipe, riff.pattern),
+      // §5A.2/#608. Articulation addresses the grid's slots, and a held riff has no grid: nothing
+      // to bind to, so nothing is bound, rather than a slot list read off a pattern that is not
+      // there.
+      articulation: riff.pattern === undefined ? [] : bindArticulation(winner.recipe, riff.pattern),
       // §2.2/#86. Read off the first voice, which every member of a pool shares — a stack is one
       // pool on one device, so there is one answer rather than one per voice.
       triggerNote: triggerNoteFor(winner.recipe, winner.assignables[0]),

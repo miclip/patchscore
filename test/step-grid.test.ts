@@ -16,6 +16,7 @@ import { GOLDEN_DEVICES, GOLDEN_MOOD, GOLDEN_SEED, GOLDEN_TEMPLATE } from './gol
 import { RIFFS } from '../lib/riffs'
 import { gridRows } from '../lib/studio/riff-text'
 import { renderRiff } from '../lib/studio/riff-markdown'
+import { gridOf } from './fixtures'
 
 /**
  * §4.3/§8/#512. **The guide and a riff page draw a step grid from one definition.**
@@ -63,7 +64,12 @@ describe('the drawing (§4.3)', () => {
 
   it('is what a riff calls, rather than a copy of it', () => {
     for (const riff of RIFFS) {
-      expect(gridRows(riff), riff.id).toEqual(stepGridRows(riff.pattern))
+      // A held riff has no grid and prints no rows (§5A.2/#608).
+      if (riff.pattern === undefined) {
+        expect(gridRows(riff), riff.id).toEqual([])
+        continue
+      }
+      expect(gridRows(riff), riff.id).toEqual(stepGridRows(gridOf(riff)))
     }
   })
 })

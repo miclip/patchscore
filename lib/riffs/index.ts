@@ -66,8 +66,10 @@ import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
  * (`detroit-funk-aeolian-machine-loop`, `polyphonic-power-brass-stab-cycle`); the first `arp`
  * (`bellbounce-sparse-bell-pattern`); a second bass, in octaves where the first was in
  * sixteenths; a line in a mode that is neither major nor minor (`aegean-organ-phrygian-figure`);
- * and two lines that are the top voice of a pad, filed as `lead` because a pad has no grid to
- * riff on (`moog-55-strings-suspension-writing`, `soft-orchestra-slow-changes`).
+ * and the first two `pad`s, the top voice of a string ensemble over slow changes, each a hook
+ * with no grid (`moog-55-strings-suspension-writing`, `soft-orchestra-slow-changes`). Both
+ * were filed as `lead` while `RiffSchema` refused a held role; #608 removed that rule and put
+ * them on the role their definitions named (§5A.2).
  *
  * ## Two entries name the patch their sound is (§5A.5, #585)
  *
@@ -81,10 +83,11 @@ import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
  * technique (§5A.5) and is not a judgement that the figure is that sound, so it earns no
  * affinity by itself. `test/riff.test.ts` pins the set at those two ids.
  *
- * Seven of the seventeen are `lead`, which is under the strict majority `test/riff.test.ts`
- * allows one role, and they are seven different lessons: a line that floats late, a line that
- * marches on the grid, a line in a mode, a line with no overlaps because the patch glides, and
- * three shapes of held top voice.
+ * Six of the seventeen are `lead`, which is under the strict majority `test/riff.test.ts`
+ * allows one role, and they are six different lessons: a line that floats late, the six
+ * arrivals of that line on their own, a line that marches on the grid, a line in a mode, a
+ * line with no overlaps because the patch glides, and a synth riff struck on every note.
+ * `test/riff.test.ts` pins the count per role.
  */
 export const RIFFS: readonly Riff[] = [
   threeOscBassLoveRootOctaveFigure,

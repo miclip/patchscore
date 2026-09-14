@@ -3,6 +3,7 @@ import type { Device } from '@/lib/core'
 import { assign, moodState, realisationOf, resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS, blueMondayBass, showMeLoveOrganStab, thrillerSynthRiff } from '@/lib/riffs'
+import { gridOf, heldRiff } from './fixtures'
 import { box, makeRecipe, withRoles } from './rigs'
 
 /**
@@ -47,11 +48,28 @@ describe('resolveRiff against a real rig (§5A)', () => {
     const resolution = resolveRiff(thrillerSynthRiff, DEVICES)
     expect(resolution.outcome).toBe('played')
     if (resolution.outcome !== 'played') return
-    const struck = new Set(thrillerSynthRiff.pattern.hits.map((h) => h.slot))
+    const struck = new Set(gridOf(thrillerSynthRiff).hits.map((h) => h.slot))
     for (const bound of resolution.voice.articulation) {
       expect(struck.has(bound.slot), bound.slot).toBe(true)
       expect(bound.steps.length).toBeGreaterThan(0)
     }
+  })
+
+  /**
+   * §5A.2/#608. A held riff has no grid, so there are no slots for a recipe's articulation to
+   * land on: the voice binds none. On a box whose pad recipe carries some, which is what makes
+   * this a test of the resolver rather than of an empty list.
+   */
+  it('binds no articulation on a held riff, even where the recipe carries some', () => {
+    const devices = rig('elektron-digitakt')
+    const recipe = devices[0]?.recipes.find((r) => r.id === 'dt-pad-soft')
+    expect(recipe?.articulation?.length ?? 0).toBeGreaterThan(0)
+    const resolution = resolveRiff(heldRiff(), devices)
+    expect(resolution.outcome).toBe('played')
+    if (resolution.outcome !== 'played') return
+    expect(resolution.voice.recipe.id).toBe('dt-pad-soft')
+    expect(resolution.voice.articulation).toEqual([])
+    expect(resolution.notes.outcome).toBe('resolved')
   })
 
   it('every resolved value carries provenance (invariant 4)', () => {

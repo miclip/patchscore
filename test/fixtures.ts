@@ -1,9 +1,12 @@
+import { expect } from 'vitest'
 import type {
   AuthoredParam,
   CapabilityEvidence,
   Cite,
   Device,
+  Pattern,
   Recipe,
+  Riff,
   Template,
 } from '../lib/core/index'
 
@@ -203,6 +206,51 @@ export function template(over: Partial<Template> = {}): Template {
         ],
       },
     ],
+    ...over,
+  }
+}
+
+/**
+ * §5A.2/#608. **The grid of a riff a test knows is struck.** `Riff.pattern` is optional because a
+ * held role carries none; a test about a grid asserts it is there and then reads it, rather than
+ * threading `?.` through every step it counts. The failure names the entry, so a riff that lost
+ * its grid fails here and not on an `undefined` three lines later.
+ */
+export function gridOf(riff: Riff): Pattern {
+  expect(riff.pattern, `${riff.id} has no grid`).toBeDefined()
+  return riff.pattern as Pattern
+}
+
+/**
+ * §5A.2/#608. **A riff on a held role**, which is the shape no library entry has yet: one part on
+ * `pad`, the hook alone, no grid and no `reArticulatesHook`. Two notes so a page has rows to
+ * print, and a key the engine reads.
+ */
+export function heldRiff(over: Partial<Riff> = {}): Riff {
+  return {
+    id: 'fixture-held-riff',
+    name: 'The fixture held riff',
+    reference: { kind: 'record', name: 'fixture held' },
+    technique: ['Hold it.'],
+    bpm: { min: 60, max: 80, default: 70 },
+    key: 'C major',
+    request: {
+      id: 'fixture-held-riff',
+      role: 'pad',
+      priority: 1,
+      character: 'soft',
+      sustain: 'continuous',
+    },
+    hook: {
+      id: 'fixture-held-riff-hook',
+      forRole: 'pad',
+      bars: 2,
+      baseOctave: 4,
+      notes: [
+        { step: 1, degree: 1, octave: 0, len: 16 },
+        { step: 17, degree: 5, octave: 0, len: 16 },
+      ],
+    },
     ...over,
   }
 }

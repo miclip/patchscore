@@ -22,6 +22,7 @@ import { presetSession } from '../lib/studio/preset-session'
 import { renderRiff } from '../lib/studio/riff-markdown'
 import { RIFF_GRID_LEAD, riffSubstitution } from '../lib/studio/riff-text'
 import { SITE_ORIGIN } from '../lib/studio/site'
+import { gridOf } from './fixtures'
 
 /**
  * §3.7/#598. **A preset figure page**, as the markup a reader receives: one figure, on the box
@@ -262,8 +263,14 @@ describe('every page carries the figure and the Muse’s block for it', () => {
   it('draws the grid as boxes with the export’s rows under it, on all twelve (#528)', () => {
     for (const { entry, figure } of FIGURED) {
       const md = renderRiff(figure.resolution)
-      const rows = md.slice(md.indexOf('```') + 4, md.lastIndexOf('```')).trimEnd().split('\n')
       const markup = PAGES.get(entry.slug) as string
+      // A held figure has no grid, and neither surface draws one (§5A.2/#608).
+      if (figure.riff.pattern === undefined) {
+        expect(md, entry.patch.name).not.toContain('```')
+        expect(markup, entry.patch.name).not.toContain('class="step-index"')
+        continue
+      }
+      const rows = md.slice(md.indexOf('```') + 4, md.lastIndexOf('```')).trimEnd().split('\n')
       const drawn = [
         ...markup.matchAll(
           /<span class="step-index">(\d+)<\/span><span class="step-text">([^<]*)<\/span>/g,
@@ -273,7 +280,7 @@ describe('every page carries the figure and the Muse’s block for it', () => {
         rows.map((row) => row.trimStart()),
       )
       const cells = markup.match(/class="step(?: on)?(?: beat)?"/g) ?? []
-      expect(cells.length, entry.patch.name).toBe(figure.riff.pattern.length)
+      expect(cells.length, entry.patch.name).toBe(gridOf(figure.riff).length)
     }
   })
 
@@ -321,8 +328,9 @@ describe('every page carries the figure and the Muse’s block for it', () => {
         expect(page, `${entry.patch.name}: ${r.id}`).not.toContain(r.title)
       }
     }
-    // Not vacuous: five recipes on the box name one of these patches, and three of the twelve
-    // figures land on the very recipe that names theirs. None of it reaches the page.
+    // Not vacuous: five recipes on the box name one of these patches, and four of the twelve
+    // figures land on the very recipe that names theirs — the strings figure since #608 put it
+    // back on `pad`, where the box's soft pad is that patch. None of it reaches the page.
     expect(MUSE.recipes.filter((r) => r.factoryPatch !== undefined)).toHaveLength(5)
     const onOwn = FIGURED.filter(
       ({ entry, figure }) => figure.voice.recipe.factoryPatch?.name === entry.patch.name,
@@ -330,23 +338,23 @@ describe('every page carries the figure and the Muse’s block for it', () => {
     expect(onOwn.map(({ entry }) => entry.patch.name).sort()).toEqual([
       '3 Osc Bass Love',
       'Detroit Funk',
+      'Moog 55 Strings',
       'Muse Runner',
     ])
   })
 
   /**
-   * §5A.2/#603/#604. The Muse Runner line is twelve bars over a four-bar grid, the Moog 55
-   * Strings line, the Bellbounce pattern and the Aegean Organ figure eight over four, and this
-   * surface draws the grid
+   * §5A.2/#603/#604. The Muse Runner line is twelve bars over a four-bar grid, the Bellbounce
+   * pattern and the Aegean Organ figure eight over four, and this surface draws the grid
    * through the same component a riff page does, so the sentence saying how many times it goes
-   * round has to reach here too.
+   * round has to reach here too. The two pads are eight bars with no grid at all (#608), so
+   * they are in the second loop.
    * Pinned as strings rather than left to the parity test above, which would pass on both
    * surfaces omitting them.
    */
   it('says how many times the grid goes round under the figures longer than it', () => {
     const REPEATS: Record<string, string> = {
       'muse-runner': 'The grid is 4 bars and the figure is 12: play it round 3 times.',
-      'moog-55-strings': 'The grid is 4 bars and the figure is 8: play it round 2 times.',
       bellbounce: 'The grid is 4 bars and the figure is 8: play it round 2 times.',
       'aegean-organ': 'The grid is 4 bars and the figure is 8: play it round 2 times.',
     }
@@ -356,10 +364,12 @@ describe('every page carries the figure and the Muse’s block for it', () => {
       expect(page.split(REPEAT).length - 1, slug).toBe(1)
       expect(page.indexOf(REPEAT), slug).toBeGreaterThan(page.indexOf(RIFF_GRID_LEAD))
     }
-    // And on no other preset page: every other figure is as long as its grid.
-    for (const { entry } of FIGURED) {
+    // And on no other preset page: every other figure is as long as its grid, or has none.
+    for (const { entry, figure } of FIGURED) {
       if (entry.slug in REPEATS) continue
-      expect(text(PAGES.get(entry.slug) as string), entry.patch.name).not.toContain('play it round')
+      const page = text(PAGES.get(entry.slug) as string)
+      expect(page, entry.patch.name).not.toContain('play it round')
+      if (figure.riff.pattern === undefined) expect(page, entry.patch.name).not.toContain(RIFF_GRID_LEAD)
     }
   })
 })

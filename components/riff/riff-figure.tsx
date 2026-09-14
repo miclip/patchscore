@@ -65,8 +65,13 @@ function Rules({ riff }: { riff: Riff }) {
  *
  * The slot rows come with it, and with the two facts this page was dropping: the velocity on the
  * line, and #457's definition trigger on the slot word.
+ *
+ * **Nothing on a held riff** (§5A.2/#608). A pad carries no grid, so there is no panel: not an
+ * empty one, and not the lead sentence, which is a sentence about a grid.
  */
 function Grid({ riff }: { riff: Riff }) {
+  const { pattern } = riff
+  if (pattern === undefined) return null
   const repeat = gridRepeatSentence(riff)
   return (
     <section className="panel riff-panel">
@@ -75,8 +80,8 @@ function Grid({ riff }: { riff: Riff }) {
       </header>
       <p className="riff-grid-lead">{RIFF_GRID_LEAD}</p>
       {repeat === undefined ? null : <p className="riff-grid-lead">{repeat}</p>}
-      <StepGrid pattern={riff.pattern} />
-      <SlotList pattern={riff.pattern} />
+      <StepGrid pattern={pattern} />
+      <SlotList pattern={pattern} />
     </section>
   )
 }

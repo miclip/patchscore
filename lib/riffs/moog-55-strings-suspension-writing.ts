@@ -1,4 +1,3 @@
-import { at, on, variant } from '../core/authoring'
 import type { Riff } from '../core/riff'
 
 /**
@@ -9,13 +8,13 @@ import type { Riff } from '../core/riff'
  * string ensemble; the notes are this library's own, and the entry names no device
  * (invariant 3).
  *
- * ## Why it is a `lead` and not a `pad`
+ * ## A `pad`, as the definition filed it, and no grid
  *
- * The original definition filed this under the pad. A `pad` is held rather than struck
- * (`NON_PATTERN_BEARING_ROLES`), so `RiffSchema` refuses a riff on it: there is no grid for the
- * figure to be played on. What the definition actually wrote is the top voice of the pad, one
- * line with entries and resolutions, and that is a `lead` at `soft`. The pad it sits on is the
- * chord table.
+ * The definition wrote `part: pad`. It first landed as a `lead` at `soft` because `RiffSchema`
+ * refused a riff on a held role, and #608 removed that rule rather than keep the workaround:
+ * a pad is held rather than struck (`NON_PATTERN_BEARING_ROLES`), so a riff on one is its hook
+ * alone (§5A.2). The articulation of this figure is its note lengths, and the notes carry them.
+ * The chords it sits on are the chord table, supplied separately.
  *
  * ## The rule that stays prose, and why
  *
@@ -31,15 +30,14 @@ import type { Riff } from '../core/riff'
  * two-beat entry. What the data cannot say, `test/riff.test.ts` asserts on this entry instead:
  * each resolution lands in the second bar of its chord.
  *
- * ## The whole cycle, over a grid half its length
+ * ## The whole cycle
  *
  * The first published version carried bars 1 to 4 of the eight, the two suspensions, and left
  * the held B and C of the definition's second half as prose, on the belief that a riff's grid
- * capped the figure at four bars. The grid is capped; the hook is not (§5A.2, #603). So the
- * hook is the definition's eight bars, all six of its notes, and the four-bar grid repeats
- * beneath it, marking only what recurs on the same step of both passes: the entry two beats
- * into each chord. The two resolutions land inside a hold on the second pass, so they are
- * slurred, not struck, and live in the hook alone.
+ * capped the figure at four bars. The hook was never capped (§5A.2, #603), so it is the
+ * definition's eight bars and all six of its notes, restored at #604. While the entry was a
+ * `lead` a four-bar grid repeated beneath it, marking the entry into each chord; the grid went
+ * with the role at #608, and the pitches and lengths are exactly as #604 restored them.
  */
 export const moog55StringsSuspensionWriting: Riff = {
   id: 'moog-55-strings-suspension-writing',
@@ -71,11 +69,10 @@ export const moog55StringsSuspensionWriting: Riff = {
   ],
   request: {
     id: 'moog-55-strings-suspension-writing',
-    role: 'lead',
+    role: 'pad',
     priority: 1,
     character: 'soft',
     sustain: 'continuous',
-    reArticulatesHook: true,
   },
   figureStartsAtBar: 1,
   /**
@@ -114,7 +111,7 @@ export const moog55StringsSuspensionWriting: Riff = {
    */
   hook: {
     id: 'moog-55-strings-suspension-writing-hook',
-    forRole: 'lead',
+    forRole: 'pad',
     bars: 8,
     baseOctave: 4,
     notes: [
@@ -133,19 +130,4 @@ export const moog55StringsSuspensionWriting: Riff = {
       { step: 105, degree: 1, octave: 1, len: 24 },
     ],
   },
-  /**
-   * §5A.2. A four-bar grid under an eight-bar line, so it repeats twice, and it marks only what
-   * recurs on the same step of both passes: the entry two beats into each chord, at 9 and 41.
-   * Across the two passes that is steps 9, 41, 73 and 105 of the cycle, the four onsets the hook
-   * enters a chord on. The resolutions at 25 and 57 are slurred: on the second pass those steps
-   * fall inside the held B and C, and a strike there would re-articulate a note the line holds.
-   */
-  pattern: variant(
-    'moog-55-strings-suspension-writing-grid',
-    'lead',
-    0,
-    64,
-    at('accent', 72, 9),
-    on('downbeat', 41),
-  ),
 }
