@@ -335,20 +335,30 @@ describe('every page carries the figure and the Muse’s block for it', () => {
   })
 
   /**
-   * §5A.2/#603. The Muse Runner line is twelve bars over a four-bar grid, and this surface draws
-   * the grid through the same component a riff page does, so the sentence saying it goes round
-   * three times has to reach here too. Pinned as a string rather than left to the parity test
-   * above, which would pass on both surfaces omitting it.
+   * §5A.2/#603/#604. The Muse Runner line is twelve bars over a four-bar grid, the Moog 55
+   * Strings line, the Bellbounce pattern and the Aegean Organ figure eight over four, and this
+   * surface draws the grid
+   * through the same component a riff page does, so the sentence saying how many times it goes
+   * round has to reach here too.
+   * Pinned as strings rather than left to the parity test above, which would pass on both
+   * surfaces omitting them.
    */
-  it('says the grid goes round three times under the Muse Runner line', () => {
-    const page = text(MUSE_RUNNER)
-    const REPEAT = 'The grid is 4 bars and the figure is 12: play it round 3 times.'
-    expect(page).toContain(RIFF_GRID_LEAD)
-    expect(page.split(REPEAT).length - 1).toBe(1)
-    expect(page.indexOf(REPEAT)).toBeGreaterThan(page.indexOf(RIFF_GRID_LEAD))
+  it('says how many times the grid goes round under the figures longer than it', () => {
+    const REPEATS: Record<string, string> = {
+      'muse-runner': 'The grid is 4 bars and the figure is 12: play it round 3 times.',
+      'moog-55-strings': 'The grid is 4 bars and the figure is 8: play it round 2 times.',
+      bellbounce: 'The grid is 4 bars and the figure is 8: play it round 2 times.',
+      'aegean-organ': 'The grid is 4 bars and the figure is 8: play it round 2 times.',
+    }
+    for (const [slug, REPEAT] of Object.entries(REPEATS)) {
+      const page = text(PAGES.get(slug) as string)
+      expect(page, slug).toContain(RIFF_GRID_LEAD)
+      expect(page.split(REPEAT).length - 1, slug).toBe(1)
+      expect(page.indexOf(REPEAT), slug).toBeGreaterThan(page.indexOf(RIFF_GRID_LEAD))
+    }
     // And on no other preset page: every other figure is as long as its grid.
     for (const { entry } of FIGURED) {
-      if (entry.slug === 'muse-runner') continue
+      if (entry.slug in REPEATS) continue
       expect(text(PAGES.get(entry.slug) as string), entry.patch.name).not.toContain('play it round')
     }
   })

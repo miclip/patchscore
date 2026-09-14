@@ -1,31 +1,33 @@
 # The Aegean Organ Phrygian figure
 
-`lead` · `bright` · 76 BPM (68–88) · D phrygian · 4 bars · 64 steps
+`lead` · `bright` · 76 BPM (68–88) · D phrygian · 8 bars · 64 steps
 
 ## The technique
 
-Bars 5 to 8 of the cycle, over the return to the D minor chord and the C minor after it. The first half of the cycle is the same mode with less motion.
+Four chords, eight bars, two bars each: D minor, E flat major, D minor, C minor. The right hand enters on the beat with every chord. An organ has no attack shape, so each note speaks the instant the key goes down, and the phrasing is all in length and release.
 
-One pitch class to watch across the whole piece: E natural. Never play it while the D minor or the Eb major is sounding. The Eb is the mode, and one E over either of those chords collapses it into ordinary D minor.
+Left hand, root and fifth only, no thirds: D and A, then Eb and Bb, then D and A, then C and G. Open fifths are what make an organ sound modal instead of churchy.
 
-Over the D minor chord, touch the Eb and come back: D, up a semitone, down again. That neighbour is the sound of the mode, and it is the only ornament the line has.
+Over the first D minor: F, then fall to Eb in the second bar. Cut the F short before the drop and the fall has weight; hold it too long and the two notes blur into one sound.
 
-Enter late, a beat or more into each chord. The organ has no attack to speak of, so the entry is heard as the note arriving, and it should arrive after the chord has.
+Over the Eb major: G, held for both bars. Over the return to D minor: D, up to Eb, back to D. Over the C minor: Eb, falling to D at the end.
+
+One rule, and it is the whole piece: never play E natural. The Eb is the flat second, what makes this Phrygian instead of ordinary D minor, and it is in three of the four chords. Play an E natural once and the modal sound is gone.
+
+Since nothing swells, practise releasing. A move inside a chord is played off the held note; the hand strikes on the entry into each chord, and the release is what shapes everything else.
 
 ## The rules
 
 - Never the raised 2nd, on any chord — over i, the raised second destroys the flat second the mode rests on.
-- Never the raised 2nd, on any chord — over II, the same pitch class, a direct semitone against the chord’s root.
-- Enter each chord at least 4 steps after it lands — the organ has no attack and the note should arrive after the chord has.
 
 ## The chords
 
-4 chords over 8 bars, in D phrygian. The figure is bars 5–8.
+4 chords over 8 bars, in D phrygian.
 
 | Degree | Notes | Bars | Under the figure |
 | --- | --- | ---: | :---: |
-| i | D · F · A | 1–2 |  |
-| II | Eb · G · Bb | 3–4 |  |
+| i | D · F · A | 1–2 | ● |
+| II | Eb · G · Bb | 3–4 | ● |
 | i | D · F · A | 5–6 | ● |
 | vii | C · Eb · G | 7–8 | ● |
 
@@ -33,26 +35,31 @@ The figure is played over these chords; supply them separately if your rig allow
 
 ## The notes
 
-4 bars in D phrygian.
+8 bars in D phrygian.
 
-- step 9 · `D5` · degree 1 · MIDI 74 · in force 8 steps
-- step 17 · `Eb5` · degree 2 · MIDI 75 · in force 8 steps
-- step 25 · `D5` · degree 1 · MIDI 74 · in force 16 steps
-- step 41 · `Eb5` · degree 2 · MIDI 75 · in force 12 steps
-- step 53 · `D5` · degree 1 · MIDI 74 · in force 12 steps
+- step 1 · `F5` · degree 3 · MIDI 77 · in force 12 steps
+- step 17 · `Eb5` · degree 2 · MIDI 75 · in force 16 steps
+- step 33 · `G5` · degree 4 · MIDI 79 · in force 32 steps
+- step 65 · `D5` · degree 1 · MIDI 74 · in force 8 steps
+- step 73 · `Eb5` · degree 2 · MIDI 75 · in force 8 steps
+- step 81 · `D5` · degree 1 · MIDI 74 · in force 16 steps
+- step 97 · `Eb5` · degree 2 · MIDI 75 · in force 24 steps
+- step 121 · `D5` · degree 1 · MIDI 74 · in force 8 steps
 
 ## The grid
 
 Every step below strikes the note in force at that point. The grid is where the figure is played.
 
+The grid is 4 bars and the figure is 8: play it round 2 times.
+
 ```
- 1 ···· ···· x··· ····
-17 x··· ···· x··· ····
-33 ···· ···· x··· ····
-49 ···· x··· ···· ····
+ 1 x··· ···· ···· ····
+17 ···· ···· ···· ····
+33 x··· ···· ···· ····
+49 ···· ···· ···· ····
 ```
-- `accent` · 9
-- `downbeat` · 17, 25, 41, 53
+- `accent` · 1
+- `downbeat` · 33
 
 ## Where it plays
 
