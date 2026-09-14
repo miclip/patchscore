@@ -721,6 +721,26 @@ map is in scope. Both are rendered at the machine — a reader patches the one a
 and neither may go uncited. The check moved from the type to the schema; the discipline did not
 change.
 
+**One fact may only be observed: `factoryPatches`**
+([#592](https://github.com/miclip/patchscore/issues/592)). `Device.factoryPatches` is the list of
+presets a box is known to ship, each `{ name, bank? }` as the screen prints it and never a slot
+number, and its evidence is one entry at `factoryPatches` for the whole list. `DeviceSchema`
+requires that entry behind a list, refuses one with no list behind it, refuses `false` as `middleC`
+does, and refuses a `manual` or `maker` citation: no document in this library names a factory
+patch, so a page cited here would be a page that does not say what it is cited for, and the only
+honest evidence is somebody with the unit and the firmware in the source string. The list is
+nonempty and its `(name, bank)` keys are unique, so a declaration is always a claim and a box ships
+each patch once. It carries no description, because what a patch sounds like is a claim a name
+cannot verify. It exists because two facts were sharing one field: `Recipe.factoryPatch` (§3) says
+a recipe's settings *reach* a shipped sound, which is a judgement #563 rightly declined for seven
+Muse patches, and the decline threw away the fact that the box *ships* them. The Muse declares the
+twelve its riffs are named after and no more, because p.12 counts 224 and names none, and twelve
+is what was read off a screen. **No renderer consumes it yet.** A preset belongs to exactly one
+box and a riff is rig-agnostic by design, so where the fact reaches a reader is a decision about
+the device page, not about a riff page, and it is not designed yet; until it is, the fact is
+counted by `npm run audit` and shown nowhere. `Recipe.factoryPatch` and `Riff.patchAffinities`
+are unchanged by it.
+
 #### The three states past `Verified`
 
 `Verified` has two and neither is "somebody went and looked". `false` is *authored, nothing checked
