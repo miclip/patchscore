@@ -4561,6 +4561,38 @@ a test: `pitch` and `followsKey` are both refused, because the hook already name
 The rendered page says it once, in a sentence above the grid, rather than leaving a reader to work
 out why a page shows both notes and steps.
 
+**The grid is capped and the hook is not, and a longer hook is played with the grid repeating
+beneath it** ([#603](https://github.com/miclip/patchscore/issues/603)). `PATTERN_LENGTHS` tops
+out at 64 steps; `Hook.bars` has no ceiling, and a direction already holds a texture for sixteen
+bars over four-bar variants. Two entries were cut to four bars of an eight- and a twelve-bar cycle
+on the belief that the grid's cap was the hook's, and #569 wrote `figureStartsAtBar` partly to
+serve that belief. The field is right where a figure genuinely sits inside a longer cycle; it is
+not a way round a limit that does not exist.
+
+So a riff whose figure is longer than 64 steps carries the whole figure in its hook and a grid
+that repeats under it, and the rule for what such a grid may mark follows from the repetition:
+**only what recurs on the same step of every pass.** The hook is a whole number of passes long.
+Under `reArticulatesHook` every strike is a note the hook already holds, so a strike that lands
+on an onset in one pass and inside a hold in the next would re-articulate a note the line slurs
+through. On the six-chord cycle both F# minor entries carry, two bars a chord, a four-bar grid
+covers two chords a pass, and what recurs is the arrival: the grid strikes the entry into each
+chord, and every move within a chord lives in the hook alone, unstruck. That is also what keeps
+the two entries apart. The Blade Runner line is six arrivals; the Muse Runner line is the same
+six with seven slurred moves between them. Both grids mark arrivals and nothing else, and they
+differ in where: Blade Runner strikes 5 and 41, a beat into the first chord of each pair and two
+into the second, and Muse Runner strikes 9 and 41, two beats into every chord.
+
+The page says the repetition in words. Where a figure is longer than its grid both renderers
+print, under the grid's lead sentence, how many times to play it round (`gridRepeatSentence`),
+and nothing where the two are the same length.
+
+The same reading serves the eight-bar cycles. An entry with a four-bar figure over an eight-bar
+cycle is finished if the figure says what it needs to over its four bars and `figureStartsAtBar`
+places it; it is unfinished only where the figure was cut mid-thought, and lengthening it means a
+hook of eight bars over a grid of four that marks what both halves share. `RiffSchema` refuses a
+hook that is not a whole number of grid passes, and `test/riff.test.ts` checks each strike at
+every step it lands on across the hook.
+
 ### 5A.3 Resolution is one part, one rig, and no search
 
 §7.1's search exists to allocate *several* parts without two of them taking the same voice. A riff
