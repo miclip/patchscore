@@ -735,11 +735,13 @@ cannot verify. It exists because two facts were sharing one field: `Recipe.facto
 a recipe's settings *reach* a shipped sound, which is a judgement #563 rightly declined for seven
 Muse patches, and the decline threw away the fact that the box *ships* them. The Muse declares the
 twelve its riffs are named after and no more, because p.12 counts 224 and names none, and twelve
-is what was read off a screen. **No renderer consumes it yet.** A preset belongs to exactly one
-box and a riff is rig-agnostic by design, so where the fact reaches a reader is a decision about
-the device page, not about a riff page, and it is not designed yet; until it is, the fact is
-counted by `npm run audit` and shown nowhere. `Recipe.factoryPatch` and `Riff.patchAffinities`
-are unchanged by it.
+is what was read off a screen. **It reaches a reader on the device page and nowhere else**
+([#593](https://github.com/miclip/patchscore/issues/593)): a preset belongs to exactly one box
+and a riff is rig-agnostic by design, so a box listing its own patches is a device page
+describing itself. What each patch is *for* is the judgement this list refuses, and it has its
+own field beside it, `Device.patchUses`, keyed to the same `(name, bank)` and refused by
+`DeviceSchema` wherever the two disagree — §3.7 has the surface and the join. `Recipe.factoryPatch`
+and `Riff.patchAffinities` are unchanged by it.
 
 #### The three states past `Verified`
 
@@ -3140,6 +3142,71 @@ the page is markup whose class names and element choices are ink that will move.
 `test/kit-page.test.ts` pins instead is the two things that must not move — that every
 substantive line the Markdown prints appears in the page's text, and that the slots, names,
 order, citation and gap match the model — so a restyle costs nothing and a lost cable fails.
+
+#### The preset session: the same two surfaces, for the patches a box ships
+
+[#593](https://github.com/miclip/patchscore/issues/593). A preset belongs to exactly one box and a
+riff is rig-agnostic by design, and six issues (#566, #585 twice, #586, #592) came out of pushing
+the first through the second. On a device page it is no exception to anything: invariant 3
+forbids a device naming a genre and a template naming a box, and a Muse page listing Muse patches
+is a box describing itself. The kit above solved the same problem — device-specific content that
+is not a song — and its answer is followed rather than a third pattern invented.
+
+**The model is two declarations in the device folder and one join.** §2.6's `factoryPatches`
+(#592) is the fact: a name and an optional bank, `observed` on the unit, no description, because
+what a patch sounds like is a claim a name cannot verify. `Device.patchUses` is the judgement
+beside it, keyed to the same `(name, bank)`: *what it is for*, in the words of whoever owns the
+box — *Greek modal writing in the Vangelis manner* — and it reads as description with no hedge,
+for §5A.5's reason. `DeviceSchema` refuses a use for a patch the box does not declare, a use
+declared twice, and a declared patch with no use: a box describes all of its declared patches or
+none of them, since a row with a name and nothing under it is a list the reader can already get
+off the box. `presetSession` (`lib/studio/preset-session.ts`) answers `undefined` for a box
+without both, and for the box with both adds the two joins the folder does not carry: **the
+recipes whose `factoryPatch` names the patch** (§3/#553, five of the Muse's twelve) and **the riff
+whose `reference` is of kind `patch` and names it** (§5A.5, twelve of twelve). Both are matched on
+the name the box prints, and the riff join is a name join rather than a device join: a second box
+shipping a patch called *Vox Humana* would reach the same figure, which is right, because the
+figure is named for the patch.
+
+**The link points from the device page to the riff and never back.** That direction is the whole
+architectural fix. A riff carries nothing about a box and gained no field; a box knows its own
+presets and may link out.
+
+**The order is the folder's, and it is editorial.** No maker prints a patch list, so there is no
+order to follow. Alphabetical puts *Bellbounce* between *Aegean Organ* and *Detroit Funk*, three
+sounds nobody compares; the Muse's `PATCH_USES` walks the roles instead — the bass, the leads, the
+struck keyboard sounds, the stabs, the string ensembles — with the nearest pair adjacent, so a
+reader choosing between *Moog 55 Strings* and *Soft Orchestra* finds them on adjacent rows. The
+session and both renderers walk the list as written and sort nothing.
+
+**Two surfaces, the kit's shape.** `PresetSection`, headed *Explore your device* on the device
+page, folds every patch into a native `<details>`, closed — every entry, whatever is under it —
+with the name and the use on the summary line and the recipe claim and the figure link inside. The page at `/devices/<id>/presets` lays every entry open.
+`generateStaticParams` enumerates the boxes `presetSession` answers for — one today — and
+`dynamicParams` is off, so every other box 404s rather than rendering a page with a claim in its
+title and nothing under it. A folder that declares both halves gets the panel, the page and the
+sitemap entry with no UI edit (invariant 2). `lib/studio/preset-text.ts` holds every sentence the
+two share, on `kit-text.ts`'s pattern, and `PresetBody` is the one React reading of an entry.
+
+**No export, and the difference from the kit page is the reason.** The kit page carries Download
+Markdown and Print behind one client boundary because a kit is a build document somebody takes to
+the machine: cables, values, a record action per sound. A preset page is a linked catalogue — a
+name, a line, a link — and the figure it links to is the document. Markdown of a list of links
+is a worse copy of the page, so the route has no client boundary at all and
+`test/preset-page.test.ts` holds that.
+
+**The recipe claim is the guide's sentence, verbatim.** The guide prints `Recipe.factoryPatch`
+as *Factory patch — the box ships X, which arrives here already. The settings below build the
+same sound from scratch*. The preset entry names the recipe and then prints the first of those
+two sentences word for word, hand-matched as the riff page's is, so three surfaces say one thing
+about one field; the second is left off, because there are no settings below on this surface.
+
+**It lists the twelve and says nothing about the rest.** The Muse ships 224 (p.12) and the count
+is recorded in the manifest's evidence, where a reader who wants it can find it. As a denominator
+on this surface it would turn a fact about the box into a completeness score of this library's
+authoring — 212 rows nobody has read — which is the standing rule about rendered surfaces
+broken in a new place. Operator decision, #593: no *twelve of 224* anywhere, and the tests hold
+it on both surfaces.
 
 ### 3.8 Samples: the sound you asked for, on the box you already own
 

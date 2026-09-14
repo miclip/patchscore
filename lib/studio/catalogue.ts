@@ -147,6 +147,16 @@ export function kitHref(device: Device): string {
   return `${devicePagePath(device.id)}/kit`
 }
 
+/**
+ * §2.6/#593. `/devices/moog-muse/presets` — the factory patches a box ships, laid open, under
+ * the device they belong to. One place, so the device page's link, the sitemap and the page's
+ * own canonical cannot disagree, for `kitHref`'s reason: a presets page exists only where a
+ * device page does.
+ */
+export function presetsHref(device: Device): string {
+  return `${devicePagePath(device.id)}/presets`
+}
+
 /** `/directions/ambient-dub`. The device pages link here, so it lives beside `deviceHref`. */
 export function templateHref(template: Template): string {
   return `/directions/${template.id}`

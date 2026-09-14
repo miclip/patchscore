@@ -1356,9 +1356,11 @@ export function middleCNotice(device: Device | undefined): MiddleCNotice | undef
  * A box with an empty list declares nothing rather than `[]`, and the schema refuses the empty
  * list so that a declaration is always a claim.
  *
- * **Nothing renders it yet.** A preset belongs to exactly one box and a riff is rig-agnostic by
- * design, so the surface this reaches a reader on is a device-page decision that is not designed
- * yet. Until it is, the audit counts the fact and no page prints it.
+ * **It reaches a reader on the device page and nowhere else** (#593). A preset belongs to
+ * exactly one box and a riff is rig-agnostic by design, so a box listing its own patches is a
+ * device page describing itself. What each patch is *for* is the judgement this list refuses,
+ * and it has its own field beside this one: `PatchUse`, keyed to the same name and bank.
+ * `presetSession` (`lib/studio/preset-session.ts`) joins the two.
  */
 export const FACTORY_PATCHES_FACT = 'factoryPatches'
 
@@ -1396,6 +1398,85 @@ export const ShippedPatchesSchema = z
       seen.add(key)
     })
   })
+
+/**
+ * §2.6/#593. **What each shipped patch is for, in the words of whoever knows the box.**
+ *
+ * `ShippedPatch` is the fact and refuses a description, because what a patch sounds like is a
+ * claim nobody can check against a document. This is the judgement, in its own field, keyed to
+ * the same `(name, bank)` so the two cannot come apart: *Aegean Organ* is a name off the unit;
+ * *Greek modal writing in the Vangelis manner* is one person's ear, and it is the reason a
+ * reader would open the page. It reads as description and carries no hedge (§5A.5 holds here
+ * as it does on a riff title), because a hedge on every line says nothing a reader can act on.
+ *
+ * **One `use` per shipped patch, all of them or none.** A box authors these as one list, and
+ * `DeviceSchema` refuses a list that names a patch the box does not declare, names one twice,
+ * or leaves a declared patch without a line: a row with a name and nothing under it is not an
+ * entry. A box with `factoryPatches` and no `patchUses` has declared the fact and not the
+ * judgement, and no page prints the fact alone (`presetSession` answers `undefined` for it).
+ *
+ * **The authored order is the reading order.** No maker prints a list, so there is no order to
+ * follow, and the folder decides which patches a reader would compare and puts them together.
+ * A resolver walks this list as written and sorts nothing.
+ */
+export type PatchUse = {
+  /** `ShippedPatch.name`, matched exactly. */
+  name: string
+  /** `ShippedPatch.bank`, matched exactly; absent means absent. */
+  bank?: string
+  /** What it is for, unhedged: *Delay-driven bell pattern*. */
+  use: string
+}
+
+export const PatchUseSchema = z.strictObject({
+  name: z.string().min(1, 'a patch use names the shipped patch as the box prints it'),
+  bank: z.string().min(1).optional(),
+  use: z.string().min(1, 'a patch use says what the patch is for'),
+})
+
+export const PatchUsesSchema = z
+  .array(PatchUseSchema)
+  .min(1, 'a box that describes its factory patches describes at least one; omit the field otherwise')
+
+/**
+ * §2.6/#593. **Every way a `patchUses` list can disagree with `factoryPatches`**, as messages.
+ * `DeviceSchema` reports them at authoring time and `presetSession` throws on them, so a device
+ * built past the schema is still refused rather than rendered with a row missing.
+ */
+export function patchUseIssues(
+  shipped: readonly ShippedPatch[],
+  uses: readonly PatchUse[],
+): { index: number | undefined; message: string }[] {
+  const issues: { index: number | undefined; message: string }[] = []
+  const declared = new Map(shipped.map((patch) => [shippedPatchKey(patch), patch]))
+  const seen = new Set<string>()
+  const label = (p: { name: string; bank?: string }) =>
+    `'${p.name}'${p.bank === undefined ? '' : ` in ${p.bank}`}`
+  uses.forEach((use, index) => {
+    const key = shippedPatchKey(use)
+    if (!declared.has(key)) {
+      issues.push({
+        index,
+        message: `patch use ${label(use)} names a patch factoryPatches does not declare; the use is keyed to the shipped name and bank exactly (§2.6/#593)`,
+      })
+    } else if (seen.has(key)) {
+      issues.push({
+        index,
+        message: `patch use ${label(use)} is declared twice; a box ships each patch once and says once what it is for (§2.6/#593)`,
+      })
+    }
+    seen.add(key)
+  })
+  for (const [key, patch] of declared) {
+    if (!seen.has(key)) {
+      issues.push({
+        index: undefined,
+        message: `factory patch ${label(patch)} has no patch use; a box describes all of its declared patches or none of them (§2.6/#593)`,
+      })
+    }
+  }
+  return issues
+}
 
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
@@ -3981,6 +4062,12 @@ export type Device = {
    */
   factoryPatches?: ShippedPatch[]
   /**
+   * §2.6/#593. What each of those patches is for — see `PatchUse`. Optional, and only legal
+   * beside `factoryPatches`, covering every entry in it: the judgement rides on the fact and
+   * never without it.
+   */
+  patchUses?: PatchUse[]
+  /**
    * §2.6/#22. **Who checked the capability facts above, keyed by field path.**
    *
    * Optional, and silence is the honest default — an author cites what they checked. Required in
@@ -4079,6 +4166,7 @@ export const DeviceSchema = z
     controlPositions: ControlPositionsSchema.optional(),
     middleC: MiddleCSchema.optional(),
     factoryPatches: ShippedPatchesSchema.optional(),
+    patchUses: PatchUsesSchema.optional(),
     capabilityEvidence: z
       .record(z.string().min(1), CapabilityEvidenceSchema)
       .refine((m) => Object.keys(m).length > 0, {
@@ -4655,6 +4743,31 @@ export const DeviceSchema = z
         message: `'${FACTORY_PATCHES_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§2.6/#592)`,
         path: ['capabilityEvidence', FACTORY_PATCHES_FACT],
       })
+    }
+
+    /**
+     * §2.6/#593. **A patch use rides on a shipped patch.** The list is refused without
+     * `factoryPatches` to key against, and with it every entry must name a declared patch once
+     * and every declared patch must have an entry — `patchUseIssues` is the single statement of
+     * that, shared with `presetSession`.
+     */
+    if (device.patchUses !== undefined) {
+      if (device.factoryPatches === undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'patchUses is declared with no factoryPatches to key against; what a patch is for rides on the fact that the box ships it (§2.6/#593)',
+          path: ['patchUses'],
+        })
+      } else {
+        for (const issue of patchUseIssues(device.factoryPatches, device.patchUses)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: issue.message,
+            path: issue.index === undefined ? ['patchUses'] : ['patchUses', issue.index],
+          })
+        }
+      }
     }
 
     /**

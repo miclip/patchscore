@@ -1328,6 +1328,190 @@ body {
   margin: 8px 0 0;
 }
 
+/* ------------------------------------------------- factory patches (#593) */
+
+/*
+ * §2.6/#593. **The factory patches a box ships: a name, a line, and where the library reaches
+ * it.** Two surfaces, the kit's shape one section over: a folded panel on the device page and
+ * the same list laid open at `/devices/<id>/presets`. Everything here obeys §21's rules for a
+ * phone, since a preset list is read standing at the box: one column, wrap rather than shrink,
+ * nothing that pushes the body sideways.
+ */
+.preset-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.preset-list > li {
+  min-width: 0;
+}
+
+/*
+ * The marker is drawn here rather than left to `::marker`, for `.kit-entry`'s reason: the row is
+ * a grid, and a `<summary>`'s native triangle lands on a line box a grid child does not have.
+ */
+.preset-entry > summary {
+  list-style: none;
+}
+
+.preset-entry > summary::-webkit-details-marker {
+  display: none;
+}
+
+/*
+ * Marker, then the name, then what it is for. One column below 640px, with the use under the
+ * name; beside it above, where a phrase like *Polymoog preset as used in late-70s cold synth
+ * pop* still wraps inside its own cell rather than widening the row. `minmax(0, …)` on both
+ * text columns is what lets them wrap at all inside a grid.
+ */
+.preset-summary {
+  display: grid;
+  grid-template-columns: 1.1em minmax(0, 1fr);
+  gap: 2px 8px;
+  align-items: baseline;
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .preset-summary {
+    grid-template-columns: 1.1em minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+}
+
+.preset-marker {
+  color: var(--ink-dim);
+  font-size: 9px;
+}
+
+.preset-marker::before {
+  content: '\25B6';
+}
+
+.preset-entry[open] .preset-marker::before {
+  content: '\25BC';
+}
+
+/*
+ * The name as the box prints it, in the prose face at full ink: it is the thing a reader scrolls
+ * a bank looking for, and a patch name is a title rather than a value to dial (§10).
+ */
+.preset-name {
+  color: var(--ink);
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* A bank where one was read, after the name in the value face — it is a label off the screen. */
+.preset-bank {
+  color: var(--ink-dim);
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+/* What it is for. Starts in the name's column on a phone, so the marker gutter stays a rule. */
+.preset-use {
+  grid-column: 2;
+  color: var(--ink-dim);
+  font-size: 12.5px;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+@media (min-width: 640px) {
+  .preset-use {
+    grid-column: 3;
+  }
+}
+
+.preset-entry .disclosure-body > .quiet,
+.preset-card > .quiet {
+  margin: 0 0 8px;
+  max-width: 66ch;
+}
+
+.preset-figure {
+  margin: 0;
+  max-width: 66ch;
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/* The panel's link out to the page. */
+.preset-open {
+  margin: 8px 0 0;
+}
+
+/*
+ * §2.6/#593. **The standalone page: the same patches, every one of them open.** No disclosure
+ * and no chrome: a head, a list of cards, and a link back to the device.
+ */
+.preset-page-head {
+  margin: 0 0 18px;
+  min-width: 0;
+}
+
+.preset-page-head h1 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  line-height: 1.25;
+  overflow-wrap: break-word;
+}
+
+.preset-page .preset-lead {
+  margin: 0 0 8px;
+  max-width: 66ch;
+  color: var(--ink);
+  min-width: 0;
+}
+
+.preset-back {
+  margin: 0;
+}
+
+.preset-cards {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  min-width: 0;
+}
+
+.preset-card {
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  padding: 12px 14px;
+  background: var(--panel-1);
+  min-width: 0;
+}
+
+.preset-page .preset-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--silkscreen);
+  min-width: 0;
+}
+
+.preset-page .preset-card-head .preset-name {
+  color: inherit;
+}
+
+.preset-page .preset-card .preset-use {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--ink-dim);
+  max-width: 66ch;
+}
+
 /*
  * §3.2's counts, said in a sentence. Full ink and full size: it is the reason to trust the page,
  * and a dim 12px note is where a reader's eye goes last.
@@ -4793,6 +4977,9 @@ html {
   .export-actions,
   .kit-back,
   .kit-open,
+  /* §2.6/#593. The preset page's two links are navigation, and go with the kit's. */
+  .preset-back,
+  .preset-open,
   /*
    * #341. **Navigation is chrome; every section is content.**
    *
@@ -4849,6 +5036,11 @@ html {
    * sounds apart once the ground is white.
    */
   .kit-slot {
+    break-inside: avoid;
+  }
+
+  /* §2.6/#593. One patch is one thing to read, and its link belongs on the same sheet as its name. */
+  .preset-card {
     break-inside: avoid;
   }
 

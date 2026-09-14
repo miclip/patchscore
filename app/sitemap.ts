@@ -6,7 +6,15 @@ import { RIFFS } from '@/lib/riffs'
 import { SAMPLE_TARGETS } from '@/lib/samples'
 import { TEMPLATES } from '@/lib/templates'
 import { kitSession } from '@/lib/studio/kit-session'
-import { deviceHref, kitHref, riffHref, sampleHref, templateHref } from '@/lib/studio/catalogue'
+import { presetSession } from '@/lib/studio/preset-session'
+import {
+  deviceHref,
+  kitHref,
+  presetsHref,
+  riffHref,
+  sampleHref,
+  templateHref,
+} from '@/lib/studio/catalogue'
 
 /**
  * The root, both catalogue indexes, one entry per device, one per direction (#84), and #174's
@@ -53,6 +61,23 @@ export default function sitemap(): MetadataRoute.Sitemap {
         : [
             {
               url: `${SITE_ORIGIN}${kitHref(device)}`,
+              changeFrequency: 'monthly' as const,
+              priority: 0.5,
+            },
+          ],
+    ),
+    /*
+     * §2.6/#593. One per box that declares its factory patches and what each is for, by the
+     * same test: there is a page at it whose canonical is itself. `presetSession` is what
+     * `generateStaticParams` enumerates too, so a folder that declares both appears in both
+     * without an edit, and one that does not is absent from both.
+     */
+    ...DEVICES.flatMap((device) =>
+      presetSession(device) === undefined
+        ? []
+        : [
+            {
+              url: `${SITE_ORIGIN}${presetsHref(device)}`,
               changeFrequency: 'monthly' as const,
               priority: 0.5,
             },
