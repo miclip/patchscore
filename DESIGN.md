@@ -4711,10 +4711,13 @@ on an onset in one pass and inside a hold in the next would re-articulate a note
 through. On the six-chord cycle both F# minor entries carry, two bars a chord, a four-bar grid
 covers two chords a pass, and what recurs is the arrival: the grid strikes the entry into each
 chord, and every move within a chord lives in the hook alone, unstruck. That is also what keeps
-the two entries apart. The Blade Runner line is six arrivals; the Muse Runner line is the same
-six with seven slurred moves between them. Both grids mark arrivals and nothing else, and they
-differ in where: Blade Runner strikes 5 and 41, a beat into the first chord of each pair and two
-into the second, and Muse Runner strikes 9 and 41, two beats into every chord.
+the two entries apart. The Blade Runner line is six arrivals, and its grid strikes 5 and 41, a
+beat into the first chord of each pair and two into the second. The Muse Runner line's first
+loop is the same six with seven slurred moves between them, and while the entry was that loop
+alone its grid struck 9 and 41, two beats into every chord. Grown to four loops (#623, above)
+the line has no grid at all, since its last loop's silent first chord and very late second entry
+leave nothing that recurs on every pass; the two entries are now apart by length and by shape,
+and Blade Runner's grid is the one a reader plays round.
 
 The page says the repetition in words. Where a figure is longer than its grid both renderers
 print, under the grid's lead sentence, how many times to play it round (`gridRepeatSentence`),
