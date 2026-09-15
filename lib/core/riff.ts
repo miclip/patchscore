@@ -342,9 +342,10 @@ export type Riff = {
    * over a minor chord.
    *
    * **The alignment is a fact about the music, so it is data and it is checked.** `RiffSchema`
-   * requires `harmony` alongside it, requires the figure to fit inside the cycle, and requires
-   * the figure to start where a chord does — a figure beginning halfway through a chord is
-   * expressible and is a different thing, and nothing has needed it.
+   * requires `harmony` alongside it and requires the figure to start where a chord does — a
+   * figure beginning halfway through a chord is expressible and is a different thing, and nothing
+   * has needed it. It does not require the figure to fit inside one cycle (#623): a figure longer
+   * than the cycle is played with the cycle repeating under it, and `chordOccurrenceAt` wraps.
    */
   figureStartsAtBar?: number
   /**
@@ -463,20 +464,48 @@ export const RiffConstraintsSchema = z
   })
 
 /**
- * §5A/#554. Which chord of the cycle is sounding at a figure step, or `undefined` where the riff
- * carries no harmony to answer with. Exported because both the schema and the surfaces need it and
- * neither should re-derive the arithmetic.
+ * §5A/#554/#623. **The chord occurrence sounding at a figure step**: its degree, and the figure
+ * step that occurrence began on. `undefined` where the riff carries no harmony, or where the
+ * progression does not cover the bar (a progression summing to less than `cycleBars`).
+ *
+ * **The cycle repeats under a figure longer than it.** A hook has no ceiling (§5A.2, #603) and
+ * a 48-bar line over a 12-bar cycle is four times round it, so the bar is taken modulo
+ * `cycleBars` rather than read off the first cycle alone. Before #623 this stopped at the end of
+ * the first cycle and answered `undefined` for every later step, which made every check built
+ * on it silently pass on anything past bar twelve.
+ *
+ * The start step is what tells one occurrence of a chord from the next: a `VI` in bar 3 and the
+ * `VI` the cycle returns to in bar 15 are one chord symbol and two entries, and a rule about how
+ * a chord is entered has to see both. Where `figureStartsAtBar` places the figure on a chord
+ * boundary (the schema requires it) every occurrence begins at or after step 1.
  */
-export function chordAtStep(riff: Riff, step: number): string | undefined {
+export function chordOccurrenceAt(
+  riff: Riff,
+  step: number,
+): { degree: string; startStep: number } | undefined {
   const { harmony } = riff
   if (harmony === undefined) return undefined
-  const cycleBar = (riff.figureStartsAtBar ?? 1) + Math.floor((step - 1) / STEPS_PER_BAR)
-  let bar = 1
+  const hookBar = Math.floor((step - 1) / STEPS_PER_BAR)
+  const cycleBar = ((riff.figureStartsAtBar ?? 1) - 1 + hookBar) % harmony.cycleBars
+  let bar = 0
   for (const chord of harmony.progression) {
-    if (cycleBar >= bar && cycleBar < bar + chord.bars) return chord.degree
+    if (cycleBar >= bar && cycleBar < bar + chord.bars) {
+      const barsIntoChord = cycleBar - bar
+      return { degree: chord.degree, startStep: (hookBar - barsIntoChord) * STEPS_PER_BAR + 1 }
+    }
     bar += chord.bars
   }
   return undefined
+}
+
+/**
+ * §5A/#554. Which chord of the cycle is sounding at a figure step, or `undefined` where the riff
+ * carries no harmony to answer with. Exported because both the schema and the surfaces need it and
+ * neither should re-derive the arithmetic. `chordOccurrenceAt` is the same answer with the
+ * occurrence kept; this is the degree alone, which is what a note row prints.
+ */
+export function chordAtStep(riff: Riff, step: number): string | undefined {
+  return chordOccurrenceAt(riff, step)?.degree
 }
 
 /**
@@ -540,28 +569,23 @@ export function riffConstraintViolations(riff: Riff): string[] {
 
   const offset = rules.onsetOffset
   if (offset !== undefined) {
-    const entered = new Set<string>()
-    for (const note of riff.hook.notes) {
-      const chord = chordAtStep(riff, note.step)
-      if (chord === undefined || entered.has(chord)) continue
-      entered.add(chord)
+    // #623. Each *occurrence* of a chord is entered once, keyed on the step it began, and not
+    // each chord symbol: a cycle a figure goes round four times has four `VI`s, and the fourth
+    // is entered as late or as early as it is, whatever the first did. Keyed by symbol, the
+    // check saw one entry per chord across the whole hook and nothing after the first cycle.
+    const entered = new Set<number>()
+    const sorted = [...riff.hook.notes].sort((a, b) => a.step - b.step)
+    for (const note of sorted) {
+      const occurrence = chordOccurrenceAt(riff, note.step)
+      if (occurrence === undefined || entered.has(occurrence.startStep)) continue
+      entered.add(occurrence.startStep)
       // Where in its own chord the entry falls, which needs the chord's start rather than the
       // bar's: a chord two bars long is entered late at step 20 and on the nose at step 17.
-      let barsBefore = 0
-      const cycleBar = (riff.figureStartsAtBar ?? 1) + Math.floor((note.step - 1) / STEPS_PER_BAR)
-      let bar = 1
-      for (const chordStep of riff.harmony?.progression ?? []) {
-        if (cycleBar >= bar && cycleBar < bar + chordStep.bars) {
-          barsBefore = cycleBar - bar
-          break
-        }
-        bar += chordStep.bars
-      }
-      const into = barsBefore * STEPS_PER_BAR + ((note.step - 1) % STEPS_PER_BAR)
+      const into = note.step - occurrence.startStep
       if (into >= offset.minSteps) continue
       out.push(
-        `${chord} is entered at step ${String(note.step)}, ${String(into)} steps in, where this ` +
-          `riff asks for ${String(offset.minSteps)}: ${offset.reason}`,
+        `${occurrence.degree} is entered at step ${String(note.step)}, ${String(into)} steps in, ` +
+          `where this riff asks for ${String(offset.minSteps)}: ${offset.reason}`,
       )
     }
   }
@@ -682,9 +706,11 @@ export const RiffSchema = z
       })
     }
     /*
-     * §5A/#552. The offset is meaningless without a cycle to be an offset into, has to land on a
-     * chord boundary, and has to leave room for the figure. Each is checked separately so the
-     * message names the one that is wrong.
+     * §5A/#552/#623. The offset is meaningless without a cycle to be an offset into, and has to
+     * land on a chord boundary. Each is checked separately so the message names the one that is
+     * wrong. It no longer has to leave room for the figure inside one cycle: the cycle repeats
+     * under a figure longer than it (`chordOccurrenceAt`), so a 48-bar figure from bar 1 of a
+     * 12-bar cycle is four times round it and not a figure that runs off the end.
      */
     if (riff.figureStartsAtBar !== undefined) {
       const { harmony } = riff
@@ -707,15 +733,6 @@ export const RiffSchema = z
             message:
               `the figure starts at bar ${String(riff.figureStartsAtBar)}, which is not where a ` +
               `chord starts — chords begin at ${[...starts].join(', ')} (§5A/#552)`,
-            path: ['figureStartsAtBar'],
-          })
-        }
-        if (riff.figureStartsAtBar + hook.bars - 1 > harmony.cycleBars) {
-          ctx.addIssue({
-            code: 'custom',
-            message:
-              `a ${String(hook.bars)}-bar figure from bar ${String(riff.figureStartsAtBar)} runs ` +
-              `past the ${String(harmony.cycleBars)}-bar cycle (§5A/#552)`,
             path: ['figureStartsAtBar'],
           })
         }

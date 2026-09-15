@@ -4727,6 +4727,30 @@ hook of eight bars over a grid of four that marks what both halves share. `RiffS
 hook that is not a whole number of grid passes, and `test/riff.test.ts` checks each strike at
 every step it lands on across the hook.
 
+**The cycle is not capped either, in the other direction: a figure longer than its harmony is
+played with the cycle repeating under it** ([#623](https://github.com/miclip/patchscore/issues/623)).
+`figureStartsAtBar` (#552) places a figure *shorter* than its cycle, and its checks arrived with
+that case in mind: the figure had to start where a chord does and had to fit inside the cycle.
+The first is a fact about the music and stays. The second was the grid's cap mistaken for the
+hook's a second time, and it went when the Muse Runner line grew to four times round its
+twelve-bar cycle. What replaced it is arithmetic rather than a rule: `chordOccurrenceAt` takes
+the figure's bar modulo `cycleBars`, so a 48-bar hook from bar 1 of a 12-bar cycle is four
+passes over the same six chords, and one from bar 7 is four passes beginning on the `I`. The
+chord table marks every chord as under the figure once the figure is as long as the cycle.
+
+**Every check built on that arithmetic now sees every pass, and before this none did.**
+`chordAtStep` read the bar off the first cycle and answered `undefined` past its end, and every
+check downstream treated `undefined` as "no chord here" and moved on: the forbidden-degree scan
+skipped every note after bar twelve, and the onset check, keyed by chord *symbol*, saw one entry
+per chord across the whole hook and never looked at the second cycle. Both passed silently on a
+hook they had not read. So `chordOccurrenceAt` answers with the occurrence, the degree and the
+step that occurrence began on, and the onset check keys on the start step: a `VI` in bar 3 and
+the `VI` the cycle returns to in bar 15 are one symbol and two entries, and the fourth time
+round is entered as late or as early as it is whatever the first did. The entry of an
+occurrence is its earliest onset, in step order rather than authored order. `test/riff.test.ts`
+plays the shipped Muse Runner line twice and plants each failure in the *second* pass, where the
+old arithmetic could not see it.
+
 ### 5A.3 Resolution is one part, one rig, and no search
 
 §7.1's search exists to allocate *several* parts without two of them taking the same voice. A riff

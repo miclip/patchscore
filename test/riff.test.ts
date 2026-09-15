@@ -8,6 +8,7 @@ import {
   STEPS_PER_BAR,
   affinePatch,
   chordAtStep,
+  chordOccurrenceAt,
   pitchClassOf,
   resolveHook,
   resolveRiff,
@@ -20,7 +21,7 @@ import {
   type Riff,
 } from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
-import { ruleLines } from '@/lib/studio/riff-text'
+import { chordRows, ruleLines } from '@/lib/studio/riff-text'
 import { gridOf } from './fixtures'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import {
@@ -1263,6 +1264,127 @@ describe('the two F# minor entries are distinguishable by more than their titles
         expect(p, riff.id).not.toContain('Blade Runner')
       }
     }
+  })
+})
+
+/**
+ * §5A/#623. **The cycle repeats under a figure longer than it, and every check sees every pass.**
+ *
+ * Before this, `chordAtStep` read the bar off the first cycle and answered `undefined` past its
+ * end, so on a hook longer than the cycle the forbidden-degree check skipped every note after
+ * bar twelve and the onset check, keyed by chord symbol, saw one entry per chord across the whole
+ * hook. Both passed silently. The fixture is the shipped Muse Runner line played twice, its second
+ * pass the first shifted by a cycle, so every assertion below is against real chords and a real
+ * rule, and each negative case is planted in the *second* pass, where the old arithmetic could
+ * not see it.
+ */
+describe('a figure longer than its cycle goes round it, and is checked on every pass (#623)', () => {
+  const one = museRunnerFloatingArrivalLead
+  const CYCLE = 12 * STEPS_PER_BAR
+  /** The line twice: 24 bars over the 12-bar cycle, from bar 1. */
+  const twice: Riff = {
+    ...one,
+    hook: {
+      ...one.hook,
+      bars: 24,
+      notes: [...one.hook.notes, ...one.hook.notes.map((n) => ({ ...n, step: n.step + CYCLE }))],
+    },
+  }
+
+  it('parses: a figure is no longer required to fit inside one cycle', () => {
+    expect(twice.figureStartsAtBar).toBe(1)
+    const parsed = RiffSchema.safeParse(twice)
+    expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+    expect(riffConstraintViolations(twice)).toEqual([])
+  })
+
+  it('still has to start where a chord does', () => {
+    expect(refusal({ ...twice, figureStartsAtBar: 2 })).toContain('not where a chord starts')
+  })
+
+  it('maps the second pass onto the same six chords as the first', () => {
+    const first = one.hook.notes.map((n) => chordAtStep(twice, n.step))
+    const second = one.hook.notes.map((n) => chordAtStep(twice, n.step + CYCLE))
+    expect(first).toEqual([
+      'i', 'i', 'VI', 'VI', 'VI', 'iv', 'iv', 'iv', 'I', 'IV', 'IV', 'v', 'v',
+    ])
+    expect(second).toEqual(first)
+    // And the last step of the hook is still under the last chord, not off the end.
+    expect(chordAtStep(twice, 24 * STEPS_PER_BAR)).toBe('v')
+  })
+
+  it('tells the second occurrence of a chord from the first by the step it began on', () => {
+    expect(chordOccurrenceAt(twice, 41)).toEqual({ degree: 'VI', startStep: 33 })
+    expect(chordOccurrenceAt(twice, 41 + CYCLE)).toEqual({ degree: 'VI', startStep: 33 + CYCLE })
+    // A step in the second bar of a chord still names the bar the chord began on.
+    expect(chordOccurrenceAt(twice, 57 + CYCLE)).toEqual({ degree: 'VI', startStep: 33 + CYCLE })
+  })
+
+  it('goes round from a later bar too, and the chord table knows the whole cycle is under it', () => {
+    // From bar 7, the `I`: 24 bars is still two cycles, they just begin on the fourth chord.
+    // The line was written for bar 1, so moved it breaks its own rules, and the check says so
+    // in *both* passes: the natural third lands over the `I` at step 25 and again at step 217.
+    const misaligned: Riff = { ...twice, figureStartsAtBar: 7 }
+    const found = riffConstraintViolations(misaligned)
+    expect(found.filter((f) => f.startsWith('A4 sounds over I at step 25,'))).toHaveLength(1)
+    expect(found.filter((f) => f.startsWith('A4 sounds over I at step 217,'))).toHaveLength(1)
+    // Without the rules it is a legal alignment, and every chord is under the figure.
+    const { constraints: _rules, ...fromTheI } = misaligned
+    expect(RiffSchema.safeParse(fromTheI).success).toBe(true)
+    expect(one.hook.notes.map((n) => chordAtStep(fromTheI, n.step))).toEqual([
+      'I', 'I', 'IV', 'IV', 'IV', 'v', 'v', 'v', 'i', 'VI', 'VI', 'iv', 'iv',
+    ])
+    expect(chordRows(fromTheI).every((row) => row.underFigure)).toBe(true)
+    expect(chordRows(twice).every((row) => row.underFigure)).toBe(true)
+  })
+
+  it('catches a forbidden note planted after the first cycle', () => {
+    // The natural third over the borrowed `I`, second time round: `A4` at step 105 + 192.
+    const broken: Riff = {
+      ...twice,
+      hook: {
+        ...twice.hook,
+        notes: twice.hook.notes.map((n) =>
+          n.step === 105 + CYCLE ? { step: n.step, degree: 3, octave: 0, len: 26 } : n,
+        ),
+      },
+    }
+    const found = riffConstraintViolations(broken)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain(`A4 sounds over I at step ${String(105 + CYCLE)}`)
+    expect(RiffSchema.safeParse(broken).success).toBe(false)
+  })
+
+  it('catches an entry on the change in the second cycle, where the first was entered late', () => {
+    // The `VI` is entered two beats in at step 41, which keeps the rule, and on the change at
+    // step 225 the second time, which breaks it. Keyed by chord symbol the check would have
+    // taken the first as the entry and never looked at the second.
+    const broken: Riff = {
+      ...twice,
+      hook: {
+        ...twice.hook,
+        notes: twice.hook.notes.map((n) => (n.step === 41 + CYCLE ? { ...n, step: 33 + CYCLE } : n)),
+      },
+    }
+    const found = riffConstraintViolations(broken)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain(`VI is entered at step ${String(33 + CYCLE)}, 0 steps in`)
+    expect(RiffSchema.safeParse(broken).success).toBe(false)
+  })
+
+  it('takes the earliest note of an occurrence as its entry, whatever order the notes are authored in', () => {
+    // The same planted entry, with the hook's notes listed last to first. The entry is the
+    // earliest onset in the occurrence, not the first one written down.
+    const broken: Riff = {
+      ...twice,
+      hook: {
+        ...twice.hook,
+        notes: twice.hook.notes
+          .map((n) => (n.step === 41 + CYCLE ? { ...n, step: 33 + CYCLE } : n))
+          .reverse(),
+      },
+    }
+    expect(riffConstraintViolations(broken)).toHaveLength(1)
   })
 })
 

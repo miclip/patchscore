@@ -126,11 +126,14 @@ export function chordRows(riff: Riff, key: string = riff.key): readonly ChordRow
   if (harmony === undefined) return []
   const start = riff.figureStartsAtBar ?? 1
   const end = start + riff.hook.bars - 1
+  // #623. A figure as long as the cycle or longer goes round it, so every chord is under it
+  // wherever it starts; the span test is for a figure shorter than the cycle.
+  const wholeCycle = riff.hook.bars >= harmony.cycleBars
   const rows: ChordRow[] = []
   let from = 1
   for (const row of progressionRows(harmony, key)) {
     const last = from + row.bars - 1
-    rows.push({ ...row, from, underFigure: from <= end && last >= start })
+    rows.push({ ...row, from, underFigure: wholeCycle || (from <= end && last >= start) })
     from += row.bars
   }
   return rows
