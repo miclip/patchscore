@@ -1,4 +1,4 @@
-import type { Device, Recipe, SustainClaim } from '../../core/device'
+import type { Device, PatchUse, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { MINILOGUE_XD_PANEL } from './panel'
 
@@ -1024,6 +1024,8 @@ const recipes: Recipe[] = [
  * Counts, off the same reading: Template 50, Poly Synth 47, Bass 25, Lead 20, Pad 17, Arp 14,
  * SFX 10, Drum 10, Chord 7; POLY 119, CHORD 51, UNISON 15, ARP 15. `ShippedPatch` carries a
  * name and a bank and nothing else, so `factoryPatches` below is a projection of this table.
+ * Exported for `test/korg-minilogue-xd.test.ts`, which holds every figure written for one of
+ * these programs to the mode printed beside it; the generator reads `device` and nothing else.
  */
 const PROGRAM_CATEGORIES = [
   'Pad',
@@ -1055,7 +1057,7 @@ type FactoryProgram = readonly [
   author: (typeof PROGRAM_AUTHORS)[number],
 ]
 
-const FACTORY_PROGRAMS: readonly FactoryProgram[] = [
+export const FACTORY_PROGRAMS: readonly FactoryProgram[] = [
   // p.61
   ['Replicant xd', 'Pad', 'POLY', 'Luke Edwards'],
   ['TyoCityLoop', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
@@ -1266,6 +1268,49 @@ const FACTORY_PROGRAMS: readonly FactoryProgram[] = [
 const SHIPPED_PROGRAMS = FACTORY_PROGRAMS.map(([name, bank]) => ({ name, bank }))
 
 /**
+ * §2.6/#593, #617, #618. **What twelve of the 200 are for**, and the figure written for each is
+ * under `lib/riffs/` with a `patch` reference naming it. `SHIPPED_PROGRAMS` is the fact and
+ * this is the judgement beside it, keyed by name and Category so the two cannot drift.
+ *
+ * **Uncited, as every `use` in the library is.** A use line is editorial judgement and carries
+ * no evidence: what to play on a program, in the words of somebody choosing it for that. The
+ * one printed fact a line may lean on is the author, because p.65 credits the eight by name;
+ * the manual supports that attribution and nothing else a line says.
+ *
+ * **Twelve of 200.** The fifty `TPL` programs are starting points and nothing musical is owed
+ * about them, and #617 made the judgement able to cover a subset of the fact so that the fact
+ * could stay whole. A program with a line has a figure; a program without one is simply not
+ * on the page.
+ *
+ * **The order is editorial, and it is the reading order.** Korg's numbering is a slot order:
+ * `Replicant xd` is No 1 and `MirroredBass` No 9, and nobody compares those two. This walks
+ * what a reader would compare, pair by pair: the two basses (one UNISON, one CHORD), the two
+ * leads (one CHORD, one POLY), the two arpeggiated programs, the two pads, the two keys
+ * sounds, then the chord program and the effect. Change the order here and the page follows;
+ * nothing downstream sorts it. Eight authors, and every one of the eight is in these twelve.
+ */
+const PATCH_USES: PatchUse[] = [
+  // Basses
+  { name: 'MirroredBass', bank: 'Bass', use: 'Unison bass for a line that answers itself upside down' },
+  { name: 'Hypno Acid', bank: 'Bass', use: 'Acid line in sixteenths, one key at a time' },
+  // Leads
+  { name: 'MetalFnkLead', bank: 'Lead', use: 'Syncopated funk lead, single keys, dorian sixth' },
+  { name: 'Pressure', bank: 'Lead', use: 'Lead for lines that build by hammering one note' },
+  // Arpeggiated programs: the hand holds a voicing and the box plays it
+  { name: '#brew time', bank: 'Arp', use: 'Arpeggiator over held major-seventh voicings' },
+  { name: 'Cloud Level', bank: 'Arp', use: 'Arpeggiator over four voicings that share one top note' },
+  // Pads
+  { name: 'Replicant xd', bank: 'Pad', use: 'Slow minor pad with a moving inner voice' },
+  { name: 'Swollen Pad', bank: 'Pad', use: 'Chords stacked one voice at a time into a slow attack' },
+  // Keys and struck sounds
+  { name: 'Petrichor', bank: 'Poly Synth', use: 'Rootless keys comping, off the beat' },
+  { name: 'Roadz Bell', bank: 'Poly Synth', use: 'Bell-toned dyads in sixths at ballad pace' },
+  // The chord program and the effect
+  { name: 'Lush m7', bank: 'Chord', use: 'Minor-seventh chords from single keys, parallel one-four-five' },
+  { name: 'Broken Toy', bank: 'SFX', use: 'Music-box tune that stumbles and corrects itself' },
+]
+
+/**
  * The six roles one four-note analog voice can honestly claim.
  *
  * `pad` and `stab` are the reason the device is in the library: four voices, one patch, real
@@ -1391,6 +1436,9 @@ export const device: Device = {
 
   /** All 200, off pp.61-64. The table and the reading are at `FACTORY_PROGRAMS`. */
   factoryPatches: SHIPPED_PROGRAMS,
+
+  /** Twelve of them, each with a figure under `lib/riffs/`. The order is the page's; see `PATCH_USES`. */
+  patchUses: PATCH_USES,
 
   hints: {
     'seq-parameter': 'EDIT MODE, PROGRAM EDIT, button 7',

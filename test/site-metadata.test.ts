@@ -42,22 +42,23 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
     expect(kits.length).toBe(24)
     /*
      * §2.6/#593 adds one entry per box that declares its factory patches and what each is for —
-     * one of the 46 today — by the same test. Derived from `presetSession`, which is also what
-     * prerenders those pages.
+     * two of the 46 since #618 — by the same test. Derived from `presetSession`, which is also
+     * what prerenders those pages.
      */
     const presets = DEVICES.filter((d) => presetSession(d) !== undefined)
-    expect(presets.map((d) => d.id)).toEqual(['moog-muse'])
+    expect(presets.map((d) => d.id)).toEqual(['korg-minilogue-xd', 'moog-muse'])
     /*
      * §3.7/#598 adds one entry per patch with a figure written for it, under its box's index —
-     * the Muse's twelve — by the same test. Derived from `presetSession`, which is also what
-     * prerenders those pages, and they are the twelve that left `/riffs`.
+     * the Muse's twelve and the minilogue xd's twelve — by the same test. Derived from
+     * `presetSession`, which is also what prerenders those pages, and the Muse's are the twelve
+     * that left `/riffs`.
      */
-    const figures = presets.flatMap((d) =>
+    const figuresOf = (d: (typeof DEVICES)[number]) =>
       (presetSession(d)?.entries ?? []).flatMap((e) =>
         e.figure === undefined ? [] : [`${SITE_ORIGIN}/devices/${d.id}/presets/${e.slug}`],
-      ),
-    )
-    expect(figures).toHaveLength(12)
+      )
+    const figures = presets.flatMap(figuresOf)
+    expect(figures).toHaveLength(24)
     /*
      * §5A/#503 adds `/riffs` and one entry per authored figure, on the same test as everything
      * else here: there is a page at each whose canonical is itself. Derived from `lib/riffs`, so
@@ -90,8 +91,8 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
       `${SITE_ORIGIN}/devices`,
       ...DEVICES.map((d) => `${SITE_ORIGIN}/devices/${d.id}`),
       ...kits.map((d) => `${SITE_ORIGIN}/devices/${d.id}/kit`),
-      ...presets.map((d) => `${SITE_ORIGIN}/devices/${d.id}/presets`),
-      ...figures,
+      // Each box's index, then the figures under it: the pages a reader reaches from that index.
+      ...presets.flatMap((d) => [`${SITE_ORIGIN}/devices/${d.id}/presets`, ...figuresOf(d)]),
       `${SITE_ORIGIN}/directions`,
       ...TEMPLATES.map((t) => `${SITE_ORIGIN}/directions/${t.id}`),
       `${SITE_ORIGIN}/riffs`,

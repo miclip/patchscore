@@ -463,13 +463,14 @@ describe('the riff library (§5A)', () => {
   /**
    * An exact pin, where this used to be a range. Six entries was the library's own headcount and
    * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
-   * hold seventeen would hold anything. The number is content: five records and the twelve
-   * factory-patch definitions, and an entry added or dropped moves it and has to say so here.
+   * hold seventeen would hold anything. The number is content: five records, the twelve
+   * factory-patch definitions for the Muse, and the twelve for the minilogue xd's programs
+   * (#618), and an entry added or dropped moves it and has to say so here.
    */
-  it('has exactly seventeen entries: five records and twelve factory patches (#566, #569)', () => {
-    expect(RIFFS.length).toBe(17)
+  it('has exactly twenty-nine entries: five records and twenty-four factory patches (#566, #569, #618)', () => {
+    expect(RIFFS.length).toBe(29)
     expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(5)
-    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(12)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(24)
   })
 
   it('every entry parses', () => {
@@ -564,24 +565,34 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is six roles over seventeen entries, two of them pads since #608', () => {
+  it('is six roles over twenty-nine entries, six of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
-    // role, pinned so the spread above is known and not merely satisfied.
+    // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
+    // the minilogue xd's roles — four pads (two of them held voicings for an arpeggiated
+    // program), three leads, three stabs, two basses — and no `arp`, since that box declares
+    // none.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
       acid: 1,
       arp: 1,
-      'bass-mid': 2,
-      lead: 6,
-      pad: 2,
-      stab: 5,
+      'bass-mid': 4,
+      lead: 9,
+      pad: 6,
+      stab: 8,
     })
-    expect(RIFFS).toHaveLength(17)
-    // And the two pads are the two held riffs: no grid, no flag, on both.
+    expect(RIFFS).toHaveLength(29)
+    // And the six pads are the six held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
-    expect(pads.sort()).toEqual(['moog-55-strings-suspension-writing', 'soft-orchestra-slow-changes'])
+    expect(pads.sort()).toEqual([
+      'brew-time-major-seventh-hold',
+      'cloud-level-shared-top-drift',
+      'moog-55-strings-suspension-writing',
+      'replicant-xd-inner-voice-pad',
+      'soft-orchestra-slow-changes',
+      'swollen-pad-staggered-stack',
+    ])
     for (const r of RIFFS) {
       expect(r.pattern === undefined, r.id).toBe(!bearsPattern(r.request.role))
       expect(r.request.reArticulatesHook === undefined, r.id).toBe(!bearsPattern(r.request.role))
@@ -1408,10 +1419,10 @@ describe('riff constraints are checked, not described (#554)', () => {
       ])
     })
 
-    it('finds every shipped entry clean, which is the sixteen diatonic ones staying legal', () => {
+    it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(17)
+      expect(RIFFS).toHaveLength(29)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
@@ -1568,12 +1579,22 @@ function withNote(riff: Riff, note: HookNote, over: Partial<Riff> = {}): Riff {
   return { ...base, hook: { ...base.hook, notes: [...base.hook.notes, note] } }
 }
 
+/** The patch riffs the Muse ships the patch for: the twelve this file's suites were written over. */
+const MUSE_PATCH_RIFFS = (() => {
+  const muse = DEVICES.find((d) => d.id === 'moog-muse')
+  const shipped = new Set((muse?.factoryPatches ?? []).map((p) => p.name))
+  return RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
+})()
+
 describe('the eleven factory-patch entries keep their rules as data (#569, #554)', () => {
-  it('covers every patch entry but Muse Runner, which has its own suite', () => {
+  it('covers every Muse patch entry but Muse Runner, which has its own suite', () => {
+    // Scoped to the Muse's twelve: the minilogue xd's twelve (#618) are held to their printed
+    // voice modes in `test/korg-minilogue-xd.test.ts`, and this suite is the Muse definitions.
     const covered = new Set(MUSE_ELEVEN.map((c) => c.riff.id))
     covered.add(moogProSoloGlideLead.id)
     covered.add(museRunnerFloatingArrivalLead.id)
-    const patches = RIFFS.filter((r) => r.reference.kind === 'patch').map((r) => r.id)
+    const patches = MUSE_PATCH_RIFFS.map((r) => r.id)
+    expect(patches).toHaveLength(12)
     expect([...covered].sort()).toEqual([...patches].sort())
   })
 
@@ -1649,10 +1670,16 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
   }
 
   it('every entry asks for exactly as many simultaneous notes as its widest voicing', () => {
+    // Counted as what *sounds* at once, not what *starts* at once: `polyphony` is the number of
+    // voices `resolveRiff` has to find (§12.4), and a voice is spent for as long as a note is
+    // in force. The two counts agree on every entry that strikes its chords together and
+    // differ on one that does not — `swollen-pad-staggered-stack` (#618) enters its four notes
+    // a beat apart and holds all four, which is four voices however it is counted at the onset.
     for (const entry of RIFFS) {
-      const atStep = new Map<number, number>()
-      for (const n of entry.hook.notes) atStep.set(n.step, (atStep.get(n.step) ?? 0) + 1)
-      const widest = Math.max(...atStep.values())
+      let widest = 0
+      for (let step = 1; step <= entry.hook.bars * 16; step += 1) {
+        widest = Math.max(widest, sounding(entry, step).length)
+      }
       expect(entry.request.polyphony ?? 1, entry.id).toBe(widest)
     }
   })
@@ -2282,13 +2309,15 @@ const FIDELITY: readonly FidelityRow[] = [
 ]
 
 describe('the eleven resolve to the pitches the definitions asked for (#569)', () => {
-  it('covers every entry but the six that were here before', () => {
+  it('covers every Muse patch entry but Muse Runner', () => {
+    // The Muse's twelve, less the one with its own suite. The minilogue xd's twelve (#618) have
+    // no definitions to be faithful to — the figures were written here — and are held to their
+    // printed voice modes in `test/korg-minilogue-xd.test.ts` instead.
     const covered = FIDELITY.map((r) => r.riff.id).sort()
-    const eleven = RIFFS.filter(
-      (r) => r.reference.kind === 'patch' && r.id !== museRunnerFloatingArrivalLead.id,
-    )
+    const eleven = MUSE_PATCH_RIFFS.filter((r) => r.id !== museRunnerFloatingArrivalLead.id)
       .map((r) => r.id)
       .sort()
+    expect(eleven).toHaveLength(11)
     expect(covered).toEqual(eleven)
   })
 

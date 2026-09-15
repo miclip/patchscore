@@ -426,7 +426,7 @@ describe('the riff page exists exactly where a record-named entry does (#598)', 
    */
   it('404s on every patch-named id, which is a page under its box instead', async () => {
     const patches = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patches).toHaveLength(12)
+    expect(patches).toHaveLength(24)
     for (const riff of patches) {
       await expect(markupFor(riff.id), riff.id).rejects.toThrow(/404/)
       expect(await generateMetadata({ params: Promise.resolve({ id: riff.id }) }), riff.id).toEqual(

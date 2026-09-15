@@ -19,11 +19,15 @@ import {
   type Assignable,
   type AuthoredParam,
   type Recipe,
+  type Riff,
   type RoleRequest,
 } from '../lib/core/index'
-import { device } from '../lib/devices/korg-minilogue-xd/index'
+import { FACTORY_PROGRAMS, device } from '../lib/devices/korg-minilogue-xd/index'
 import { MINILOGUE_XD_PANEL } from '../lib/devices/korg-minilogue-xd/panel'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { RIFFS } from '../lib/riffs/index'
+import { presetSession } from '../lib/studio/preset-session'
+import { presetLead } from '../lib/studio/preset-text'
 import { TEMPLATES, industrialTechno } from '../lib/templates/index'
 import { template } from './fixtures'
 
@@ -1193,8 +1197,147 @@ describe('the factory programs, pp.61-64 (§2.6/#617, #618)', () => {
     expect(new Set(patches.map((p) => p.name)).size).toBe(200)
   })
 
-  it('declares no patch use yet, so the fact stands without a judgement beside it', () => {
-    expect(device.patchUses).toBeUndefined()
+})
+
+/**
+ * §2.6/#593, §3.7/#598, #618. **Twelve of the 200 carry a use and a figure**, and every figure
+ * is written under the Voice Mode pp.61-64 print beside its program. The mode is the constraint
+ * `CLAUDE.md` names for this box: a CHORD or UNISON program spends all four voices on one key,
+ * so a figure asking one of those for two notes at once is a value read off the wrong printed
+ * scale. `FACTORY_PROGRAMS` carries the mode so this file can hold each figure to it.
+ */
+describe('twelve programs carry a use and a figure, each under its printed mode (#618)', () => {
+  const uses = device.patchUses ?? []
+  const modeOf = new Map(FACTORY_PROGRAMS.map(([name, , mode]) => [name, mode]))
+  const authorOf = new Map(FACTORY_PROGRAMS.map(([name, , , author]) => [name, author]))
+  const session = presetSession(device)
+
+  /** What sounds at one step of a hook. */
+  function peakOf(riff: Riff): number {
+    let peak = 0
+    for (let step = 1; step <= riff.hook.bars * 16; step += 1) {
+      const sounding = riff.hook.notes.filter((n) => step >= n.step && step < n.step + n.len)
+      peak = Math.max(peak, sounding.length)
+    }
+    return peak
+  }
+
+  it('describes exactly twelve, in the editorial order, each keyed to its printed Category', () => {
+    expect(uses.map((u) => u.name)).toEqual([
+      'MirroredBass',
+      'Hypno Acid',
+      'MetalFnkLead',
+      'Pressure',
+      '#brew time',
+      'Cloud Level',
+      'Replicant xd',
+      'Swollen Pad',
+      'Petrichor',
+      'Roadz Bell',
+      'Lush m7',
+      'Broken Toy',
+    ])
+    const shipped = new Map((device.factoryPatches ?? []).map((p) => [p.name, p.bank]))
+    for (const use of uses) expect(use.bank, use.name).toBe(shipped.get(use.name))
+  })
+
+  it('describes a subset of the fact, and no template (#617)', () => {
+    const described = new Set(uses.map((u) => u.name))
+    expect(described.size).toBe(12)
+    for (const p of device.factoryPatches ?? []) {
+      if (p.bank === 'Template') expect(described.has(p.name), p.name).toBe(false)
+    }
+  })
+
+  it('writes every use unhedged, and every one is a sentence about what to play', () => {
+    for (const use of uses) {
+      expect(use.use.trim().length, use.name).toBeGreaterThan(0)
+      expect(use.use, use.name).not.toMatch(/\b(probably|maybe|roughly|perhaps|might|could)\b/i)
+      expect(use.use, use.name).not.toMatch(/\b(sounds like|reminiscent|-ish)\b/i)
+    }
+  })
+
+  it('covers all eight credited authors across the twelve (p.65)', () => {
+    const authors = new Set(uses.map((u) => authorOf.get(u.name)))
+    expect([...authors].sort()).toEqual([
+      'Artemiy Pavlov',
+      'Dorian Concept',
+      'Ian Bradshaw',
+      'KORG Inc.',
+      'Luke Edwards',
+      'Nick Kwas',
+      'Taylor McFerrin',
+      'Tomohiro Nakamura',
+    ])
+  })
+
+  it('joins every use to exactly one figure, resolved played on this box alone', () => {
+    expect(session).toBeDefined()
+    expect(session?.named).toBe(200)
+    expect(session?.reading).toBe('manual')
+    expect(session?.entries).toHaveLength(12)
+    for (const entry of session?.entries ?? []) {
+      expect(entry.figure, entry.patch.name).toBeDefined()
+      expect(entry.figure?.riff.reference, entry.patch.name).toEqual({ kind: 'patch', name: entry.patch.name })
+      expect(entry.figure?.resolution.outcome, entry.patch.name).toBe('played')
+      expect(entry.figure?.voice.device.id, entry.patch.name).toBe('korg-minilogue-xd')
+      // An exact character on every one: no figure here asks for a sound the box substitutes.
+      expect(entry.figure?.voice.substituted, entry.patch.name).toBe(false)
+    }
+    // Twelve figures for twelve uses, and no thirteenth riff names one of this box's programs.
+    const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
+    const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
+    expect(naming).toHaveLength(12)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(12)
+  })
+
+  it('never overlaps a note on a CHORD or UNISON program, and holds at most four on the rest', () => {
+    for (const entry of session?.entries ?? []) {
+      const riff = entry.figure?.riff
+      if (riff === undefined) throw new Error(`no figure for ${entry.patch.name}`)
+      const mode = modeOf.get(entry.patch.name)
+      const peak = peakOf(riff)
+      if (mode === 'CHORD' || mode === 'UNISON') {
+        expect(peak, `${entry.patch.name} is ${String(mode)}`).toBe(1)
+      } else {
+        expect(mode, entry.patch.name).toMatch(/^(POLY|ARP)$/)
+        expect(peak, `${entry.patch.name} is ${String(mode)}`).toBeLessThanOrEqual(4)
+      }
+      expect(riff.request.polyphony ?? 1, riff.id).toBe(peak)
+    }
+    // The four single-key programs and the two arpeggiated ones, by name, so the mode table
+    // above is not the only thing this rests on.
+    const single = uses.filter((u) => ['CHORD', 'UNISON'].includes(modeOf.get(u.name) ?? ''))
+    expect(single.map((u) => u.name)).toEqual(['MirroredBass', 'Hypno Acid', 'MetalFnkLead', 'Lush m7'])
+    const arps = uses.filter((u) => modeOf.get(u.name) === 'ARP')
+    expect(arps.map((u) => u.name)).toEqual(['#brew time', 'Cloud Level'])
+  })
+
+  it('writes the two arpeggiated programs as held voicings with no grid', () => {
+    for (const name of ['#brew time', 'Cloud Level']) {
+      const riff = session?.entries.find((e) => e.patch.name === name)?.figure?.riff
+      expect(riff?.request.role, name).toBe('pad')
+      expect(riff?.pattern, name).toBeUndefined()
+      expect(peakOf(riff as Riff), name).toBe(4)
+    }
+  })
+
+  it('names no author in a use line beyond the credit p.65 prints, and no device anywhere', () => {
+    const credited = new Set<string>(FACTORY_PROGRAMS.map(([, , , author]) => author))
+    for (const use of uses) {
+      // A line may lean on who made a program; it may not name somebody the page does not credit.
+      for (const word of use.use.match(/[A-Z][a-z]+ [A-Z][a-z]+/g) ?? []) {
+        if (credited.has(word)) expect(authorOf.get(use.name), use.name).toBe(word)
+      }
+      expect(use.use, use.name).not.toMatch(/minilogue|Korg|KORG/)
+    }
+  })
+
+  it('reads on the device page as twelve closed entries under the #617 lead', () => {
+    if (session === undefined) throw new Error('no session')
+    expect(presetLead(session)).toBe(
+      'The manual names 200 factory patches, and 12 of them are here: what each is for, and the figure written for it where one exists.',
+    )
   })
 })
 
