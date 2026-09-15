@@ -721,27 +721,36 @@ map is in scope. Both are rendered at the machine — a reader patches the one a
 and neither may go uncited. The check moved from the type to the schema; the discipline did not
 change.
 
-**One fact may only be observed: `factoryPatches`**
-([#592](https://github.com/miclip/patchscore/issues/592)). `Device.factoryPatches` is the list of
-presets a box is known to ship, each `{ name, bank? }` as the screen prints it and never a slot
+**One fact takes two kinds of reading and no third: `factoryPatches`**
+([#592](https://github.com/miclip/patchscore/issues/592),
+[#617](https://github.com/miclip/patchscore/issues/617)). `Device.factoryPatches` is the list of
+presets a box is known to ship, each `{ name, bank? }` as the box prints it and never a slot
 number, and its evidence is one entry at `factoryPatches` for the whole list. `DeviceSchema`
 requires that entry behind a list, refuses one with no list behind it, refuses `false` as `middleC`
-does, and refuses a `manual` or `maker` citation: no document in this library names a factory
-patch, so a page cited here would be a page that does not say what it is cited for, and the only
-honest evidence is somebody with the unit and the firmware in the source string. The list is
-nonempty and its `(name, bank)` keys are unique, so a declaration is always a claim and a box ships
-each patch once. It carries no description, because what a patch sounds like is a claim a name
-cannot verify. It exists because two facts were sharing one field: `Recipe.factoryPatch` (§3) says
-a recipe's settings *reach* a shipped sound, which is a judgement #563 rightly declined for seven
-Muse patches, and the decline threw away the fact that the box *ships* them. The Muse declares the
-twelve its riffs are named after and no more, because p.12 counts 224 and names none, and twelve
-is what was read off a screen. **It reaches a reader on the device page and nowhere else**
+does, and accepts `manual` or `observed` there, because each proves something the other does not:
+a page proves the maker ships the name, and a unit proves this unit has it, with the firmware in
+the source string. Neither ranks above the other. `maker` is refused until a maker page in this
+library names a patch. The two readings differ in how wide a list they support. The Korg minilogue
+xd's Owner's Manual prints all 200 of its programs on pp.61-64, so a list off that page can be the
+whole page. The Muse's manual counts 224 on p.12 and names none, so its list is what somebody read
+off the screen: the twelve its riffs are named after and no more. The list is nonempty and its
+`(name, bank)` keys are unique, so a declaration is always a claim and a box ships each patch once.
+The slot-number ban holds for a printed list too: Korg's `No` column is a slot, and a maker printing
+it in a table does not make it stable across firmware or across an owner who has reordered a bank;
+`bank` on that box carries the manual's `Category`. It carries no description, because what a patch
+sounds like is a claim a name cannot verify. It exists because two facts were sharing one field:
+`Recipe.factoryPatch` (§3) says a recipe's settings *reach* a shipped sound, which is a judgement
+#563 rightly declined for seven Muse patches, and the decline threw away the fact that the box
+*ships* them. **It reaches a reader on the device page and nowhere else**
 ([#593](https://github.com/miclip/patchscore/issues/593)): a preset belongs to exactly one box
 and a riff is rig-agnostic by design, so a box listing its own patches is a device page
 describing itself. What each patch is *for* is the judgement this list refuses, and it has its
-own field beside it, `Device.patchUses`, keyed to the same `(name, bank)` and refused by
-`DeviceSchema` wherever the two disagree — §3.7 has the surface and the join. `Recipe.factoryPatch`
-and `Riff.patchAffinities` are unchanged by it.
+own field beside it, `Device.patchUses`, keyed to the same `(name, bank)`, refused by
+`DeviceSchema` where it names a patch the box does not declare or names one twice, and free to
+cover a subset (#617) — §3.7 has the surface, the join, and what the page does with a patch no use
+covers. `Recipe.factoryPatch` and `Riff.patchAffinities` are unchanged by it; the recipe field
+stays `observed` only, since every pairing so far came off a unit and it is widened when one comes
+off a page.
 
 #### The three states past `Verified`
 
@@ -1591,11 +1600,12 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   ```
 
   By name and an optional bank, never by slot, since slots move across firmware and across any
-  owner who has reordered a bank. `observed` only, and the schema enforces it: no manual in the
-  library names a factory patch, so the only honest evidence is somebody with the unit in front
-  of them and the firmware in the source string. The *match* is the library's judgement and is
-  uncited, which is the split `verified` already draws: what exists is evidence, which to reach
-  for is taste.
+  owner who has reordered a bank. `observed` only on this field, and the schema enforces it:
+  every pairing so far came off a unit, with the firmware in the source string, and the field is
+  widened when a recipe first pairs with a name off a page. A maker can print the names — the
+  minilogue xd's manual does, and the device-level list at §2.6's `factoryPatches` accepts that
+  page (#617). The *match* is the library's judgement and is uncited, which is the split
+  `verified` already draws: what exists is evidence, which to reach for is taste.
 
   **A guide prints it beside the block it belongs to, and a riff page prints it only where the
   riff says the sound is its own** (#585). On a guide the reader asked for a bright lead, and a
@@ -3153,19 +3163,33 @@ is a box describing itself. The kit above solved the same problem — device-spe
 is not a song — and its answer is followed rather than a third pattern invented.
 
 **The model is two declarations in the device folder and one join.** §2.6's `factoryPatches`
-(#592) is the fact: a name and an optional bank, `observed` on the unit, no description, because
-what a patch sounds like is a claim a name cannot verify. `Device.patchUses` is the judgement
-beside it, keyed to the same `(name, bank)`: *what it is for*, in the words of whoever owns the
-box — *Greek modal writing in the Vangelis manner* — and it reads as description with no hedge,
-for §5A.5's reason. `DeviceSchema` refuses a use for a patch the box does not declare, a use
-declared twice, and a declared patch with no use: a box describes all of its declared patches or
-none of them, since a row with a name and nothing under it is a list the reader can already get
-off the box. `presetSession` (`lib/studio/preset-session.ts`) answers `undefined` for a box
-without both, and for the box with both adds the join the folder does not carry: **the riff
-whose `reference` is of kind `patch` and names it** (§5A.5, twelve of twelve), resolved on this
-box (#598, below). It is a name join rather than a device join: a second box shipping a patch
-called *Vox Humana* would reach the same figure, which is right, because the figure is named for
-the patch.
+(#592) is the fact: a name and an optional bank, off a manual page or off the unit (#617), no
+description, because what a patch sounds like is a claim a name cannot verify. `Device.patchUses`
+is the judgement beside it, keyed to the same `(name, bank)`: *what it is for*, in the words of
+whoever knows the box — *Greek modal writing in the Vangelis manner* — and it reads as description
+with no hedge, for §5A.5's reason. `DeviceSchema` refuses a use for a patch the box does not
+declare and a use declared twice. **It does not refuse a declared patch with no use** (#617). The
+check used to, on the argument that a row with a name and nothing under it is not an entry, and
+that argument was written when the fact and the judgement came off the same reading of the same
+unit, where a patch somebody could name but not describe was an odd gap. A printed list splits the
+two: the fact is complete at every name on the page, and the judgement is not and should not
+pretend to be, since fifty of the minilogue xd's 200 are `TPL`-style templates about which nothing
+musical is owed. So the judgement may cover a subset, and the ink rule moves to where the ink is.
+**A patch no use covers is absent from the page, not present and blank.** `presetSession`
+(`lib/studio/preset-session.ts`) carries one entry per use and none for the rest, and beside the
+entries it carries `named`, the count the box declares, and `reading`, whether that count came
+off a page or a unit. The lead sentence (`presetLead`, shared by the panel and the page) depends
+on the reading. Off a manual page the total is the maker's own figure, so the lead states it and
+says how many are here: *The manual names 200 factory patches, and 40 of them are here*. A reader
+who does not find their preset has learned something true about the page. Off a unit the count
+is how many somebody read, so the lead says no count at all (operator decision, #593): the Muse's
+twelve are twelve and not twelve of anything, and a denominator there would be the library's
+authoring state wearing the clothes of a fact about the box. The session answers `undefined` for a
+box without both declarations, and for a box with both adds the join the folder does not carry:
+**the riff whose `reference` is of kind `patch` and names it** (§5A.5, twelve of twelve), resolved
+on this box (#598, below). It is a name join rather than a device join: a second box shipping a
+patch called *Vox Humana* would reach the same figure, which is right, because the figure is
+named for the patch.
 
 **Nothing about a recipe, on any preset surface** (operator decision, #598). `Recipe.factoryPatch`
 (§3/#553) names five of the Muse's twelve, and the session used to join those recipes so the
@@ -3218,12 +3242,14 @@ that recipe reaches the patch (the rule above). The settings are there because a
 to see or tweak what the preset does, which is not a claim about a recipe and needs no sentence
 arguing for it.
 
-**The order is the folder's, and it is editorial.** No maker prints a patch list, so there is no
-order to follow. Alphabetical puts *Bellbounce* between *Aegean Organ* and *Detroit Funk*, three
-sounds nobody compares; the Muse's `PATCH_USES` walks the roles instead — the bass, the leads, the
-struck keyboard sounds, the stabs, the string ensembles — with the nearest pair adjacent, so a
-reader choosing between *Moog 55 Strings* and *Soft Orchestra* finds them on adjacent rows. The
-session and both renderers walk the list as written and sort nothing.
+**The order is the folder's, and it is editorial.** A maker's printed order is a slot order, the
+sequence a bank was filled in, so even where one exists there is nothing to follow (#617): Korg
+prints 1 to 200 and the sequence says nothing about which two programs a reader would weigh against
+each other. Alphabetical puts *Bellbounce* between *Aegean Organ* and *Detroit Funk*, three sounds
+nobody compares; the Muse's `PATCH_USES` walks the roles instead — the bass, the leads, the struck
+keyboard sounds, the stabs, the string ensembles — with the nearest pair adjacent, so a reader
+choosing between *Moog 55 Strings* and *Soft Orchestra* finds them on adjacent rows. The session
+and both renderers walk the list as written and sort nothing.
 
 **Three surfaces, the kit's shape.** `PresetSection`, headed *Explore your device* on the device
 page, folds every patch into a native `<details>`, closed — every entry, whatever is under it —

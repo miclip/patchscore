@@ -3,7 +3,7 @@ import type { Device } from '@/lib/core'
 import { shippedPatchKey } from '@/lib/core'
 import { presetFigureHref, presetsHref } from '@/lib/studio/catalogue'
 import type { PresetEntry, PresetSession } from '@/lib/studio/preset-session'
-import { PRESET_FIGURE, PRESET_HEADING, PRESET_LEAD } from '@/lib/studio/preset-text'
+import { PRESET_FIGURE, PRESET_HEADING, presetLead } from '@/lib/studio/preset-text'
 
 /**
  * §2.6/#593. **The factory patches a box ships, what each is for, and the figure written for
@@ -20,12 +20,15 @@ import { PRESET_FIGURE, PRESET_HEADING, PRESET_LEAD } from '@/lib/studio/preset-
  * it: no panel, no heading, no claim (the kit's rule, §3.7). A folder that declares both gets
  * the panel and the page at `presetsHref` with no UI edit (invariant 2).
  *
- * **The order is the folder's.** No maker prints a patch list, so there is no order to follow,
- * and the folder that authored the list has said which patches a reader would compare and put
- * them together. Nothing here sorts.
+ * **The order is the folder's.** A maker's printed order is a slot order, so there is nothing
+ * to follow even where one exists, and the folder that authored the list has said which patches
+ * a reader would compare and put them together. Nothing here sorts.
  *
- * **Nothing about the patches it does not list.** The Muse ships 224 and declares twelve; the
- * panel lists the twelve and says nothing about the rest, by operator decision (#593).
+ * **One row per use, and no row for a patch without one** (#617). The session carries an entry
+ * per `patchUses` line, so a declared patch nobody described is absent rather than blank. What
+ * the lead says about the count depends on where the list came from (`presetLead`): the Muse's
+ * twelve came off a unit and the panel says nothing about the rest, by operator decision (#593);
+ * a list off a manual page states the total the manual names and how many are here.
  */
 
 /** The name as the box prints it, with its bank where one was read. */
@@ -107,7 +110,7 @@ export function PresetSection({ session }: { session: PresetSession | undefined 
     <section className="panel span-2 preset-section">
       <header>
         <h2>{PRESET_HEADING}</h2>
-        <p className="note">{PRESET_LEAD}</p>
+        <p className="note">{presetLead(session)}</p>
       </header>
       <ul className="preset-list">
         {session.entries.map((entry) => (

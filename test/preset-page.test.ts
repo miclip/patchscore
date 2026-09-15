@@ -15,7 +15,7 @@ import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS } from '../lib/riffs'
 import { deviceHref, presetFigureHref, presetsHref, riffHref } from '../lib/studio/catalogue'
 import { presetSession } from '../lib/studio/preset-session'
-import { PRESET_LEAD, presetTitle } from '../lib/studio/preset-text'
+import { presetLead, presetTitle } from '../lib/studio/preset-text'
 
 /**
  * §2.6/#593. **The standalone presets page**, as the markup a reader receives.
@@ -24,8 +24,8 @@ import { PRESET_LEAD, presetTitle } from '../lib/studio/preset-text'
  * no client boundary at all, so everything a crawler and a reader with no JavaScript get is in
  * this string. What is pinned is that the page exists exactly where a session does, that it
  * says what the model says with every entry open, that it links to the device and to every
- * figure, that nothing on it is about a recipe (#598), and that it carries no export and no
- * count of what it does not list.
+ * figure, that nothing on it is about a recipe (#598), that it carries no export, and that its
+ * lead is the panel's own sentence, which on the Muse's observed reading counts nothing (#617).
  */
 
 const byId = (id: string): Device => {
@@ -103,7 +103,9 @@ describe('the presets page exists exactly where a session does (#593)', () => {
 describe('the page says what the model says, every entry open', () => {
   it('carries the title, the lead, and every name and use in the folder’s order', () => {
     expect(MUSE).toContain(`<h1>${presetTitle(byId('moog-muse'))}</h1>`)
-    expect(MUSE_TEXT).toContain(PRESET_LEAD)
+    // The same sentence the panel says, from the one function both call (#617).
+    expect(MUSE).toContain(`<p class="preset-lead">${presetLead(session)}</p>`)
+    expect(MUSE_TEXT).toContain(presetLead(session))
     expect(MUSE.match(/class="preset-card"/g)?.length).toBe(12)
     // No disclosure anywhere: the page is the open reading.
     expect(MUSE).not.toContain('<details')

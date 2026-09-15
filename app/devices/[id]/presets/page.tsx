@@ -9,7 +9,7 @@ import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceHref, deviceLabel, presetsHref } from '@/lib/studio/catalogue'
 import type { PresetEntry, PresetSession } from '@/lib/studio/preset-session'
 import { presetSession } from '@/lib/studio/preset-session'
-import { PRESET_LEAD, presetDescription, presetTitle } from '@/lib/studio/preset-text'
+import { presetDescription, presetLead, presetTitle } from '@/lib/studio/preset-text'
 
 /**
  * §2.6/#593. **The preset session, laid open, at its own address.**
@@ -32,7 +32,9 @@ import { PRESET_LEAD, presetDescription, presetTitle } from '@/lib/studio/preset
  * copy of the page, and Print is the browser's own menu. So nothing here needs a browser, and
  * every byte is in the prerendered HTML.
  *
- * **No song and no controls for one**, and nothing about the patches it does not list.
+ * **No song and no controls for one.** One entry per use and none for a declared patch without
+ * one (#617); the lead is `presetLead`, the same sentence the panel says, and it is the one
+ * place a count appears, where the list came off a manual page.
  */
 
 export const dynamicParams = false
@@ -102,7 +104,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
     <main className="shell catalogue-page preset-page">
       <header className="preset-page-head">
         <h1>{presetTitle(session.device)}</h1>
-        <p className="preset-lead">{PRESET_LEAD}</p>
+        <p className="preset-lead">{presetLead(session)}</p>
         <p className="note preset-back">
           <Link href={deviceHref(session.device)}>Everything else about the {label}</Link>
         </p>

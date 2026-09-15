@@ -5,7 +5,8 @@ import { DEVICES } from '@/lib/devices/registry.generated'
 import { device as fixtureDevice, recipe } from './fixtures'
 
 /**
- * §2.6/#592. **A box declares the factory patches it ships, by name, observed on the unit.**
+ * §2.6/#592, #617. **A box declares the factory patches it ships, by name, off a page or off
+ * the unit.**
  *
  * Twelve riffs are named after a Muse factory patch. Five had that patch recorded on a recipe
  * (`Recipe.factoryPatch`, #553) and seven did not, because #563 correctly declined to pair them
@@ -15,15 +16,17 @@ import { device as fixtureDevice, recipe } from './fixtures'
  * where the fact reaches a reader is a device-page decision not designed yet, so nothing here
  * renders or resolves it. These tests hold:
  *
- *  - the declaration is a **positive claim whose evidence is a reading of the unit**: a list
- *    with no citation, a citation with no list, `false`, and a `manual` citation are all refused,
- *    because no manual in this library names a factory patch;
+ *  - the declaration is a **positive claim whose evidence is a reading**, and two readings
+ *    count (#617): a `manual` page proves the maker ships the name, an `observed` unit proves
+ *    this unit has it. A list with no citation, a citation with no list, `false`, and a `maker`
+ *    citation are all refused;
  *  - the list is **nonempty and its `(name, bank)` keys are unique**;
  *  - the Muse declares **exactly the twelve** the operator named, and no other box declares any.
  */
 
 const OBSERVED = { kind: 'observed', source: 'A unit, firmware 1.0' } as const
-const MANUAL = { kind: 'manual', source: 'A Manual, p.12' } as const
+const MANUAL = { kind: 'manual', source: 'A Manual, p.61' } as const
+const MAKER = { kind: 'maker', source: 'a maker page' } as const
 const READ_AND_SILENT = {
   kind: 'unknown',
   reason: 'p.12 counts them and names none',
@@ -47,7 +50,7 @@ function issues(parsed: ReturnType<typeof DeviceSchema.safeParse>): string {
   return JSON.stringify(parsed.success ? [] : parsed.error.issues)
 }
 
-describe('factoryPatches is a positive claim read off the unit (§2.6/#592)', () => {
+describe('factoryPatches is a positive claim read off a page or off the unit (§2.6/#592, #617)', () => {
   it('is a capability fact on the closed list', () => {
     expect(CAPABILITY_FACTS).toContain(FACTORY_PATCHES_FACT)
   })
@@ -73,10 +76,24 @@ describe('factoryPatches is a positive claim read off the unit (§2.6/#592)', ()
     expect(issues(parsed)).toContain('with no citation')
   })
 
-  it('refuses a manual citation, because no manual in the library names a factory patch', () => {
-    const parsed = DeviceSchema.safeParse(declared([{ name: 'Aegean Organ' }], MANUAL))
+  it('accepts a list behind a manual citation: a page proves the maker ships the name (#617)', () => {
+    expect(DeviceSchema.safeParse(declared([{ name: 'Replicant xd' }], MANUAL)).success).toBe(
+      true,
+    )
+    expect(
+      DeviceSchema.safeParse(declared([{ name: 'Replicant xd', bank: 'Pad' }], MANUAL)).success,
+    ).toBe(true)
+  })
+
+  it('refuses a maker citation, and the refusal names what each accepted kind proves', () => {
+    const parsed = DeviceSchema.safeParse(declared([{ name: 'Aegean Organ' }], MAKER))
     expect(parsed.success).toBe(false)
-    expect(issues(parsed)).toContain("cited 'manual'")
+    const text = issues(parsed)
+    expect(text).toContain("cited 'maker'")
+    expect(text).toContain('a page proves the maker ships the name')
+    expect(text).toContain('a unit proves this unit has it')
+    // Neither kind is ranked above the other: the message says what each proves and no more.
+    expect(text).not.toMatch(/only honest|stronger|weaker|better/)
   })
 
   it('refuses a citation with no list behind it', () => {
