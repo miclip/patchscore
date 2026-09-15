@@ -185,6 +185,11 @@ export type RoleRequest = {
    * Meaningless without both a hook and variants for the role, so `TemplateSchema` requires
    * both: a flag that changes nothing is an author writing something that does nothing, which
    * is the same discipline `sustain`/`sections` and `optional`/`inessential` are held to.
+   *
+   * `true` only, here. `false` would be a second spelling of the absent default. A riff's
+   * request (`RiffRequest`, §5A.2/#623) widens this to `boolean`, and the reason is the same one
+   * read the other way: on a struck riff the absent flag is refused, so `false` is not a spelling
+   * of any default there but the answer that the figure is through-composed and carries no grid.
    */
   reArticulatesHook?: true
 }

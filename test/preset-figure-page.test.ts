@@ -356,17 +356,16 @@ describe('every page carries the figure and the Muse’s block for it', () => {
   })
 
   /**
-   * §5A.2/#603/#604. The Muse Runner line is twelve bars over a four-bar grid, the Bellbounce
-   * pattern and the Aegean Organ figure eight over four, and this surface draws the grid
-   * through the same component a riff page does, so the sentence saying how many times it goes
-   * round has to reach here too. The two pads are eight bars with no grid at all (#608), so
-   * they are in the second loop.
+   * §5A.2/#603/#604/#623. The Bellbounce pattern and the Aegean Organ figure are eight bars
+   * over a four-bar grid, and this surface draws the grid through the same component a riff
+   * page does, so the sentence saying how many times it goes round has to reach here too. The
+   * two pads are eight bars with no grid at all (#608), and the Muse Runner line is forty-eight
+   * bars with none either, through-composed (#623), so those are in the second loop.
    * Pinned as strings rather than left to the parity test above, which would pass on both
    * surfaces omitting them.
    */
   it('says how many times the grid goes round under the figures longer than it', () => {
     const REPEATS: Record<string, string> = {
-      'muse-runner': 'The grid is 4 bars and the figure is 12: play it round 3 times.',
       bellbounce: 'The grid is 4 bars and the figure is 8: play it round 2 times.',
       'aegean-organ': 'The grid is 4 bars and the figure is 8: play it round 2 times.',
     }
@@ -376,6 +375,12 @@ describe('every page carries the figure and the Muse’s block for it', () => {
       expect(page.split(REPEAT).length - 1, slug).toBe(1)
       expect(page.indexOf(REPEAT), slug).toBeGreaterThan(page.indexOf(RIFF_GRID_LEAD))
     }
+    // The Muse Runner line has no grid to go round, and its chord table says instead that the
+    // cycle goes round under the figure (#623).
+    const musePage = text(MUSE_RUNNER)
+    const CYCLE = 'The 12-bar cycle repeats 4 times under this 48-bar figure.'
+    expect(musePage.split(CYCLE).length - 1).toBe(1)
+    expect(musePage.indexOf(CYCLE)).toBeLessThan(musePage.indexOf('The figure is played over these chords'))
     // And on no other preset page: every other figure is as long as its grid, or has none.
     for (const { entry, figure } of FIGURED) {
       if (entry.slug in REPEATS) continue

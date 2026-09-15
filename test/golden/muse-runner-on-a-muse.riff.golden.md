@@ -1,20 +1,28 @@
 # The Muse Runner floating-arrival lead
 
-`lead` · `bright` · 66 BPM (58–78) · F# minor · 12 bars · 64 steps
+`lead` · `bright` · 66 BPM (58–78) · F# minor · 48 bars
 
 ## The technique
 
-Six chords, twelve bars, and the line covers all of them. Three minor chords, then the pair the key does not own, then the minor fifth to take it back.
+Six chords, twelve bars, and the line goes round them four times. Three minor chords, then the pair the key does not own, then the minor fifth to take it back. The first pass is the line. The second takes it up into the higher register and turns the shape over. The third comes back down to just above the chords and thins to one note each. The fourth is the highest and the thinnest, and it is the ending.
 
-One late entry per chord. Let the pad move first, then arrive: every entry lands two beats after the chord has changed under it, and the wait is what makes the note sound placed rather than programmed.
+One late entry per chord, until the last pass leaves its first chord empty. Let the pad move first, then arrive: an entry lands two beats after the chord has changed under it, and the wait is what makes the note sound placed rather than programmed. Two entries come later still, a bar and a half in: the A# over the F# major in the third pass and the A that opens the fourth pass alone. Wait for those until it feels too late, then play them.
 
-The moves inside a chord are slurred, not struck. The drop to A late in the first chord, the step down through E to D in the second, the neighbour C# and back in the third, the lift to F# in the fifth: each is played off the held note without a new attack, so the chord gets one arrival and the line keeps moving.
+First pass, the full line. C# held over the F# minor, dropping to A late in the second bar. F# an octave up over the D, stepping down through E to D. D over the B minor, its neighbour C# and back. A# late over the F# major, hanging. D# over the B, lifting to F#. G# over the C# minor, resolving down to E.
 
-The fourth and fifth chords are where the key turns major, and the line goes with it: A# over the F# major and D# over the B, each a semitone above what the key gives you. Play the natural note and the turn disappears.
+Second pass, up in the higher register with the contour turned over. A falling to F# over the F# minor and left to sit. A with its upper neighbour B and back over the D. B stepping down through A to F# over the B minor. C# rising late to A# over the F# major. F# down to D# and back over the B. E stepping down through D# to C# over the C# minor. That D# over the C# minor is right: it is the raised sixth of F# minor and the second of C# minor at once, so play it and do not soften it to D.
 
-Hold each chord’s last note until the next chord is already sounding, then release, except into the F# major. There the D closing the third chord clears before the bar line, so the raised third arrives on air.
+Third pass, one note a chord, sitting just above the pad. Each arrives two beats in and holds until the next chord is already under it. F#, A, F#, then A# arriving very late over the F# major and hanging into the B, then F#, then G# over the C# minor with no resolution. Let each one sit and move nothing.
 
-The last chord resolves down: G# held, then E a major third below it, still ringing when the cycle comes round. Leaving the line on the G# unresolved is the other ending, and it works when the pad is going round again; take the E when it is the last time through.
+Fourth pass, the ending. Nothing over the F# minor. A alone over the D, very late. F# held over the B minor. A# held over the F# major, and keep the vibrato off it until the chord is nearly over. F# held over the B. Then the leap up to C# over the C# minor, and let it ring past the end.
+
+The moves inside a chord are slurred, not struck. Each is played off the held note without a new attack, so a chord gets one arrival and the line keeps moving; the entries are the only attacks in the whole figure.
+
+The fourth and fifth chords are where the key turns major, and the line goes with it in every pass: A# over the F# major and D# over the B, each a semitone above what the key gives you. Play the natural note and the turn disappears.
+
+Hold each chord’s last note until the next chord is already sounding, then release, except into the F# major. There the note closing the B minor clears on the bar line, in every pass, so the raised third arrives on air.
+
+The last note is C#, high, held past the point where the pad would come round again, and nothing follows it. If you would rather the line cycle than close, end on G# instead and it hands back to the first pass; leaving the line on the G# unresolved is how the first pass ends when it is not the last time through.
 
 Wide vibrato, arriving after the note has settled. The note should be still for a moment before it starts to move.
 
@@ -26,7 +34,7 @@ Wide vibrato, arriving after the note has settled. The note should be still for 
 
 ## The chords
 
-6 chords over 12 bars, in F# minor.
+6 chords over 12 bars, in F# minor. The 12-bar cycle repeats 4 times under this 48-bar figure.
 
 | Degree | Notes | Bars | Under the figure |
 | --- | --- | ---: | :---: |
@@ -41,7 +49,7 @@ The figure is played over these chords; supply them separately if your rig allow
 
 ## The notes
 
-12 bars in F# minor. Each note is in force across the steps shown.
+48 bars in F# minor. Each note is in force across the steps shown.
 
 - steps 9–24 · over i · `C#5` · degree 5 · MIDI 73
 - steps 25–34 · over i · `A4` · degree 3 · MIDI 69
@@ -56,21 +64,33 @@ The figure is played over these chords; supply them separately if your rig allow
 - steps 149–162 · over IV · `F#5` · degree 1 · MIDI 78
 - steps 169–184 · over v · `G#4` · degree 2 · MIDI 68
 - steps 185–194 · over v · `E4` · degree 7 · MIDI 64
-
-## The grid
-
-Every step below strikes the note in force at that point. The grid is where the figure is played.
-
-The grid is 4 bars and the figure is 12: play it round 3 times.
-
-```
- 1 ···· ···· x··· ····
-17 ···· ···· ···· ····
-33 ···· ···· x··· ····
-49 ···· ···· ···· ····
-```
-- `accent` · 9, 73, 137
-- `downbeat` · 41, 105, 169
+- steps 201–212 · over i · `A5` · degree 3 · MIDI 81
+- steps 213–226 · over i · `F#5` · degree 1 · MIDI 78
+- steps 233–244 · over VI · `A5` · degree 3 · MIDI 81
+- steps 245–248 · over VI · `B5` · degree 4 · MIDI 83
+- steps 249–258 · over VI · `A5` · degree 3 · MIDI 81
+- steps 265–276 · over iv · `B5` · degree 4 · MIDI 83
+- steps 277–280 · over iv · `A5` · degree 3 · MIDI 81
+- steps 281–288 · over iv · `F#5` · degree 1 · MIDI 78
+- steps 297–308 · over I · `C#5` · degree 5 · MIDI 73
+- steps 309–322 · over I · `A#5` · degree #3 · MIDI 82
+- steps 329–340 · over IV · `F#5` · degree 1 · MIDI 78
+- steps 341–344 · over IV · `D#5` · degree #6 · MIDI 75
+- steps 345–354 · over IV · `F#5` · degree 1 · MIDI 78
+- steps 361–372 · over v · `E5` · degree 7 · MIDI 76
+- steps 373–376 · over v · `D#5` · degree #6 · MIDI 75
+- steps 377–386 · over v · `C#5` · degree 5 · MIDI 73
+- steps 393–418 · over i · `F#4` · degree 1 · MIDI 66
+- steps 425–450 · over VI · `A4` · degree 3 · MIDI 69
+- steps 457–480 · over iv · `F#4` · degree 1 · MIDI 66
+- steps 505–514 · over I · `A#4` · degree #3 · MIDI 70
+- steps 521–546 · over IV · `F#4` · degree 1 · MIDI 66
+- steps 553–578 · over v · `G#4` · degree 2 · MIDI 68
+- steps 633–642 · over VI · `A5` · degree 3 · MIDI 81
+- steps 649–672 · over iv · `F#5` · degree 1 · MIDI 78
+- steps 681–706 · over I · `A#5` · degree #3 · MIDI 82
+- steps 713–738 · over IV · `F#5` · degree 1 · MIDI 78
+- steps 745–776 · over v · `C#6` · degree 5 · MIDI 85
 
 ## Where it plays
 

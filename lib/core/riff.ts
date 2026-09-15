@@ -110,11 +110,54 @@ import { NEUTRAL_MOOD, bearsPattern, type Character } from './vocabulary'
  * join it to one. The role decides which shape an entry has, and the schema refuses the other:
  * a grid on a pad would be a pattern that says nothing, and a struck part without one would be
  * a figure with no rhythm.
+ *
+ * **A struck part whose figure is through-composed says so, with `reArticulatesHook: false` and
+ * no grid** (§5A.2, #623). A repeating grid marks only what recurs on the same step of every
+ * pass, and a figure can be long enough, and end differently enough, that nothing does: the
+ * four-loop Muse Runner line has a silent chord in its last loop, so no step is an onset on
+ * every pass and the honest grid is empty. An empty grid is refused, and the role is still
+ * struck, so neither of the two shapes above fits. The third shape is the hook as the whole
+ * rhythm. `false` is legal here and nowhere else in the product, because here it is not a second
+ * spelling of the default: on a struck role the absent flag is *refused*, so `true` beside a
+ * grid and `false` without one are two different authored answers to a question every struck
+ * riff has to answer. `RiffRequestSchema` is `RoleRequestSchema` with that one field widened.
  */
 
 // ---------------------------------------------------------------------------
 // The riff
 // ---------------------------------------------------------------------------
+
+/**
+ * §5A.2/#623. **§4's `RoleRequest`, with `reArticulatesHook` allowed to be `false`.**
+ *
+ * A template's request takes `true` only, and the reason is right (`RoleRequest`): there the
+ * absent flag is the default, and `false` would be a second spelling of it. A riff on a struck
+ * role has no default. The absent flag is refused, so the field is a question the author has to
+ * answer, and it has two answers: `true`, and a grid says where the hook is struck again; or
+ * `false`, and no grid, because the figure is through-composed and a repeating grid would have
+ * nothing to mark that recurs on every pass. A held role still carries neither answer, since it
+ * was never asked.
+ *
+ * Every other field is `RoleRequest`'s, and every refinement `RoleRequestSchema` makes is kept:
+ * the shape is spread with the one field widened, and the base schema is run over the request
+ * with the flag removed, so its rules reach a riff's request without being written twice. (Zod
+ * refuses `.extend` on a refined object and `.safeExtend` refuses to widen, which is why it is
+ * done by hand.)
+ */
+export type RiffRequest = Omit<RoleRequest, 'reArticulatesHook'> & { reArticulatesHook?: boolean }
+
+export const RiffRequestSchema = z
+  .strictObject({ ...RoleRequestSchema.shape, reArticulatesHook: z.boolean().optional() })
+  .superRefine((request, ctx) => {
+    const { reArticulatesHook: _flag, ...base } = request
+    const checked = RoleRequestSchema.safeParse(base)
+    if (checked.success) return
+    // Re-raised as custom issues carrying the base message and path: the base schema's rules
+    // are all `custom` already, and the path is relative to the request either way.
+    for (const issue of checked.error.issues) {
+      ctx.addIssue({ code: 'custom', message: issue.message, path: [...issue.path] })
+    }
+  })
 
 /**
  * §5A.5. What a riff is named for. See `Riff.reference`.
@@ -267,9 +310,10 @@ export type Riff = {
   key: string
   /**
    * **The one part.** `continuous`, priority 1, no sections — a riff has no structure for a
-   * transient request to name.
+   * transient request to name. A `RiffRequest` rather than a `RoleRequest` for one field: see
+   * `reArticulatesHook` there.
    */
-  request: RoleRequest
+  request: RiffRequest
   /** The notes. Original, always — never a transcription of the recording or patch an entry references. */
   /**
    * §5A/§4.1. **The chords the figure is played over**, where the figure only makes sense against
@@ -298,9 +342,10 @@ export type Riff = {
    * over a minor chord.
    *
    * **The alignment is a fact about the music, so it is data and it is checked.** `RiffSchema`
-   * requires `harmony` alongside it, requires the figure to fit inside the cycle, and requires
-   * the figure to start where a chord does — a figure beginning halfway through a chord is
-   * expressible and is a different thing, and nothing has needed it.
+   * requires `harmony` alongside it and requires the figure to start where a chord does — a
+   * figure beginning halfway through a chord is expressible and is a different thing, and nothing
+   * has needed it. It does not require the figure to fit inside one cycle (#623): a figure longer
+   * than the cycle is played with the cycle repeating under it, and `chordOccurrenceAt` wraps.
    */
   figureStartsAtBar?: number
   /**
@@ -312,10 +357,12 @@ export type Riff = {
   /**
    * Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them.
    *
-   * **Present exactly where the role bears a pattern** (`bearsPattern`), and absent on a held
-   * role, where the hook is the whole figure. Optional in the type because the role decides; the
-   * schema holds each role to its own shape, so a `Riff` that parsed has a grid if and only if
-   * its part is struck.
+   * **Present exactly where the request says the grid re-articulates the hook.** Absent on a
+   * held role (`bearsPattern` is false), where the hook is the whole figure, and absent on a
+   * struck role whose request says `reArticulatesHook: false`, where the figure is
+   * through-composed and the hook is the whole rhythm (§5A.2, #623). Optional in the type
+   * because the role and the flag decide together; the schema holds each shape to itself, so a
+   * `Riff` that parsed has a grid if and only if `request.reArticulatesHook === true`.
    */
   pattern?: Pattern
 }
@@ -417,20 +464,48 @@ export const RiffConstraintsSchema = z
   })
 
 /**
- * §5A/#554. Which chord of the cycle is sounding at a figure step, or `undefined` where the riff
- * carries no harmony to answer with. Exported because both the schema and the surfaces need it and
- * neither should re-derive the arithmetic.
+ * §5A/#554/#623. **The chord occurrence sounding at a figure step**: its degree, and the figure
+ * step that occurrence began on. `undefined` where the riff carries no harmony, or where the
+ * progression does not cover the bar (a progression summing to less than `cycleBars`).
+ *
+ * **The cycle repeats under a figure longer than it.** A hook has no ceiling (§5A.2, #603) and
+ * a 48-bar line over a 12-bar cycle is four times round it, so the bar is taken modulo
+ * `cycleBars` rather than read off the first cycle alone. Before #623 this stopped at the end of
+ * the first cycle and answered `undefined` for every later step, which made every check built
+ * on it silently pass on anything past bar twelve.
+ *
+ * The start step is what tells one occurrence of a chord from the next: a `VI` in bar 3 and the
+ * `VI` the cycle returns to in bar 15 are one chord symbol and two entries, and a rule about how
+ * a chord is entered has to see both. Where `figureStartsAtBar` places the figure on a chord
+ * boundary (the schema requires it) every occurrence begins at or after step 1.
  */
-export function chordAtStep(riff: Riff, step: number): string | undefined {
+export function chordOccurrenceAt(
+  riff: Riff,
+  step: number,
+): { degree: string; startStep: number } | undefined {
   const { harmony } = riff
   if (harmony === undefined) return undefined
-  const cycleBar = (riff.figureStartsAtBar ?? 1) + Math.floor((step - 1) / STEPS_PER_BAR)
-  let bar = 1
+  const hookBar = Math.floor((step - 1) / STEPS_PER_BAR)
+  const cycleBar = ((riff.figureStartsAtBar ?? 1) - 1 + hookBar) % harmony.cycleBars
+  let bar = 0
   for (const chord of harmony.progression) {
-    if (cycleBar >= bar && cycleBar < bar + chord.bars) return chord.degree
+    if (cycleBar >= bar && cycleBar < bar + chord.bars) {
+      const barsIntoChord = cycleBar - bar
+      return { degree: chord.degree, startStep: (hookBar - barsIntoChord) * STEPS_PER_BAR + 1 }
+    }
     bar += chord.bars
   }
   return undefined
+}
+
+/**
+ * §5A/#554. Which chord of the cycle is sounding at a figure step, or `undefined` where the riff
+ * carries no harmony to answer with. Exported because both the schema and the surfaces need it and
+ * neither should re-derive the arithmetic. `chordOccurrenceAt` is the same answer with the
+ * occurrence kept; this is the degree alone, which is what a note row prints.
+ */
+export function chordAtStep(riff: Riff, step: number): string | undefined {
+  return chordOccurrenceAt(riff, step)?.degree
 }
 
 /**
@@ -494,28 +569,23 @@ export function riffConstraintViolations(riff: Riff): string[] {
 
   const offset = rules.onsetOffset
   if (offset !== undefined) {
-    const entered = new Set<string>()
-    for (const note of riff.hook.notes) {
-      const chord = chordAtStep(riff, note.step)
-      if (chord === undefined || entered.has(chord)) continue
-      entered.add(chord)
+    // #623. Each *occurrence* of a chord is entered once, keyed on the step it began, and not
+    // each chord symbol: a cycle a figure goes round four times has four `VI`s, and the fourth
+    // is entered as late or as early as it is, whatever the first did. Keyed by symbol, the
+    // check saw one entry per chord across the whole hook and nothing after the first cycle.
+    const entered = new Set<number>()
+    const sorted = [...riff.hook.notes].sort((a, b) => a.step - b.step)
+    for (const note of sorted) {
+      const occurrence = chordOccurrenceAt(riff, note.step)
+      if (occurrence === undefined || entered.has(occurrence.startStep)) continue
+      entered.add(occurrence.startStep)
       // Where in its own chord the entry falls, which needs the chord's start rather than the
       // bar's: a chord two bars long is entered late at step 20 and on the nose at step 17.
-      let barsBefore = 0
-      const cycleBar = (riff.figureStartsAtBar ?? 1) + Math.floor((note.step - 1) / STEPS_PER_BAR)
-      let bar = 1
-      for (const chordStep of riff.harmony?.progression ?? []) {
-        if (cycleBar >= bar && cycleBar < bar + chordStep.bars) {
-          barsBefore = cycleBar - bar
-          break
-        }
-        bar += chordStep.bars
-      }
-      const into = barsBefore * STEPS_PER_BAR + ((note.step - 1) % STEPS_PER_BAR)
+      const into = note.step - occurrence.startStep
       if (into >= offset.minSteps) continue
       out.push(
-        `${chord} is entered at step ${String(note.step)}, ${String(into)} steps in, where this ` +
-          `riff asks for ${String(offset.minSteps)}: ${offset.reason}`,
+        `${occurrence.degree} is entered at step ${String(note.step)}, ${String(into)} steps in, ` +
+          `where this riff asks for ${String(offset.minSteps)}: ${offset.reason}`,
       )
     }
   }
@@ -531,7 +601,7 @@ export const RiffSchema = z
     technique: z.array(z.string().min(1)).min(1, 'a riff is a technique: say what it is'),
     bpm: BpmSpecSchema,
     key: MusicalKeySchema,
-    request: RoleRequestSchema,
+    request: RiffRequestSchema,
     harmony: HarmonySchema.optional(),
     figureStartsAtBar: z.int().min(1).optional(),
     constraints: RiffConstraintsSchema.optional(),
@@ -636,9 +706,11 @@ export const RiffSchema = z
       })
     }
     /*
-     * §5A/#552. The offset is meaningless without a cycle to be an offset into, has to land on a
-     * chord boundary, and has to leave room for the figure. Each is checked separately so the
-     * message names the one that is wrong.
+     * §5A/#552/#623. The offset is meaningless without a cycle to be an offset into, and has to
+     * land on a chord boundary. Each is checked separately so the message names the one that is
+     * wrong. It no longer has to leave room for the figure inside one cycle: the cycle repeats
+     * under a figure longer than it (`chordOccurrenceAt`), so a 48-bar figure from bar 1 of a
+     * 12-bar cycle is four times round it and not a figure that runs off the end.
      */
     if (riff.figureStartsAtBar !== undefined) {
       const { harmony } = riff
@@ -664,15 +736,6 @@ export const RiffSchema = z
             path: ['figureStartsAtBar'],
           })
         }
-        if (riff.figureStartsAtBar + hook.bars - 1 > harmony.cycleBars) {
-          ctx.addIssue({
-            code: 'custom',
-            message:
-              `a ${String(hook.bars)}-bar figure from bar ${String(riff.figureStartsAtBar)} runs ` +
-              `past the ${String(harmony.cycleBars)}-bar cycle (§5A/#552)`,
-            path: ['figureStartsAtBar'],
-          })
-        }
       }
     }
     /*
@@ -695,12 +758,15 @@ export const RiffSchema = z
       })
     }
     /*
-     * §4.2/§5A.2/#608. **The role decides whether there is a grid.** A held role
-     * (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on one
-     * is its hook and nothing else: no `pattern`, and no `reArticulatesHook`, since there is no
-     * grid for the flag to join to the hook. A struck role has both, and the flag is required
-     * rather than offered — see the header. Each half refuses the other's shape, so an entry
-     * cannot half-change role.
+     * §4.2/§5A.2/#608/#623. **The role and the flag decide whether there is a grid.** A held
+     * role (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on
+     * one is its hook and nothing else: no `pattern`, and no `reArticulatesHook` in either
+     * spelling, since there is no grid question for the flag to answer. A struck role has to
+     * answer it, and the flag is required rather than offered — see the header. `true` means a
+     * grid says where the hook is struck again, and the grid is required beside it. `false`
+     * means the figure is through-composed, the hook is the whole rhythm, and a grid beside it
+     * would be the two authorities #100 forbids. Each shape refuses the others', so an entry
+     * cannot half-change role and cannot carry a grid it has disowned.
      */
     if (!bearsPattern(request.role)) {
       if (pattern !== undefined) {
@@ -719,15 +785,15 @@ export const RiffSchema = z
           path: ['request', 'reArticulatesHook'],
         })
       }
-    } else {
-      if (request.reArticulatesHook !== true) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            'a riff carries a hook and a grid: it must say the grid re-articulates the hook (§4.3)',
-          path: ['request', 'reArticulatesHook'],
-        })
-      }
+    } else if (request.reArticulatesHook === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          `\`${request.role}\` is struck, so the riff says whether a grid re-articulates the hook: ` +
+          '`true` beside a grid, or `false` with none where the figure is through-composed (§5A.2)',
+        path: ['request', 'reArticulatesHook'],
+      })
+    } else if (request.reArticulatesHook) {
       if (pattern === undefined) {
         ctx.addIssue({
           code: 'custom',
@@ -735,6 +801,14 @@ export const RiffSchema = z
           path: ['pattern'],
         })
       }
+    } else if (pattern !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'the request says the figure is through-composed and the grid says where it is struck: ' +
+          'two authorities over one rhythm (#100). Drop the grid, or say `reArticulatesHook: true`',
+        path: ['pattern'],
+      })
     }
     if (pattern !== undefined) {
       if (pattern.forRole !== request.role) {

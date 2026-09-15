@@ -4574,16 +4574,17 @@ words for what makes it that part — resolved against whatever boxes the reader
   technique: [ /* prose. What makes it this part, in the words somebody teaching it would use */ ],
   bpm: { min: 118, max: 134, default: 128 },
   key: 'F minor',
-  request: { /* one RoleRequest: continuous, priority 1, reArticulatesHook where there is a grid */ },
+  request: { /* one RiffRequest: continuous, priority 1, reArticulatesHook true with a grid, false without (§5A.2) */ },
   hook:    { /* Hook — the notes. Ours, always */ },
-  pattern: { /* Pattern — where they are struck. Band 0, no sections. Absent on a held role (§5A.2) */ },
+  pattern: { /* Pattern — where they are struck. Band 0, no sections. Absent on a held role and on a through-composed one (§5A.2) */ },
 }
 ```
 
-Everything in it is an existing primitive. `RoleRequest`, `Hook`, `Pattern` and `BpmSpec` are §4's,
-the key string is the one §4.1 already parses, and the vocabulary is `Role`, `Character`,
-`MoodAxis` and `PatternSlot` as it is everywhere else — **invariant 3 is untouched, and no fifth
-shared vocabulary is added**. A riff names no device, for the reason a template does not: which box
+Everything in it is an existing primitive. `Hook`, `Pattern` and `BpmSpec` are §4's, `RiffRequest`
+is §4's `RoleRequest` with `reArticulatesHook` widened to take `false` (§5A.2), the key string is
+the one §4.1 already parses, and the vocabulary is `Role`, `Character`, `MoodAxis` and
+`PatternSlot` as it is everywhere else — **invariant 3 is untouched, and no fifth shared
+vocabulary is added**. A riff names no device, for the reason a template does not: which box
 plays it is the rig's answer, not the author's.
 
 **Where a riff surfaces follows its reference** (#598). A record-named riff is at `/riffs/<id>`,
@@ -4648,7 +4649,8 @@ with the first re-articulates the tied note the figure exists to teach. The grid
 music because the role was wrong, and the role was wrong because riffs could not be pads.
 
 So `Riff.pattern` is optional, and the schema holds each kind of role to its own shape. **A struck
-role carries a `pattern` and `reArticulatesHook: true`, and is refused without either.** **A held
+role carries a `pattern` and `reArticulatesHook: true`, and is refused without either** (or,
+since #623, answers `false` and carries no grid; below). **A held
 role carries neither, and is refused with either**: a grid on a pad would be a pattern that says
 nothing, and the flag without a grid has nothing to join to the hook. Every combination is a test
 in `test/riff.test.ts`. What a held riff is, then, is its hook alone — the notes, each in force
@@ -4664,7 +4666,27 @@ into the `iv`, where three notes sharing a pitch would have been three attacks. 
 ships both patches the figures now land on its soft pad, which is the recipe that names the
 strings patch, where as leads they had substituted to a bright mono lead.
 
-Downstream, the absence is an absence and not an empty section. `resolveRiff` binds no
+**A struck role whose figure is through-composed carries no grid either, and says so with
+`reArticulatesHook: false`** ([#623](https://github.com/miclip/patchscore/issues/623)). The
+rule below for a repeating grid, that it marks only what recurs on the same step of every pass,
+has a case where nothing does. The Muse Runner line grown to four loops has a silent chord in
+its last loop, so no step is an onset on every pass; its honest grid is empty, and an empty grid
+is refused because it would be a held note, not a riff. The role is still `lead`. It is struck,
+every other lead in the library carries a grid, and adding it to `NON_PATTERN_BEARING_ROLES`
+would have said something false about leads to fix one entry. So the third shape is the hook as
+the whole rhythm: a struck role, `false`, and no `pattern`. **`false` is legal here and nowhere
+else**, and the reason it is legal here is the reason it is refused in a template. §4.3 takes
+`true` only because a template's absent flag is the default and `false` would be a second
+spelling of it. On a struck riff the absent flag is *refused*: the field is a question every
+struck entry has to answer, and it has two answers, `true` beside a grid and `false` without one.
+A held role is never asked, and is refused either spelling. `RiffRequestSchema` is
+`RoleRequestSchema` with the one field widened and every refinement kept, and `test/riff.test.ts`
+holds all three shapes and every wrong combination. The refusal for an unanswered struck entry
+names the choice rather than demanding a grid, since the author may be about to decline one.
+
+Downstream, the absence is an absence and not an empty section, and a through-composed riff
+takes the same path a held one does, since the renderers ask whether there is a grid and never
+which role declined it. `resolveRiff` binds no
 articulation, since articulation addresses a grid's slots and there is no grid; both renderers
 omit the grid section entirely — no heading, no lead sentence, no rows and no slots — and the
 header describes the figure's length in bars alone, because a step count is a fact about a grid.
@@ -4689,10 +4711,13 @@ on an onset in one pass and inside a hold in the next would re-articulate a note
 through. On the six-chord cycle both F# minor entries carry, two bars a chord, a four-bar grid
 covers two chords a pass, and what recurs is the arrival: the grid strikes the entry into each
 chord, and every move within a chord lives in the hook alone, unstruck. That is also what keeps
-the two entries apart. The Blade Runner line is six arrivals; the Muse Runner line is the same
-six with seven slurred moves between them. Both grids mark arrivals and nothing else, and they
-differ in where: Blade Runner strikes 5 and 41, a beat into the first chord of each pair and two
-into the second, and Muse Runner strikes 9 and 41, two beats into every chord.
+the two entries apart. The Blade Runner line is six arrivals, and its grid strikes 5 and 41, a
+beat into the first chord of each pair and two into the second. The Muse Runner line's first
+loop is the same six with seven slurred moves between them, and while the entry was that loop
+alone its grid struck 9 and 41, two beats into every chord. Grown to four loops (#623, above)
+the line has no grid at all, since its last loop's silent first chord and very late second entry
+leave nothing that recurs on every pass; the two entries are now apart by length and by shape,
+and Blade Runner's grid is the one a reader plays round.
 
 The page says the repetition in words. Where a figure is longer than its grid both renderers
 print, under the grid's lead sentence, how many times to play it round (`gridRepeatSentence`),
@@ -4704,6 +4729,30 @@ places it; it is unfinished only where the figure was cut mid-thought, and lengt
 hook of eight bars over a grid of four that marks what both halves share. `RiffSchema` refuses a
 hook that is not a whole number of grid passes, and `test/riff.test.ts` checks each strike at
 every step it lands on across the hook.
+
+**The cycle is not capped either, in the other direction: a figure longer than its harmony is
+played with the cycle repeating under it** ([#623](https://github.com/miclip/patchscore/issues/623)).
+`figureStartsAtBar` (#552) places a figure *shorter* than its cycle, and its checks arrived with
+that case in mind: the figure had to start where a chord does and had to fit inside the cycle.
+The first is a fact about the music and stays. The second was the grid's cap mistaken for the
+hook's a second time, and it went when the Muse Runner line grew to four times round its
+twelve-bar cycle. What replaced it is arithmetic rather than a rule: `chordOccurrenceAt` takes
+the figure's bar modulo `cycleBars`, so a 48-bar hook from bar 1 of a 12-bar cycle is four
+passes over the same six chords, and one from bar 7 is four passes beginning on the `I`. The
+chord table marks every chord as under the figure once the figure is as long as the cycle.
+
+**Every check built on that arithmetic now sees every pass, and before this none did.**
+`chordAtStep` read the bar off the first cycle and answered `undefined` past its end, and every
+check downstream treated `undefined` as "no chord here" and moved on: the forbidden-degree scan
+skipped every note after bar twelve, and the onset check, keyed by chord *symbol*, saw one entry
+per chord across the whole hook and never looked at the second cycle. Both passed silently on a
+hook they had not read. So `chordOccurrenceAt` answers with the occurrence, the degree and the
+step that occurrence began on, and the onset check keys on the start step: a `VI` in bar 3 and
+the `VI` the cycle returns to in bar 15 are one symbol and two entries, and the fourth time
+round is entered as late or as early as it is whatever the first did. The entry of an
+occurrence is its earliest onset, in step order rather than authored order. `test/riff.test.ts`
+plays the shipped Muse Runner line twice and plants each failure in the *second* pass, where the
+old arithmetic could not see it.
 
 ### 5A.3 Resolution is one part, one rig, and no search
 

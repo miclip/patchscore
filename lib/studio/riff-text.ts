@@ -84,9 +84,9 @@ export function riffTempo(riff: Riff): string {
 /**
  * How long the figure is, and how many steps that is on §4.3's grid.
  *
- * **Bars alone on a held riff** (§5A.2/#608). A step count is a fact about a grid, and a riff
- * on a held role has none; printing the hook's length in steps would name a grid the page then
- * fails to draw.
+ * **Bars alone on a riff with no grid** (§5A.2/#608/#623). A step count is a fact about a grid,
+ * and a riff on a held role has none, nor does a through-composed one on a struck role; printing
+ * the hook's length in steps would name a grid the page then fails to draw.
  */
 export function riffLength(riff: Riff): string {
   const bars = count(riff.hook.bars, 'bar')
@@ -126,11 +126,14 @@ export function chordRows(riff: Riff, key: string = riff.key): readonly ChordRow
   if (harmony === undefined) return []
   const start = riff.figureStartsAtBar ?? 1
   const end = start + riff.hook.bars - 1
+  // #623. A figure as long as the cycle or longer goes round it, so every chord is under it
+  // wherever it starts; the span test is for a figure shorter than the cycle.
+  const wholeCycle = riff.hook.bars >= harmony.cycleBars
   const rows: ChordRow[] = []
   let from = 1
   for (const row of progressionRows(harmony, key)) {
     const last = from + row.bars - 1
-    rows.push({ ...row, from, underFigure: from <= end && last >= start })
+    rows.push({ ...row, from, underFigure: wholeCycle || (from <= end && last >= start) })
     from += row.bars
   }
   return rows
@@ -139,8 +142,12 @@ export function chordRows(riff: Riff, key: string = riff.key): readonly ChordRow
 /**
  * `6 chords over 12 bars, in F# minor. The figure is bars 7-10.` — the line above the rows.
  *
- * The second sentence appears only where the figure is shorter than the cycle. Where the two are
- * the same length there is nothing to align and saying so would be noise.
+ * The second sentence appears only where the figure and the cycle differ in length. Shorter, it
+ * says which bars the figure sits on. Longer (§5A.2/#623), it says the cycle repeats under the
+ * figure, with the count where the figure is a whole number of cycles: `The 12-bar cycle repeats
+ * 4 times under this 48-bar figure.` A page that printed a twelve-bar table under a forty-eight
+ * bar figure and said nothing left the reader to work out that the chords come round. Where the
+ * two are the same length there is nothing to align and saying so would be noise.
  */
 export function riffChordSummary(riff: Riff, key: string = riff.key): string | undefined {
   const { harmony } = riff
@@ -148,7 +155,14 @@ export function riffChordSummary(riff: Riff, key: string = riff.key): string | u
   const head =
     `${count(harmony.progression.length, 'chord')} over ` +
     `${count(harmony.cycleBars, 'bar')}, in ${key}.`
-  if (riff.hook.bars >= harmony.cycleBars) return head
+  if (riff.hook.bars === harmony.cycleBars) return head
+  if (riff.hook.bars > harmony.cycleBars) {
+    const cycle = `The ${num(harmony.cycleBars)}-bar cycle repeats`
+    const figure = `under this ${num(riff.hook.bars)}-bar figure.`
+    const whole = riff.hook.bars % harmony.cycleBars === 0
+    const times = whole ? ` ${count(riff.hook.bars / harmony.cycleBars, 'time')}` : ''
+    return `${head} ${cycle}${times} ${figure}`
+  }
   const start = riff.figureStartsAtBar ?? 1
   const end = start + riff.hook.bars - 1
   const span = start === end ? `bar ${num(start)}` : `bars ${num(start)}\u2013${num(end)}`
@@ -351,8 +365,10 @@ export function stepSpanLabel(row: NoteRow): string {
 // ---------------------------------------------------------------------------
 
 /*
- * §5A.2/#608. **A held riff has no grid, and no grid section.** Every function below answers
- * with nothing where `riff.pattern` is absent — no rows, no slots, no repeat sentence — and both
+ * §5A.2/#608/#623. **A riff with no grid has no grid section.** A held riff has none, and so
+ * does a through-composed one on a struck role (`reArticulatesHook: false`); every function
+ * below asks only whether `riff.pattern` is there, never which of the two declined it, and
+ * answers with nothing where it is absent — no rows, no slots, no repeat sentence — and both
  * renderers omit the section rather than heading an empty one. The lead sentence is a sentence
  * about a grid, so it goes with it.
  */

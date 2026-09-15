@@ -25,11 +25,13 @@ import type { Riff } from '../core/riff'
  *
  * ## The skeleton, and how it differs from the Muse Runner line
  *
- * `muse-runner-floating-arrival-lead` carries the same six chords with thirteen notes: the full
- * line, with a contour inside each chord. This entry is the six notes under that line, the one
- * arrival each chord gets, so what it teaches is what the harmony does to a single held note
- * and where to place it. The two lessons are on one progression on purpose. A reader who has
- * the arrivals goes to the other entry for the moves between them.
+ * `muse-runner-floating-arrival-lead` carries the same six chords four times round, forty notes
+ * over forty-eight bars: the full line with a contour inside each chord, then the same line an
+ * octave up, thinned to one note a chord, and closed. This entry is the six notes under the
+ * first of those loops, the one arrival each chord gets, so what it teaches is what the harmony
+ * does to a single held note and where to place it. The two lessons are on one progression on
+ * purpose. A reader who has the arrivals goes to the other entry for the moves between them and
+ * for where the line goes after the first time round.
  *
  * ## Why both notes are altered, and why that is the whole lesson
  *

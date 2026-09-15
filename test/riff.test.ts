@@ -8,6 +8,7 @@ import {
   STEPS_PER_BAR,
   affinePatch,
   chordAtStep,
+  chordOccurrenceAt,
   pitchClassOf,
   resolveHook,
   resolveRiff,
@@ -20,7 +21,7 @@ import {
   type Riff,
 } from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
-import { ruleLines } from '@/lib/studio/riff-text'
+import { chordRows, ruleLines } from '@/lib/studio/riff-text'
 import { gridOf } from './fixtures'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import {
@@ -244,23 +245,29 @@ describe('RiffSchema (§5A)', () => {
   })
 
   /**
-   * §4.2/§5A.2/#608. **The role decides the shape.** A struck role carries a grid and the flag
-   * that joins it to the hook; a held role carries neither. Every combination of the two fields
-   * against the two kinds of role is here, so the schema is held to refusing exactly the three
-   * wrong ones on each side.
+   * §4.2/§5A.2/#608/#623. **The role and the flag decide the shape.** A struck role answers
+   * whether a grid re-articulates the hook: `true` and it carries a grid, `false` and it carries
+   * none, because the figure is through-composed. A held role carries neither the flag nor a
+   * grid. Every combination of the two fields against the two kinds of role is here, so the
+   * schema is held to accepting exactly the three shapes and refusing every other.
    */
   describe('a grid and `reArticulatesHook` go together, and only on a struck role (#608)', () => {
     const struck = riff()
     const { reArticulatesHook: _flag, ...unflagged } = struck.request
     const { pattern: grid, ...ungridded } = struck
     const held = heldRiff()
+    /** §5A.2/#623. The third shape: a struck role, `false`, and no grid. */
+    const throughComposed: Riff = {
+      ...ungridded,
+      request: { ...unflagged, reArticulatesHook: false },
+    }
 
     it('accepts a struck role with both, which is every riff before #608', () => {
       expect(RiffSchema.safeParse(struck).success).toBe(true)
       expect(NON_PATTERN_BEARING_ROLES).not.toContain(struck.request.role)
     })
 
-    it('refuses a struck role with no grid: the part is struck, so the riff says where', () => {
+    it('refuses a struck role with `true` and no grid: the flag names a grid, so the riff says where', () => {
       expect(refusal(ungridded)).toContain('is struck: a riff on it says where, in a grid')
     })
 
@@ -268,10 +275,46 @@ describe('RiffSchema (§5A)', () => {
       expect(refusal({ ...struck, request: unflagged })).toContain('re-articulates the hook')
     })
 
-    it('refuses a struck role with neither, and names both', () => {
+    it('refuses a struck role with neither, and names the choice rather than demanding a grid', () => {
+      // Absent is not `false`. The author has not said which of the two shapes the entry is,
+      // so the refusal names both and asks for one, and does not also demand a grid the author
+      // may be about to decline.
       const messages = refusals({ ...ungridded, request: unflagged })
       expect(messages.some((m) => m.includes('re-articulates the hook'))).toBe(true)
-      expect(messages.some((m) => m.includes('says where, in a grid'))).toBe(true)
+      expect(messages.some((m) => m.includes('`false` with none'))).toBe(true)
+      expect(messages.some((m) => m.includes('says where, in a grid'))).toBe(false)
+    })
+
+    it('accepts a struck role with `false` and no grid: the figure is through-composed (#623)', () => {
+      expect(NON_PATTERN_BEARING_ROLES).not.toContain(throughComposed.request.role)
+      const parsed = RiffSchema.safeParse(throughComposed)
+      expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+    })
+
+    it('refuses a struck role with `false` and a grid: two authorities over one rhythm (#100)', () => {
+      const messages = refusals({ ...throughComposed, pattern: grid })
+      expect(messages.some((m) => m.includes('two authorities over one rhythm'))).toBe(true)
+      // And says which way out is which, since either repair is a legitimate entry.
+      expect(messages.some((m) => m.includes('Drop the grid, or say `reArticulatesHook: true`'))).toBe(true)
+    })
+
+    it('holds a through-composed riff to every rule that is not about the grid', () => {
+      expect(refusal({ ...throughComposed, key: 'H major' })).toContain('not a key this engine reads')
+      expect(refusal({ ...throughComposed, hook: { ...throughComposed.hook, notes: [] } })).toContain(
+        'drum pattern',
+      )
+      // The base request's own refinements still reach it: `RiffRequestSchema` re-runs them, and
+      // the first message on a transient request is `RoleRequestSchema`'s own.
+      expect(
+        refusal({ ...throughComposed, request: { ...throughComposed.request, sustain: 'transient' } }),
+      ).toContain('a transient request must list the sections it occupies')
+      expect(
+        refusal({
+          ...throughComposed,
+          request: { ...throughComposed.request, followsKey: true, role: 'lead' },
+          hook: { ...throughComposed.hook, forRole: 'lead' },
+        }),
+      ).toContain('have a fundamental worth tuning to the key')
     })
 
     it('accepts a held role with neither: the hook is the whole figure', () => {
@@ -287,9 +330,14 @@ describe('RiffSchema (§5A)', () => {
       expect(refusal({ ...held, pattern: padGrid })).toContain('no grid to riff on')
     })
 
-    it('refuses a held role with the flag: there is no grid to re-articulate the hook', () => {
+    it('refuses a held role with the flag in either spelling: it was never asked the question', () => {
       expect(
         refusal({ ...held, request: { ...held.request, reArticulatesHook: true as const } }),
+      ).toContain('no grid to re-articulate the hook')
+      // `false` is a struck role's answer (#623). A held role has no grid to decline, so the
+      // spelling that means "no grid" on a lead means nothing on a pad and is refused the same.
+      expect(
+        refusal({ ...held, request: { ...held.request, reArticulatesHook: false } }),
       ).toContain('no grid to re-articulate the hook')
     })
 
@@ -593,9 +641,11 @@ describe('the riff library (§5A)', () => {
       'soft-orchestra-slow-changes',
       'swollen-pad-staggered-stack',
     ])
+    // The flag is a struck role's question (#623): every held riff leaves it unanswered, every
+    // struck riff answers it, and the grid is there exactly where the answer is `true`.
     for (const r of RIFFS) {
-      expect(r.pattern === undefined, r.id).toBe(!bearsPattern(r.request.role))
       expect(r.request.reArticulatesHook === undefined, r.id).toBe(!bearsPattern(r.request.role))
+      expect(r.pattern !== undefined, r.id).toBe(r.request.reArticulatesHook === true)
     }
   })
 
@@ -978,20 +1028,27 @@ describe('the Blade Runner Blues lead lines up with its chords (#552)', () => {
 })
 
 /**
- * §5A.5/#566/#603. **The one entry named after a factory patch**, carrying the operator's own
- * line: thirteen notes over the six-chord cycle, one late entry per chord and a contour inside
- * each. The first version was three notes over four bars of a different cycle, and the reason
- * given was the false one #603 removed.
+ * §5A.5/#566/#603/#623. **The one entry named after a factory patch**, carrying the operator's
+ * own line: four loops over the six-chord cycle, forty notes over forty-eight bars, each loop
+ * higher and thinner and the fourth an ending. The first version was three notes over four bars
+ * of a different cycle, the second the first loop alone, and the reason given for the cut was
+ * the false one #603 removed. The four-loop line is #623's, and the grid went with it.
  */
-describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603)', () => {
+describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603/#623)', () => {
   const riff = museRunnerFloatingArrivalLead
   const { harmony } = riff
   if (harmony === undefined) throw new Error('the entry carries no harmony')
   const cycle = harmony
+  const LOOP = 12 * STEPS_PER_BAR
 
   const resolved = resolveHook(riff.hook, riff.key)
   if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
   const notes = resolved.hook.notes
+
+  /** The loop a step falls in, 1 to 4. */
+  const loopOf = (step: number): number => Math.floor((step - 1) / LOOP) + 1
+  /** The step a chord occurrence begins on, inside the hook. */
+  const startOf = (step: number): number => chordOccurrenceAt(riff, step)?.startStep ?? -1
 
   it('is named after a patch, in the title and in the slug', () => {
     expect(riff.reference).toEqual({ kind: 'patch', name: 'Muse Runner' })
@@ -1000,41 +1057,73 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603)', () => {
     expect(RiffSchema.safeParse(riff).success).toBe(true)
   })
 
-  it('carries the whole twelve-bar cycle from bar 1, in F# minor', () => {
+  it('is four loops of the twelve-bar cycle from bar 1, in F# minor', () => {
     expect(riff.key).toBe('F# minor')
     expect(cycle.cycleBars).toBe(12)
     expect(cycle.progression.map((p) => p.degree)).toEqual([...SIX_CHORDS])
     expect(cycle.progression.every((p) => p.bars === 2)).toBe(true)
     expect(riff.figureStartsAtBar).toBe(1)
-    expect(riff.hook.bars).toBe(12)
+    expect(riff.hook.bars).toBe(48)
+    expect(riff.hook.notes).toHaveLength(40)
   })
 
-  it('resolves to the thirteen notes the operator wrote', () => {
-    // The table in #603, pitch for pitch. The corrected count is thirteen: the `Bm` row is
-    // *hold, neighbour C#5 back to D5*, three notes, and the issue's sentence said twelve.
+  it('resolves to the forty notes the operator wrote, loop by loop', () => {
+    // #623's four tables, pitch for pitch. Loop 1 is thirteen, Loop 2 sixteen, Loop 3 six and
+    // Loop 4 five: the line thins as it climbs.
     expect(notes.map((n) => n.note)).toEqual([
+      // Loop 1
       'C#5', 'A4',
       'F#5', 'E5', 'D5',
       'D5', 'C#5', 'D5',
       'A#4',
       'D#5', 'F#5',
       'G#4', 'E4',
+      // Loop 2
+      'A5', 'F#5',
+      'A5', 'B5', 'A5',
+      'B5', 'A5', 'F#5',
+      'C#5', 'A#5',
+      'F#5', 'D#5', 'F#5',
+      'E5', 'D#5', 'C#5',
+      // Loop 3
+      'F#4', 'A4', 'F#4', 'A#4', 'F#4', 'G#4',
+      // Loop 4
+      'A5', 'F#5', 'A#5', 'F#5', 'C#6',
     ])
-    expect(notes.map((n) => n.midi)).toEqual([
-      73, 69, 78, 76, 74, 74, 73, 74, 70, 75, 78, 68, 64,
-    ])
-    expect(riff.hook.notes.map((n) => n.alter)).toEqual([
-      undefined, undefined,
-      undefined, undefined, undefined,
-      undefined, undefined, undefined,
-      1,
-      1, undefined,
-      undefined, undefined,
+    expect(riff.hook.notes.map((n) => loopOf(n.step))).toEqual([
+      ...Array<number>(13).fill(1),
+      ...Array<number>(16).fill(2),
+      ...Array<number>(6).fill(3),
+      ...Array<number>(5).fill(4),
     ])
   })
 
-  it('puts every note over the chord it was written for', () => {
-    expect(notes.map((n) => [n.note, chordAtStep(riff, n.step)])).toEqual([
+  it('keeps Loop 1 as the thirteen notes that shipped, unchanged', () => {
+    // The first twelve bars are what a Muse owner opens first (#618), and the expansion built
+    // on them. Pinned as note objects, so a length or an octave cannot drift.
+    expect(riff.hook.notes.slice(0, 13)).toEqual([
+      { step: 9, degree: 5, octave: 0, len: 16 },
+      { step: 25, degree: 3, octave: 0, len: 10 },
+      { step: 41, degree: 1, octave: 1, len: 12 },
+      { step: 53, degree: 7, octave: 0, len: 4 },
+      { step: 57, degree: 6, octave: 0, len: 10 },
+      { step: 73, degree: 6, octave: 0, len: 12 },
+      { step: 85, degree: 5, octave: 0, len: 4 },
+      { step: 89, degree: 6, octave: 0, len: 8 },
+      { step: 105, degree: 3, octave: 0, len: 26, alter: 1 },
+      { step: 137, degree: 6, octave: 0, len: 12, alter: 1 },
+      { step: 149, degree: 1, octave: 1, len: 14 },
+      { step: 169, degree: 2, octave: 0, len: 16 },
+      { step: 185, degree: 7, octave: -1, len: 10 },
+    ])
+    expect(notes.slice(0, 13).map((n) => n.midi)).toEqual([
+      73, 69, 78, 76, 74, 74, 73, 74, 70, 75, 78, 68, 64,
+    ])
+  })
+
+  it('puts every note over the chord it was written for, across all four cycles', () => {
+    const placed = notes.map((n) => [n.note, chordAtStep(riff, n.step)])
+    expect(placed.slice(0, 13)).toEqual([
       ['C#5', 'i'], ['A4', 'i'],
       ['F#5', 'VI'], ['E5', 'VI'], ['D5', 'VI'],
       ['D5', 'iv'], ['C#5', 'iv'], ['D5', 'iv'],
@@ -1042,54 +1131,161 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603)', () => {
       ['D#5', 'IV'], ['F#5', 'IV'],
       ['G#4', 'v'], ['E4', 'v'],
     ])
+    expect(placed.slice(13, 29)).toEqual([
+      ['A5', 'i'], ['F#5', 'i'],
+      ['A5', 'VI'], ['B5', 'VI'], ['A5', 'VI'],
+      ['B5', 'iv'], ['A5', 'iv'], ['F#5', 'iv'],
+      ['C#5', 'I'], ['A#5', 'I'],
+      ['F#5', 'IV'], ['D#5', 'IV'], ['F#5', 'IV'],
+      ['E5', 'v'], ['D#5', 'v'], ['C#5', 'v'],
+    ])
+    expect(placed.slice(29, 35)).toEqual([
+      ['F#4', 'i'], ['A4', 'VI'], ['F#4', 'iv'], ['A#4', 'I'], ['F#4', 'IV'], ['G#4', 'v'],
+    ])
+    // Loop 4 has no note over the `i`: it is silent.
+    expect(placed.slice(35)).toEqual([
+      ['A5', 'VI'], ['F#5', 'iv'], ['A#5', 'I'], ['F#5', 'IV'], ['C#6', 'v'],
+    ])
+    expect(riff.hook.notes.some((n) => loopOf(n.step) === 4 && chordAtStep(riff, n.step) === 'i')).toBe(
+      false,
+    )
   })
 
-  it('resolves the E below the G#, which needs the octave down', () => {
+  it('descends B5 A5 F#5 over the B minor in Loop 2, three notes and stepwise', () => {
+    // The operator's row is *B5, descend B5 A5 F#5*: three notes, a straight descent where
+    // Loop 1's `iv` has a neighbour and back.
+    const overBm = notes.filter((n) => loopOf(n.step) === 2 && chordAtStep(riff, n.step) === 'iv')
+    expect(overBm.map((n) => n.note)).toEqual(['B5', 'A5', 'F#5'])
+    expect(overBm.map((n) => n.step)).toEqual([265, 277, 281])
+    const [b, a, f] = overBm.map((n) => n.midi)
+    expect(b).toBeGreaterThan(a as number)
+    expect(a).toBeGreaterThan(f as number)
+  })
+
+  it('plays both D#5s of Loop 2 as the raised sixth, and neither is caught by the rule', () => {
+    // Over the `IV` the D# is B major's third, the same note Loop 1 plays there. Over the `v`
+    // it is the second of C# minor: the key's raised sixth, the chord's own note, in a stepwise
+    // descent `E5 D#5 C#5`. Both are `6/0 alter 1`; the rule forbids degree 6 *unaltered* over
+    // the `IV`, so it reaches neither. Lowering the second to D would be the wrong correction.
+    const sharps = riff.hook.notes.filter((n, i) => notes[i]?.note === 'D#5' && loopOf(n.step) === 2)
+    expect(sharps).toEqual([
+      { step: 341, degree: 6, octave: 0, len: 4, alter: 1 },
+      { step: 373, degree: 6, octave: 0, len: 4, alter: 1 },
+    ])
+    expect(sharps.map((n) => chordAtStep(riff, n.step))).toEqual(['IV', 'v'])
+    const overV = notes.filter((n) => loopOf(n.step) === 2 && chordAtStep(riff, n.step) === 'v')
+    expect(overV.map((n) => n.note)).toEqual(['E5', 'D#5', 'C#5'])
+    expect(riffConstraintViolations(riff)).toEqual([])
+    // And the lowered spelling *is* caught, so the rule is doing the work the docstring says.
+    const lowered: Riff = {
+      ...riff,
+      hook: {
+        ...riff.hook,
+        notes: riff.hook.notes.map((n) => (n.step === 341 ? { step: 341, degree: 6, octave: 0, len: 4 } : n)),
+      },
+    }
+    expect(riffConstraintViolations(lowered)[0]).toContain('D5 sounds over IV at step 341')
+  })
+
+  it('resolves the E below the G# at the end of Loop 1, which needs the octave down', () => {
     // Degree 7 at octave 0 is `E5`, above the tonic; the operator's line resolves *down* a
     // major third from `G#4`, so the note carries `octave: -1`.
-    const last = riff.hook.notes.at(-1)
+    const last = riff.hook.notes[12]
     expect(last).toEqual({ step: 185, degree: 7, octave: -1, len: 10 })
-    const [g, e] = notes.slice(-2)
+    const [g, e] = notes.slice(11, 13)
     if (g === undefined || e === undefined) throw new Error('two notes expected')
     expect(e.midi).toBeLessThan(g.midi)
     expect(g.midi - e.midi).toBe(4)
   })
 
-  it('offers the unresolved G# as the other ending, in prose and not as a fourteenth note', () => {
-    // *"or leave it on G# unresolved"* is an alternative reading of the last note. A hook holds
-    // one figure, so the alternative is technique (#603).
-    expect(riff.hook.notes).toHaveLength(13)
+  it('offers the G# cycling ending as prose, and the C#6 close as the figure', () => {
+    // *"end on G#5 and it hands back to loop 1"* is a choice the reader makes. A hook holds one
+    // figure, so the figure closes and the alternative is technique (#603, #623).
+    const last = riff.hook.notes.at(-1)
+    expect(last).toEqual({ step: 745, degree: 5, octave: 1, len: 32 })
+    expect(notes.at(-1)?.note).toBe('C#6')
+    expect(riff.technique.some((p) => p.includes('end on G# instead and it hands back'))).toBe(true)
     expect(riff.technique.some((p) => p.includes('on the G# unresolved'))).toBe(true)
+  })
+
+  it('lets the last note ring eight steps past the end of the hook, and nothing follows it', () => {
+    // Authored sustain beyond the figure, not another loop: the hook is 768 steps and the C#6
+    // sounds to 776. Loop 1's E4 does the same two steps into Loop 2, as every last note of a
+    // chord does across the change.
+    const hookSteps = riff.hook.bars * STEPS_PER_BAR
+    expect(hookSteps).toBe(768)
+    const last = riff.hook.notes.at(-1)
+    if (last === undefined) throw new Error('a last note')
+    expect(last.step + last.len - 1).toBe(hookSteps + 8)
+    expect(riff.technique.some((p) => p.includes('let it ring past the end'))).toBe(true)
+    expect(riff.technique.some((p) => p.includes('nothing follows it'))).toBe(true)
   })
 
   it('carries the definition’s own tempo window (#569)', () => {
     expect(riff.bpm).toEqual({ min: 58, max: 78, default: 66 })
   })
 
-  it('enters every chord two beats late, and the grid strikes those six and nothing else', () => {
+  it('enters every chord eight steps in, except the two very late entries at twenty-four, and Loop 4’s silent i', () => {
     expect(riff.constraints?.onsetOffset?.minSteps).toBe(8)
-    const arrivals = entries(riff).map((n) => n.step)
-    expect(arrivals).toEqual([9, 41, 73, 105, 137, 169])
-    for (const step of arrivals) expect(step - chordStart(chordAtStep(riff, step) ?? '')).toBe(8)
-    // A four-bar grid under a twelve-bar line, three passes: steps 9 and 41 of each are the
-    // six arrivals. The seven moves inside a chord have no strike, because they are slurred
-    // (§5A.2).
-    expect(gridOf(riff).length).toBe(64)
-    expect(gridOf(riff).hits.map((h) => h.step)).toEqual([9, 41])
-    expect(gridStrikes(riff)).toEqual(arrivals)
+    // One entry per chord occurrence, keyed on where the occurrence began: 23 of 24, since
+    // Loop 4's `i` has none.
+    const firstOf = new Map<number, number>()
+    for (const n of riff.hook.notes) {
+      const start = startOf(n.step)
+      if (!firstOf.has(start)) firstOf.set(start, n.step)
+    }
+    expect(firstOf.size).toBe(23)
+    expect(firstOf.has(576 + 1)).toBe(false)
+    const into = [...firstOf].map(([start, step]) => [step, step - start] as const)
+    const late = into.filter(([, offset]) => offset !== 8)
+    // Loop 3's `I` (`A#4`) and Loop 4's `VI` (`A5`), a bar and a half in.
+    expect(late).toEqual([
+      [505, 24],
+      [633, 24],
+    ])
+    expect(riff.technique.some((p) => p.includes('a bar and a half in'))).toBe(true)
+  })
+
+  it('has no grid: the figure is through-composed and the entry says so', () => {
+    // §5A.2/#623. The only steps Loop 1's three passes shared were 9 and 41; Loop 4's silent
+    // `i` removes 9 and its very late `VI` removes 41, so across twelve passes nothing recurs.
+    // Proven here rather than asserted: no pass-relative step is an onset on every 64-step pass.
+    expect(riff.pattern).toBeUndefined()
+    expect(riff.request.reArticulatesHook).toBe(false)
+    expect(bearsPattern(riff.request.role)).toBe(true)
+    const onsets = new Set(riff.hook.notes.map((n) => n.step))
+    const passes = (riff.hook.bars * STEPS_PER_BAR) / 64
+    expect(passes).toBe(12)
+    const recurring = Array.from({ length: 64 }, (_, i) => i + 1).filter((s) =>
+      Array.from({ length: passes }, (_, pass) => s + pass * 64).every((step) => onsets.has(step)),
+    )
+    expect(recurring).toEqual([])
+    // And the first loop alone would have had exactly the two the old grid marked.
+    const loopOne = Array.from({ length: 64 }, (_, i) => i + 1).filter((s) =>
+      [0, 1, 2].every((pass) => onsets.has(s + pass * 64)),
+    )
+    expect(loopOne).toEqual([9, 41])
     expect(riff.technique.some((p) => p.includes('slurred, not struck'))).toBe(true)
   })
 
-  it('hangs each chord’s last note over the change, except into the I', () => {
-    const lastOf = (chord: string): number => {
-      const over = notes.filter((n) => chordAtStep(riff, n.step) === chord)
+  it('hangs each chord’s last note over the change, except into the I, in every loop', () => {
+    const lastOver = (start: number): number => {
+      const over = riff.hook.notes.filter((n) => startOf(n.step) === start)
       const last = over.at(-1)
-      if (last === undefined) throw new Error(chord)
+      if (last === undefined) throw new Error(String(start))
       return last.step + last.len - 1
     }
-    expect(SIX_CHORDS.map(lastOf)).toEqual([34, 66, 96, 130, 162, 194])
-    // The `D5` closing the `iv` stops on the chord's last step: the raised third arrives on air.
-    expect(lastOf('iv')).toBe(chordStart('I') - 1)
+    for (let loop = 0; loop < 4; loop += 1) {
+      for (const chord of SIX_CHORDS) {
+        const start = chordStart(chord) + loop * LOOP
+        if (loop === 3 && chord === 'i') continue
+        const end = start + 31
+        // The note before the `I` stops on the chord's last step; every other runs two past,
+        // and the last of the whole figure eight past.
+        const expected = chord === 'iv' ? end : chord === 'v' && loop === 3 ? end + 8 : end + 2
+        expect(lastOver(start), `loop ${String(loop + 1)} ${chord}`).toBe(expected)
+      }
+    }
     expect(riff.technique.some((p) => p.includes('arrives on air'))).toBe(true)
   })
 
@@ -1113,21 +1309,25 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603)', () => {
     expect(riffConstraintViolations(riff)).toEqual([])
   })
 
-  it('catches a natural A played over the I, and refuses to parse it', () => {
-    const broken: Riff = {
-      ...riff,
-      hook: {
-        ...riff.hook,
-        notes: riff.hook.notes.map((n) =>
-          n.step === 105 ? { step: 105, degree: 3, octave: 0, len: 26 } : n,
-        ),
-      },
+  it('catches a natural A played over the I, in the first loop and in the fourth', () => {
+    for (const [step, len, note] of [
+      [105, 26, 'A4'],
+      [681, 26, 'A5'],
+    ] as const) {
+      const octave = note === 'A5' ? 1 : 0
+      const broken: Riff = {
+        ...riff,
+        hook: {
+          ...riff.hook,
+          notes: riff.hook.notes.map((n) => (n.step === step ? { step, degree: 3, octave, len } : n)),
+        },
+      }
+      const found = riffConstraintViolations(broken)
+      expect(found, String(step)).toHaveLength(1)
+      expect(found[0]).toContain(`${note} sounds over I at step ${String(step)}`)
+      expect(found[0]).toContain('the turn collapsing')
+      expect(RiffSchema.safeParse(broken).success).toBe(false)
     }
-    const found = riffConstraintViolations(broken)
-    expect(found).toHaveLength(1)
-    expect(found[0]).toContain('A4 sounds over I')
-    expect(found[0]).toContain('the turn collapsing')
-    expect(RiffSchema.safeParse(broken).success).toBe(false)
   })
 
   it('catches a natural D played over the IV, and refuses to parse it', () => {
@@ -1147,18 +1347,23 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603)', () => {
     expect(RiffSchema.safeParse(broken).success).toBe(false)
   })
 
-  it('catches an entry on the change, which the offset forbids', () => {
-    const broken: Riff = {
-      ...riff,
-      hook: {
-        ...riff.hook,
-        notes: riff.hook.notes.map((n) => (n.step === 41 ? { ...n, step: 33 } : n)),
-      },
+  it('catches an entry on the change, in the first loop and in the last', () => {
+    for (const [from, to, chord] of [
+      [41, 33, 'VI'],
+      [745, 737, 'v'],
+    ] as const) {
+      const broken: Riff = {
+        ...riff,
+        hook: {
+          ...riff.hook,
+          notes: riff.hook.notes.map((n) => (n.step === from ? { ...n, step: to } : n)),
+        },
+      }
+      const found = riffConstraintViolations(broken)
+      expect(found, String(from)).toHaveLength(1)
+      expect(found[0]).toContain(`${chord} is entered at step ${String(to)}, 0 steps in`)
+      expect(RiffSchema.safeParse(broken).success).toBe(false)
     }
-    const found = riffConstraintViolations(broken)
-    expect(found).toHaveLength(1)
-    expect(found[0]).toContain('VI is entered at step 33, 0 steps in')
-    expect(RiffSchema.safeParse(broken).success).toBe(false)
   })
 })
 
@@ -1176,29 +1381,33 @@ describe('the two F# minor entries are distinguishable by more than their titles
     return r.hook.notes.map((n) => n.note)
   }
 
-  it('share the key and the cycle, whole and from bar 1', () => {
+  it('share the key and the cycle, from bar 1; Blade is one cycle and Muse is four', () => {
     expect(blade.key).toBe(muse.key)
     expect(blade.harmony).toEqual(muse.harmony)
     expect(blade.figureStartsAtBar).toBe(1)
     expect(muse.figureStartsAtBar).toBe(1)
     expect(blade.hook.bars).toBe(12)
-    expect(muse.hook.bars).toBe(12)
+    expect(muse.hook.bars).toBe(48)
   })
 
-  it('Blade Runner is the six arrivals of the Muse Runner line, pitch for pitch', () => {
+  it('Blade Runner is the six arrivals of the Muse Runner line’s first loop, pitch for pitch', () => {
+    // `entries` takes the first note over each chord symbol, which on a four-loop line is the
+    // first loop's six.
     const museArrivals = entries(muse).map((n) => spelt(muse)[muse.hook.notes.indexOf(n)])
     expect(spelt(blade)).toEqual(museArrivals)
     expect(blade.hook.notes).toHaveLength(6)
-    expect(muse.hook.notes).toHaveLength(13)
+    expect(muse.hook.notes).toHaveLength(40)
   })
 
-  it('enter on different beats: Blade alternates one and two, Muse is always two', () => {
+  it('enter on different beats: Blade alternates one and two, Muse’s first loop is always two', () => {
     const into = (riff: Riff): number[] =>
       entries(riff).map((n) => n.step - chordStart(chordAtStep(riff, n.step) ?? ''))
     expect(into(blade)).toEqual([4, 8, 4, 8, 4, 8])
     expect(into(muse)).toEqual([8, 8, 8, 8, 8, 8])
+    // Blade's grid marks its arrivals; Muse has none, since across four loops nothing recurs
+    // on the same step of every pass (§5A.2/#623).
     expect(gridOf(blade).hits.map((h) => h.step)).toEqual([5, 41])
-    expect(gridOf(muse).hits.map((h) => h.step)).toEqual([9, 41])
+    expect(muse.pattern).toBeUndefined()
   })
 
   it('share no paragraph of technique', () => {
@@ -1214,6 +1423,135 @@ describe('the two F# minor entries are distinguishable by more than their titles
         expect(p, riff.id).not.toContain('Blade Runner')
       }
     }
+  })
+})
+
+/**
+ * §5A/#623. **The cycle repeats under a figure longer than it, and every check sees every pass.**
+ *
+ * Before this, `chordAtStep` read the bar off the first cycle and answered `undefined` past its
+ * end, so on a hook longer than the cycle the forbidden-degree check skipped every note after
+ * bar twelve and the onset check, keyed by chord symbol, saw one entry per chord across the whole
+ * hook. Both passed silently. The fixture is the Muse Runner line's first loop played twice, its
+ * second pass the first shifted by a cycle, so every assertion below is against real chords and a real
+ * rule, and each negative case is planted in the *second* pass, where the old arithmetic could
+ * not see it.
+ */
+describe('a figure longer than its cycle goes round it, and is checked on every pass (#623)', () => {
+  const CYCLE = 12 * STEPS_PER_BAR
+  /** The shipped line's first loop alone: thirteen notes over one cycle. */
+  const one: Riff = {
+    ...museRunnerFloatingArrivalLead,
+    hook: {
+      ...museRunnerFloatingArrivalLead.hook,
+      bars: 12,
+      notes: museRunnerFloatingArrivalLead.hook.notes.slice(0, 13),
+    },
+  }
+  /** That loop twice: 24 bars over the 12-bar cycle, from bar 1. */
+  const twice: Riff = {
+    ...one,
+    hook: {
+      ...one.hook,
+      bars: 24,
+      notes: [...one.hook.notes, ...one.hook.notes.map((n) => ({ ...n, step: n.step + CYCLE }))],
+    },
+  }
+
+  it('parses: a figure is no longer required to fit inside one cycle', () => {
+    expect(twice.figureStartsAtBar).toBe(1)
+    const parsed = RiffSchema.safeParse(twice)
+    expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+    expect(riffConstraintViolations(twice)).toEqual([])
+  })
+
+  it('still has to start where a chord does', () => {
+    expect(refusal({ ...twice, figureStartsAtBar: 2 })).toContain('not where a chord starts')
+  })
+
+  it('maps the second pass onto the same six chords as the first', () => {
+    const first = one.hook.notes.map((n) => chordAtStep(twice, n.step))
+    const second = one.hook.notes.map((n) => chordAtStep(twice, n.step + CYCLE))
+    expect(first).toEqual([
+      'i', 'i', 'VI', 'VI', 'VI', 'iv', 'iv', 'iv', 'I', 'IV', 'IV', 'v', 'v',
+    ])
+    expect(second).toEqual(first)
+    // And the last step of the hook is still under the last chord, not off the end.
+    expect(chordAtStep(twice, 24 * STEPS_PER_BAR)).toBe('v')
+  })
+
+  it('tells the second occurrence of a chord from the first by the step it began on', () => {
+    expect(chordOccurrenceAt(twice, 41)).toEqual({ degree: 'VI', startStep: 33 })
+    expect(chordOccurrenceAt(twice, 41 + CYCLE)).toEqual({ degree: 'VI', startStep: 33 + CYCLE })
+    // A step in the second bar of a chord still names the bar the chord began on.
+    expect(chordOccurrenceAt(twice, 57 + CYCLE)).toEqual({ degree: 'VI', startStep: 33 + CYCLE })
+  })
+
+  it('goes round from a later bar too, and the chord table knows the whole cycle is under it', () => {
+    // From bar 7, the `I`: 24 bars is still two cycles, they just begin on the fourth chord.
+    // The line was written for bar 1, so moved it breaks its own rules, and the check says so
+    // in *both* passes: the natural third lands over the `I` at step 25 and again at step 217.
+    const misaligned: Riff = { ...twice, figureStartsAtBar: 7 }
+    const found = riffConstraintViolations(misaligned)
+    expect(found.filter((f) => f.startsWith('A4 sounds over I at step 25,'))).toHaveLength(1)
+    expect(found.filter((f) => f.startsWith('A4 sounds over I at step 217,'))).toHaveLength(1)
+    // Without the rules it is a legal alignment, and every chord is under the figure.
+    const { constraints: _rules, ...fromTheI } = misaligned
+    expect(RiffSchema.safeParse(fromTheI).success).toBe(true)
+    expect(one.hook.notes.map((n) => chordAtStep(fromTheI, n.step))).toEqual([
+      'I', 'I', 'IV', 'IV', 'IV', 'v', 'v', 'v', 'i', 'VI', 'VI', 'iv', 'iv',
+    ])
+    expect(chordRows(fromTheI).every((row) => row.underFigure)).toBe(true)
+    expect(chordRows(twice).every((row) => row.underFigure)).toBe(true)
+  })
+
+  it('catches a forbidden note planted after the first cycle', () => {
+    // The natural third over the borrowed `I`, second time round: `A4` at step 105 + 192.
+    const broken: Riff = {
+      ...twice,
+      hook: {
+        ...twice.hook,
+        notes: twice.hook.notes.map((n) =>
+          n.step === 105 + CYCLE ? { step: n.step, degree: 3, octave: 0, len: 26 } : n,
+        ),
+      },
+    }
+    const found = riffConstraintViolations(broken)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain(`A4 sounds over I at step ${String(105 + CYCLE)}`)
+    expect(RiffSchema.safeParse(broken).success).toBe(false)
+  })
+
+  it('catches an entry on the change in the second cycle, where the first was entered late', () => {
+    // The `VI` is entered two beats in at step 41, which keeps the rule, and on the change at
+    // step 225 the second time, which breaks it. Keyed by chord symbol the check would have
+    // taken the first as the entry and never looked at the second.
+    const broken: Riff = {
+      ...twice,
+      hook: {
+        ...twice.hook,
+        notes: twice.hook.notes.map((n) => (n.step === 41 + CYCLE ? { ...n, step: 33 + CYCLE } : n)),
+      },
+    }
+    const found = riffConstraintViolations(broken)
+    expect(found).toHaveLength(1)
+    expect(found[0]).toContain(`VI is entered at step ${String(33 + CYCLE)}, 0 steps in`)
+    expect(RiffSchema.safeParse(broken).success).toBe(false)
+  })
+
+  it('takes the earliest note of an occurrence as its entry, whatever order the notes are authored in', () => {
+    // The same planted entry, with the hook's notes listed last to first. The entry is the
+    // earliest onset in the occurrence, not the first one written down.
+    const broken: Riff = {
+      ...twice,
+      hook: {
+        ...twice.hook,
+        notes: twice.hook.notes
+          .map((n) => (n.step === 41 + CYCLE ? { ...n, step: 33 + CYCLE } : n))
+          .reverse(),
+      },
+    }
+    expect(riffConstraintViolations(broken)).toHaveLength(1)
   })
 })
 
@@ -1689,9 +2027,13 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // beneath it (§5A.2), so a hit is checked at every step it lands on across the hook, and the
     // hook has to be a whole number of passes for that reading to close.
     for (const entry of RIFFS) {
-      // A held riff has no grid to check (§5A.2/#608); the schema holds it to that shape.
+      // A held riff has no grid to check (§5A.2/#608), and neither has a through-composed one
+      // on a struck role (#623); the schema holds each to its shape.
       if (entry.pattern === undefined) {
-        expect(bearsPattern(entry.request.role), entry.id).toBe(false)
+        expect(
+          !bearsPattern(entry.request.role) || entry.request.reArticulatesHook === false,
+          entry.id,
+        ).toBe(true)
         continue
       }
       const hookSteps = entry.hook.bars * STEPS_PER_BAR
