@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
-import { PresetBody } from '@/components/catalogue/preset-section'
+import { PatchName, PresetBody } from '@/components/catalogue/preset-section'
 import type { Device } from '@/lib/core'
 import { shippedPatchKey } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
@@ -82,10 +82,7 @@ function Entry({ device, entry }: { device: Device; entry: PresetEntry }) {
   return (
     <li className="preset-card">
       <h3 className="preset-card-head">
-        <span className="preset-name">{entry.patch.name}</span>
-        {entry.patch.bank === undefined ? null : (
-          <span className="preset-bank mono">{entry.patch.bank}</span>
-        )}
+        <PatchName entry={entry} />
       </h3>
       <p className="preset-use">{entry.use}</p>
       <PresetBody device={device} entry={entry} />

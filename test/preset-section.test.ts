@@ -2,6 +2,7 @@ import { createElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import DevicePageRoute from '../app/devices/[id]/page'
+import PresetsPageRoute from '../app/devices/[id]/presets/page'
 import { PresetSection } from '../components/catalogue/preset-section'
 import { FACTORY_PATCHES_FACT } from '../lib/core/index'
 import type { Device } from '../lib/core/index'
@@ -114,6 +115,43 @@ describe('each entry says what the model says', () => {
       expect(MUSE, riff.id).not.toContain(`href="${riffHref(riff)}"`)
     }
     expect(MUSE).not.toContain('href="/riffs')
+  })
+
+  /**
+   * #621. **A bank travels inside the name's cell, on both surfaces.**
+   *
+   * `.preset-summary` is a grid, and the name and bank used to be a fragment, so they were two
+   * cells rather than two words. On a phone the bank fell into the 1.1em marker gutter and set
+   * one letter per line — `B`, `a`, `s`, `s` — and above 640px it took the column `.preset-use`
+   * declares. Nothing caught it because the Muse's twelve carry no bank and the minilogue xd is
+   * the first device that does.
+   *
+   * So this pins the containment rather than the class: a bank must be inside a `.preset-title`
+   * that also holds the name, on the panel and on the presets page, which had the markup written
+   * out twice. A markup test cannot see a collapsed column, but it can see the shape that
+   * collapsed it.
+   */
+  it('keeps a bank inside the same element as the name, on both surfaces', async () => {
+    const device = byId('korg-minilogue-xd')
+    const session = presetSession(device)
+    const banked = session?.entries.filter((e) => e.patch.bank !== undefined) ?? []
+    expect(banked.length).toBeGreaterThan(0)
+
+    const panel = await markupFor('korg-minilogue-xd')
+    const page = renderToStaticMarkup(
+      await PresetsPageRoute({ params: Promise.resolve({ id: 'korg-minilogue-xd' }) }),
+    )
+
+    for (const markup of [panel, page]) {
+      for (const entry of banked) {
+        const name = entry.patch.name.replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
+        const bank = (entry.patch.bank ?? '').replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
+        expect(markup, entry.patch.name).toContain(
+          `<span class="preset-title"><span class="preset-name">${name}</span>` +
+            `<span class="preset-bank mono">${bank}</span></span>`,
+        )
+      }
+    }
   })
 
   /**
