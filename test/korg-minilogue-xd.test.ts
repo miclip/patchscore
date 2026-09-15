@@ -1,12 +1,17 @@
 import { describe, expect, it } from 'vitest'
 import {
   CHARACTERS,
+  FACTORY_PATCHES_FACT,
+  MIDDLE_C_FACT,
+  NOTE_DURATION_FACT,
   DeviceSchema,
   NEUTRAL_MOOD,
   assignableKey,
   expand,
   groupedParams,
+  noteDurationNotice,
   paramLabel,
+  printsNoteDuration,
   realisationOf,
   renderGuide,
   requiredVoicePolyphony,
@@ -1089,5 +1094,154 @@ describe('sustain claims (§3/#506)', () => {
     for (const r of device.recipes) {
       if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
     }
+  })
+})
+
+/**
+ * §2.6/#617, #618. **The factory programs are a fact off a page**, the first in the library that
+ * is: the Muse's twelve came off a unit's screen, and pp.61-64 of this manual print all 200.
+ * The counts here are the manual's, checked against a render of each page rather than the text
+ * dump alone; a wrong count would mean a row was dropped or a category misread.
+ */
+describe('the factory programs, pp.61-64 (§2.6/#617, #618)', () => {
+  const patches = device.factoryPatches ?? []
+  const byBank = new Map<string, string[]>()
+  for (const p of patches) {
+    const list = byBank.get(p.bank ?? '') ?? []
+    list.push(p.name)
+    byBank.set(p.bank ?? '', list)
+  }
+
+  it('declares all 200 the manual prints, cited manual to pp.61-64', () => {
+    expect(patches).toHaveLength(200)
+    expect(device.capabilityEvidence?.[FACTORY_PATCHES_FACT]).toEqual({
+      kind: 'manual',
+      source: "minilogue xd Owner's Manual E 9, pp.61-64",
+    })
+  })
+
+  it('carries a name and Korg’s Category as the bank, and no slot number', () => {
+    for (const p of patches) {
+      expect(Object.keys(p).sort(), p.name).toEqual(['bank', 'name'])
+      expect(p.name, p.name).not.toMatch(/^\d+\s/)
+      expect(p.name.trim(), p.name).toBe(p.name)
+    }
+    // A slot number is what Korg's `No` column prints, and nothing here carries it under any name.
+    for (const p of patches as Array<Record<string, unknown>>) {
+      expect(p).not.toHaveProperty('no')
+      expect(p).not.toHaveProperty('slot')
+      expect(p).not.toHaveProperty('number')
+    }
+  })
+
+  it('counts each Category as the four pages do', () => {
+    const counts = Object.fromEntries([...byBank.entries()].map(([bank, names]) => [bank, names.length]))
+    expect(counts).toEqual({
+      Template: 50,
+      'Poly Synth': 47,
+      Bass: 25,
+      Lead: 20,
+      Pad: 17,
+      Arp: 14,
+      SFX: 10,
+      Drum: 10,
+      Chord: 7,
+    })
+  })
+
+  it('spells the names exactly as printed, punctuation included', () => {
+    const named = new Map(patches.map((p) => [p.name, p.bank]))
+    // One from each page, plus every name whose punctuation a retyping would lose.
+    expect(named.get('Replicant xd')).toBe('Pad') // p.61, No 1
+    expect(named.get('MirroredBass')).toBe('Bass') // p.61, UNISON
+    expect(named.get("90's EPiano")).toBe('Poly Synth') // p.61
+    expect(named.get('Tape*Sine')).toBe('Poly Synth') // p.61
+    expect(named.get('Atk&Rel')).toBe('Poly Synth') // p.61
+    expect(named.get('K.ORG')).toBe('Poly Synth') // p.61
+    expect(named.get('LukeWarm Pad')).toBe('Pad') // p.62
+    expect(named.get('M.G.Bass')).toBe('Bass') // p.62
+    expect(named.get('#brew time')).toBe('Arp') // p.63
+    expect(named.get('Joystick!')).toBe('Lead') // p.63
+    expect(named.get('PTN Acieeed?')).toBe('Drum') // p.63
+    expect(named.get('Lush m7')).toBe('Chord') // p.63
+    expect(named.get('BDSDHHTOM')).toBe('Drum') // p.63, No 150
+    expect(named.get('TPL BasicSaw')).toBe('Template') // p.64, No 151
+    expect(named.get('TPL 100%Wet')).toBe('Template') // p.64
+    expect(named.get('TPL EG+1shot')).toBe('Template') // p.64
+    expect(named.get('TPL Hats')).toBe('Template') // p.64, No 200
+    // And the order is the printed order, so a reader holding the manual finds the same row.
+    expect(patches[0]?.name).toBe('Replicant xd')
+    expect(patches[49]?.name).toBe('Smart Bell')
+    expect(patches[50]?.name).toBe('FantaBell')
+    expect(patches[99]?.name).toBe('Detuned Saw')
+    expect(patches[100]?.name).toBe('Pressure')
+    expect(patches[149]?.name).toBe('BDSDHHTOM')
+    expect(patches[150]?.name).toBe('TPL BasicSaw')
+    expect(patches[199]?.name).toBe('TPL Hats')
+  })
+
+  it('keeps every Template on the list, and only the fifty carry the TPL prefix', () => {
+    const templates = byBank.get('Template') ?? []
+    expect(templates.every((n) => n.startsWith('TPL '))).toBe(true)
+    for (const [bank, names] of byBank) {
+      if (bank === 'Template') continue
+      expect(names.some((n) => n.startsWith('TPL ')), bank).toBe(false)
+    }
+  })
+
+  it('has no name printed twice, so each row keys once', () => {
+    expect(new Set(patches.map((p) => p.name)).size).toBe(200)
+  })
+
+  it('declares no patch use yet, so the fact stands without a judgement beside it', () => {
+    expect(device.patchUses).toBeUndefined()
+  })
+})
+
+/**
+ * §4.1/#571, #618. **Where this box puts middle C is not on any page**, and the absence is
+ * recorded rather than an octave guessed, because figures on this device print note names.
+ */
+describe('middle C is undeclared, with the pages read (§4.1/#571, #618)', () => {
+  it('declares no middleC and records unknown at the fact, naming the pages that use C4', () => {
+    expect(device.middleC).toBeUndefined()
+    const fact = device.capabilityEvidence?.[MIDDLE_C_FACT]
+    expect(fact).toBeDefined()
+    if (fact === undefined || fact === false || !('kind' in fact) || fact.kind !== 'unknown') {
+      throw new Error(`expected unknown, got ${JSON.stringify(fact)}`)
+    }
+    expect(fact.reason).toContain('p.23')
+    expect(fact.reason).toContain('p.36')
+    expect(fact.reason).toContain('p.37')
+    expect(fact.reason).toContain('p.67')
+    expect(fact.reason).toContain('never states which MIDI note number')
+  })
+})
+
+/**
+ * §2.6/#142, #618. **How the box ends a note is read off the manual now.** This entry was the
+ * library's worked example of `unread` — the manual was not in `manuals/` — and a reason that
+ * names a document turns false the day the document arrives.
+ */
+describe('note length is a per-step GATE TIME in percent (§2.6/#142, #618)', () => {
+  it('declares per-note-value on GATE TIME with the printed range in the unit', () => {
+    expect(device.noteDuration?.kind).toBe('per-note-value')
+    if (device.noteDuration?.kind !== 'per-note-value') throw new Error('expected per-note-value')
+    expect(device.noteDuration.control).toBe('GATE TIME')
+    expect(device.noteDuration.unit).toContain('0% to 100%')
+    expect(device.noteDuration.unit).toContain('PROGRAM/VALUE')
+  })
+
+  it('cites pp.27, 31 and 41 and no longer reads unread', () => {
+    expect(device.capabilityEvidence?.[NOTE_DURATION_FACT]).toEqual({
+      kind: 'manual',
+      source: "minilogue xd Owner's Manual E 9, pp.27, 31, 41",
+    })
+  })
+
+  it('reaches the guide as a per-note-value notice that prints durations', () => {
+    const notice = noteDurationNotice(device)
+    expect(notice.state).toBe('per-note-value')
+    expect(printsNoteDuration(notice)).toBe(true)
   })
 })

@@ -171,8 +171,9 @@ describe('a declaration is a positive claim and carries a page (§2.6/#142)', ()
   })
 
   it('accepts a reasoned non-claim with no declaration', () => {
-    // #120's three states, and the minilogue xd is really in one of them: its manual is not in
-    // `manuals/` at all, so nobody here has opened the document that would answer.
+    // #120's three states. The minilogue xd was the library's `unread` when this was written,
+    // its manual being absent from `manuals/`; the manual arrived and it cites pp.27, 31, 41 now
+    // (#618), so the fixture below stands in for a box still waiting on a file.
     for (const state of [
       { kind: 'unknown', reason: 'read, and the manual does not say' },
       { kind: 'unread', reason: 'the manual is not in `manuals/`' },

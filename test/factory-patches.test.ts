@@ -21,7 +21,9 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    this unit has it. A list with no citation, a citation with no list, `false`, and a `maker`
  *    citation are all refused;
  *  - the list is **nonempty and its `(name, bank)` keys are unique**;
- *  - the Muse declares **exactly the twelve** the operator named, and no other box declares any.
+ *  - the Muse declares **exactly the twelve** the operator named; the minilogue xd declares its
+ *    200 off pp.61-64 (#618, asserted in `test/korg-minilogue-xd.test.ts`); no other box
+ *    declares any.
  */
 
 const OBSERVED = { kind: 'observed', source: 'A unit, firmware 1.0' } as const
@@ -144,7 +146,7 @@ describe('factoryPatches is a positive claim read off a page or off the unit (§
 
 const muse = DEVICES.filter((d) => d.id === 'moog-muse')
 
-describe('the Muse declares the twelve, and nothing else declares any (#592)', () => {
+describe('the Muse declares the twelve, the minilogue xd its 200, and nothing else declares any (#592, #618)', () => {
   const [device] = muse
 
   /**
@@ -195,8 +197,10 @@ describe('the Muse declares the twelve, and nothing else declares any (#592)', (
   })
 
   it('no other box declares a list', () => {
+    const declaring = DEVICES.filter((d) => d.factoryPatches !== undefined).map((d) => d.id)
+    expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse'])
     for (const d of DEVICES) {
-      if (d.id === 'moog-muse') continue
+      if (d.id === 'moog-muse' || d.id === 'korg-minilogue-xd') continue
       expect(d.factoryPatches, d.id).toBeUndefined()
       expect(d.capabilityEvidence?.[FACTORY_PATCHES_FACT], d.id).toBeUndefined()
     }
