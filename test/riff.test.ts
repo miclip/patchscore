@@ -244,23 +244,29 @@ describe('RiffSchema (§5A)', () => {
   })
 
   /**
-   * §4.2/§5A.2/#608. **The role decides the shape.** A struck role carries a grid and the flag
-   * that joins it to the hook; a held role carries neither. Every combination of the two fields
-   * against the two kinds of role is here, so the schema is held to refusing exactly the three
-   * wrong ones on each side.
+   * §4.2/§5A.2/#608/#623. **The role and the flag decide the shape.** A struck role answers
+   * whether a grid re-articulates the hook: `true` and it carries a grid, `false` and it carries
+   * none, because the figure is through-composed. A held role carries neither the flag nor a
+   * grid. Every combination of the two fields against the two kinds of role is here, so the
+   * schema is held to accepting exactly the three shapes and refusing every other.
    */
   describe('a grid and `reArticulatesHook` go together, and only on a struck role (#608)', () => {
     const struck = riff()
     const { reArticulatesHook: _flag, ...unflagged } = struck.request
     const { pattern: grid, ...ungridded } = struck
     const held = heldRiff()
+    /** §5A.2/#623. The third shape: a struck role, `false`, and no grid. */
+    const throughComposed: Riff = {
+      ...ungridded,
+      request: { ...unflagged, reArticulatesHook: false },
+    }
 
     it('accepts a struck role with both, which is every riff before #608', () => {
       expect(RiffSchema.safeParse(struck).success).toBe(true)
       expect(NON_PATTERN_BEARING_ROLES).not.toContain(struck.request.role)
     })
 
-    it('refuses a struck role with no grid: the part is struck, so the riff says where', () => {
+    it('refuses a struck role with `true` and no grid: the flag names a grid, so the riff says where', () => {
       expect(refusal(ungridded)).toContain('is struck: a riff on it says where, in a grid')
     })
 
@@ -268,10 +274,46 @@ describe('RiffSchema (§5A)', () => {
       expect(refusal({ ...struck, request: unflagged })).toContain('re-articulates the hook')
     })
 
-    it('refuses a struck role with neither, and names both', () => {
+    it('refuses a struck role with neither, and names the choice rather than demanding a grid', () => {
+      // Absent is not `false`. The author has not said which of the two shapes the entry is,
+      // so the refusal names both and asks for one, and does not also demand a grid the author
+      // may be about to decline.
       const messages = refusals({ ...ungridded, request: unflagged })
       expect(messages.some((m) => m.includes('re-articulates the hook'))).toBe(true)
-      expect(messages.some((m) => m.includes('says where, in a grid'))).toBe(true)
+      expect(messages.some((m) => m.includes('`false` with none'))).toBe(true)
+      expect(messages.some((m) => m.includes('says where, in a grid'))).toBe(false)
+    })
+
+    it('accepts a struck role with `false` and no grid: the figure is through-composed (#623)', () => {
+      expect(NON_PATTERN_BEARING_ROLES).not.toContain(throughComposed.request.role)
+      const parsed = RiffSchema.safeParse(throughComposed)
+      expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+    })
+
+    it('refuses a struck role with `false` and a grid: two authorities over one rhythm (#100)', () => {
+      const messages = refusals({ ...throughComposed, pattern: grid })
+      expect(messages.some((m) => m.includes('two authorities over one rhythm'))).toBe(true)
+      // And says which way out is which, since either repair is a legitimate entry.
+      expect(messages.some((m) => m.includes('Drop the grid, or say `reArticulatesHook: true`'))).toBe(true)
+    })
+
+    it('holds a through-composed riff to every rule that is not about the grid', () => {
+      expect(refusal({ ...throughComposed, key: 'H major' })).toContain('not a key this engine reads')
+      expect(refusal({ ...throughComposed, hook: { ...throughComposed.hook, notes: [] } })).toContain(
+        'drum pattern',
+      )
+      // The base request's own refinements still reach it: `RiffRequestSchema` re-runs them, and
+      // the first message on a transient request is `RoleRequestSchema`'s own.
+      expect(
+        refusal({ ...throughComposed, request: { ...throughComposed.request, sustain: 'transient' } }),
+      ).toContain('a transient request must list the sections it occupies')
+      expect(
+        refusal({
+          ...throughComposed,
+          request: { ...throughComposed.request, followsKey: true, role: 'lead' },
+          hook: { ...throughComposed.hook, forRole: 'lead' },
+        }),
+      ).toContain('have a fundamental worth tuning to the key')
     })
 
     it('accepts a held role with neither: the hook is the whole figure', () => {
@@ -287,9 +329,14 @@ describe('RiffSchema (§5A)', () => {
       expect(refusal({ ...held, pattern: padGrid })).toContain('no grid to riff on')
     })
 
-    it('refuses a held role with the flag: there is no grid to re-articulate the hook', () => {
+    it('refuses a held role with the flag in either spelling: it was never asked the question', () => {
       expect(
         refusal({ ...held, request: { ...held.request, reArticulatesHook: true as const } }),
+      ).toContain('no grid to re-articulate the hook')
+      // `false` is a struck role's answer (#623). A held role has no grid to decline, so the
+      // spelling that means "no grid" on a lead means nothing on a pad and is refused the same.
+      expect(
+        refusal({ ...held, request: { ...held.request, reArticulatesHook: false } }),
       ).toContain('no grid to re-articulate the hook')
     })
 
@@ -593,9 +640,11 @@ describe('the riff library (§5A)', () => {
       'soft-orchestra-slow-changes',
       'swollen-pad-staggered-stack',
     ])
+    // The flag is a struck role's question (#623): every held riff leaves it unanswered, every
+    // struck riff answers it, and the grid is there exactly where the answer is `true`.
     for (const r of RIFFS) {
-      expect(r.pattern === undefined, r.id).toBe(!bearsPattern(r.request.role))
       expect(r.request.reArticulatesHook === undefined, r.id).toBe(!bearsPattern(r.request.role))
+      expect(r.pattern !== undefined, r.id).toBe(r.request.reArticulatesHook === true)
     }
   })
 

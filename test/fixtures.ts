@@ -7,6 +7,7 @@ import type {
   Pattern,
   Recipe,
   Riff,
+  RoleRequest,
   Template,
 } from '../lib/core/index'
 
@@ -219,6 +220,17 @@ export function template(over: Partial<Template> = {}): Template {
 export function gridOf(riff: Riff): Pattern {
   expect(riff.pattern, `${riff.id} has no grid`).toBeDefined()
   return riff.pattern as Pattern
+}
+
+/**
+ * §5A.2/#623. **A riff's request as a template's.** `RiffRequest` widens `reArticulatesHook` to
+ * `boolean`, because on a struck riff `false` is an answer (through-composed, no grid) and not a
+ * spelling of the default; a template's `RoleRequest` takes `true` only, and there `false` *is*
+ * the absent flag. A test that puts a riff's request to the search as a one-request direction
+ * translates it: `true` is carried, and `false` becomes absent.
+ */
+export function asRoleRequest({ reArticulatesHook, ...rest }: Riff['request']): RoleRequest {
+  return reArticulatesHook === true ? { ...rest, reArticulatesHook } : rest
 }
 
 /**

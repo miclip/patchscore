@@ -30,16 +30,18 @@ import { bestVoiceCandidate, crowdOf, type VoiceCandidate } from './voicing'
  * Why it is not a `Riff`
  * ---------------------------------------------------------------------------
  *
- * A riff is a *figure*: a hook whose degrees resolve against a key, a grid saying where those
- * notes are struck again, a tempo range the technique lives in, and `reArticulatesHook` joining
- * the two. Every one of those would be a fiction here. A one-shot has no key to be in, no second
- * note to be re-articulated against, and no tempo — a reader records one hit and edits the tails
- * off it. Built as a `Riff` the schema would be demanding a hook with notes nobody plays and a
- * grid whose strikes are all the same strike.
+ * A riff is a *figure*: a hook whose degrees resolve against a key, a tempo range the technique
+ * lives in, and, on a struck role that is not through-composed, a grid saying where those notes
+ * are struck again with `reArticulatesHook` joining the two. Every one of those would be a
+ * fiction here. A one-shot has no key to be in, no note to hold or to strike again, and no tempo
+ * — a reader records one hit and edits the tails off it. Built as a `Riff` the schema would be
+ * demanding a hook with notes nobody plays.
  *
- * The other direction is just as clear: `RiffSchema` refuses a role that does not bear a pattern,
- * and refuses a request that is not `continuous`. A sample target covers **`pad`**, which is held
- * rather than struck, and every one of the three transitional roles. Neither of those is a riff.
+ * The line between the two is not the role and not the grid. A riff may be a pad, held with no
+ * grid (§5A.2/#608), or a lead whose figure is through-composed and carries none (§5A.2/#623),
+ * and its request may name any continuous role. What every riff has and no sample target does is
+ * the figure itself: authored notes in a key, at a tempo, for as long as the hook says. A sample
+ * target authors none of those, so it cannot be a riff however its role would parse.
  *
  * ---------------------------------------------------------------------------
  * Why it is not a kit slot

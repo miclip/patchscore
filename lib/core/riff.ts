@@ -110,11 +110,54 @@ import { NEUTRAL_MOOD, bearsPattern, type Character } from './vocabulary'
  * join it to one. The role decides which shape an entry has, and the schema refuses the other:
  * a grid on a pad would be a pattern that says nothing, and a struck part without one would be
  * a figure with no rhythm.
+ *
+ * **A struck part whose figure is through-composed says so, with `reArticulatesHook: false` and
+ * no grid** (§5A.2, #623). A repeating grid marks only what recurs on the same step of every
+ * pass, and a figure can be long enough, and end differently enough, that nothing does: the
+ * four-loop Muse Runner line has a silent chord in its last loop, so no step is an onset on
+ * every pass and the honest grid is empty. An empty grid is refused, and the role is still
+ * struck, so neither of the two shapes above fits. The third shape is the hook as the whole
+ * rhythm. `false` is legal here and nowhere else in the product, because here it is not a second
+ * spelling of the default: on a struck role the absent flag is *refused*, so `true` beside a
+ * grid and `false` without one are two different authored answers to a question every struck
+ * riff has to answer. `RiffRequestSchema` is `RoleRequestSchema` with that one field widened.
  */
 
 // ---------------------------------------------------------------------------
 // The riff
 // ---------------------------------------------------------------------------
+
+/**
+ * §5A.2/#623. **§4's `RoleRequest`, with `reArticulatesHook` allowed to be `false`.**
+ *
+ * A template's request takes `true` only, and the reason is right (`RoleRequest`): there the
+ * absent flag is the default, and `false` would be a second spelling of it. A riff on a struck
+ * role has no default. The absent flag is refused, so the field is a question the author has to
+ * answer, and it has two answers: `true`, and a grid says where the hook is struck again; or
+ * `false`, and no grid, because the figure is through-composed and a repeating grid would have
+ * nothing to mark that recurs on every pass. A held role still carries neither answer, since it
+ * was never asked.
+ *
+ * Every other field is `RoleRequest`'s, and every refinement `RoleRequestSchema` makes is kept:
+ * the shape is spread with the one field widened, and the base schema is run over the request
+ * with the flag removed, so its rules reach a riff's request without being written twice. (Zod
+ * refuses `.extend` on a refined object and `.safeExtend` refuses to widen, which is why it is
+ * done by hand.)
+ */
+export type RiffRequest = Omit<RoleRequest, 'reArticulatesHook'> & { reArticulatesHook?: boolean }
+
+export const RiffRequestSchema = z
+  .strictObject({ ...RoleRequestSchema.shape, reArticulatesHook: z.boolean().optional() })
+  .superRefine((request, ctx) => {
+    const { reArticulatesHook: _flag, ...base } = request
+    const checked = RoleRequestSchema.safeParse(base)
+    if (checked.success) return
+    // Re-raised as custom issues carrying the base message and path: the base schema's rules
+    // are all `custom` already, and the path is relative to the request either way.
+    for (const issue of checked.error.issues) {
+      ctx.addIssue({ code: 'custom', message: issue.message, path: [...issue.path] })
+    }
+  })
 
 /**
  * §5A.5. What a riff is named for. See `Riff.reference`.
@@ -267,9 +310,10 @@ export type Riff = {
   key: string
   /**
    * **The one part.** `continuous`, priority 1, no sections — a riff has no structure for a
-   * transient request to name.
+   * transient request to name. A `RiffRequest` rather than a `RoleRequest` for one field: see
+   * `reArticulatesHook` there.
    */
-  request: RoleRequest
+  request: RiffRequest
   /** The notes. Original, always — never a transcription of the recording or patch an entry references. */
   /**
    * §5A/§4.1. **The chords the figure is played over**, where the figure only makes sense against
@@ -312,10 +356,12 @@ export type Riff = {
   /**
    * Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them.
    *
-   * **Present exactly where the role bears a pattern** (`bearsPattern`), and absent on a held
-   * role, where the hook is the whole figure. Optional in the type because the role decides; the
-   * schema holds each role to its own shape, so a `Riff` that parsed has a grid if and only if
-   * its part is struck.
+   * **Present exactly where the request says the grid re-articulates the hook.** Absent on a
+   * held role (`bearsPattern` is false), where the hook is the whole figure, and absent on a
+   * struck role whose request says `reArticulatesHook: false`, where the figure is
+   * through-composed and the hook is the whole rhythm (§5A.2, #623). Optional in the type
+   * because the role and the flag decide together; the schema holds each shape to itself, so a
+   * `Riff` that parsed has a grid if and only if `request.reArticulatesHook === true`.
    */
   pattern?: Pattern
 }
@@ -531,7 +577,7 @@ export const RiffSchema = z
     technique: z.array(z.string().min(1)).min(1, 'a riff is a technique: say what it is'),
     bpm: BpmSpecSchema,
     key: MusicalKeySchema,
-    request: RoleRequestSchema,
+    request: RiffRequestSchema,
     harmony: HarmonySchema.optional(),
     figureStartsAtBar: z.int().min(1).optional(),
     constraints: RiffConstraintsSchema.optional(),
@@ -695,12 +741,15 @@ export const RiffSchema = z
       })
     }
     /*
-     * §4.2/§5A.2/#608. **The role decides whether there is a grid.** A held role
-     * (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on one
-     * is its hook and nothing else: no `pattern`, and no `reArticulatesHook`, since there is no
-     * grid for the flag to join to the hook. A struck role has both, and the flag is required
-     * rather than offered — see the header. Each half refuses the other's shape, so an entry
-     * cannot half-change role.
+     * §4.2/§5A.2/#608/#623. **The role and the flag decide whether there is a grid.** A held
+     * role (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on
+     * one is its hook and nothing else: no `pattern`, and no `reArticulatesHook` in either
+     * spelling, since there is no grid question for the flag to answer. A struck role has to
+     * answer it, and the flag is required rather than offered — see the header. `true` means a
+     * grid says where the hook is struck again, and the grid is required beside it. `false`
+     * means the figure is through-composed, the hook is the whole rhythm, and a grid beside it
+     * would be the two authorities #100 forbids. Each shape refuses the others', so an entry
+     * cannot half-change role and cannot carry a grid it has disowned.
      */
     if (!bearsPattern(request.role)) {
       if (pattern !== undefined) {
@@ -719,15 +768,15 @@ export const RiffSchema = z
           path: ['request', 'reArticulatesHook'],
         })
       }
-    } else {
-      if (request.reArticulatesHook !== true) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            'a riff carries a hook and a grid: it must say the grid re-articulates the hook (§4.3)',
-          path: ['request', 'reArticulatesHook'],
-        })
-      }
+    } else if (request.reArticulatesHook === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          `\`${request.role}\` is struck, so the riff says whether a grid re-articulates the hook: ` +
+          '`true` beside a grid, or `false` with none where the figure is through-composed (§5A.2)',
+        path: ['request', 'reArticulatesHook'],
+      })
+    } else if (request.reArticulatesHook) {
       if (pattern === undefined) {
         ctx.addIssue({
           code: 'custom',
@@ -735,6 +784,14 @@ export const RiffSchema = z
           path: ['pattern'],
         })
       }
+    } else if (pattern !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'the request says the figure is through-composed and the grid says where it is struck: ' +
+          'two authorities over one rhythm (#100). Drop the grid, or say `reArticulatesHook: true`',
+        path: ['pattern'],
+      })
     }
     if (pattern !== undefined) {
       if (pattern.forRole !== request.role) {

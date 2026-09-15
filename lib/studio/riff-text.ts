@@ -84,9 +84,9 @@ export function riffTempo(riff: Riff): string {
 /**
  * How long the figure is, and how many steps that is on §4.3's grid.
  *
- * **Bars alone on a held riff** (§5A.2/#608). A step count is a fact about a grid, and a riff
- * on a held role has none; printing the hook's length in steps would name a grid the page then
- * fails to draw.
+ * **Bars alone on a riff with no grid** (§5A.2/#608/#623). A step count is a fact about a grid,
+ * and a riff on a held role has none, nor does a through-composed one on a struck role; printing
+ * the hook's length in steps would name a grid the page then fails to draw.
  */
 export function riffLength(riff: Riff): string {
   const bars = count(riff.hook.bars, 'bar')
@@ -351,8 +351,10 @@ export function stepSpanLabel(row: NoteRow): string {
 // ---------------------------------------------------------------------------
 
 /*
- * §5A.2/#608. **A held riff has no grid, and no grid section.** Every function below answers
- * with nothing where `riff.pattern` is absent — no rows, no slots, no repeat sentence — and both
+ * §5A.2/#608/#623. **A riff with no grid has no grid section.** A held riff has none, and so
+ * does a through-composed one on a struck role (`reArticulatesHook: false`); every function
+ * below asks only whether `riff.pattern` is there, never which of the two declined it, and
+ * answers with nothing where it is absent — no rows, no slots, no repeat sentence — and both
  * renderers omit the section rather than heading an empty one. The lead sentence is a sentence
  * about a grid, so it goes with it.
  */

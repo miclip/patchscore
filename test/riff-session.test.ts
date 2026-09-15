@@ -3,7 +3,7 @@ import type { Device, Recipe } from '@/lib/core'
 import { assign, moodState, realisationOf, resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS, blueMondayBass, showMeLoveOrganStab, thrillerSynthRiff } from '@/lib/riffs'
-import { gridOf, heldRiff } from './fixtures'
+import { asRoleRequest, gridOf, heldRiff } from './fixtures'
 import { box, makeRecipe, withRoles } from './rigs'
 
 /**
@@ -279,7 +279,7 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
 
   /** The same request, put to the real search as a one-request direction. */
   function assigned(devices: readonly Device[]) {
-    const template = withRoles([{ ...showMeLoveOrganStab.request }])
+    const template = withRoles([asRoleRequest(showMeLoveOrganStab.request)])
     const result = assign({ devices: [...devices], template, mood: moodState(), seed: 1 })
     return result.assignments[0]
   }
@@ -338,7 +338,7 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
     )
     for (const riff of RIFFS) {
       const resolution = resolveRiff(riff, rig)
-      const template = withRoles([{ ...riff.request }])
+      const template = withRoles([asRoleRequest(riff.request)])
       const search = assign({ devices: rig, template, mood: moodState(), seed: 1 }).assignments[0]
       expect(resolution.outcome, riff.id).toBe('played')
       expect(search, riff.id).toBeDefined()
