@@ -1,4 +1,4 @@
-import type { Device, Recipe, SustainClaim } from '../../core/device'
+import type { Device, PatchUse, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { MINILOGUE_XD_PANEL } from './panel'
 
@@ -991,6 +991,325 @@ const recipes: Recipe[] = [
 // §2.3 Manifest
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// The factory programs, pp.61-64
+// ---------------------------------------------------------------------------
+
+/**
+ * §2.6/#592, #617, #618. **All 200 factory programs, as the manual prints them.**
+ *
+ * pp.61-64 print `Program list`: `No | Program Name | Category | Voice Mode | Author`, fifty
+ * rows to a page, and p.10 sends the reader there — *"preset programs are assigned to program
+ * numbers 1–200"*. Slots 201-500 are `(Init Program)` on p.65 and are not content. This is the
+ * first patch list in the library that rests on a page rather than on a unit, which is what
+ * #617 widened `Device.factoryPatches` for; the Muse's twelve came off a screen.
+ *
+ * Four columns are carried and one is not:
+ *
+ *  - **`Program Name`**, exactly as printed. Apostrophes, ampersands, the asterisk in `Tape*Sine`
+ *    and the hash in `#brew time` are all Korg's.
+ *  - **`Category`** is the `bank`, because it is what the box shows and what a reader navigates
+ *    by. It is Korg's word and not `Role` (invariant 3): `Poly Synth` is forty-seven programs
+ *    declining to say, and `SFX` and `Drum` have no `Role` on a four-voice analogue synth. Where
+ *    a figure needs a role, that is the folder's judgement and not a mapping.
+ *  - **`Voice Mode`** is a constraint on anything written against the program. The manifest
+ *    declares one voice with `polyphony: 4`, and a CHORD or UNISON program spends all four on a
+ *    single note — fifty-one are CHORD and fifteen UNISON. A figure asking a CHORD program for
+ *    four-note voicings is a value read off the wrong printed scale, exactly as `SHAPE` under
+ *    NOISE is. `ARP` is the column's word; the panel switch on p.17 says `ARP/LATCH`.
+ *  - **`Author`** is a credit p.65 prints, and a use line may lean on it because of that.
+ *  - **`No` is not carried.** A slot number moves across firmware and across any owner who has
+ *    reordered a bank, and a maker printing it in a table does not make it stable.
+ *
+ * Counts, off the same reading: Template 50, Poly Synth 47, Bass 25, Lead 20, Pad 17, Arp 14,
+ * SFX 10, Drum 10, Chord 7; POLY 119, CHORD 51, UNISON 15, ARP 15. `ShippedPatch` carries a
+ * name and a bank and nothing else, so `factoryPatches` below is a projection of this table.
+ * Exported for `test/korg-minilogue-xd.test.ts`, which holds every figure written for one of
+ * these programs to the mode printed beside it; the generator reads `device` and nothing else.
+ */
+const PROGRAM_CATEGORIES = [
+  'Pad',
+  'Poly Synth',
+  'Bass',
+  'Lead',
+  'Arp',
+  'Chord',
+  'SFX',
+  'Drum',
+  'Template',
+] as const
+const PROGRAM_MODES = ['POLY', 'UNISON', 'CHORD', 'ARP'] as const
+const PROGRAM_AUTHORS = [
+  'KORG Inc.',
+  'Tomohiro Nakamura',
+  'Artemiy Pavlov',
+  'Taylor McFerrin',
+  'Luke Edwards',
+  'Nick Kwas',
+  'Dorian Concept',
+  'Ian Bradshaw',
+] as const
+
+type FactoryProgram = readonly [
+  name: string,
+  category: (typeof PROGRAM_CATEGORIES)[number],
+  mode: (typeof PROGRAM_MODES)[number],
+  author: (typeof PROGRAM_AUTHORS)[number],
+]
+
+export const FACTORY_PROGRAMS: readonly FactoryProgram[] = [
+  // p.61
+  ['Replicant xd', 'Pad', 'POLY', 'Luke Edwards'],
+  ['TyoCityLoop', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Sharp Fifth', 'Poly Synth', 'POLY', 'Artemiy Pavlov'],
+  ['Quarra', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Terror Key', 'Poly Synth', 'POLY', 'KORG Inc.'],
+  ['PWM Cloud', 'Poly Synth', 'POLY', 'Artemiy Pavlov'],
+  ['Pump SAW', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Orchestra xD', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['MirroredBass', 'Bass', 'UNISON', 'KORG Inc.'],
+  ['Mr. Squelch', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['MetalFnkLead', 'Lead', 'CHORD', 'Tomohiro Nakamura'],
+  ['Space Clavi', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['VelocityStab', 'Chord', 'CHORD', 'KORG Inc.'],
+  ['Bassblaster', 'Bass', 'CHORD', 'KORG Inc.'],
+  ['Digital Rush', 'Arp', 'ARP', 'KORG Inc.'],
+  ['OnTheLevel', 'Poly Synth', 'POLY', 'Ian Bradshaw'],
+  ['CheeseRoyale', 'Poly Synth', 'POLY', 'Taylor McFerrin'],
+  ['BabeWave', 'Poly Synth', 'POLY', 'Nick Kwas'],
+  ['Pluck VPM', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Pulsating80s', 'Poly Synth', 'POLY', 'Luke Edwards'],
+  ['Fifth Kiss', 'Poly Synth', 'POLY', 'Artemiy Pavlov'],
+  ['Warm Dtn', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Funky Stab', 'Poly Synth', 'POLY', 'Luke Edwards'],
+  ['Harp xd', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Future Pulse', 'Poly Synth', 'POLY', 'Luke Edwards'],
+  ['Atk&Rel', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Prolly800mk2', 'Poly Synth', 'POLY', 'Nick Kwas'],
+  ['Kawaii Chord', 'Poly Synth', 'POLY', 'Nick Kwas'],
+  ['Creep Lights', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Trill Synth', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['LapisLazuli', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Claymate', 'Poly Synth', 'POLY', 'Dorian Concept'],
+  ['DownStair', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['FallingPluck', 'Poly Synth', 'POLY', 'Dorian Concept'],
+  ['Rainchild', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Tape*Sine', 'Poly Synth', 'POLY', 'Dorian Concept'],
+  ['Mini Moon', 'Poly Synth', 'POLY', 'Nick Kwas'],
+  ['Petrichor', 'Poly Synth', 'POLY', 'Taylor McFerrin'],
+  ['LoFi Strings', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Signal Key', 'Poly Synth', 'POLY', 'KORG Inc.'],
+  ['Organ xd', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Organic Keys', 'Poly Synth', 'POLY', 'Taylor McFerrin'],
+  ['K.ORG', 'Poly Synth', 'POLY', 'Artemiy Pavlov'],
+  ['Soapy EP', 'Poly Synth', 'POLY', 'Artemiy Pavlov'],
+  ['Logue Lady', 'Poly Synth', 'POLY', 'Nick Kwas'],
+  ["90's EPiano", 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['XD Seven', 'Poly Synth', 'POLY', 'Artemiy Pavlov'],
+  ['Roadz Bell', 'Poly Synth', 'POLY', 'Ian Bradshaw'],
+  ['Glocken xd', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['Smart Bell', 'Poly Synth', 'POLY', 'KORG Inc.'],
+  // p.62
+  ['FantaBell', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['GateStepps', 'Poly Synth', 'POLY', 'Taylor McFerrin'],
+  ['Gate 4AM', 'Poly Synth', 'POLY', 'Taylor McFerrin'],
+  ['1982theme', 'Poly Synth', 'POLY', 'Tomohiro Nakamura'],
+  ['LukeWarm Pad', 'Pad', 'POLY', 'Luke Edwards'],
+  ['RiseToPower', 'Pad', 'POLY', 'Luke Edwards'],
+  ['Eyes Of Owl', 'Pad', 'POLY', 'Tomohiro Nakamura'],
+  ['Nowhere Pad', 'Pad', 'POLY', 'Tomohiro Nakamura'],
+  ['WaveSeq Pad', 'Pad', 'POLY', 'Tomohiro Nakamura'],
+  ['GlasssinePad', 'Pad', 'POLY', 'Tomohiro Nakamura'],
+  ['Angelic Vox', 'Pad', 'POLY', 'Artemiy Pavlov'],
+  ['Plastic Pad', 'Pad', 'POLY', 'Artemiy Pavlov'],
+  ['Haunted Pad', 'Pad', 'POLY', 'Artemiy Pavlov'],
+  ['Gaia Dawn', 'Pad', 'POLY', 'Tomohiro Nakamura'],
+  ['Swollen Pad', 'Pad', 'POLY', 'Dorian Concept'],
+  ['Xtra Fat', 'Pad', 'POLY', 'Artemiy Pavlov'],
+  ['Sacred Wall', 'Pad', 'POLY', 'KORG Inc.'],
+  ['Ring PWM', 'Pad', 'POLY', 'Artemiy Pavlov'],
+  ['BrightStrngs', 'Pad', 'POLY', 'Artemiy Pavlov'],
+  ['Square Drone', 'Pad', 'POLY', 'Artemiy Pavlov'],
+  ['Boombastic', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Dirty Trappn', 'Bass', 'UNISON', 'Nick Kwas'],
+  ['M.G.Bass', 'Bass', 'CHORD', 'KORG Inc.'],
+  ['Octava Bass', 'Bass', 'CHORD', 'Taylor McFerrin'],
+  ['PWM Bass', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Cutie Bass', 'Bass', 'CHORD', 'KORG Inc.'],
+  ['Anchor Bass', 'Bass', 'CHORD', 'KORG Inc.'],
+  ['TriKO Bass', 'Bass', 'CHORD', 'Tomohiro Nakamura'],
+  ['Pluck Bass', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Sharp Teeth', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Hypno Acid', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Spike Bass', 'Bass', 'UNISON', 'KORG Inc.'],
+  ['Pure Vintage', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Tronic Bass', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Multi Bass', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Thick Bass', 'Bass', 'UNISON', 'Luke Edwards'],
+  ['FM Dubz', 'Bass', 'UNISON', 'Luke Edwards'],
+  ['Brawl Bass', 'Bass', 'CHORD', 'KORG Inc.'],
+  ['Wire Bass', 'Bass', 'CHORD', 'Tomohiro Nakamura'],
+  ['ScreaFM Bass', 'Bass', 'CHORD', 'Tomohiro Nakamura'],
+  ['Dirty Pulse', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Crude Pulse', 'Bass', 'CHORD', 'Artemiy Pavlov'],
+  ['Flat Lead', 'Lead', 'CHORD', 'KORG Inc.'],
+  ['Cheese Lead', 'Lead', 'CHORD', 'Tomohiro Nakamura'],
+  ['Classic Lead', 'Lead', 'CHORD', 'KORG Inc.'],
+  ['Waard Lead', 'Lead', 'CHORD', 'KORG Inc.'],
+  ['OrientalLead', 'Lead', 'CHORD', 'KORG Inc.'],
+  ['RingSoloLead', 'Lead', 'CHORD', 'KORG Inc.'],
+  ['Rave Synth', 'Lead', 'UNISON', 'Artemiy Pavlov'],
+  ['Detuned Saw', 'Lead', 'UNISON', 'Luke Edwards'],
+  // p.63
+  ['Pressure', 'Lead', 'POLY', 'KORG Inc.'],
+  ['Vreeeew', 'Lead', 'POLY', 'Nick Kwas'],
+  ['EvilSyncLead', 'Lead', 'UNISON', 'Tomohiro Nakamura'],
+  ['OvrdriveLead', 'Lead', 'UNISON', 'KORG Inc.'],
+  ['Hybrid', 'Lead', 'POLY', 'Artemiy Pavlov'],
+  ['Hoover Cloud', 'Lead', 'UNISON', 'Artemiy Pavlov'],
+  ['Dense Lead', 'Lead', 'CHORD', 'Taylor McFerrin'],
+  ['The Blob', 'Lead', 'CHORD', 'Dorian Concept'],
+  ['WaveringLead', 'Lead', 'UNISON', 'Luke Edwards'],
+  ['Message From', 'Lead', 'CHORD', 'KORG Inc.'],
+  ['Joystick!', 'Lead', 'CHORD', 'Tomohiro Nakamura'],
+  ['#brew time', 'Arp', 'ARP', 'Luke Edwards'],
+  ['Duality', 'Arp', 'ARP', 'Artemiy Pavlov'],
+  ['Cluster 5th', 'Arp', 'ARP', 'Dorian Concept'],
+  ['Innerstellar', 'Arp', 'ARP', 'Tomohiro Nakamura'],
+  ['xdBassRepeat', 'Arp', 'ARP', 'Luke Edwards'],
+  ['Cloud Level', 'Arp', 'ARP', 'Nick Kwas'],
+  ['Beautyvolver', 'Arp', 'ARP', 'Nick Kwas'],
+  ['Sparkles', 'Arp', 'ARP', 'Artemiy Pavlov'],
+  ['Trance Vibes', 'Arp', 'ARP', 'Artemiy Pavlov'],
+  ['Warpeggio', 'Arp', 'ARP', 'Dorian Concept'],
+  ['LetGo Arp', 'Arp', 'ARP', 'Dorian Concept'],
+  ['Fat Plucks', 'Arp', 'ARP', 'KORG Inc.'],
+  ['Alarm&Bottle', 'Arp', 'POLY', 'KORG Inc.'],
+  ['Deep Flavor', 'Chord', 'CHORD', 'KORG Inc.'],
+  ['Piano Chord', 'Chord', 'CHORD', 'Artemiy Pavlov'],
+  ['Gxyexp Stab', 'Chord', 'CHORD', 'KORG Inc.'],
+  ['Lush m7', 'Chord', 'CHORD', 'Artemiy Pavlov'],
+  ['SpiralNebula', 'Chord', 'CHORD', 'KORG Inc.'],
+  ['Third Code', 'Chord', 'CHORD', 'Taylor McFerrin'],
+  ['Sirens', 'SFX', 'POLY', 'Artemiy Pavlov'],
+  ['Halo Pad', 'SFX', 'POLY', 'Taylor McFerrin'],
+  ['Antidote', 'SFX', 'CHORD', 'Taylor McFerrin'],
+  ['Starship', 'SFX', 'POLY', 'Artemiy Pavlov'],
+  ['Space Acid', 'SFX', 'CHORD', 'Artemiy Pavlov'],
+  ['Late Riser', 'SFX', 'POLY', 'Taylor McFerrin'],
+  ['Doppler Pad', 'SFX', 'POLY', 'Taylor McFerrin'],
+  ['Disco Callin', 'SFX', 'CHORD', 'KORG Inc.'],
+  ['RuinHitChart', 'SFX', 'UNISON', 'Tomohiro Nakamura'],
+  ['Broken Toy', 'SFX', 'POLY', 'Tomohiro Nakamura'],
+  ['PTN Techno1', 'Drum', 'POLY', 'Tomohiro Nakamura'],
+  ['PTN Techno2', 'Drum', 'CHORD', 'Tomohiro Nakamura'],
+  ['PTN DubTch', 'Drum', 'POLY', 'Tomohiro Nakamura'],
+  ['PTN Acieeed?', 'Drum', 'CHORD', 'Tomohiro Nakamura'],
+  ['PTN Mutant', 'Drum', 'POLY', 'Tomohiro Nakamura'],
+  ['PTN Mellow', 'Drum', 'POLY', 'Tomohiro Nakamura'],
+  ['Game On!', 'Drum', 'POLY', 'Tomohiro Nakamura'],
+  ['16bt Bass', 'Drum', 'CHORD', 'Tomohiro Nakamura'],
+  ['VPM Plant', 'Drum', 'UNISON', 'Tomohiro Nakamura'],
+  ['BDSDHHTOM', 'Drum', 'POLY', 'Tomohiro Nakamura'],
+  // p.64
+  ['TPL BasicSaw', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL BasicTri', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL BasicSqr', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL BasicSin', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL LayerOct', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Layer5th', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL 3sawPoly', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL 4sawDuo', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL 8sawMono', 'Template', 'UNISON', 'KORG Inc.'],
+  ['TPL SyncVCO2', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL RingVCO2', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL XmodVCO2', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL ResoVelo', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL ShortTom', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Sweeping', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL EG+1shot', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL PulseWM', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL VPMmod', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL TrillLFO', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL PumpSaw', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL ChordHit', 'Template', 'CHORD', 'KORG Inc.'],
+  ['TPL RandArp', 'Template', 'ARP', 'KORG Inc.'],
+  ['TPL Repeater', 'Template', 'ARP', 'KORG Inc.'],
+  ['TPL PingPong', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Downpour', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL 100%Wet', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Doubling', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Parroted', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL PumpNois', 'Template', 'CHORD', 'KORG Inc.'],
+  ['TPL DownSmpl', 'Template', 'CHORD', 'KORG Inc.'],
+  ['TPL ThruVCF', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL 2Sines', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Reversed', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL LongSeq', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Strings', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Brass', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Organ', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL WahClav', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL A.EPiano', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL D.EPiano', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL A.Bell', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL D.Bell', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL SubBass', 'Template', 'UNISON', 'KORG Inc.'],
+  ['TPL LofiSine', 'Template', 'CHORD', 'KORG Inc.'],
+  ['TPL MonoDriv', 'Template', 'CHORD', 'KORG Inc.'],
+  ['TPL RoarVPM', 'Template', 'CHORD', 'KORG Inc.'],
+  ['TPL Talkie', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Kick', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Snare', 'Template', 'POLY', 'KORG Inc.'],
+  ['TPL Hats', 'Template', 'CHORD', 'KORG Inc.'],
+]
+
+/** The fact `DeviceSchema` reads: name and category off pp.61-64, and nothing the page did not print. */
+const SHIPPED_PROGRAMS = FACTORY_PROGRAMS.map(([name, bank]) => ({ name, bank }))
+
+/**
+ * §2.6/#593, #617, #618. **What twelve of the 200 are for**, and the figure written for each is
+ * under `lib/riffs/` with a `patch` reference naming it. `SHIPPED_PROGRAMS` is the fact and
+ * this is the judgement beside it, keyed by name and Category so the two cannot drift.
+ *
+ * **Uncited, as every `use` in the library is.** A use line is editorial judgement and carries
+ * no evidence: what to play on a program, in the words of somebody choosing it for that. The
+ * one printed fact a line may lean on is the author, because p.65 credits the eight by name;
+ * the manual supports that attribution and nothing else a line says.
+ *
+ * **Twelve of 200.** The fifty `TPL` programs are starting points and nothing musical is owed
+ * about them, and #617 made the judgement able to cover a subset of the fact so that the fact
+ * could stay whole. A program with a line has a figure; a program without one is simply not
+ * on the page.
+ *
+ * **The order is editorial, and it is the reading order.** Korg's numbering is a slot order:
+ * `Replicant xd` is No 1 and `MirroredBass` No 9, and nobody compares those two. This walks
+ * what a reader would compare, pair by pair: the two basses (one UNISON, one CHORD), the two
+ * leads (one CHORD, one POLY), the two arpeggiated programs, the two pads, the two keys
+ * sounds, then the chord program and the effect. Change the order here and the page follows;
+ * nothing downstream sorts it. Eight authors, and every one of the eight is in these twelve.
+ */
+const PATCH_USES: PatchUse[] = [
+  // Basses
+  { name: 'MirroredBass', bank: 'Bass', use: 'Unison bass for a line that answers itself upside down' },
+  { name: 'Hypno Acid', bank: 'Bass', use: 'Acid line in sixteenths, one key at a time' },
+  // Leads
+  { name: 'MetalFnkLead', bank: 'Lead', use: 'Syncopated funk lead, single keys, dorian sixth' },
+  { name: 'Pressure', bank: 'Lead', use: 'Lead for lines that build by hammering one note' },
+  // Arpeggiated programs: the hand holds a voicing and the box plays it
+  { name: '#brew time', bank: 'Arp', use: 'Arpeggiator over held major-seventh voicings' },
+  { name: 'Cloud Level', bank: 'Arp', use: 'Arpeggiator over four voicings that share one top note' },
+  // Pads
+  { name: 'Replicant xd', bank: 'Pad', use: 'Slow minor pad with a moving inner voice' },
+  { name: 'Swollen Pad', bank: 'Pad', use: 'Chords stacked one voice at a time into a slow attack' },
+  // Keys and struck sounds
+  { name: 'Petrichor', bank: 'Poly Synth', use: 'Rootless keys comping, off the beat' },
+  { name: 'Roadz Bell', bank: 'Poly Synth', use: 'Bell-toned dyads in sixths at ballad pace' },
+  // The chord program and the effect
+  { name: 'Lush m7', bank: 'Chord', use: 'Minor-seventh chords from single keys, parallel one-four-five' },
+  { name: 'Broken Toy', bank: 'SFX', use: 'Music-box tune that stumbles and corrects itself' },
+]
+
 /**
  * The six roles one four-note analog voice can honestly claim.
  *
@@ -1031,22 +1350,59 @@ export const device: Device = {
    * should be played by something else, and nothing here says it should lead.
    */
 
+  /**
+   * §2.6/#142, #618. **A length on every step, in percent.** p.41, SEQ PARAMETER: `Default Gate
+   * Time [0%...100%]`, *"the default value used for each step recorded using the step sequencer.
+   * Lower values are more staccato, higher values have a longer gate time"*. Per note rather than
+   * per program because p.27 and p.31 both say the recording gesture moves it on one step at a
+   * time: *"If you turn the PROGRAM/VALUE knob while playing buttons 1–16, the gate time for only
+   * the step(s) you played will be changed"*. The manual writes `Gate Time`; the name is
+   * uppercased here as every SEQ EDIT name in this folder is (`SWING`, off the same page).
+   *
+   * **Not `tied-steps`, though the box ties too.** p.27's *Recording a tie* (REST held with a
+   * key) and p.31's *"connect the notes inputted in these steps with a tie"* join a note to the
+   * next step, on top of the value — a tie here is how a note outlives its step, not the only way
+   * a length is entered. The kind is decided by whether there is a value, and there is.
+   *
+   * The unit carries the gesture because no panel label says `GATE TIME`: the reader turns
+   * PROGRAM/VALUE with the step button held, and a duration printed without that is a value with
+   * no field to put it in. This entry used to be `unread` with the reason that the manual was not
+   * in `manuals/`, which was true when it was written and is not now.
+   */
+  noteDuration: {
+    kind: 'per-note-value',
+    control: 'GATE TIME',
+    unit: 'percent, 0% to 100%, turned in with PROGRAM/VALUE while the step button is held',
+  },
+
   capabilityEvidence: {
-    /**
-     * §2.6/#120/#142. `unread`, and it is the state's ordinary case rather than an edge one: the
-     * minilogue xd's manual is not in `manuals/` at all. Nobody here has opened the document that
-     * would answer whether its 16-step sequencer carries a note length, so the reading is blocked
-     * on a file rather than on an author's afternoon — and recording it as `unknown` would render
-     * a missing document as a finished finding.
-     */
-    noteDuration: {
-      kind: 'unread',
-      reason: "the minilogue xd manual is not in `manuals/`; no document here was opened for it",
-    },
+    /** §2.6/#142. p.27 and p.31 for the per-step gesture, p.41 for `[0%...100%]`. */
+    noteDuration: { kind: 'manual', source: `${MANUAL}, pp.27, 31, 41` },
     'clock.preferredSource': {
       kind: 'unknown',
       reason:
         'p.58 gives the send half — with `Clock Source` set to `Internal` the TEMPO knob’s tempo "will be sent as MIDI timing clock data" — and p.46 the receive half, `Clock Source [Auto (USB), Auto (MIDI), Internal]`; both are capabilities and neither is a role, and the volca-style `SYNC OUT` pulse carries no start or stop at all (p.7, p.46, p.55)',
+    },
+    /**
+     * §2.6/#617. `manual`, the first in the library: pp.61-64 print all 200 names, and p.10
+     * sends the reader to that list. See `FACTORY_PROGRAMS`.
+     */
+    factoryPatches: { kind: 'manual', source: `${MANUAL}, pp.61-64` },
+    /**
+     * §4.1/#571. `unknown`, with the pages read. The manual names `C4` three times and never
+     * says which MIDI note or which key it is: p.23 centres KEYTRACK on it (*"pressing the C5
+     * key will give a cutoff frequency one octave higher than the C4 key"*), p.36 puts it at 1 V
+     * on `CV IN` (*"Inputting a 1V signal will generate a C4 note"*), and p.37 makes it the
+     * centre of the `Reverse` microtuning. The MIDI implementation chart on p.67 gives
+     * `Note Number 0–127` and no true-voice names, and p.10 describes the OCTAVE switch as ±2
+     * octaves without naming a key. Where the box puts MIDI 60 is not on any of them, and
+     * figures on this device print note names, so the absence is recorded rather than an octave
+     * guessed.
+     */
+    middleC: {
+      kind: 'unknown',
+      reason:
+        'the manual uses C4 in its synthesis and CV examples — KEYTRACK centred on C4 (p.23), "Inputting a 1V signal will generate a C4 note" (p.36), the Reverse microtuning "with C4 as the center" (p.37) — and never states which MIDI note number or which key that C4 is; the MIDI implementation chart (p.67) gives Note Number 0–127 with no true-voice names, and p.10 describes the OCTAVE switch as ±2 octaves without naming a key',
     },
   },
 
@@ -1077,6 +1433,12 @@ export const device: Device = {
    * voices share one set of knob positions, so they are capacity within a part and never parts.
    */
   voices: [{ kind: 'fixed', id: 'voice', label: 'Voice', roles: [...VOICE_ROLES], polyphony: 4 }],
+
+  /** All 200, off pp.61-64. The table and the reading are at `FACTORY_PROGRAMS`. */
+  factoryPatches: SHIPPED_PROGRAMS,
+
+  /** Twelve of them, each with a figure under `lib/riffs/`. The order is the page's; see `PATCH_USES`. */
+  patchUses: PATCH_USES,
 
   hints: {
     'seq-parameter': 'EDIT MODE, PROGRAM EDIT, button 7',

@@ -1077,7 +1077,7 @@ So `Device.noteDuration` says how the box in front of the reader ends a note, ci
 
 | kind | the gesture | in the library |
 |---|---|---|
-| `per-note-value` | a length carried on each note — `control` names what sets it, `unit` only where a manual states one | Digitakt II `LEN`, MC-101 `LEN`, Mother-32 and Crave `GATE LENGTH`, the Deluge's start pad + end pad |
+| `per-note-value` | a length carried on each note — `control` names what sets it, `unit` only where a manual states one | Digitakt II `LEN`, MC-101 `LEN`, Mother-32 and Crave `GATE LENGTH`, the minilogue xd `GATE TIME` in percent, the Deluge's start pad + end pad |
 | `tied-steps` | one step per note; `control` is the tie that joins it to the next | Grandmother, Matriarch, Subsequent 37 — all `TIE` |
 | `until-next` | no length field; the next note ends this one, or `noteOff` does | Tracker Mini, `OFF` |
 | `gate` | a gate held from somewhere that is not the pattern | Cascadia |
@@ -1085,8 +1085,11 @@ So `Device.noteDuration` says how the box in front of the reader ends a note, ci
 
 **The fifth state is the absence of the field**, exactly as `content` does it and for the same
 reason: a claim of not-knowing is still a field somebody has to remember to write. The *reason*
-lives in `capabilityEvidence` as one of #120's three reasoned states — the minilogue xd is `unread`,
-because its manual is not in `manuals/` at all.
+lives in `capabilityEvidence` as one of #120's three reasoned states. The minilogue xd was the
+worked example of `unread` here, because its manual was not in `manuals/` when this was written;
+the manual is there now, pp.27, 31 and 41 answer with a per-step `GATE TIME` in percent, and the
+entry is a citation (#618). An `unread` reason names a document, and a document that arrives
+turns the reason false — which is the check that caught this one.
 
 **A box a guide can ask to play something has to have been asked.** `DeviceSchema` demands an entry
 from any device with a recipe, and refuses `false` there — the `sourceAudio` rule of §2.6 in another

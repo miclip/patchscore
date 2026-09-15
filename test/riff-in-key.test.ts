@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { referenceSlug, resolveHook, resolveRiff, spellChord, transposableKeys } from '../lib/core'
 import type { Riff } from '../lib/core'
 import { RIFFS } from '../lib/riffs'
+import { DEVICES } from '../lib/devices/registry.generated'
 import { RiffFigureView, RiffInKey } from '../components/riff/riff-in-key'
 import { RiffFigure } from '../components/riff/riff-figure'
 import { chordRows, noteRows } from '../lib/studio/riff-text'
@@ -83,16 +84,20 @@ function facts(markup: string) {
 
 /**
  * The route that carries a riff (#598): a record-named entry is at `/riffs/<id>`, and a
- * patch-named one is a page under the box that ships the patch, which is the Muse for all
- * twelve today. Both draw the figure through the same `RiffFigure`, so both are held to #570.
+ * patch-named one is a page under the box that ships the patch — found by the name the riff
+ * references, exactly as `presetSession` finds the riff, since a riff names no box
+ * (invariant 3). Both draw the figure through the same `RiffFigure`, so both are held to #570.
  */
 async function markupFor(riff: Riff): Promise<string> {
   if (riff.reference.kind === 'record') {
     return renderToStaticMarkup(await RiffRoute({ params: Promise.resolve({ id: riff.id }) }))
   }
+  const name = riff.reference.name
+  const shipping = DEVICES.filter((d) => d.factoryPatches?.some((p) => p.name === name))
+  if (shipping.length !== 1) throw new Error(`${riff.id}: ${shipping.length} boxes ship '${name}'`)
   return renderToStaticMarkup(
     await PresetFigureRoute({
-      params: Promise.resolve({ id: 'moog-muse', patch: referenceSlug(riff.reference.name) }),
+      params: Promise.resolve({ id: shipping[0]!.id, patch: referenceSlug(name) }),
     }),
   )
 }

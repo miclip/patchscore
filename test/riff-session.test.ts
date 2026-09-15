@@ -1,10 +1,24 @@
 import { describe, expect, it } from 'vitest'
-import type { Device } from '@/lib/core'
+import type { Device, Recipe } from '@/lib/core'
 import { assign, moodState, realisationOf, resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS, blueMondayBass, showMeLoveOrganStab, thrillerSynthRiff } from '@/lib/riffs'
 import { gridOf, heldRiff } from './fixtures'
 import { box, makeRecipe, withRoles } from './rigs'
+
+/**
+ * §2.3/#25. **Two recipes the folder declares one patch**: each spends a `sharedAs` key and the
+ * two spend exactly the same keys, as a multiset, in both directions. A `consumes` entry with
+ * no `sharedAs` is that recipe's own (`sharedAs ?? id`), so it matches no other recipe.
+ */
+function declaredOnePatch(a: Recipe, b: Recipe): boolean {
+  const keys = (r: Recipe) =>
+    (r.consumes ?? []).map((c) => c.sharedAs ?? r.id).sort((x, y) => (x < y ? -1 : x > y ? 1 : 0))
+  const ka = keys(a)
+  const kb = keys(b)
+  return ka.length > 0 && ka.length === kb.length && ka.every((k, i) => k === kb[i])
+}
+
 
 /**
  * §5A/§7.3. Resolving one riff against one rig, and the three honest answers.
@@ -330,9 +344,53 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
       expect(search, riff.id).toBeDefined()
       if (resolution.outcome !== 'played' || search === undefined) continue
       expect(resolution.voice.device.id, riff.id).toBe(search.deviceId)
-      expect(resolution.voice.recipe.id, riff.id).toBe(search.recipe.id)
       expect(resolution.voice.stackWidth, riff.id).toBe(search.assignables.length)
+      /*
+       * The recipe too, with one exception the design makes rather than this test: a seed
+       * permutes only among *exactly equal* costs (§7.2), and `resolveRiff` carries no seed, so
+       * where two candidates tie on every key the two paths may pick differently. The library
+       * has exactly one such tie: the Tracker Mini writes each synth recipe on both of its pools
+       * as one patch (`sharedAs`, §2.3/#25), and a four-note pad stacked across either pool
+       * costs the same. `assign` flips between the twins by seed; `resolveRiff` takes the
+       * first key. Equal, or declared one patch — nothing looser; see `declaredOnePatch`.
+       */
+      if (!declaredOnePatch(resolution.voice.recipe, search.recipe)) {
+        expect(resolution.voice.recipe.id, riff.id).toBe(search.recipe.id)
+      }
     }
+  })
+
+  /**
+   * The exception above, held to its own bar: two recipes are one patch only when each declares
+   * a nonempty `sharedAs` set and the two sets are the same multiset. A recipe sharing a subset
+   * of another's keys is a different patch that happens to spend one of the same slots.
+   */
+  it('declaredOnePatch is identical nonempty sharedAs multisets, both ways, and nothing looser', () => {
+    const consuming = (id: string, keys: string[]): Recipe => ({
+      ...makeRecipe(id, 'pad', 'soft', 'track'),
+      consumes: keys.map((sharedAs) => ({ resource: 'synth-slot', sharedAs })),
+    })
+    const a = consuming('a', ['tm-pad-soft'])
+    const b = consuming('b', ['tm-pad-soft'])
+    expect(declaredOnePatch(a, b)).toBe(true)
+    expect(declaredOnePatch(b, a)).toBe(true)
+    // Neither declares anything: two recipes, not one patch.
+    const bare = makeRecipe('bare', 'pad', 'soft', 'track')
+    expect(declaredOnePatch(bare, makeRecipe('bare-2', 'pad', 'soft', 'track'))).toBe(false)
+    expect(declaredOnePatch(a, bare)).toBe(false)
+    expect(declaredOnePatch(bare, a)).toBe(false)
+    // A subset in either direction does not qualify.
+    const wider = consuming('wider', ['tm-pad-soft', 'fx-slot'])
+    expect(declaredOnePatch(a, wider)).toBe(false)
+    expect(declaredOnePatch(wider, a)).toBe(false)
+    // The same keys with a different multiplicity do not qualify either.
+    const doubled = consuming('doubled', ['tm-pad-soft', 'tm-pad-soft'])
+    expect(declaredOnePatch(a, doubled)).toBe(false)
+    expect(declaredOnePatch(doubled, a)).toBe(false)
+    // A `consumes` entry with no `sharedAs` is keyed to its own recipe id, so it never matches another.
+    const own = { ...makeRecipe('own', 'pad', 'soft', 'track'), consumes: [{ resource: 'synth-slot' }] }
+    const other = { ...makeRecipe('other', 'pad', 'soft', 'track'), consumes: [{ resource: 'synth-slot' }] }
+    expect(declaredOnePatch(own, other)).toBe(false)
   })
 })
 

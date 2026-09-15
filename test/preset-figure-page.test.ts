@@ -137,11 +137,23 @@ describe('the figure page exists exactly where a figure does, and nowhere it use
   it('is prerendered for the twelve, under the Muse, in the folder’s order', () => {
     expect(dynamicParams).toBe(false)
     const params = generateStaticParams()
-    expect(params).toEqual(FIGURED.map(({ entry }) => ({ id: 'moog-muse', patch: entry.slug })))
-    expect(params).toHaveLength(12)
-    // Every patch-named riff has a page here, and only those.
+    // Two boxes carry a session since #618; the Muse's twelve are the ones this file renders.
+    const museParams = params.filter((p) => p.id === 'moog-muse')
+    expect(museParams).toEqual(FIGURED.map(({ entry }) => ({ id: 'moog-muse', patch: entry.slug })))
+    expect(museParams).toHaveLength(12)
+    expect(params).toHaveLength(24)
+    // Every patch-named riff has a page here, under the box that ships its patch, and only those.
+    const musePatches = new Set(byId('moog-muse').factoryPatches?.map((p) => p.name))
     const ids = new Set(FIGURED.map(({ figure }) => figure.riff.id))
     expect([...ids].sort()).toEqual(
+      RIFFS.filter((r) => r.reference.kind === 'patch' && musePatches.has(r.reference.name))
+        .map((r) => r.id)
+        .sort(),
+    )
+    const figured = DEVICES.flatMap((d) =>
+      (presetSession(d)?.entries ?? []).flatMap((e) => (e.figure === undefined ? [] : [e.figure.riff.id])),
+    )
+    expect(figured.sort()).toEqual(
       RIFFS.filter((r) => r.reference.kind === 'patch')
         .map((r) => r.id)
         .sort(),

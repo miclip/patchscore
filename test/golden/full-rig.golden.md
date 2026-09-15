@@ -346,7 +346,7 @@ A step is one note long and nothing here sets a length: `TIE` joins a note to th
 
 8 bars in F minor.
 
-How this box sets a note’s length is not established here, so the durations below are the part rather than a field to fill in.
+Note length is set per note here — `GATE TIME`, in percent, 0% to 100%, turned in with PROGRAM/VALUE while the step button is held.
 
 - bar 1 · step 1 · held for 64 steps (4 bars) · `F3` `Ab3` (`G#3`) `C4` · root 3rd 5th · MIDI 53 56 60
 - bar 5 · step 65 · held for 32 steps (2 bars) · `Db4` (`C#4`) `F4` `Ab4` (`G#4`) · 6th root 3rd · MIDI 61 65 68

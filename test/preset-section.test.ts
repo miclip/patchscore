@@ -68,7 +68,7 @@ describe('the Explore your device panel is on the Muse and on no other box (#593
 
   it('renders no panel, no heading and no link on every other box', async () => {
     for (const device of DEVICES) {
-      if (device.id === 'moog-muse') continue
+      if (device.id === 'moog-muse' || device.id === 'korg-minilogue-xd') continue
       const markup = await markupFor(device.id)
       expect(markup, device.id).not.toContain('preset-section')
       expect(markup, device.id).not.toContain(`>${PRESET_HEADING}<`)
@@ -102,7 +102,7 @@ describe('each entry says what the model says', () => {
    */
   it('links every entry to its figure page under the device, and nowhere into /riffs', () => {
     const patchRiffs = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patchRiffs.length).toBe(12)
+    expect(patchRiffs.length).toBe(24)
     for (const entry of session.entries) {
       expect(entry.figure, entry.patch.name).toBeDefined()
       expect(MUSE, entry.patch.name).toContain(

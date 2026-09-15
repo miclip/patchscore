@@ -592,15 +592,16 @@ describe('spellChord (#570)', () => {
         })
       }
     }
-    // The seventeen forms the library authors today, across templates and riffs — the claim this
+    // The twenty forms the library authors today, across templates and riffs — the claim this
     // test makes. The sweep above spells whatever is authored, so a new form cannot hide from it;
     // this list is checked both ways so a form that stops being authored, or arrives, is noticed
-    // here and the list kept exact.
+    // here and the list kept exact. `i7`, `iv7` and `v7` arrived with #618's Lush m7 figure,
+    // where every key the hand plays is a minor seventh and the table has to say so.
     const AUTHORED_FORMS = [
       'I', 'II', 'II7', 'III', 'IV', 'V', 'VI', 'VII', 'Vsus2', 'bII',
-      'i', 'ii', 'iii', 'iv', 'v', 'vi', 'vii',
+      'i', 'i7', 'ii', 'iii', 'iv', 'iv7', 'v', 'v7', 'vi', 'vii',
     ]
-    expect(AUTHORED_FORMS).toHaveLength(17)
+    expect(AUTHORED_FORMS).toHaveLength(20)
     for (const form of AUTHORED_FORMS) {
       expect(seen.has(form), `${form} is no longer authored anywhere`).toBe(true)
     }

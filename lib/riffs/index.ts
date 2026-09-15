@@ -17,6 +17,18 @@ import { showMeLoveOrganStab } from './show-me-love-organ-stab'
 import { softOrchestraSlowChanges } from './soft-orchestra-slow-changes'
 import { thrillerSynthRiff } from './thriller-synth-riff'
 import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
+import { brewTimeMajorSeventhHold } from './brew-time-major-seventh-hold'
+import { brokenToyMusicBoxStumble } from './broken-toy-music-box-stumble'
+import { cloudLevelSharedTopDrift } from './cloud-level-shared-top-drift'
+import { hypnoAcidSixteenthLoop } from './hypno-acid-sixteenth-loop'
+import { lushM7ParallelRootLine } from './lush-m7-parallel-root-line'
+import { metalfnkleadSyncopatedFunkLine } from './metalfnklead-syncopated-funk-line'
+import { mirroredbassInvertedAnswerLine } from './mirroredbass-inverted-answer-line'
+import { petrichorOffbeatCompingFigure } from './petrichor-offbeat-comping-figure'
+import { pressureRepeatedNoteBuild } from './pressure-repeated-note-build'
+import { replicantXdInnerVoicePad } from './replicant-xd-inner-voice-pad'
+import { roadzBellSixthsBalladFigure } from './roadz-bell-sixths-ballad-figure'
+import { swollenPadStaggeredStack } from './swollen-pad-staggered-stack'
 
 /**
  * The riff registry (§5A). Hand-written and static, for the reason the template and inspiration
@@ -34,9 +46,9 @@ import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
  * named one reference and filed itself under another cannot parse. Five entries are `record`
- * references and twelve are `patch` references, and the kind decides where an entry surfaces
- * (#598): the five are `/riffs`, and each of the twelve is a page under the box that ships its
- * patch. See `RECORD_RIFFS`.
+ * references and twenty-four are `patch` references, and the kind decides where an entry
+ * surfaces (#598): the five are `/riffs`, and each of the twenty-four is a page under the box
+ * that ships its patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
  * the reference stands for. A reader who wants the record should go and listen to the record.
@@ -83,11 +95,25 @@ import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
  * technique (§5A.5) and is not a judgement that the figure is that sound, so it earns no
  * affinity by itself. `test/riff.test.ts` pins the set at those two ids.
  *
- * Six of the seventeen are `lead`, which is under the strict majority `test/riff.test.ts`
+ * Six of the first seventeen are `lead`, which is under the strict majority `test/riff.test.ts`
  * allows one role, and they are six different lessons: a line that floats late, the six
  * arrivals of that line on their own, a line that marches on the grid, a line in a mode, a
  * line with no overlaps because the patch glides, and a synth riff struck on every note.
  * `test/riff.test.ts` pins the count per role.
+ *
+ * ## The twelve for the minilogue xd's programs (§5A.5, #618)
+ *
+ * The second box with a patch list, and the first whose list is off a page: pp.61-64 of its
+ * manual print all 200 programs with a Voice Mode beside each, and the mode is a constraint
+ * the figures are written under. A CHORD or UNISON program sounds one key at a time however
+ * many voices the box has, so the four figures on those (`mirroredbass-…`, `hypno-acid-…`,
+ * `metalfnklead-…`, `lush-m7-…`) never overlap a note; an ARP program plays what the hand
+ * holds, so the two on those (`brew-time-…`, `cloud-level-…`) are `pad`s of held voicings with
+ * no grid, four notes at most; and every POLY figure peaks at four. What the twelve add to the
+ * library is the first four-note `pad`s (the first seventeen's two pads are the top voice of an
+ * ensemble), a staggered entry whose polyphony is what *sounds* rather than what *starts*
+ * (`swollen-pad-…`), and a line whose every note is a chord (`lush-m7-…`).
+ * `test/korg-minilogue-xd.test.ts` holds each to the printed mode.
  */
 export const RIFFS: readonly Riff[] = [
   threeOscBassLoveRootOctaveFigure,
@@ -97,14 +123,26 @@ export const RIFFS: readonly Riff[] = [
   bellbounceSparseBellPattern,
   bladeRunnerBluesLead,
   blueMondayBass,
+  brewTimeMajorSeventhHold,
+  brokenToyMusicBoxStumble,
+  cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
   hamamatsuTinesBalladFigure,
+  hypnoAcidSixteenthLoop,
+  lushM7ParallelRootLine,
+  metalfnkleadSyncopatedFunkLine,
+  mirroredbassInvertedAnswerLine,
   moog55StringsSuspensionWriting,
   moogProSoloGlideLead,
   museRunnerFloatingArrivalLead,
+  petrichorOffbeatCompingFigure,
   polyphonicPowerBrassStabCycle,
+  pressureRepeatedNoteBuild,
+  replicantXdInnerVoicePad,
+  roadzBellSixthsBalladFigure,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
+  swollenPadStaggeredStack,
   thrillerSynthRiff,
   voxHumanaRigidColdPopLine,
 ]
@@ -115,15 +153,27 @@ export {
   bellbounceSparseBellPattern,
   bladeRunnerBluesLead,
   blueMondayBass,
+  brewTimeMajorSeventhHold,
+  brokenToyMusicBoxStumble,
+  cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
   hamamatsuTinesBalladFigure,
+  hypnoAcidSixteenthLoop,
+  lushM7ParallelRootLine,
+  metalfnkleadSyncopatedFunkLine,
+  mirroredbassInvertedAnswerLine,
   moog55StringsSuspensionWriting,
   moogProSoloGlideLead,
   museRunnerFloatingArrivalLead,
+  petrichorOffbeatCompingFigure,
   polyphonicPowerBrassStabCycle,
+  pressureRepeatedNoteBuild,
+  replicantXdInnerVoicePad,
+  roadzBellSixthsBalladFigure,
   seventiesElectroPnoRhodesTurnaround,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
+  swollenPadStaggeredStack,
   threeOscBassLoveRootOctaveFigure,
   thrillerSynthRiff,
   voxHumanaRigidColdPopLine,
