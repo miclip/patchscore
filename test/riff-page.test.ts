@@ -15,10 +15,17 @@ import { hintText } from '../components/guide/format'
 import type { DeviceId, RiffVoicing } from '../lib/core'
 import { MAX_RIG_DEVICES, resolveRiff, spellChord } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
-import { RECORD_RIFFS, RIFFS, blueMondayBass } from '../lib/riffs'
+import { RECORD_RIFFS, RIFFS, blueMondayBass, museRunnerFloatingArrivalLead } from '../lib/riffs'
 import { riffHref } from '../lib/studio/catalogue'
 import { renderRiff } from '../lib/studio/riff-markdown'
-import { RIFF_GRID_LEAD, gridRepeatSentence, gridRows, riffLength, slotRows } from '../lib/studio/riff-text'
+import {
+  RIFF_GRID_LEAD,
+  gridRepeatSentence,
+  gridRows,
+  riffChordSummary,
+  riffLength,
+  slotRows,
+} from '../lib/studio/riff-text'
 import { SITE_ORIGIN } from '../lib/studio/site'
 import { gridOf, heldRiff } from './fixtures'
 
@@ -312,6 +319,48 @@ describe('the chord table says the chords are supplied separately', () => {
     expect(BLUE_MD).not.toContain(SENTENCE)
     expect(BLUE_TEXT).not.toContain(SENTENCE)
     expect(BLUE_TEXT).not.toContain('The chords')
+  })
+})
+
+/**
+ * §5A.2/#623. **The chord summary says how the figure and the cycle differ in length.** Equal,
+ * it is the head alone. Shorter, the figure's bars. Longer, that the cycle repeats under the
+ * figure, with the count where the figure is a whole number of cycles: a twelve-bar table under
+ * a forty-eight bar figure said nothing about the chords coming round until this did.
+ */
+describe('the chord summary says the cycle repeats under a longer figure (#623)', () => {
+  const blade = RIFFS.find((r) => r.id === 'blade-runner-blues-lead') as (typeof RIFFS)[number]
+  const muse = museRunnerFloatingArrivalLead
+  const HEAD = '6 chords over 12 bars, in F# minor.'
+  const REPEATS = 'The 12-bar cycle repeats 4 times under this 48-bar figure.'
+
+  it('is the head alone where the figure is the cycle', () => {
+    expect(blade.hook.bars).toBe(blade.harmony?.cycleBars)
+    expect(riffChordSummary(blade)).toBe(HEAD)
+  })
+
+  it('says the cycle repeats, and how many times, under the four-loop line', () => {
+    expect(muse.hook.bars).toBe(48)
+    expect(riffChordSummary(muse)).toBe(`${HEAD} ${REPEATS}`)
+    // Once, above the rows, in the export.
+    const md = renderRiff(resolveRiff(muse, []))
+    expect(md.split(REPEATS).length - 1).toBe(1)
+    const chords = md.slice(md.indexOf('## The chords'), md.indexOf('## The notes'))
+    expect(chords.indexOf(REPEATS)).toBeLessThan(chords.indexOf('| i | F# · A · C# | 1'))
+  })
+
+  it('drops the count where the figure is not a whole number of cycles', () => {
+    const uneven = { ...muse, hook: { ...muse.hook, bars: 18 } }
+    expect(riffChordSummary(uneven)).toBe(`${HEAD} The 12-bar cycle repeats under this 18-bar figure.`)
+  })
+
+  it('still names the bars where the figure is shorter than the cycle', () => {
+    const short = { ...blade, figureStartsAtBar: 7, hook: { ...blade.hook, bars: 4 } }
+    expect(riffChordSummary(short)).toBe(`${HEAD} The figure is bars 7\u201310.`)
+  })
+
+  it('moves the key with the page’s key control and nothing else', () => {
+    expect(riffChordSummary(muse, 'G minor')).toBe(`6 chords over 12 bars, in G minor. ${REPEATS}`)
   })
 })
 

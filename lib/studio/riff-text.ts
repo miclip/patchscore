@@ -142,8 +142,12 @@ export function chordRows(riff: Riff, key: string = riff.key): readonly ChordRow
 /**
  * `6 chords over 12 bars, in F# minor. The figure is bars 7-10.` — the line above the rows.
  *
- * The second sentence appears only where the figure is shorter than the cycle. Where the two are
- * the same length there is nothing to align and saying so would be noise.
+ * The second sentence appears only where the figure and the cycle differ in length. Shorter, it
+ * says which bars the figure sits on. Longer (§5A.2/#623), it says the cycle repeats under the
+ * figure, with the count where the figure is a whole number of cycles: `The 12-bar cycle repeats
+ * 4 times under this 48-bar figure.` A page that printed a twelve-bar table under a forty-eight
+ * bar figure and said nothing left the reader to work out that the chords come round. Where the
+ * two are the same length there is nothing to align and saying so would be noise.
  */
 export function riffChordSummary(riff: Riff, key: string = riff.key): string | undefined {
   const { harmony } = riff
@@ -151,7 +155,14 @@ export function riffChordSummary(riff: Riff, key: string = riff.key): string | u
   const head =
     `${count(harmony.progression.length, 'chord')} over ` +
     `${count(harmony.cycleBars, 'bar')}, in ${key}.`
-  if (riff.hook.bars >= harmony.cycleBars) return head
+  if (riff.hook.bars === harmony.cycleBars) return head
+  if (riff.hook.bars > harmony.cycleBars) {
+    const cycle = `The ${num(harmony.cycleBars)}-bar cycle repeats`
+    const figure = `under this ${num(riff.hook.bars)}-bar figure.`
+    const whole = riff.hook.bars % harmony.cycleBars === 0
+    const times = whole ? ` ${count(riff.hook.bars / harmony.cycleBars, 'time')}` : ''
+    return `${head} ${cycle}${times} ${figure}`
+  }
   const start = riff.figureStartsAtBar ?? 1
   const end = start + riff.hook.bars - 1
   const span = start === end ? `bar ${num(start)}` : `bars ${num(start)}\u2013${num(end)}`

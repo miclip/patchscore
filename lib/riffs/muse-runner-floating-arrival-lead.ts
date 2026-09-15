@@ -2,9 +2,10 @@ import type { Riff } from '../core/riff'
 
 /**
  * §5A. **The Muse Runner floating-arrival lead**: four passes over a six-chord cycle in F#
- * minor, each pass in a higher register and thinner than the last, the fourth working as an
- * ending. Every note arrives after the pad has already moved and sounds until the next chord is
- * under it.
+ * minor, the first the full line, the second the same line in the upper register with its
+ * contour turned over, the third dropped near the pad's voicings and thinned to a note a chord,
+ * the fourth the highest and thinnest and working as an ending. Every note arrives after the
+ * pad has already moved and sounds until the next chord is under it.
  *
  * **Named after a factory patch, with a figure authored here** (§5A.5, #566). The reference is a
  * preset a box ships under that name, and it is the name a reader looks the technique up by. On
@@ -24,11 +25,13 @@ import type { Riff } from '../core/riff'
  * (§5A.2), so the fourth `I` is the same chord as the first and is checked as its own entry.
  *
  * **Loop 1** is the figure that shipped, note for note: one late entry per chord and a contour
- * inside each. **Loop 2** is an octave up with the contour inverted, the widest of the four,
- * and it carries the two notes that look wrong and are not (below). **Loop 3** is one note a
- * chord, just above the pad's voicings, each held through its two bars. **Loop 4** is the
- * highest and the thinnest: the first chord is silent, the second is entered alone and very
- * late, and the last note leaps to `C#6` and rings past the end.
+ * inside each. **Loop 2** is in the upper register with the contour inverted, the widest of the
+ * four, and it carries the two notes that look wrong and are not (below). **Loop 3** drops back
+ * to just above the pad's voicings and thins to one note a chord, each entered late and held
+ * until the next chord is under it. **Loop 4** is the highest and the thinnest: the first chord
+ * is silent, the second is entered alone and very late, and the last note leaps to `C#6` and
+ * rings past the end. The registers do not climb in order; the line goes up, comes down, and
+ * ends above where it started.
  *
  * ## Why there is no grid
  *
@@ -48,15 +51,16 @@ import type { Riff } from '../core/riff'
  * all; the `G#4` closing Loop 3 releases two steps into it, as every last note of a chord does,
  * and then the chord is silent.
  *
- * ## The two `D#5`s over the C# minor, which are correct
+ * ## The two `D#5`s of Loop 2, which are correct
  *
- * Loop 2 closes on `E5 D#5 C#5` over the `v`. `D#` is the raised sixth of F# minor, which the
- * key does not own, and it is the second of C# minor, which the chord does. It is a stepwise
- * descent inside the chord and not a borrowing, so it is authored as `6/0 alter 1` beside the
- * `D#5` over the `IV` one chord earlier, which is the borrowed chord's own third. The rule that
- * forbids degree 6 names it *unaltered* over the `IV`, so neither note reaches it. A future
- * editor who reads the D# over C# minor as a mistake and lowers it to D would put the key's
- * sixth a semitone under the chord's third; the operator's line does not do that.
+ * One is over the `IV`, where it is B major's own third, the same note Loop 1 plays there. The
+ * other is over the `v`: Loop 2 closes on `E5 D#5 C#5` over the C# minor, and that `D#` is both
+ * things at once, the raised sixth of F# minor, which the key does not own, and the second of C#
+ * minor, which the chord does. It is a stepwise descent inside the chord, so it is authored as
+ * `6/0 alter 1` like the one over the `IV`. The rule that forbids degree 6 names it *unaltered*
+ * over the `IV`, so neither note reaches it. A future editor who reads the D# over C# minor as
+ * a mistake and lowers it to D would put the key's sixth a semitone under the chord's third;
+ * the operator's line does not do that.
  *
  * ## The raised notes, and where the line clears before them
  *
@@ -95,11 +99,13 @@ export const museRunnerFloatingArrivalLead: Riff = {
   bpm: { min: 58, max: 78, default: 66 },
   key: 'F# minor',
   technique: [
-    'Six chords, twelve bars, and the line goes round them four times, each pass higher and ' +
-      'thinner than the last. Three minor chords, then the pair the key does not own, then the ' +
-      'minor fifth to take it back. The first pass is the line; the other three are the same ' +
-      'line moving up and away until there is almost nothing left of it.',
-    'One late entry per chord. Let the pad move first, then arrive: an entry lands two beats ' +
+    'Six chords, twelve bars, and the line goes round them four times. Three minor chords, ' +
+      'then the pair the key does not own, then the minor fifth to take it back. The first ' +
+      'pass is the line. The second takes it up into the higher register and turns the shape ' +
+      'over. The third comes back down to just above the chords and thins to one note each. ' +
+      'The fourth is the highest and the thinnest, and it is the ending.',
+    'One late entry per chord, until the last pass leaves its first chord empty. Let the pad ' +
+      'move first, then arrive: an entry lands two beats ' +
       'after the chord has changed under it, and the wait is what makes the note sound placed ' +
       'rather than programmed. Two entries come later still, a bar and a half in: the A# over ' +
       'the F# major in the third pass and the A that opens the fourth pass alone. Wait for ' +
@@ -108,15 +114,17 @@ export const museRunnerFloatingArrivalLead: Riff = {
       'bar. F# an octave up over the D, stepping down through E to D. D over the B minor, its ' +
       'neighbour C# and back. A# late over the F# major, hanging. D# over the B, lifting to F#. ' +
       'G# over the C# minor, resolving down to E.',
-    'Second pass, an octave up and the contour turned over. A falling to F# over the F# minor ' +
+    'Second pass, up in the higher register with the contour turned over. A falling to F# over ' +
+      'the F# minor ' +
       'and left to sit. A with its upper neighbour B and back over the D. B stepping down ' +
       'through A to F# over the B minor. C# rising late to A# over the F# major. F# down to ' +
       'D# and back over the B. E stepping down through D# to C# over the C# minor. That D# ' +
-      'over the C# minor is right: it is the second of the chord, not the sixth of the key, ' +
-      'so play it and do not soften it to D.',
-    'Third pass, one note a chord, held for the two bars, sitting just above the pad. F#, A, ' +
-      'F#, then A# arriving very late over the F# major, then F#, then G# over the C# minor ' +
-      'with no resolution. Let each one sit and move nothing.',
+      'over the C# minor is right: it is the raised sixth of F# minor and the second of C# ' +
+      'minor at once, so play it and do not soften it to D.',
+    'Third pass, one note a chord, sitting just above the pad. Each arrives two beats in and ' +
+      'holds until the next chord is already under it. F#, A, F#, then A# arriving very late ' +
+      'over the F# major and hanging into the B, then F#, then G# over the C# minor with no ' +
+      'resolution. Let each one sit and move nothing.',
     'Fourth pass, the ending. Nothing over the F# minor. A alone over the D, very late. F# ' +
       'held over the B minor. A# held over the F# major, and keep the vibrato off it until the ' +
       'chord is nearly over. F# held over the B. Then the leap up to C# over the C# minor, and ' +
@@ -228,7 +236,7 @@ export const museRunnerFloatingArrivalLead: Riff = {
       { step: 169, degree: 2, octave: 0, len: 16 },
       { step: 185, degree: 7, octave: -1, len: 10 },
 
-      // Loop 2, steps 193–384. An octave up, the contour turned over.
+      // Loop 2, steps 193–384. The upper register, the contour turned over.
       // `i`. The third an octave up, falling to the tonic and left to sit.
       { step: 201, degree: 3, octave: 1, len: 12 },
       { step: 213, degree: 1, octave: 1, len: 14 },

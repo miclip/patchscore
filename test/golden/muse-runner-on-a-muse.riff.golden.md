@@ -4,15 +4,15 @@
 
 ## The technique
 
-Six chords, twelve bars, and the line goes round them four times, each pass higher and thinner than the last. Three minor chords, then the pair the key does not own, then the minor fifth to take it back. The first pass is the line; the other three are the same line moving up and away until there is almost nothing left of it.
+Six chords, twelve bars, and the line goes round them four times. Three minor chords, then the pair the key does not own, then the minor fifth to take it back. The first pass is the line. The second takes it up into the higher register and turns the shape over. The third comes back down to just above the chords and thins to one note each. The fourth is the highest and the thinnest, and it is the ending.
 
-One late entry per chord. Let the pad move first, then arrive: an entry lands two beats after the chord has changed under it, and the wait is what makes the note sound placed rather than programmed. Two entries come later still, a bar and a half in: the A# over the F# major in the third pass and the A that opens the fourth pass alone. Wait for those until it feels too late, then play them.
+One late entry per chord, until the last pass leaves its first chord empty. Let the pad move first, then arrive: an entry lands two beats after the chord has changed under it, and the wait is what makes the note sound placed rather than programmed. Two entries come later still, a bar and a half in: the A# over the F# major in the third pass and the A that opens the fourth pass alone. Wait for those until it feels too late, then play them.
 
 First pass, the full line. C# held over the F# minor, dropping to A late in the second bar. F# an octave up over the D, stepping down through E to D. D over the B minor, its neighbour C# and back. A# late over the F# major, hanging. D# over the B, lifting to F#. G# over the C# minor, resolving down to E.
 
-Second pass, an octave up and the contour turned over. A falling to F# over the F# minor and left to sit. A with its upper neighbour B and back over the D. B stepping down through A to F# over the B minor. C# rising late to A# over the F# major. F# down to D# and back over the B. E stepping down through D# to C# over the C# minor. That D# over the C# minor is right: it is the second of the chord, not the sixth of the key, so play it and do not soften it to D.
+Second pass, up in the higher register with the contour turned over. A falling to F# over the F# minor and left to sit. A with its upper neighbour B and back over the D. B stepping down through A to F# over the B minor. C# rising late to A# over the F# major. F# down to D# and back over the B. E stepping down through D# to C# over the C# minor. That D# over the C# minor is right: it is the raised sixth of F# minor and the second of C# minor at once, so play it and do not soften it to D.
 
-Third pass, one note a chord, held for the two bars, sitting just above the pad. F#, A, F#, then A# arriving very late over the F# major, then F#, then G# over the C# minor with no resolution. Let each one sit and move nothing.
+Third pass, one note a chord, sitting just above the pad. Each arrives two beats in and holds until the next chord is already under it. F#, A, F#, then A# arriving very late over the F# major and hanging into the B, then F#, then G# over the C# minor with no resolution. Let each one sit and move nothing.
 
 Fourth pass, the ending. Nothing over the F# minor. A alone over the D, very late. F# held over the B minor. A# held over the F# major, and keep the vibrato off it until the chord is nearly over. F# held over the B. Then the leap up to C# over the C# minor, and let it ring past the end.
 
@@ -34,7 +34,7 @@ Wide vibrato, arriving after the note has settled. The note should be still for 
 
 ## The chords
 
-6 chords over 12 bars, in F# minor.
+6 chords over 12 bars, in F# minor. The 12-bar cycle repeats 4 times under this 48-bar figure.
 
 | Degree | Notes | Bars | Under the figure |
 | --- | --- | ---: | :---: |

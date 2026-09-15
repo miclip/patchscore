@@ -375,6 +375,12 @@ describe('every page carries the figure and the Muse’s block for it', () => {
       expect(page.split(REPEAT).length - 1, slug).toBe(1)
       expect(page.indexOf(REPEAT), slug).toBeGreaterThan(page.indexOf(RIFF_GRID_LEAD))
     }
+    // The Muse Runner line has no grid to go round, and its chord table says instead that the
+    // cycle goes round under the figure (#623).
+    const musePage = text(MUSE_RUNNER)
+    const CYCLE = 'The 12-bar cycle repeats 4 times under this 48-bar figure.'
+    expect(musePage.split(CYCLE).length - 1).toBe(1)
+    expect(musePage.indexOf(CYCLE)).toBeLessThan(musePage.indexOf('The figure is played over these chords'))
     // And on no other preset page: every other figure is as long as its grid, or has none.
     for (const { entry, figure } of FIGURED) {
       if (entry.slug in REPEATS) continue
