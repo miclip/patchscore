@@ -1396,6 +1396,17 @@ body {
 }
 
 /*
+ * Name and bank together, as one grid cell (#621). `.preset-summary` is a grid, so two siblings
+ * here are two cells: the bank fell into the marker gutter and set one letter per line. The
+ * `minmax(0, …)` on the column only lets a cell wrap if the cell itself may shrink, hence
+ * `min-width: 0` here as well as on the name.
+ */
+.preset-title {
+  min-width: 0;
+  overflow-wrap: break-word;
+}
+
+/*
  * The name as the box prints it, in the prose face at full ink: it is the thing a reader scrolls
  * a bank looking for, and a patch name is a title rather than a value to dial (§10).
  */
