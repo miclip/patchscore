@@ -179,7 +179,9 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
                     { middleC: { kind: 'fixed', octave: 3 } as const }
                   : fact === FACTORY_PATCHES_FACT
                     ? // §2.6/#592. The sixth: that a box ships a named patch is a positive claim
-                      // read off the unit (`test/factory-patches.test.ts`).
+                      // read off a page or off the unit, so the manual citation below is
+                      // accepted here as it is everywhere else (#617,
+                      // `test/factory-patches.test.ts`).
                       { factoryPatches: [{ name: 'Aegean Organ' }] }
                     : {}
       /**
@@ -190,11 +192,7 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
       const found =
         fact === CONTROL_POSITION_FACT
           ? ({ kind: 'unknown', reason: 'the drawings mark it and the CC table values it' } as const)
-          : fact === FACTORY_PATCHES_FACT
-            ? // §2.6/#592 refuses a manual page here: no manual names a factory patch, so the
-              // evidence is the unit.
-              ({ kind: 'observed', source: 'A unit, firmware 1.0' } as const)
-            : CITE
+          : CITE
       const parsed = DeviceSchema.safeParse(
         patchable({
           ...declaring,

@@ -10,10 +10,13 @@ import type { PresetFigure, PresetSession } from './preset-session'
  * here rather than in either of them, on `kit-text.ts`'s pattern, so parity is structural.
  * What each renderer owns is its ink.
  *
- * **Nothing here counts what it does not list.** The Muse ships 224 patches and declares twelve,
- * and no sentence below says *twelve of*, by operator decision (#593): a denominator turns a
- * fact about the box into a score of this library's authoring, which no rendered surface may
- * show. The panel and the page list what is declared and say nothing about the rest.
+ * **A count appears where the count is a fact about the box, and nowhere else.** The Muse ships
+ * 224 patches and declares twelve off a unit's screen, and no sentence below says *twelve of*,
+ * by operator decision (#593): twelve is how many somebody read, and a denominator would turn
+ * that into a score of this library's authoring, which no rendered surface may show. A box whose
+ * manual prints the whole list is the other case (#617): the total is the maker's own figure,
+ * so the lead states it and says how many of them are here, and a reader who does not find
+ * their preset has learned something true about the page rather than found a blank row.
  */
 
 /** `Moog Muse: factory patches`. The page's title and the panel's link, one string. */
@@ -22,12 +25,28 @@ export function presetTitle(device: Device): string {
 }
 
 /**
- * What the list is, in one sentence, and the reason to open it (#593). No count: the entries
- * are the ones somebody who owns the box picked out, and a number in front of them would read
- * as the box's total.
+ * What the list is, in one sentence, and the reason to open it (#593, #617). One sentence per
+ * kind of reading, because the two support different claims:
+ *
+ *  - **`observed`**: no count. The entries are the ones somebody who owns the box picked out,
+ *    and a number in front of them would read as the box's total.
+ *  - **`manual`**: the total the manual names, and how many are here. The first is the maker's
+ *    figure and the second is the page's own length, and neither says anything about the
+ *    library's backlog: a reader learns the box ships 200 and that this page describes 40.
+ *
+ * Both surfaces call this, so the sentence is the same on the panel and on the page.
  */
-export const PRESET_LEAD =
-  'The ones worth knowing, what each is for, and the figure written for it where one exists.'
+export function presetLead(session: PresetSession): string {
+  const rest = 'what each is for, and the figure written for it where one exists.'
+  if (session.reading === 'observed') return `The ones worth knowing, ${rest}`
+  const here = session.entries.length
+  const named = session.named
+  const count =
+    here === named
+      ? 'and every one is here'
+      : `and ${here} of them ${here === 1 ? 'is' : 'are'} here`
+  return `The manual names ${named} factory patches, ${count}: ${rest}`
+}
 
 /** The device page's panel heading — the section's name in #593, the reason to open the page. */
 export const PRESET_HEADING = 'Explore your device'

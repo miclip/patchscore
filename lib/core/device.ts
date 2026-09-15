@@ -1342,19 +1342,25 @@ export function middleCNotice(device: Device | undefined): MiddleCNotice | undef
  * patch called Aegean Organ is not a judgement; the operator owns the unit and read the name off
  * its screen. This is the slot for that fact alone.
  *
- * **A name and an optional bank, nothing else.** No per-entry evidence: one reading of one unit
- * produced the whole list, so the evidence is one entry at `factoryPatches` in
- * `capabilityEvidence`, and `DeviceSchema` requires it to be `observed` — no maker in this library
- * prints its factory patch names, so a manual citation here would be a page that does not say
- * what it is cited for. Never a slot number, for `FactoryPatch`'s reason: slots move across
- * firmware and across any owner who has reordered a bank. **No description**, deliberately: what
- * a patch sounds like is a sonic claim, and the only verifiable thing about a factory patch from
- * here is that it exists under that name.
+ * **A name and an optional bank, nothing else.** No per-entry evidence: one reading produced
+ * the whole list, so the evidence is one entry at `factoryPatches` in `capabilityEvidence`, and
+ * `DeviceSchema` accepts two kinds there, because two kinds of reading exist (#617). A `manual`
+ * page proves the maker ships the name: the minilogue xd's Owner's Manual prints all 200 of its
+ * programs on pp.61-64. An `observed` unit proves this unit has it, with its firmware in the
+ * source string: the Muse's manual counts 224 on p.12 and names none, so its twelve came off the
+ * screen. Neither ranks above the other and neither substitutes for the other; a `maker` page
+ * is refused until one in this library names a patch. Never a slot number, for
+ * `FactoryPatch`'s reason: slots move across firmware and across any owner who has reordered a
+ * bank, and a maker printing the slot in a table does not make it stable — Korg's `No` column
+ * is exactly that. **No description**, deliberately: what a patch sounds like is a sonic claim,
+ * and the only verifiable thing about a factory patch from here is that it exists under that
+ * name.
  *
- * **The list is what somebody has read off a box, and nothing wider.** The Muse's manual counts
- * 224 on p.12 and names none; twelve are declared, because twelve is what the operator named.
- * A box with an empty list declares nothing rather than `[]`, and the schema refuses the empty
- * list so that a declaration is always a claim.
+ * **The list is as wide as its reading and no wider.** Off a unit that is what somebody named:
+ * the Muse declares twelve of 224, because twelve is what the operator read. Off a page it can
+ * be the whole page: a manual that prints 200 names supports declaring 200. A box with an empty
+ * list declares nothing rather than `[]`, and the schema refuses the empty list so that a
+ * declaration is always a claim.
  *
  * **It reaches a reader on the device page and nowhere else** (#593). A preset belongs to
  * exactly one box and a riff is rig-agnostic by design, so a box listing its own patches is a
@@ -1409,15 +1415,22 @@ export const ShippedPatchesSchema = z
  * reader would open the page. It reads as description and carries no hedge (§5A.5 holds here
  * as it does on a riff title), because a hedge on every line says nothing a reader can act on.
  *
- * **One `use` per shipped patch, all of them or none.** A box authors these as one list, and
- * `DeviceSchema` refuses a list that names a patch the box does not declare, names one twice,
- * or leaves a declared patch without a line: a row with a name and nothing under it is not an
- * entry. A box with `factoryPatches` and no `patchUses` has declared the fact and not the
+ * **At most one `use` per shipped patch, and not every shipped patch needs one** (#617). A box
+ * authors these as one list, and `DeviceSchema` refuses a list that names a patch the box does
+ * not declare or names one twice. It does not refuse a declared patch without a line, because
+ * the fact and the judgement need not come off the same reading: a page can name 200 programs
+ * where fifty are `TPL Snare`-style templates about which nothing musical is owed, and a use
+ * written for each of those would be fifty lines saying nothing. The rule the old all-or-none
+ * check enforced still holds where it matters, on the page: a row with a name and nothing under
+ * it is not an entry, so `presetSession` carries only the patches with a use and never grows a
+ * silent row. A box with `factoryPatches` and no `patchUses` has declared the fact and not the
  * judgement, and no page prints the fact alone (`presetSession` answers `undefined` for it).
  *
- * **The authored order is the reading order.** No maker prints a list, so there is no order to
- * follow, and the folder decides which patches a reader would compare and puts them together.
- * A resolver walks this list as written and sorts nothing.
+ * **The authored order is the reading order, whether or not the maker prints one.** A printed
+ * order is a slot order — the sequence a bank was filled in — and the point of this field is to
+ * put next to each other the patches a reader would compare, which the Muse's `PATCH_USES`
+ * argues at length and which does not depend on the absence of a list. The folder decides, and
+ * a resolver walks this list as written and sorts nothing.
  */
 export type PatchUse = {
   /** `ShippedPatch.name`, matched exactly. */
@@ -1439,16 +1452,19 @@ export const PatchUsesSchema = z
   .min(1, 'a box that describes its factory patches describes at least one; omit the field otherwise')
 
 /**
- * §2.6/#593. **Every way a `patchUses` list can disagree with `factoryPatches`**, as messages.
- * `DeviceSchema` reports them at authoring time and `presetSession` throws on them, so a device
- * built past the schema is still refused rather than rendered with a row missing.
+ * §2.6/#593. **Every way a `patchUses` list can disagree with `factoryPatches`**, as messages:
+ * a use naming a patch the box does not declare, and a use declared twice. A declared patch with
+ * no use is not a disagreement (#617): the judgement may cover a subset of the fact, and the
+ * page renders only the covered patches. `DeviceSchema` reports these at authoring time and
+ * `presetSession` throws on them, so a device built past the schema is still refused rather
+ * than rendered with a row keyed to nothing.
  */
 export function patchUseIssues(
   shipped: readonly ShippedPatch[],
   uses: readonly PatchUse[],
-): { index: number | undefined; message: string }[] {
-  const issues: { index: number | undefined; message: string }[] = []
-  const declared = new Map(shipped.map((patch) => [shippedPatchKey(patch), patch]))
+): { index: number; message: string }[] {
+  const issues: { index: number; message: string }[] = []
+  const declared = new Set(shipped.map(shippedPatchKey))
   const seen = new Set<string>()
   const label = (p: { name: string; bank?: string }) =>
     `'${p.name}'${p.bank === undefined ? '' : ` in ${p.bank}`}`
@@ -1467,14 +1483,6 @@ export function patchUseIssues(
     }
     seen.add(key)
   })
-  for (const [key, patch] of declared) {
-    if (!seen.has(key)) {
-      issues.push({
-        index: undefined,
-        message: `factory patch ${label(patch)} has no patch use; a box describes all of its declared patches or none of them (§2.6/#593)`,
-      })
-    }
-  }
   return issues
 }
 
@@ -2542,7 +2550,11 @@ export type FactoryPatch = {
    * Optional, because some boxes present one flat list and there is nothing to say.
    */
   bank?: string
-  /** `observed` only: no manual in this library names a factory patch. */
+  /**
+   * `observed` only, on this field. `Device.factoryPatches` accepts a manual page as well
+   * (#617); every recipe pairing in the library so far came off a unit, and this field has not
+   * been widened ahead of one that comes off a page.
+   */
   evidence: { kind: 'observed'; source: string }
 }
 
@@ -2892,11 +2904,13 @@ export type Recipe = {
    * reordered their banks, so a number would be wrong for most readers and unfalsifiable for the
    * rest. A name is searchable on the box.
    *
-   * **`observed` only, and the schema enforces it.** No maker in this library prints its factory
-   * patch names: the Muse's manual counts 224 on p.12 and names none, and the Subsequent 37's
-   * omits them entirely. So the only honest evidence is somebody with the box in front of them,
-   * and the firmware goes in the source string the way every other `observed` cite carries it —
-   * a patch list is a thing that changes between releases.
+   * **`observed` only, and the schema enforces it here.** Every pairing so far came off a unit:
+   * the Muse's manual counts 224 on p.12 and names none, and the Subsequent 37's omits them
+   * entirely. The firmware goes in the source string the way every other `observed` cite carries
+   * it, because a patch list is a thing that changes between releases. A maker *can* print the
+   * names — the minilogue xd's manual does, and `Device.factoryPatches` accepts that page (#617)
+   * — and this field is widened to match when a recipe first pairs with a printed name rather
+   * than ahead of it.
    *
    * The *match* is the library's judgement and stays uncited, which is the same split `verified`
    * already draws: what exists is evidence, which one to reach for is taste.
@@ -4058,13 +4072,14 @@ export type Device = {
   /**
    * §2.6/#592. The factory patches this box ships, by name — see `ShippedPatch`. Optional, and
    * absent on every box nobody has read a list off; the evidence for the whole list sits at
-   * `factoryPatches` in the map below and must be `observed`.
+   * `factoryPatches` in the map below and is `manual` where a page prints the names or
+   * `observed` where a unit did (#617).
    */
   factoryPatches?: ShippedPatch[]
   /**
-   * §2.6/#593. What each of those patches is for — see `PatchUse`. Optional, and only legal
-   * beside `factoryPatches`, covering every entry in it: the judgement rides on the fact and
-   * never without it.
+   * §2.6/#593. What those patches are for — see `PatchUse`. Optional, and only legal beside
+   * `factoryPatches`, each entry keyed to one of its patches: the judgement rides on the fact
+   * and never without it. It may cover a subset (#617); the page renders only what it covers.
    */
   patchUses?: PatchUse[]
   /**
@@ -4709,24 +4724,24 @@ export const DeviceSchema = z
     }
 
     /**
-     * §2.6/#592. **A shipped patch list is a positive claim about the box and its evidence is a
-     * reading of the unit**, in the same two directions as `middleC`, with one more rule: the
-     * citation must be `observed`. No maker in this library prints its factory patch names, so a
-     * `manual` or `maker` citation here names a document that does not say what it is cited for.
-     * `false` is refused as it is at `middleC`.
+     * §2.6/#592, #617. **A shipped patch list is a positive claim about the box and its evidence
+     * is a reading**, in the same two directions as `middleC`, with one more rule: the citation
+     * is `manual` or `observed`. A page proves the maker ships the name; a unit proves this unit
+     * has it. Neither is ranked above the other, and `maker` is refused until a maker page in
+     * this library names a patch. `false` is refused as it is at `middleC`.
      */
     const patchesEvidence = evidence[FACTORY_PATCHES_FACT]
     if (device.factoryPatches !== undefined) {
       if (patchesEvidence === undefined || !isCite(patchesEvidence)) {
         ctx.addIssue({
           code: 'custom',
-          message: `factoryPatches is declared with no citation at '${FACTORY_PATCHES_FACT}'; a patch list is read off the unit, so cite it 'observed' with the firmware (§2.6/#592)`,
+          message: `factoryPatches is declared with no citation at '${FACTORY_PATCHES_FACT}'; a patch list is read off a page or off the unit, so cite it 'manual' with the page or 'observed' with the firmware (§2.6/#592, #617)`,
           path: ['capabilityEvidence', FACTORY_PATCHES_FACT],
         })
-      } else if (patchesEvidence.kind !== 'observed') {
+      } else if (patchesEvidence.kind !== 'manual' && patchesEvidence.kind !== 'observed') {
         ctx.addIssue({
           code: 'custom',
-          message: `'${FACTORY_PATCHES_FACT}' is cited '${patchesEvidence.kind}', but no manual or maker page in this library names a factory patch; the only honest evidence is 'observed' on a unit, with its firmware (§2.6/#592)`,
+          message: `'${FACTORY_PATCHES_FACT}' is cited '${patchesEvidence.kind}'; a factory patch list is evidenced by 'manual', where a page proves the maker ships the name, or by 'observed', where a unit proves this unit has it, with its firmware (§2.6/#592, #617)`,
           path: ['capabilityEvidence', FACTORY_PATCHES_FACT],
         })
       }
@@ -4746,9 +4761,9 @@ export const DeviceSchema = z
     }
 
     /**
-     * §2.6/#593. **A patch use rides on a shipped patch.** The list is refused without
-     * `factoryPatches` to key against, and with it every entry must name a declared patch once
-     * and every declared patch must have an entry — `patchUseIssues` is the single statement of
+     * §2.6/#593, #617. **A patch use rides on a shipped patch.** The list is refused without
+     * `factoryPatches` to key against, and with it every entry must name a declared patch once.
+     * A declared patch may go without an entry — `patchUseIssues` is the single statement of
      * that, shared with `presetSession`.
      */
     if (device.patchUses !== undefined) {
@@ -4764,7 +4779,7 @@ export const DeviceSchema = z
           ctx.addIssue({
             code: 'custom',
             message: issue.message,
-            path: issue.index === undefined ? ['patchUses'] : ['patchUses', issue.index],
+            path: ['patchUses', issue.index],
           })
         }
       }

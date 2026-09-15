@@ -12,8 +12,10 @@ import { device as fixtureDevice, recipe } from './fixtures'
  * `test/preset-page.test.ts` and `test/preset-figure-page.test.ts` hold the pages. These hold:
  *
  *  - `Device.patchUses` is **keyed to `factoryPatches` exactly**: a list without the fact to
- *    key against, a use naming a patch the box does not declare, a use declared twice, and a
- *    declared patch with no use are all refused by the schema and by the session;
+ *    key against, a use naming a patch the box does not declare, and a use declared twice are
+ *    all refused by the schema and by the session; a declared patch with no use is **accepted**
+ *    (#617), and the session carries only the patches with a use, so no silent row reaches a
+ *    page;
  *  - the session answers **`undefined` for a box without both declarations**, so a box with
  *    the fact alone shows nothing;
  *  - the Muse's session carries **the twelve in the folder's order**, joins **all twelve** to
@@ -24,18 +26,23 @@ import { device as fixtureDevice, recipe } from './fixtures'
  */
 
 const OBSERVED = { kind: 'observed', source: 'A unit, firmware 1.0' } as const
+const MANUAL = { kind: 'manual', source: 'A Manual, pp.61-64' } as const
 
 /** What the shared fixture already cites, so a test adding one fact does not drop the rest. */
 const baseline = fixtureDevice({ recipes: [recipe()] }).capabilityEvidence ?? {}
 
-function declared(patches: ShippedPatch[] | undefined, uses: PatchUse[] | undefined): Device {
+function declared(
+  patches: ShippedPatch[] | undefined,
+  uses: PatchUse[] | undefined,
+  evidence: typeof OBSERVED | typeof MANUAL = OBSERVED,
+): Device {
   return fixtureDevice({
     recipes: [recipe()],
     ...(patches === undefined ? {} : { factoryPatches: patches }),
     ...(uses === undefined ? {} : { patchUses: uses }),
     capabilityEvidence: {
       ...baseline,
-      ...(patches === undefined ? {} : { [FACTORY_PATCHES_FACT]: OBSERVED }),
+      ...(patches === undefined ? {} : { [FACTORY_PATCHES_FACT]: evidence }),
     },
   } as never)
 }
@@ -91,10 +98,35 @@ describe('patchUses is keyed to factoryPatches exactly (§2.6/#593)', () => {
     expect(issues(parsed)).toContain("'Aegean Organ' is declared twice")
   })
 
-  it('refuses a declared patch with no use: all of them or none', () => {
-    const parsed = DeviceSchema.safeParse(declared([ORGAN, BELL], [ORGAN_USE]))
-    expect(parsed.success).toBe(false)
-    expect(issues(parsed)).toContain("'Bellbounce' has no patch use")
+  it('accepts a subset: a declared patch with no use is not a disagreement (#617)', () => {
+    const device = declared([ORGAN, BELL], [ORGAN_USE])
+    expect(DeviceSchema.safeParse(device).success).toBe(true)
+    // The page gets the described patches and no silent row for the rest.
+    const session = presetSession(device, [])
+    expect(session?.entries.map((e) => e.patch.name)).toEqual(['Aegean Organ'])
+    expect(session?.device.factoryPatches).toHaveLength(2)
+  })
+
+  /**
+   * #617. The case the subset rule exists for: a manual prints the whole list, so the fact is
+   * complete at every name on the page, and the judgement covers the ones worth a line. The
+   * session says how many the page named and where it read them, carries an entry per use,
+   * and carries nothing at all under the undescribed name.
+   */
+  it('a manual-backed list with one use of two: the count is two, the entry is one', () => {
+    const device = declared([ORGAN, BELL], [ORGAN_USE], MANUAL)
+    expect(DeviceSchema.safeParse(device).success).toBe(true)
+    const session = presetSession(device, [])
+    expect(session?.named).toBe(2)
+    expect(session?.reading).toBe('manual')
+    expect(session?.entries).toHaveLength(1)
+    expect(JSON.stringify(session?.entries)).not.toContain('Bellbounce')
+  })
+
+  it('an observed list says how many were read, and that it was read off a unit', () => {
+    const session = presetSession(declared([ORGAN, BELL], [ORGAN_USE, BELL_USE]), [])
+    expect(session?.named).toBe(2)
+    expect(session?.reading).toBe('observed')
   })
 
   it('refuses an empty list and an empty use', () => {
@@ -104,15 +136,12 @@ describe('patchUses is keyed to factoryPatches exactly (§2.6/#593)', () => {
     ).toBe(false)
   })
 
-  it('the session throws on the same three disagreements, for a device built past the schema', () => {
+  it('the session throws on the same two disagreements, for a device built past the schema', () => {
     expect(() => presetSession(declared([ORGAN], [ORGAN_USE, BELL_USE]), [])).toThrow(
       'does not declare',
     )
     expect(() => presetSession(declared([ORGAN], [ORGAN_USE, ORGAN_USE]), [])).toThrow(
       'declared twice',
-    )
-    expect(() => presetSession(declared([ORGAN, BELL], [ORGAN_USE]), [])).toThrow(
-      'has no patch use',
     )
   })
 })

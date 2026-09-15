@@ -9,7 +9,7 @@ import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS } from '../lib/riffs'
 import { presetFigureHref, riffHref } from '../lib/studio/catalogue'
 import { presetSession } from '../lib/studio/preset-session'
-import { PRESET_HEADING, PRESET_LEAD } from '../lib/studio/preset-text'
+import { PRESET_HEADING, presetLead } from '../lib/studio/preset-text'
 import { device as fixtureDevice, recipe } from './fixtures'
 
 /**
@@ -19,7 +19,9 @@ import { device as fixtureDevice, recipe } from './fixtures'
  * What is pinned: the panel is on the one box with a session and on no other; every entry is a
  * closed disclosure whose summary carries the name and what it is for; the body carries the
  * link to the figure written for it and nothing about a recipe (#598); the order is the
- * folder's; and nothing on the panel counts the patches it does not list.
+ * folder's; the Muse's panel counts nothing, since its twelve came off a unit; and a list off a
+ * manual page states the total the manual names and how many are here, with no row for a
+ * patch nobody described (#617).
  */
 
 const byId = (id: string): Device => {
@@ -91,7 +93,7 @@ describe('each entry says what the model says', () => {
     for (const entry of session.entries) {
       expect(MUSE_TEXT, entry.patch.name).toContain(entry.use)
     }
-    expect(MUSE_TEXT).toContain(PRESET_LEAD)
+    expect(MUSE_TEXT).toContain(presetLead(session))
   })
 
   /**
@@ -147,11 +149,74 @@ describe('each entry says what the model says', () => {
   })
 
   it('says nothing about the patches it does not list', () => {
-    // The Muse ships 224 and declares twelve. A denominator turns a fact into a score of our
-    // authoring, and the operator's decision was to list the twelve and say nothing else.
+    // The Muse ships 224 and declares twelve off a unit. A denominator on an observed reading
+    // turns a fact into a score of our authoring, and the operator's decision was to list the
+    // twelve and say nothing else.
+    expect(session.reading).toBe('observed')
     expect(PANEL_TEXT).not.toMatch(/\b224\b/)
     expect(PANEL_TEXT).not.toMatch(/twelve of|12 of/i)
     expect(PANEL_TEXT).not.toMatch(/nobody has|not yet written|backlog/i)
+  })
+})
+
+/**
+ * #617. A list off a manual page is the other case. The fixture names two and describes one,
+ * cited to a page, and the panel says the manual names two and one is here, with no row and
+ * no name for the undescribed patch. The page at `presetsHref` says the same sentence, since
+ * both call `presetLead`; `test/preset-page.test.ts` pins that on the Muse.
+ */
+describe('a list off a manual page states the total and how many are here (#617)', () => {
+  function manualBacked(uses: { name: string; bank: string; use: string }[]): Device {
+    return fixtureDevice({
+      recipes: [recipe()],
+      factoryPatches: [
+        { name: 'Replicant xd', bank: 'Pad' },
+        { name: 'TPL Snare', bank: 'Template' },
+      ],
+      patchUses: uses,
+      capabilityEvidence: {
+        ...(fixtureDevice().capabilityEvidence ?? {}),
+        [FACTORY_PATCHES_FACT]: { kind: 'manual', source: "Owner's Manual, pp.61-64" },
+      },
+    } as never)
+  }
+
+  it('one use of two: the lead counts two named and one here, and the other is absent', () => {
+    const session = presetSession(manualBacked([{ name: 'Replicant xd', bank: 'Pad', use: 'A wide pad' }]), [])
+    if (session === undefined) throw new Error('no session')
+    const markup = renderToStaticMarkup(createElement(PresetSection, { session }))
+    const body = text(markup)
+    expect(presetLead(session)).toBe(
+      'The manual names 2 factory patches, and 1 of them is here: what each is for, and the figure written for it where one exists.',
+    )
+    expect(body).toContain(presetLead(session))
+    expect(markup.match(/class="disclosure preset-entry"/g)?.length).toBe(1)
+    expect(markup).toContain('Replicant xd')
+    expect(markup).not.toContain('TPL Snare')
+    expect(body).not.toMatch(/nobody has|not yet written|backlog/i)
+  })
+
+  it('every one described: the lead says so', () => {
+    const session = presetSession(
+      manualBacked([
+        { name: 'Replicant xd', bank: 'Pad', use: 'A wide pad' },
+        { name: 'TPL Snare', bank: 'Template', use: 'A starting point for a snare' },
+      ]),
+      [],
+    )
+    if (session === undefined) throw new Error('no session')
+    expect(presetLead(session)).toBe(
+      'The manual names 2 factory patches, and every one is here: what each is for, and the figure written for it where one exists.',
+    )
+    expect(text(renderToStaticMarkup(createElement(PresetSection, { session })))).toContain(
+      presetLead(session),
+    )
+  })
+
+  it('an observed reading keeps the sentence with no count', () => {
+    expect(presetLead(session)).toBe(
+      'The ones worth knowing, what each is for, and the figure written for it where one exists.',
+    )
   })
 })
 

@@ -6,7 +6,7 @@ import type {
   RiffVoicing,
   ShippedPatch,
 } from '@/lib/core'
-import { patchUseIssues, resolveRiff, shippedPatchKey } from '@/lib/core'
+import { FACTORY_PATCHES_FACT, isCite, patchUseIssues, resolveRiff, shippedPatchKey } from '@/lib/core'
 import { RIFFS } from '@/lib/riffs'
 import { presetSlug } from './catalogue'
 
@@ -50,12 +50,20 @@ import { presetSlug } from './catalogue'
  *
  *  - **No song.** No mood, no arrangement, no rig, no direction. A preset is a sound the box
  *    ships, and this page is reached with none of those in hand.
- *  - **No count of anything it does not list.** The Muse ships 224 and twelve are declared;
- *    the session carries the twelve and no denominator, by operator decision (#593). A count of
- *    the rest is the library's authoring state, which no rendered surface may show.
+ *  - **No entry for a patch without a use** (#617). `patchUses` may cover a subset of
+ *    `factoryPatches`, and the session carries an entry per use and none for the rest: a row
+ *    with a name and nothing under it is not an entry, so an undescribed patch is absent from
+ *    the list rather than present and blank. What the session does carry is `named`, the count
+ *    the box declares, and `reading`, whether that count came off a page or off a unit, because
+ *    the two support different sentences. A page names the box's total, so the lead can say
+ *    *the manual names 200* and how many are here. A unit reading is as wide as whoever read
+ *    it, so the Muse's twelve are twelve and not twelve of anything; the lead for an observed
+ *    reading says no count (operator decision, #593), since a denominator there would be the
+ *    library's authoring state and not a fact about the box.
  *  - **No ordering.** The entries come in the order the folder authored them, and the folder
- *    says why (the Muse's `PATCH_USES`). No maker prints a list, so there is no order to
- *    follow, and a sort here would overrule the one place that has thought about it.
+ *    says why (the Muse's `PATCH_USES`). A printed order is a slot order, so even where a
+ *    maker prints one there is nothing to follow, and a sort here would overrule the one place
+ *    that has thought about which patches a reader would compare.
  */
 
 /**
@@ -88,8 +96,16 @@ export type PresetEntry = {
 /** §2.6/#593. What one box offers somebody exploring the patches it ships. */
 export type PresetSession = {
   device: Device
-  /** `Device.patchUses` order, one entry each. */
+  /** `Device.patchUses` order, one entry each; a declared patch with no use has none (#617). */
   entries: readonly PresetEntry[]
+  /** How many patches `Device.factoryPatches` declares, described or not. */
+  named: number
+  /**
+   * What the declared list came off (#617). `manual`: a page prints the names, so `named` is
+   * the box's total and a surface may say so. `observed`: somebody read them off a unit, so
+   * `named` is how many were read and says nothing about the box's total.
+   */
+  reading: 'manual' | 'observed'
 }
 
 /**
@@ -163,6 +179,16 @@ export function presetSession(
     throw new Error(`${device.id}: ${issues.map((issue) => issue.message).join('; ')}`)
   }
 
+  // §2.6/#592, #617. `DeviceSchema` admits `manual` and `observed` here and nothing else, so a
+  // device built past it is the only way to reach the throw.
+  const evidence = device.capabilityEvidence?.[FACTORY_PATCHES_FACT]
+  if (evidence === undefined || !isCite(evidence) || evidence.kind === 'maker') {
+    throw new Error(
+      `${device.id}: factoryPatches is cited '${evidence === undefined || evidence === false ? String(evidence) : evidence.kind}'; a preset session needs a 'manual' page or an 'observed' unit behind the list (§2.6/#617)`,
+    )
+  }
+  const reading = evidence.kind
+
   const byKey = new Map(shipped.map((patch) => [shippedPatchKey(patch), patch]))
   const entries = uses.map((use: PatchUse): PresetEntry => {
     const key = shippedPatchKey(use)
@@ -195,5 +221,5 @@ export function presetSession(
     slugs.set(entry.slug, entry.patch.name)
   }
 
-  return { device, entries }
+  return { device, entries, named: shipped.length, reading }
 }
