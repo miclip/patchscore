@@ -21,6 +21,7 @@ import {
   type Riff,
   type RoleRequest,
 } from '../lib/core/index'
+import { resolveRecipe } from '../lib/core/resolver'
 import { device } from '../lib/devices/moog-subsequent-37/index'
 import { SUBSEQUENT_37_PANEL } from '../lib/devices/moog-subsequent-37/panel'
 import { DEVICES } from '../lib/devices/registry.generated'
@@ -471,6 +472,26 @@ describe('DUO MODE never means two notes on its own (p.26)', () => {
     // Not vacuous on either side: the library carries both kinds.
     expect(device.recipes.some((r) => r.patchPolyphony === 1)).toBe(true)
     expect(device.recipes.some((r) => r.patchPolyphony === undefined)).toBe(true)
+  })
+
+  it('refuses a two-note request to every one-note recipe, and gives it to every two-note one (#632)', () => {
+    // The declaration above is what the resolver reads; this is the resolver reading it. Each
+    // recipe is asked for its own role and character at two notes. Where the switches leave one
+    // note there is no recipe on that role that plays two, so the answer is `unvoiced` rather
+    // than a patch with OSC 2 on the same key or parked off the keyboard. Where they leave two,
+    // the recipe still wins its own part exactly, which is what keeps the three DUO figures
+    // from #624 resolving.
+    const voice = expand(device)[0]
+    if (voice === undefined) throw new Error('no assignable')
+    for (const recipe of device.recipes) {
+      const result = resolveRecipe(device, voice, recipe.role, recipe.character, 2)
+      if (notesAvailable(recipe) === 2) {
+        expect(result.outcome, recipe.id).toBe('exact')
+        expect(result.outcome !== 'unvoiced' && result.recipe.id, recipe.id).toBe(recipe.id)
+      } else {
+        expect(result.outcome, recipe.id).toBe('unvoiced')
+      }
+    }
   })
 
   it('can play every request the shipped templates make of the roles it declares', () => {
