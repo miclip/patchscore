@@ -62,13 +62,25 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  * off the keyboard entirely and parked on a fixed pitch. So DUO MODE alone never means two
  * notes; **the pair does**, and every recipe here states both.
  *
- * `Recipe` cannot express this, exactly as it could not for the minilogue xd: `realisation`
- * lowers what a request *demands* (§12.4) and nothing lowers what a voice *supplies*. So the
- * response is the same one — confine it and state it. `duo()` is used on the two roles the
- * templates ask for more than one note of, `stab` and `pad`, and nowhere else; `mono()` and
- * `drone()` are used only on roles that are one note in practice; each says what it costs in a
- * note the reader sees at the machine, and `test/moog-subsequent-37.test.ts` holds the
- * confinement from the manifest side.
+ * `Recipe.patchPolyphony` (§12.4/#85) is where the engine reads it. Every `mono()` and
+ * `drone()` recipe declares `patchPolyphony: 1`, and every `duo()` recipe omits it, so the
+ * resolver refuses to hand a two-note part to a patch whose second oscillator is off the
+ * keyboard, and hands it to one whose second oscillator is on the other key. The switches say
+ * the same thing to the reader: each helper says what it costs in a note seen at the machine,
+ * and `test/moog-subsequent-37.test.ts` asserts the declaration and the switch pair agree on
+ * every recipe, read off the switches rather than a list of ids.
+ *
+ * **Which roles go to two.** `stab` and `pad` are two notes on every recipe, because the
+ * templates ask for more than one note of both. `lead` carries three one-note recipes and a
+ * two-note `clean` one: two oscillators tracking two keys is the sound this box is bought for,
+ * and refusing a two-note lead outright would have said the box does not do two notes, which
+ * is the wrong thing to say about a paraphonic synth. `bass-mid`, `sub` and `acid` stay on one
+ * note: the first has every character authored mono already, and the other two are one-note
+ * parts by nature, so a duo version would be a worse recipe rather than a missing one.
+ * `texture` is one note over a drone, which is the third rung and not the second. `arp` stays
+ * on one note for a different reason: the two characters any direction asks an arp for, `bright`
+ * and `clean`, are the two authored mono here, so a duo arp in any other character is a recipe
+ * nothing shipped can reach, and `test/reachability.test.ts` would list it as dark on arrival.
  *
  * ## The switch-gated scales, and what each recipe has to carry because of them
  *
@@ -275,8 +287,8 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
  * because their names make the second note the subject. They are the three species of two-voice
  * motion, so a reader with all three has three different lessons and not one lesson three
  * times: parallel (the pair moves together), contrary (the pair cross), oblique (one holds, one
- * moves). All three sit on `stab` and `pad`, the two roles whose recipes here spend the second
- * note.
+ * moves). All three sit on `stab` and `pad`, the two roles every recipe of which spends the
+ * second note.
  *
  * **The order is editorial, and it is the reading order.** The box was seen browsing
  * alphabetically during the reading that produced `SHIPPED_PATCHES` — no page states a browse
@@ -615,7 +627,9 @@ function osc2(
  * The pair is load-bearing twice over, which is why there are three helpers and not one switch
  * with an argument. It decides **how many notes** the patch plays, and it decides **which scale
  * FREQUENCY is on** — `±7 semitones` under HI and LO, `±3 octaves` under OFF. Splitting them
- * makes it impossible to write a recipe where the two come apart.
+ * makes it impossible to write a recipe where the two come apart. A recipe built on `mono()`
+ * or `drone()` also carries `patchPolyphony: 1`, which is the same fact stated where the
+ * resolver reads it; the test holds the two together.
  *
  * `KB CTRL` is stated even in `mono()`, where p.26 makes it inert ("how OSC 2 responds to the
  * keyboard *when in DUO MODE*"). One line buys the guarantee that a FREQUENCY value is never
@@ -945,6 +959,7 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Square and sub, four poles, the filter envelope doing the punch',
     params: [
       ...program(50),
@@ -965,6 +980,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Mixer pushed past unity with feedback under it and MultiDrive on top',
     params: [
       ...program(50),
@@ -985,6 +1001,7 @@ const recipes: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Bass line over a fixed drone, filter shut most of the way down',
     params: [
       ...program(50),
@@ -1006,6 +1023,7 @@ const recipes: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Every mixer channel at or under five, so nothing overdrives the filter',
     params: [
       ...program(50),
@@ -1026,6 +1044,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Two saws an octave apart with the filter well open and two poles',
     params: [
       ...program(50),
@@ -1046,6 +1065,7 @@ const recipes: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Triangles, a slow attack and nothing sharp anywhere in it',
     params: [
       ...program(50),
@@ -1069,6 +1089,7 @@ const recipes: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Sub oscillator and a 16-foot triangle, everything above 200 Hz gone',
     params: [
       ...program(50),
@@ -1090,6 +1111,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Sub through mixer feedback, hard clipping under the fundamental',
     params: [
       ...program(50),
@@ -1113,6 +1135,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     // Moog's own instruction, from the Quickstart: legato glide, EXP, TIME 2, ties between
     // notes of different pitches. The ties are the template's business (§4.3); the rest is here.
     routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above is the slide, and on the `dirty` line it is Moog\u2019s own acid instruction verbatim \u2014 *\"Turn on Legato Glide, set Glide Type to EXP, and set the GLIDE TIME knob to 2\"* (p.21). `LEGATO ON` means the pitch only travels between notes that overlap, so the ties in the pattern above are what decide which steps slide',
@@ -1137,6 +1160,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Squelch with the cutoff already high and the envelope pushing further',
     routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above, `LEGATO ON` and `TIME 1.5` \u2014 shorter than the `dirty` line\u2019s 2, so the pitch arrives sooner. Legato means the pitch only travels between overlapping notes, so the ties in the pattern above decide which steps slide',
     params: [
@@ -1159,6 +1183,7 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Four poles, a very short decay and no sustain at all',
     routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above, `LEGATO ON` and `TIME 1` \u2014 the shortest of the three, which is what keeps a line this separated from smearing. Legato means the pitch only travels between overlapping notes, so the ties in the pattern above decide which steps slide',
     params: [
@@ -1175,13 +1200,14 @@ const recipes: Recipe[] = [
     ],
   },
 
-  // ---- lead: one note, and everything the box has behind it --------------
+  // ---- lead: three on one note, and one on two --------------------------
   {
     id: 'sub37-lead-bright',
     role: 'lead',
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Two saws, a fifth of detune and vibrato at the rate the manual names',
     params: [
       ...program(50),
@@ -1203,6 +1229,7 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Narrow pulse into four poles, MultiDrive taking the edge off nothing',
     params: [
       ...program(50),
@@ -1223,6 +1250,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Hard sync with the LFO dragging oscillator two through the sync tear',
     params: [
       ...program(50),
@@ -1239,8 +1267,37 @@ const recipes: Recipe[] = [
       ...lfoSynced('1/8', modOver({ source: 'Ramp', pitchAmt: 3, osc: '2' })),
     ],
   },
+  {
+    id: 'sub37-lead-clean',
+    role: 'lead',
+    character: 'clean',
+    voice: 'voice',
+    verified: false,
+    title: 'Two keys on two oscillators, every mixer channel at or under five',
+    params: [
+      ...program(50),
+      // No glide: with the oscillators on separate keys, sliding each independently under the
+      // one filter smears the interval, the same call `sub37-pad-dark` makes.
+      ...glide({ on: 'OFF', type: 'LCR', osc: 'BOTH', time: 0, gated: 'OFF', legato: 'OFF' }),
+      ...osc1("8'", 'TRIANGLE'),
+      ...osc2("8'", 'SAWTOOTH', 'OFF', 'OFF'),
+      // The interval is in the two keys held, not in the knob: p.26, KB CTRL at HI puts OSC 2 on
+      // the higher key and OSC 1 on the lower, and one key held alone is both oscillators on
+      // it. FREQUENCY stays centred so the second key sounds where it was played.
+      ...duo('HI', 0, 0.5),
+      // Every channel at or under five, so nothing overdrives the filter (p.27).
+      ...mix(5, 1, 5, 0, 0),
+      // KB TRACK at 1.0 so the two notes, which may sit an octave apart, get the same brightness.
+      ...filt(2000, 1.5, 0, '24', 2.5, 1),
+      ...filterEg(5, 250, 4, 200),
+      ...ampEg(5, 400, 8, 220, 'OFF'),
+      // p.23: "modulation at normal vibrato rates (between 5 and 10Hz) is possible". On BOTH,
+      // so the interval moves together rather than one note wobbling against the other.
+      ...lfoFree(5.5, 'OFF', modOver({ pitchAmt: 0.5, osc: 'BOTH' })),
+    ],
+  },
 
-  // ---- stab: the only role that spends the second note ------------------
+  // ---- stab: the first role that spends the second note -----------------
   {
     id: 'sub37-stab-hard',
     role: 'stab',
@@ -1253,7 +1310,7 @@ const recipes: Recipe[] = [
       ...glide({ on: 'OFF', type: 'LCR', osc: 'BOTH', time: 0, gated: 'OFF', legato: 'OFF' }),
       ...osc1("8'", 'SAWTOOTH'),
       ...osc2("8'", 'SAWTOOTH', 'OFF', 'ON'),
-      // DUO MODE on with KB CTRL at HI: this is the one recipe pair that plays two notes.
+      // DUO MODE on with KB CTRL at HI: two notes, one per oscillator.
       ...duo('HI', 0, 0.5),
       ...mix(7, 2, 7, 0, 0),
       ...filt(1400, 4.5, 3.5, '24', 4, 1),
@@ -1291,6 +1348,7 @@ const recipes: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'A fifth droning under one held note, the filter envelope looping over both',
     params: [
       ...program(50),
@@ -1352,6 +1410,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Short pluck, two poles, the filter envelope opening on every note',
     params: [
       ...program(50),
@@ -1372,6 +1431,7 @@ const recipes: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'One oscillator, nothing over unity, decay just long enough to ring',
     params: [
       ...program(50),
@@ -1396,9 +1456,10 @@ const recipes: Recipe[] = [
  * The eight roles one paraphonic analog voice can honestly claim.
  *
  * `bass-mid`, `sub` and `acid` are why the box is in a rack at all; `lead` and `arp` are the
- * other monophonic uses of the same voice; `stab` and `pad` are the two that spend the second
- * note, and the two the templates ask for more notes of than this box has; `texture` is the
- * sustaining, non-melodic use of the same signal path.
+ * other melodic uses of the same voice, the lead on one note or on two; `stab` and `pad` are
+ * the two that spend the second note on every recipe, and the two the templates ask for more
+ * notes of than this box has; `texture` is the sustaining, non-melodic use of the same signal
+ * path.
  *
  * **A role is declared on what the voice can be asked to do, never on how well it will do it at
  * a given size, and never on whether anybody has authored a recipe yet.** Those are three
