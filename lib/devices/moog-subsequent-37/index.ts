@@ -1282,8 +1282,11 @@ const recipes: Recipe[] = [
       ...osc1("8'", 'TRIANGLE'),
       ...osc2("8'", 'SAWTOOTH', 'OFF', 'OFF'),
       // The interval is in the two keys held, not in the knob: p.26, KB CTRL at HI puts OSC 2 on
-      // the higher key and OSC 1 on the lower, and one key held alone is both oscillators on
-      // it. FREQUENCY stays centred so the second key sounds where it was played.
+      // the higher key and OSC 1 on the lower. One key held alone sounds both oscillators — the
+      // page implies it, since a lone key is at once the highest and the lowest, but it is a
+      // reading rather than a sentence, and it was taken at the instrument with OSC 2 detuned so
+      // the beating made the second one audible. That is what lets a one-note lead sit here at
+      // all. FREQUENCY stays centred so the second key sounds where it was played.
       ...duo('HI', 0, 0.5),
       // Every channel at or under five, so nothing overdrives the filter (p.27).
       ...mix(5, 1, 5, 0, 0),
