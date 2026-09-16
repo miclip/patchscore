@@ -62,13 +62,12 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  * off the keyboard entirely and parked on a fixed pitch. So DUO MODE alone never means two
  * notes; **the pair does**, and every recipe here states both.
  *
- * `Recipe` cannot express this, exactly as it could not for the minilogue xd: `realisation`
- * lowers what a request *demands* (§12.4) and nothing lowers what a voice *supplies*. So the
- * response is the same one — confine it and state it. `duo()` is used on the two roles the
- * templates ask for more than one note of, `stab` and `pad`, and nowhere else; `mono()` and
- * `drone()` are used only on roles that are one note in practice; each says what it costs in a
- * note the reader sees at the machine, and `test/moog-subsequent-37.test.ts` holds the
- * confinement from the manifest side.
+ * `Recipe.patchPolyphony` (§12.4/#85) is where the engine reads it. Every `mono()` and
+ * `drone()` recipe declares `patchPolyphony: 1`, and the three `duo()` recipes omit it, so the
+ * resolver refuses to hand a two-note part to a patch whose second oscillator is off the
+ * keyboard. The switches say the same thing to the reader: each helper says what it costs in a
+ * note seen at the machine, and `test/moog-subsequent-37.test.ts` asserts the declaration and
+ * the switch pair agree on every recipe, read off the switches rather than a list of ids.
  *
  * ## The switch-gated scales, and what each recipe has to carry because of them
  *
@@ -615,7 +614,9 @@ function osc2(
  * The pair is load-bearing twice over, which is why there are three helpers and not one switch
  * with an argument. It decides **how many notes** the patch plays, and it decides **which scale
  * FREQUENCY is on** — `±7 semitones` under HI and LO, `±3 octaves` under OFF. Splitting them
- * makes it impossible to write a recipe where the two come apart.
+ * makes it impossible to write a recipe where the two come apart. A recipe built on `mono()`
+ * or `drone()` also carries `patchPolyphony: 1`, which is the same fact stated where the
+ * resolver reads it; the test holds the two together.
  *
  * `KB CTRL` is stated even in `mono()`, where p.26 makes it inert ("how OSC 2 responds to the
  * keyboard *when in DUO MODE*"). One line buys the guarantee that a FREQUENCY value is never
@@ -945,6 +946,7 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Square and sub, four poles, the filter envelope doing the punch',
     params: [
       ...program(50),
@@ -965,6 +967,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Mixer pushed past unity with feedback under it and MultiDrive on top',
     params: [
       ...program(50),
@@ -985,6 +988,7 @@ const recipes: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Bass line over a fixed drone, filter shut most of the way down',
     params: [
       ...program(50),
@@ -1006,6 +1010,7 @@ const recipes: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Every mixer channel at or under five, so nothing overdrives the filter',
     params: [
       ...program(50),
@@ -1026,6 +1031,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Two saws an octave apart with the filter well open and two poles',
     params: [
       ...program(50),
@@ -1046,6 +1052,7 @@ const recipes: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Triangles, a slow attack and nothing sharp anywhere in it',
     params: [
       ...program(50),
@@ -1069,6 +1076,7 @@ const recipes: Recipe[] = [
     character: 'dark',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Sub oscillator and a 16-foot triangle, everything above 200 Hz gone',
     params: [
       ...program(50),
@@ -1090,6 +1098,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Sub through mixer feedback, hard clipping under the fundamental',
     params: [
       ...program(50),
@@ -1113,6 +1122,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     // Moog's own instruction, from the Quickstart: legato glide, EXP, TIME 2, ties between
     // notes of different pitches. The ties are the template's business (§4.3); the rest is here.
     routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above is the slide, and on the `dirty` line it is Moog\u2019s own acid instruction verbatim \u2014 *\"Turn on Legato Glide, set Glide Type to EXP, and set the GLIDE TIME knob to 2\"* (p.21). `LEGATO ON` means the pitch only travels between notes that overlap, so the ties in the pattern above are what decide which steps slide',
@@ -1137,6 +1147,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Squelch with the cutoff already high and the envelope pushing further',
     routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above, `LEGATO ON` and `TIME 1.5` \u2014 shorter than the `dirty` line\u2019s 2, so the pitch arrives sooner. Legato means the pitch only travels between overlapping notes, so the ties in the pattern above decide which steps slide',
     params: [
@@ -1159,6 +1170,7 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Four poles, a very short decay and no sustain at all',
     routing: '**Accent:** this manual documents note, velocity and ratchet *recording* rather than a per-step accent lane, so there is no lane here to mark one step louder than its neighbours \u2014 the accent is in the playing, and nothing on this box stores which steps carry it. **Slide:** the `GLIDE` section above, `LEGATO ON` and `TIME 1` \u2014 the shortest of the three, which is what keeps a line this separated from smearing. Legato means the pitch only travels between overlapping notes, so the ties in the pattern above decide which steps slide',
     params: [
@@ -1182,6 +1194,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Two saws, a fifth of detune and vibrato at the rate the manual names',
     params: [
       ...program(50),
@@ -1203,6 +1216,7 @@ const recipes: Recipe[] = [
     character: 'hard',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Narrow pulse into four poles, MultiDrive taking the edge off nothing',
     params: [
       ...program(50),
@@ -1223,6 +1237,7 @@ const recipes: Recipe[] = [
     character: 'dirty',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Hard sync with the LFO dragging oscillator two through the sync tear',
     params: [
       ...program(50),
@@ -1291,6 +1306,7 @@ const recipes: Recipe[] = [
     character: 'soft',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'A fifth droning under one held note, the filter envelope looping over both',
     params: [
       ...program(50),
@@ -1352,6 +1368,7 @@ const recipes: Recipe[] = [
     character: 'bright',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'Short pluck, two poles, the filter envelope opening on every note',
     params: [
       ...program(50),
@@ -1372,6 +1389,7 @@ const recipes: Recipe[] = [
     character: 'clean',
     voice: 'voice',
     verified: false,
+    patchPolyphony: 1,
     title: 'One oscillator, nothing over unity, decay just long enough to ring',
     params: [
       ...program(50),

@@ -75,9 +75,10 @@ function every(): AuthoredParam[] {
 /**
  * How many notes a recipe leaves itself, read off the two switches that decide it (p.26).
  *
- * This is the number the engine cannot see. `Assignable.polyphony` is 2 and stays 2, because
- * that is a fact about the box; what a recipe does with the two is a fact about the recipe, and
- * `Recipe` has nowhere to put it.
+ * This is the number read off the panel, deliberately not off `patchPolyphony`. `Assignable.polyphony`
+ * is 2 and stays 2, because that is a fact about the box; what a recipe does with the two is a
+ * fact about the recipe, and `Recipe.patchPolyphony` (§12.4/#85) is where it tells the engine.
+ * Two ways of knowing, and the test below holds them to the same answer on every recipe.
  *
  * **Both switches are consulted, and that is the point.** DUO MODE on with KB CTRL at OFF is the
  * state that looks duophonic and is not: "OSC 2 drones and does not follow the keyboard".
@@ -443,7 +444,8 @@ describe('DUO MODE never means two notes on its own (p.26)', () => {
       // One note played, plus a drone that never touches the keyboard.
       texture: [1],
     })
-    // And the cost of each is stated where the reader sees it, because `Recipe` cannot say it.
+    // And the cost of each is stated where the reader sees it, beside what `patchPolyphony` tells
+    // the engine, because the reader is at the machine and not in the resolver.
     for (const recipe of device.recipes) {
       const duoMode = paramNamed(recipe, 'OSC · DUO MODE')
       if (duoMode?.kind !== 'enum') throw new Error(`${recipe.id}: no DUO MODE`)
@@ -451,6 +453,24 @@ describe('DUO MODE never means two notes on its own (p.26)', () => {
       if (notesAvailable(recipe) === 2) expect(duoMode.note).toContain('two notes')
       else expect(duoMode.note).toContain('one note')
     }
+  })
+
+  it('declares patchPolyphony 1 exactly where the switches leave one note (§12.4/#85)', () => {
+    // `notesAvailable` reads DUO MODE and KB CTRL, which is what a reader sets; `patchPolyphony`
+    // is what the resolver reads. Held to each other on every recipe, off the switches rather
+    // than a list of ids, so a new recipe joins the rule instead of slipping past it. Omitted
+    // means the patch spends nothing the box does not have, so a two-note recipe declares
+    // nothing rather than restating the assignable's 2.
+    for (const recipe of device.recipes) {
+      if (notesAvailable(recipe) === 2) {
+        expect(recipe.patchPolyphony, `${recipe.id} plays two notes`).toBeUndefined()
+      } else {
+        expect(recipe.patchPolyphony, `${recipe.id} plays one note`).toBe(1)
+      }
+    }
+    // Not vacuous on either side: the library carries both kinds.
+    expect(device.recipes.some((r) => r.patchPolyphony === 1)).toBe(true)
+    expect(device.recipes.some((r) => r.patchPolyphony === undefined)).toBe(true)
   })
 
   it('can play every request the shipped templates make of the roles it declares', () => {

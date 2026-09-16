@@ -61,7 +61,7 @@ describe('a patch cannot be handed more notes than it sounds (#85)', () => {
 describe('the cap changes nothing for a box that declares none', () => {
   it('leaves every other device untouched', () => {
     // #85 is a new optional field, so absence has to be the pre-#85 behaviour exactly. Asserted
-    // over the library rather than argued, and pinned so that a third device declaring it is a
+    // over the library rather than argued, and pinned so that the next device declaring it is a
     // decision somebody made rather than a diff nobody read.
     //
     // The Muse is the second, and since #383 it declares the field for **two** reasons rather
@@ -100,6 +100,16 @@ describe('the cap changes nothing for a box that declares none', () => {
       'behringer-neutron',
       'korg-minilogue-xd',
       'moog-muse',
+      // **The Subsequent 37 is the seventh, and the one whose count is decided by a pair of
+      // switches rather than one.** Its single voice carries `polyphony: 2` (p.9, "2-note
+      // paraphonic"), and p.26 gives three states: DUO MODE off is one note; DUO MODE on with
+      // KB CTRL at HI or LO is two, OSC 1 and OSC 2 on the two outer keys; DUO MODE on with
+      // KB CTRL at OFF is one again, because "OSC 2 drones and does not follow the keyboard".
+      // The device file builds those as `mono()`, `duo()` and `drone()`, and seventeen of its
+      // twenty recipes are on the two one-note rungs and declare `patchPolyphony: 1`; the three
+      // `duo()` recipes, two stabs and a pad, leave the field off and take the voice's two. Its
+      // own test reads both switches off every recipe and holds the declaration to that reading.
+      'moog-subsequent-37',
       // The Circuit Tracks is the fourth, and its reason is the plainest in the list: p.35 states
       // six-note polyphony and then qualifies it — "if the Patch you've selected is suitably
       // polyphonic" — and four of its nine synth recipes put the patch in a Mono polyphony mode
