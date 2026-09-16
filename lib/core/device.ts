@@ -1342,17 +1342,25 @@ export function middleCNotice(device: Device | undefined): MiddleCNotice | undef
  * patch called Aegean Organ is not a judgement; the operator owns the unit and read the name off
  * its screen. This is the slot for that fact alone.
  *
- * **A name and an optional bank, nothing else.** No per-entry evidence: one reading produced
+ * **A name, an optional bank, an optional address, nothing else.** No per-entry evidence: one reading produced
  * the whole list, so the evidence is one entry at `factoryPatches` in `capabilityEvidence`, and
  * `DeviceSchema` accepts two kinds there, because two kinds of reading exist (#617). A `manual`
  * page proves the maker ships the name: the minilogue xd's Owner's Manual prints all 200 of its
  * programs on pp.61-64. An `observed` unit proves this unit has it, with its firmware in the
  * source string: the Muse's manual counts 224 on p.12 and names none, so its twelve came off the
  * screen. Neither ranks above the other and neither substitutes for the other; a `maker` page
- * is refused until one in this library names a patch. Never a slot number, for
+ * is refused until one in this library names a patch. **`bank` is never a slot number**, for
  * `FactoryPatch`'s reason: slots move across firmware and across any owner who has reordered a
  * bank, and a maker printing the slot in a table does not make it stable — Korg's `No` column
- * is exactly that. **No description**, deliberately: what a patch sounds like is a sonic claim,
+ * is exactly that. The ban is on *identity*: `bank` is half of `shippedPatchKey`, what
+ * `patchUses` matches on, and an identity that moves when somebody reorders a bank is not one.
+ * **It does not ban saying where a patch sat** (#629). `slot` is a separate optional field for
+ * that, in the box's own words (`9.11`, `Bank 9, Preset 11`), and it is an address rather than
+ * an identity: nothing keys on it, no slug carries it, and it may go stale without breaking
+ * anything. It rides the same reading as the names — the citation at `factoryPatches` covers
+ * it, and it is declared only where somebody navigated to that address on a unit and found the
+ * name there. A printed slot column is not that reading, so the minilogue xd's `No` stays out
+ * of both fields. **No description**, deliberately: what a patch sounds like is a sonic claim,
  * and the only verifiable thing about a factory patch from here is that it exists under that
  * name.
  *
@@ -1373,16 +1381,33 @@ export const FACTORY_PATCHES_FACT = 'factoryPatches'
 export type ShippedPatch = {
   /** As it reads on the box's own screen. */
   name: string
-  /** Where it lives, in the words the box uses — a bank or a category, never a slot number. */
+  /**
+   * Where it lives, in the words the box uses — a bank or a category, never a slot number.
+   * Identity: half of `shippedPatchKey`, so it has to be as stable as the name. Where it sat is
+   * `slot`.
+   */
   bank?: string
+  /**
+   * Where it sat when somebody looked — `9.11`, `Bank 9, Preset 11`, in the box's own words.
+   * A convenience and not an identity (#629): never part of `shippedPatchKey`, never in a slug,
+   * matched by nothing. Free text for `bank`'s reason: one box navigates by bank and preset,
+   * another by one program number, and a structured field would be a fifth vocabulary. Declared
+   * only where the reading behind `factoryPatches` navigated to this address and found the name
+   * there, so a device may carry it on some entries and not others.
+   */
+  slot?: string
 }
 
 export const ShippedPatchSchema = z.strictObject({
   name: z.string().min(1, 'a shipped patch is named as the box prints it'),
   bank: z.string().min(1).optional(),
+  slot: z.string().min(1).optional(),
 })
 
-/** `name` alone, or `name` NUL `bank`: the key two shipped patches may not share. */
+/**
+ * `name` alone, or `name` NUL `bank`: the key two shipped patches may not share. `slot` is not
+ * in it, on purpose: two entries differing only by address are one patch declared twice.
+ */
 export function shippedPatchKey(patch: ShippedPatch): string {
   return patch.bank === undefined ? patch.name : `${patch.name}\u0000${patch.bank}`
 }
@@ -2547,7 +2572,10 @@ export type FactoryPatch = {
   name: string
   /**
    * Where it lives, in the words the box uses — a bank or a category, never a slot number.
-   * Optional, because some boxes present one flat list and there is nothing to say.
+   * Optional, because some boxes present one flat list and there is nothing to say. The ban is
+   * on identity, which is what this field and `ShippedPatch.bank` are; where a patch *sat* is a
+   * different claim and has its own field on the device-level list, `ShippedPatch.slot` (#629).
+   * A recipe pairing names the patch and does not carry an address.
    */
   bank?: string
   /**
@@ -2902,7 +2930,9 @@ export type Recipe = {
    *
    * **By name, never by bank and slot.** Slots move across firmware and across any owner who has
    * reordered their banks, so a number would be wrong for most readers and unfalsifiable for the
-   * rest. A name is searchable on the box.
+   * rest. A name is searchable on the box. That is a rule about what identifies the patch; where
+   * it *sat* when somebody looked is `ShippedPatch.slot` on the device-level list (#629), an
+   * address nothing keys on, and this pairing does not repeat it.
    *
    * **`observed` only, and the schema enforces it here.** Every pairing so far came off a unit:
    * the Muse's manual counts 224 on p.12 and names none, and the Subsequent 37's omits them
