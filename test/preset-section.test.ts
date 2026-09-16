@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { createElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -291,5 +292,97 @@ describe('every entry is a closed details, whatever is under it', () => {
 
   it('renders nothing at all for no session', () => {
     expect(renderToStaticMarkup(createElement(PresetSection, { session: undefined }))).toBe('')
+  })
+})
+
+/**
+ * §2.6/#629. **Where a patch sat is a hint beside the name, on every surface, and part of
+ * nothing.** The address rides in the same shrinkable cell as the name (#621's shape, so it
+ * cannot fall into the marker gutter) as a sibling after the name and after the bank: it is not
+ * inside `.preset-name`, not inside a link, not in a heading of its own, and `shippedPatchKey`
+ * ignores it, which `test/factory-patches.test.ts` pins. A box that carries none renders no
+ * element and no sentence about it.
+ */
+describe('where a patch sat is a hint beside the name and part of nothing (#629)', () => {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
+
+  async function surfaces(id: string): Promise<{ panel: string; page: string }> {
+    return {
+      panel: panelOf(await markupFor(id)),
+      page: renderToStaticMarkup(await PresetsPageRoute({ params: Promise.resolve({ id }) })),
+    }
+  }
+
+  for (const id of ['moog-muse', 'moog-subsequent-37']) {
+    it(`${id}: every entry carries its address as a sibling of the name, inside the title cell, on the panel and the page`, async () => {
+      const entries = presetSession(byId(id))?.entries ?? []
+      expect(entries.length).toBeGreaterThan(0)
+      const { panel, page } = await surfaces(id)
+      for (const markup of [panel, page]) {
+        for (const entry of entries) {
+          const { name, slot } = entry.patch
+          expect(slot, name).toBeDefined()
+          const title =
+            `<span class="preset-title"><span class="preset-name">${esc(name)}</span>` +
+            `<span class="preset-slot mono">${esc(slot ?? '')}</span></span>`
+          expect(markup, name).toContain(title)
+          // The name's own element is closed before the address opens, so it is not the name.
+          expect(markup, name).not.toContain(`${esc(name)} ${esc(slot ?? '')}</span>`)
+          expect(markup, name).not.toContain(`${esc(name)}${esc(slot ?? '')}`)
+        }
+        // Never inside a link: the only links in an entry are to the figure and the page.
+        for (const anchor of markup.match(/<a [^>]*>.*?<\/a>/g) ?? []) {
+          expect(anchor).not.toContain('preset-slot')
+        }
+        expect((markup.match(/preset-slot/g) ?? []).length).toBe(entries.length)
+      }
+    })
+  }
+
+  it('the minilogue xd renders no address and no word about one', async () => {
+    const { panel, page } = await surfaces('korg-minilogue-xd')
+    for (const markup of [panel, page]) {
+      expect(markup).not.toContain('preset-slot')
+      for (const word of ['slot', 'address', 'location', 'position']) {
+        expect(text(markup).toLowerCase()).not.toContain(` ${word} `)
+      }
+    }
+  })
+
+  it('a bank comes before the address where a box carries both', () => {
+    const device = fixtureDevice({
+      recipes: [recipe()],
+      factoryPatches: [{ name: 'Aegean Organ', bank: 'KEYS', slot: '5.14' }],
+      patchUses: [{ name: 'Aegean Organ', bank: 'KEYS', use: 'Greek modal writing' }],
+      capabilityEvidence: {
+        ...(fixtureDevice({ recipes: [recipe()] }).capabilityEvidence ?? {}),
+        [FACTORY_PATCHES_FACT]: { kind: 'observed', source: 'A unit, firmware 1.0' },
+      },
+    } as never)
+    const markup = renderToStaticMarkup(
+      createElement(PresetSection, { session: presetSession(device, []) }),
+    )
+    expect(markup).toContain(
+      '<span class="preset-title"><span class="preset-name">Aegean Organ</span>' +
+        '<span class="preset-bank mono">KEYS</span><span class="preset-slot mono">5.14</span></span>',
+    )
+  })
+
+  /**
+   * An address broken across a line is two numbers, and the cell it sits in has to be the thing
+   * that shrinks, so the name wraps before the address ever needs to (#21: 390px is primary).
+   */
+  it('the stylesheet keeps the address on one line inside a cell that may shrink', () => {
+    const css = readFileSync(new URL('../app/globals.css', import.meta.url), 'utf8')
+    const rule = (selector: string) => {
+      const start = css.indexOf(`\n${selector} {`)
+      expect(start, `${selector} is missing`).toBeGreaterThan(-1)
+      return css.slice(start, css.indexOf('}', start))
+    }
+    expect(rule('.preset-slot')).toContain('white-space: nowrap')
+    expect(rule('.preset-slot')).toContain('font-size: 12px')
+    expect(rule('.preset-slot')).toContain('color: var(--ink-dim)')
+    expect(rule('.preset-title')).toContain('min-width: 0')
+    expect(rule('.preset-name')).toContain('color: var(--ink)')
   })
 })

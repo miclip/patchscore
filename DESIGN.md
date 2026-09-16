@@ -3283,6 +3283,20 @@ that declares both halves gets the panel, the index, the figure pages and the si
 with no UI edit (invariant 2). `lib/studio/preset-text.ts` holds every sentence the surfaces
 share, on `kit-text.ts`'s pattern, and `PresetBody` is the one React reading of an entry.
 
+**The name is the ink, and where the patch sat is a hint beside it**
+([#629](https://github.com/miclip/patchscore/issues/629)). `PatchName` is the one reading of a
+patch's name on all three surfaces: the name at full ink in the prose face, since it is a title
+and the thing a reader scrolls a bank for (§3.2's rule); the bank after it where one was read, in
+the value face and dim; and after that the address where one was observed, in the value face,
+dim, a step smaller and never broken across a line, because `9.11` split in two is two numbers.
+All three sit in one shrinkable cell (`.preset-title`, #621's shape), so on a phone the name wraps
+and the address stays whole beside its last word rather than falling into the marker gutter. The
+address is a sibling of the name and part of nothing else: not the name's element, not the link
+to the figure, not a heading of its own, and not the row's key, which is `shippedPatchKey` and
+ignores it. A box that carries none renders no element and no sentence about its absence, for
+invariant 5's reason. A reader on a Subsequent 37 reads `TRIPLET 5THS 9.11`, presses BANK 9 and
+PRESET 11, and is there.
+
 **No export, and the difference from the kit page is the reason.** The kit page carries Download
 Markdown and Print behind one client boundary because a kit is a build document somebody takes to
 the machine: cables, values, a record action per sound. A preset page is a linked catalogue — a

@@ -1423,6 +1423,21 @@ body {
   margin-left: 6px;
 }
 
+/*
+ * §2.6/#629. **Where the patch sat, as a find-it hint after the name.** The value face, dim and
+ * a step smaller, so the name stays the title and the address reads as the number a reader keys
+ * in on the way to it. `nowrap`, because `9.11` broken across a line is two numbers; the cell
+ * it sits in shrinks and wraps, so the name breaks before the address ever needs to. Inline,
+ * with the same gap as a bank, and after the bank where a box carries both.
+ */
+.preset-slot {
+  color: var(--ink-dim);
+  font-size: 12px;
+  font-weight: 400;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
 /* What it is for. Starts in the name's column on a phone, so the marker gutter stays a rule. */
 .preset-use {
   grid-column: 2;

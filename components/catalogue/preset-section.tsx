@@ -32,15 +32,25 @@ import { PRESET_FIGURE, PRESET_HEADING, presetLead } from '@/lib/studio/preset-t
  */
 
 /**
- * The name as the box prints it, with its bank where one was read.
+ * The name as the box prints it, with its bank where one was read and where it sat where
+ * somebody looked.
  *
  * **One element, not a fragment, because `.preset-summary` is a grid** (#621). A fragment put the
  * name and the bank in adjacent cells: on a phone the bank landed in the 1.1em marker gutter and
  * rendered one letter per line, and above 640px it took the column the use was declared in. The
  * minilogue xd is the first device to carry a `bank`, so nothing rendered here until it did.
  *
- * Both surfaces call this. The panel and the page had the same markup written out twice and only
- * the grid one broke, which is the argument for there being one copy of it.
+ * **The address is a hint beside the name, not part of it** (#629). The name is the ink a reader
+ * scrolls a bank for (§3.2), and the address is how they skip the scroll: `9.11` on a Subsequent
+ * 37 is BANK 9, PRESET 11, which is what those two buttons take. It sits after the bank, in the
+ * value face, dim, and unbreakable, since an address split across lines is two numbers. It is
+ * inside the same shrinkable cell as the name so the two travel together, and it is nothing
+ * else: not in the name, not in the link, not in a key. A device that carries none renders
+ * none, and nothing on the page says so.
+ *
+ * All three surfaces call this: the panel, the presets page and the figure page's patch line.
+ * The panel and the page had the same markup written out twice and only the grid one broke,
+ * which is the argument for there being one copy of it.
  */
 export function PatchName({ entry }: { entry: PresetEntry }) {
   return (
@@ -48,6 +58,9 @@ export function PatchName({ entry }: { entry: PresetEntry }) {
       <span className="preset-name">{entry.patch.name}</span>
       {entry.patch.bank === undefined ? null : (
         <span className="preset-bank mono">{entry.patch.bank}</span>
+      )}
+      {entry.patch.slot === undefined ? null : (
+        <span className="preset-slot mono">{entry.patch.slot}</span>
       )}
     </span>
   )
