@@ -59,7 +59,7 @@ const PANEL_TEXT = text(PANEL)
 const session = presetSession(byId('moog-muse'))
 if (session === undefined) throw new Error('the Muse has no preset session')
 
-describe('the Explore your device panel is on the Muse and on no other box (#593)', () => {
+describe('the Explore your device panel is on the three boxes with a session and on no other (#593, #618, #624)', () => {
   it('renders twelve closed entries on the Muse', () => {
     expect(PRESET_HEADING).toBe('Explore your device')
     expect(MUSE).toContain(`>${PRESET_HEADING}<`)

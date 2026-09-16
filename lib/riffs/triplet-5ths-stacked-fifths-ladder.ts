@@ -3,8 +3,9 @@ import type { Riff } from '../core/riff'
 
 /**
  * §5A. **The TRIPLET 5THS stacked-fifths ladder**: twelve sixteenths in four groups of three,
- * each group a note, the fifth above it and the fifth above that, each group starting where the
- * last one's middle note was, and then four sixteenths of silence.
+ * every note in a group a fifth from the one before it — three groups climbing, each starting
+ * where the last one's middle note was, and a fourth coming back down — and then four
+ * sixteenths of silence.
  *
  * **Named after a factory patch, with a figure authored here** (§5A.5, #624). The patch is the
  * arp pluck; the notes are this library's own, and the entry names no device (invariant 3).
@@ -12,9 +13,10 @@ import type { Riff } from '../core/riff'
  * ## What the name gives the figure, and what it does not
  *
  * Nobody writing this had heard the preset. Its name says *triplet* and *5ths*, which is more
- * than most names say, and the figure takes both at their word visibly. Fifths: every note is a
- * fifth above the one before it, three at a time, so a group is a stack of fifths and a bar is a
- * ladder of them. Triplet: the notes come in groups of three. The grid here is sixteenths, so
+ * than most names say, and the figure takes both at their word visibly. Fifths: within a group
+ * every note is a fifth from the one before it, so a group is a stack of fifths and a bar is a
+ * ladder of them, climbed for three groups and descended in the fourth. Triplet: the notes come
+ * in groups of three. The grid here is sixteenths, so
  * what a group of three is on it is three sixteenths with the accent on the first, and four of
  * those in a row is an accent every three against a beat every four. That cross-rhythm is what
  * *triplet* becomes on this grid, and it is said as that rather than as a triplet a sixteenth
@@ -59,15 +61,15 @@ export const triplet5thsStackedFifthsLadder: Riff = {
   bpm: { min: 100, max: 128, default: 116 },
   key: 'C major',
   technique: [
-    'The name says fifths, so every note is a fifth above the one before it, three at a time. ' +
-      'From C: C, G, D. Then from the G: G, D, A. Then from the D: D, A, E. That is the ladder, ' +
-      'and every rung is a fifth.',
+    'The name says fifths, so every note in a group is a fifth from the one before it, three ' +
+      'at a time. Up from C: C, G, D. Then up from the G: G, D, A. Then up from the D: D, A, E. ' +
+      'That is the ladder, and every rung is a fifth.',
     'The name says triplet, so the notes come in threes: three sixteenths, the first of each ' +
       'three the loud one. Four groups in a row is an accent every three sixteenths against a ' +
       'beat every four, and that cross-rhythm is the figure. Do not straighten it out.',
-    'The fourth group comes down: E, A, D, landing on the D. Then a beat of nothing. Twelve ' +
-      'sixteenths climbing and turning, four of silence, and the next bar starts the ladder ' +
-      'again from its own root.',
+    'The fourth group comes down the same rungs: E, A, D, a fifth below each time, landing on ' +
+      'the D. Then a beat of nothing. Twelve sixteenths climbing and turning, four of silence, ' +
+      'and the next bar starts the ladder again from its own root.',
     'Bar two is the same ladder from the F below, over the F chord: F, C, G, then C, G, D, then ' +
       'G, D, A, then A, D, G and the silence. Same shape, same accents, a fourth lower.',
     'One note at a time, every note the same length. Let each sixteenth go before the next is ' +

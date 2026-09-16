@@ -22,8 +22,9 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    citation are all refused;
  *  - the list is **nonempty and its `(name, bank)` keys are unique**;
  *  - the Muse declares **exactly the twelve** the operator named; the minilogue xd declares its
- *    200 off pp.61-64 (#618, asserted in `test/korg-minilogue-xd.test.ts`); no other box
- *    declares any.
+ *    200 off pp.61-64 (#618, asserted in `test/korg-minilogue-xd.test.ts`); the Subsequent 37
+ *    declares the twenty read off its unit (#624, asserted in `test/moog-subsequent-37.test.ts`);
+ *    no other box declares any.
  */
 
 const OBSERVED = { kind: 'observed', source: 'A unit, firmware 1.0' } as const
@@ -146,7 +147,7 @@ describe('factoryPatches is a positive claim read off a page or off the unit (§
 
 const muse = DEVICES.filter((d) => d.id === 'moog-muse')
 
-describe('the Muse declares the twelve, the minilogue xd its 200, and nothing else declares any (#592, #618)', () => {
+describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent 37 its twenty, and nothing else declares any (#592, #618, #624)', () => {
   const [device] = muse
 
   /**
@@ -196,7 +197,7 @@ describe('the Muse declares the twelve, the minilogue xd its 200, and nothing el
     expect(reached).toBe(5)
   })
 
-  it('no other box declares a list', () => {
+  it('no fourth box declares a list', () => {
     const declaring = DEVICES.filter((d) => d.factoryPatches !== undefined).map((d) => d.id)
     expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse', 'moog-subsequent-37'])
     for (const d of DEVICES) {
