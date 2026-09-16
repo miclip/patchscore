@@ -3292,8 +3292,13 @@ dim, a step smaller and never broken across a line, because `9.11` split in two 
 All three sit in one shrinkable cell (`.preset-title`, #621's shape), so on a phone the name wraps
 and the address stays whole beside its last word rather than falling into the marker gutter. The
 address is a sibling of the name and part of nothing else: not the name's element, not the link
-to the figure, not a heading of its own, and not the row's key, which is `shippedPatchKey` and
-ignores it. A box that carries none renders no element and no sentence about its absence, for
+to the figure, not the row's key, which is `shippedPatchKey` and ignores it, and **not inside any
+heading**. The presets page heads each card with the name, and a heading is what a screen reader
+announces and an outline lists, so the `<h3>` there is the name alone and the bank and the address
+stand beside it in the title row as siblings, the row being a `<div>` on that surface because a
+heading may not sit inside a `<span>`; on the panel and the figure page the row is a `<span>` of
+spans inside a `<summary>` cell and a `<p>`. One component draws all three, with the heading as
+its one switch. A box that carries none renders no element and no sentence about its absence, for
 invariant 5's reason. A reader on a Subsequent 37 reads `TRIPLET 5THS 9.11`, presses BANK 9 and
 PRESET 11, and is there.
 

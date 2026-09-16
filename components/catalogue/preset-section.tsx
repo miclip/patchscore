@@ -45,23 +45,44 @@ import { PRESET_FIGURE, PRESET_HEADING, presetLead } from '@/lib/studio/preset-t
  * 37 is BANK 9, PRESET 11, which is what those two buttons take. It sits after the bank, in the
  * value face, dim, and unbreakable, since an address split across lines is two numbers. It is
  * inside the same shrinkable cell as the name so the two travel together, and it is nothing
- * else: not in the name, not in the link, not in a key. A device that carries none renders
- * none, and nothing on the page says so.
+ * else: not in the name, not in the link, not in a key, and **not in any heading's accessible
+ * text**. A device that carries none renders none, and nothing on the page says so.
  *
- * All three surfaces call this: the panel, the presets page and the figure page's patch line.
- * The panel and the page had the same markup written out twice and only the grid one broke,
- * which is the argument for there being one copy of it.
+ * **`heading` makes the name an `<h3>` and nothing else one.** The presets page heads each card
+ * with the name, and a heading that read *TRIPLET 5THS 9.11* would announce an address as part
+ * of the title. So the heading wraps the name alone, and the bank and the address are its
+ * siblings in the title row — a `<div>` there rather than a `<span>`, since a heading is flow
+ * content and may not sit inside phrasing. The panel and the figure page put the row inside a
+ * `<summary>` grid cell and a `<p>`, where it stays a `<span>` around three spans.
+ *
+ * All three surfaces call this. The panel and the page had the same markup written out twice
+ * and only the grid one broke, which is the argument for there being one copy of it.
  */
-export function PatchName({ entry }: { entry: PresetEntry }) {
-  return (
-    <span className="preset-title">
-      <span className="preset-name">{entry.patch.name}</span>
+export function PatchName({ entry, heading = false }: { entry: PresetEntry; heading?: boolean }) {
+  const name = heading ? (
+    <h3 className="preset-name">{entry.patch.name}</h3>
+  ) : (
+    <span className="preset-name">{entry.patch.name}</span>
+  )
+  const rest = (
+    <>
       {entry.patch.bank === undefined ? null : (
         <span className="preset-bank mono">{entry.patch.bank}</span>
       )}
       {entry.patch.slot === undefined ? null : (
         <span className="preset-slot mono">{entry.patch.slot}</span>
       )}
+    </>
+  )
+  return heading ? (
+    <div className="preset-title preset-card-head">
+      {name}
+      {rest}
+    </div>
+  ) : (
+    <span className="preset-title">
+      {name}
+      {rest}
     </span>
   )
 }

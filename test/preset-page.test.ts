@@ -113,8 +113,9 @@ describe('the page says what the model says, every entry open', () => {
     expect(MUSE.match(/class="preset-card"/g)?.length).toBe(12)
     // No disclosure anywhere: the page is the open reading.
     expect(MUSE).not.toContain('<details')
+    // The name is the card's heading, and the heading is the name alone (#629).
     const positions = session.entries.map((e) =>
-      MUSE.indexOf(`<span class="preset-name">${e.patch.name.replace(/'/g, '&#x27;')}</span>`),
+      MUSE.indexOf(`<h3 class="preset-name">${e.patch.name.replace(/'/g, '&#x27;')}</h3>`),
     )
     expect(positions.every((at) => at >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))

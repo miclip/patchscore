@@ -143,15 +143,19 @@ describe('each entry says what the model says', () => {
       await PresetsPageRoute({ params: Promise.resolve({ id: 'korg-minilogue-xd' }) }),
     )
 
-    for (const markup of [panel, page]) {
-      for (const entry of banked) {
-        const name = entry.patch.name.replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
-        const bank = (entry.patch.bank ?? '').replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
-        expect(markup, entry.patch.name).toContain(
-          `<span class="preset-title"><span class="preset-name">${name}</span>` +
-            `<span class="preset-bank mono">${bank}</span></span>`,
-        )
-      }
+    for (const entry of banked) {
+      const name = entry.patch.name.replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
+      const bank = (entry.patch.bank ?? '').replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
+      expect(panel, entry.patch.name).toContain(
+        `<span class="preset-title"><span class="preset-name">${name}</span>` +
+          `<span class="preset-bank mono">${bank}</span></span>`,
+      )
+      // On the page the name is the card's heading and the bank its sibling (#629): the same
+      // cell, a `<div>` because a heading may not sit inside a `<span>`.
+      expect(page, entry.patch.name).toContain(
+        `<div class="preset-title preset-card-head"><h3 class="preset-name">${name}</h3>` +
+          `<span class="preset-bank mono">${bank}</span></div>`,
+      )
     }
   })
 
@@ -299,9 +303,10 @@ describe('every entry is a closed details, whatever is under it', () => {
  * §2.6/#629. **Where a patch sat is a hint beside the name, on every surface, and part of
  * nothing.** The address rides in the same shrinkable cell as the name (#621's shape, so it
  * cannot fall into the marker gutter) as a sibling after the name and after the bank: it is not
- * inside `.preset-name`, not inside a link, not in a heading of its own, and `shippedPatchKey`
- * ignores it, which `test/factory-patches.test.ts` pins. A box that carries none renders no
- * element and no sentence about it.
+ * inside `.preset-name`, not inside a link, not inside any heading `h1`-`h6` — on the presets
+ * page the name is the card's `<h3>` and the address stands beside it, so what a heading
+ * announces is the name — and `shippedPatchKey` ignores it, which `test/factory-patches.test.ts`
+ * pins. A box that carries none renders no element and no sentence about it.
  */
 describe('where a patch sat is a hint beside the name and part of nothing (#629)', () => {
   const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
@@ -313,21 +318,29 @@ describe('where a patch sat is a hint beside the name and part of nothing (#629)
     }
   }
 
+  /** The title cell as each surface writes it: a span of spans, or a div heading the card. */
+  function titleOf(name: string, slot: string, heading: boolean): string {
+    const address = `<span class="preset-slot mono">${esc(slot)}</span>`
+    return heading
+      ? `<div class="preset-title preset-card-head"><h3 class="preset-name">${esc(name)}</h3>${address}</div>`
+      : `<span class="preset-title"><span class="preset-name">${esc(name)}</span>${address}</span>`
+  }
+
   for (const id of ['moog-muse', 'moog-subsequent-37']) {
     it(`${id}: every entry carries its address as a sibling of the name, inside the title cell, on the panel and the page`, async () => {
       const entries = presetSession(byId(id))?.entries ?? []
       expect(entries.length).toBeGreaterThan(0)
       const { panel, page } = await surfaces(id)
-      for (const markup of [panel, page]) {
+      for (const [markup, heading] of [
+        [panel, false],
+        [page, true],
+      ] as const) {
         for (const entry of entries) {
           const { name, slot } = entry.patch
           expect(slot, name).toBeDefined()
-          const title =
-            `<span class="preset-title"><span class="preset-name">${esc(name)}</span>` +
-            `<span class="preset-slot mono">${esc(slot ?? '')}</span></span>`
-          expect(markup, name).toContain(title)
+          expect(markup, name).toContain(titleOf(name, slot ?? '', heading))
           // The name's own element is closed before the address opens, so it is not the name.
-          expect(markup, name).not.toContain(`${esc(name)} ${esc(slot ?? '')}</span>`)
+          expect(markup, name).not.toContain(`${esc(name)} ${esc(slot ?? '')}<`)
           expect(markup, name).not.toContain(`${esc(name)}${esc(slot ?? '')}`)
         }
         // Never inside a link: the only links in an entry are to the figure and the page.
@@ -338,6 +351,32 @@ describe('where a patch sat is a hint beside the name and part of nothing (#629)
       }
     })
   }
+
+  /**
+   * A heading's accessible text is what a screen reader announces and what an outline lists,
+   * and *TRIPLET 5THS 9.11* is not the patch's name. So no address and no bank inside any
+   * heading, on any surface, for every box with a session — the three that carry either.
+   */
+  it('no heading on any surface carries an address or a bank in its text', async () => {
+    for (const id of ['moog-muse', 'moog-subsequent-37', 'korg-minilogue-xd']) {
+      const { panel, page } = await surfaces(id)
+      const whole = await markupFor(id)
+      for (const markup of [whole, panel, page]) {
+        const headings = markup.match(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/g) ?? []
+        expect(headings.length, id).toBeGreaterThan(0)
+        for (const h of headings) {
+          expect(h, id).not.toContain('preset-slot')
+          expect(h, id).not.toContain('preset-bank')
+        }
+      }
+      // And the card heading is the name alone, so the outline reads as the box prints it.
+      for (const entry of presetSession(byId(id))?.entries ?? []) {
+        expect(page, entry.patch.name).toContain(
+          `<h3 class="preset-name">${esc(entry.patch.name)}</h3>`,
+        )
+      }
+    }
+  })
 
   it('the minilogue xd renders no address and no word about one', async () => {
     const { panel, page } = await surfaces('korg-minilogue-xd')
@@ -384,5 +423,9 @@ describe('where a patch sat is a hint beside the name and part of nothing (#629)
     expect(rule('.preset-slot')).toContain('color: var(--ink-dim)')
     expect(rule('.preset-title')).toContain('min-width: 0')
     expect(rule('.preset-name')).toContain('color: var(--ink)')
+    // The card's heading is inline, so the address follows its last word rather than dropping
+    // under a block, and the row it sits in is the shrinkable cell.
+    expect(rule('.preset-page .preset-card-head .preset-name')).toContain('display: inline')
+    expect(rule('.preset-page .preset-card-head')).toContain('min-width: 0')
   })
 })

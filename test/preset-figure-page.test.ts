@@ -580,9 +580,12 @@ describe('the figure page prints where the patch sat, beside the name and not in
             `<span class="preset-name">${esc(name)}</span>` +
             `<span class="preset-slot mono">${esc(slot ?? '')}</span></span>`,
         )
-        const h1 = markup.match(/<h1>(.*?)<\/h1>/)?.[1] ?? ''
-        expect(h1, name).not.toContain('preset-slot')
-        expect(h1, name).not.toContain(slot ?? '')
+        // In no heading at all: the `<h1>` is the figure's, and the technique's and the
+        // settings' headings under it are theirs.
+        for (const h of markup.match(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/g) ?? []) {
+          expect(h, name).not.toContain('preset-slot')
+          expect(h, name).not.toContain('preset-bank')
+        }
         expect((markup.match(/preset-slot/g) ?? []).length, name).toBe(1)
       }
     })

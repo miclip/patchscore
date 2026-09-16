@@ -1527,20 +1527,23 @@ body {
   min-width: 0;
 }
 
+/*
+ * §2.6/#629. **The card's title row**: the name is the `<h3>` and the bank and the address are
+ * its siblings, so a heading announces the name alone. The heading is inline, so the two labels
+ * follow its last word and wrap with it as running text rather than dropping to a row of their
+ * own; the row is the shrinkable cell (`.preset-title`) and the heading carries the weight.
+ */
 .preset-page .preset-card-head {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 4px 10px;
   margin: 0 0 4px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--silkscreen);
   min-width: 0;
 }
 
 .preset-page .preset-card-head .preset-name {
-  color: inherit;
+  display: inline;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--silkscreen);
 }
 
 .preset-page .preset-card .preset-use {
