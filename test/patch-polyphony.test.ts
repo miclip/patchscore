@@ -106,9 +106,10 @@ describe('the cap changes nothing for a box that declares none', () => {
       // KB CTRL at HI or LO is two, OSC 1 and OSC 2 on the two outer keys; DUO MODE on with
       // KB CTRL at OFF is one again, because "OSC 2 drones and does not follow the keyboard".
       // The device file builds those as `mono()`, `duo()` and `drone()`, and seventeen of its
-      // twenty recipes are on the two one-note rungs and declare `patchPolyphony: 1`; the three
-      // `duo()` recipes, two stabs and a pad, leave the field off and take the voice's two. Its
-      // own test reads both switches off every recipe and holds the declaration to that reading.
+      // twenty-one recipes are on the two one-note rungs and declare `patchPolyphony: 1`; the
+      // four `duo()` recipes, two stabs, a pad and a lead, leave the field off and take the
+      // voice's two. Its own test reads both switches off every recipe and holds the
+      // declaration to that reading.
       'moog-subsequent-37',
       // The Circuit Tracks is the fourth, and its reason is the plainest in the list: p.35 states
       // six-note polyphony and then qualifies it — "if the Patch you've selected is suitably

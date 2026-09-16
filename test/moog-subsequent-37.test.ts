@@ -423,7 +423,7 @@ describe('DUO MODE never means two notes on its own (p.26)', () => {
     for (const recipe of drones) expect(notesAvailable(recipe), recipe.id).toBe(1)
   })
 
-  it('spends the second note only where a template asks for two, and says so at the machine', () => {
+  it('spends the second note on every stab and pad and on one lead, and says so at the machine', () => {
     // Read off the manifest rather than asserted per recipe id, so a new recipe joins the rule
     // instead of slipping past it.
     const byRole = new Map<string, Set<number>>()
@@ -434,12 +434,18 @@ describe('DUO MODE never means two notes on its own (p.26)', () => {
     }
     const spent = Object.fromEntries([...byRole].map(([role, n]) => [role, [...n].sort()]))
     expect(spent).toEqual({
+      // Every character authored mono already, and a duo bass would displace one of them.
       'bass-mid': [1],
+      // One-note parts by nature; a duo version would be a worse recipe, not a missing one.
       sub: [1],
       acid: [1],
-      lead: [1],
+      // Three one-note recipes and a two-note one: a mono patch refuses a part it cannot play,
+      // and a duo patch is there when the part wants two (#632).
+      lead: [1, 2],
+      // The two characters a direction asks an arp for are the two authored mono here; a duo
+      // arp in any other would be dark on arrival (`test/reachability.test.ts`).
       arp: [1],
-      // The two roles the shipped templates ask for more than one note of.
+      // The two roles the shipped templates ask for more than one note of: two on every recipe.
       stab: [2],
       pad: [2],
       // One note played, plus a drone that never touches the keyboard.
@@ -474,24 +480,36 @@ describe('DUO MODE never means two notes on its own (p.26)', () => {
     expect(device.recipes.some((r) => r.patchPolyphony === undefined)).toBe(true)
   })
 
-  it('refuses a two-note request to every one-note recipe, and gives it to every two-note one (#632)', () => {
+  it('never hands a two-note request to a one-note recipe, and gives it to every two-note one (#632)', () => {
     // The declaration above is what the resolver reads; this is the resolver reading it. Each
-    // recipe is asked for its own role and character at two notes. Where the switches leave one
-    // note there is no recipe on that role that plays two, so the answer is `unvoiced` rather
-    // than a patch with OSC 2 on the same key or parked off the keyboard. Where they leave two,
-    // the recipe still wins its own part exactly, which is what keeps the three DUO figures
-    // resolving (#624).
+    // recipe is asked for its own role and character at two notes. Where the switches leave two,
+    // the recipe wins its own part exactly, which is what keeps the DUO figures resolving
+    // (#624). Where they leave one, the recipe is never the answer: either the role has a
+    // two-note recipe and the request substitutes to it, which is what a paraphonic box should
+    // do, or it has none and the answer is `unvoiced` rather than a patch with OSC 2 on the same
+    // key or parked off the keyboard. Which of the two is a fact about the role's recipes, not
+    // asserted here per id; what is asserted is that the recipe reached, if any, plays two.
     const voice = expand(device)[0]
     if (voice === undefined) throw new Error('no assignable')
+    let refused = 0
+    let redirected = 0
     for (const recipe of device.recipes) {
       const result = resolveRecipe(device, voice, recipe.role, recipe.character, 2)
       if (notesAvailable(recipe) === 2) {
         expect(result.outcome, recipe.id).toBe('exact')
         expect(result.outcome !== 'unvoiced' && result.recipe.id, recipe.id).toBe(recipe.id)
+      } else if (result.outcome === 'unvoiced') {
+        refused += 1
       } else {
-        expect(result.outcome, recipe.id).toBe('unvoiced')
+        expect(result.outcome, recipe.id).toBe('substituted')
+        expect(result.recipe.id, recipe.id).not.toBe(recipe.id)
+        expect(notesAvailable(result.recipe), `${recipe.id} sent to ${result.recipe.id}`).toBe(2)
+        redirected += 1
       }
     }
+    // Not vacuous on either branch: some roles refuse, some redirect.
+    expect(refused).toBeGreaterThan(0)
+    expect(redirected).toBeGreaterThan(0)
   })
 
   it('can play every request the shipped templates make of the roles it declares', () => {
@@ -908,9 +926,11 @@ describe('the panel (§10)', () => {
 // ---------------------------------------------------------------------------
 
 describe('the recipe library', () => {
-  it('authors 15 to 20 recipes over eight roles, weighted to the low end', () => {
+  it('authors at least fifteen recipes over eight roles, weighted to the low end', () => {
+    // A floor and no ceiling. Fifteen to twenty is what covers a device well, not a quota, and
+    // a ceiling here made the twenty-first recipe (#632's two-note lead) a test edit rather
+    // than a recipe. What is worth pinning is coverage: every role, and all six bass characters.
     expect(device.recipes.length).toBeGreaterThanOrEqual(15)
-    expect(device.recipes.length).toBeLessThanOrEqual(20)
     const byRole = new Map<string, number>()
     for (const r of device.recipes) byRole.set(r.role, (byRole.get(r.role) ?? 0) + 1)
     expect([...byRole.keys()].sort()).toEqual([
@@ -1507,13 +1527,18 @@ describe('twelve presets carry a use and a figure, each playable within two note
     expect(new Set(naming.map((r) => r.reference.name)).size).toBe(12)
   })
 
-  it('substitutes on exactly two, where the honest character is one this box does not author on the role', () => {
-    // A triangle lead is clean and a celestial pad is soft; the box authors neither on that
-    // role, so each lands on the nearest recipe (§3.5) and the page names the character it got.
+  it('substitutes on exactly one, where the honest character is one this box does not author on the role', () => {
+    // A celestial pad is soft and the box authors no soft pad, so it lands on the nearest
+    // recipe (§3.5) and the page names the character it got. A triangle lead is clean, and it
+    // used to be the other substitution; since #632 the box authors a clean lead, so the figure
+    // gets the character it asked for.
     const substituted = entries.filter((e) => e.figure?.voice.substituted).map((e) => e.patch.name)
-    expect(substituted.sort()).toEqual(['CELESTIAL', 'Triangle Lead'])
-    expect(figureOf('Triangle Lead').request.character).toBe('clean')
+    expect(substituted).toEqual(['CELESTIAL'])
     expect(figureOf('CELESTIAL').request.character).toBe('soft')
+    expect(figureOf('Triangle Lead').request.character).toBe('clean')
+    expect(figureOf('Triangle Lead').request.character).toBe(
+      entries.find((e) => e.patch.name === 'Triangle Lead')?.figure?.voice.recipe.character,
+    )
   })
 
   it('never needs a third note, and spends the second on exactly the three DUO presets', () => {
@@ -1533,8 +1558,9 @@ describe('twelve presets carry a use and a figure, each playable within two note
     // `KB CTRL` at HI or LO does. Read off the resolved settings of the recipe each figure
     // reached, so the claim rests on what the page prints and not on the role alone. The
     // converse is not a rule: a one-note figure on a two-note recipe is a figure with a note
-    // to spare, and FUNK ORGAN and CELESTIAL are exactly that, since every stab and pad recipe
-    // here spends both notes.
+    // to spare. FUNK ORGAN and CELESTIAL are that because every stab and pad recipe here spends
+    // both notes, and Triangle Lead is that because the clean lead it asks for is the duo one
+    // (#632); p.26 has one key held sounding on both oscillators, so the line plays as written.
     const spare: string[] = []
     for (const entry of entries) {
       const params = entry.figure?.voice.params ?? []
@@ -1545,8 +1571,8 @@ describe('twelve presets carry a use and a figure, each playable within two note
       if (peak === 2) expect(twoNotes, `${entry.patch.name} on ${entry.figure?.voice.recipe.id ?? '?'}`).toBe(true)
       else if (twoNotes) spare.push(entry.patch.name)
     }
-    expect(spare).toEqual(['FUNK ORGAN', 'CELESTIAL'])
-    // And the three are on the two roles the manifest confines `duo()` to.
+    expect(spare).toEqual(['Triangle Lead', 'FUNK ORGAN', 'CELESTIAL'])
+    // And the three two-note figures are on the two roles that spend the second note on every recipe.
     const roles = new Set(['DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons'].map((n) => figureOf(n).request.role))
     expect([...roles].sort()).toEqual(['pad', 'stab'])
   })

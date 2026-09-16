@@ -63,11 +63,24 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  * notes; **the pair does**, and every recipe here states both.
  *
  * `Recipe.patchPolyphony` (§12.4/#85) is where the engine reads it. Every `mono()` and
- * `drone()` recipe declares `patchPolyphony: 1`, and the three `duo()` recipes omit it, so the
+ * `drone()` recipe declares `patchPolyphony: 1`, and every `duo()` recipe omits it, so the
  * resolver refuses to hand a two-note part to a patch whose second oscillator is off the
- * keyboard. The switches say the same thing to the reader: each helper says what it costs in a
- * note seen at the machine, and `test/moog-subsequent-37.test.ts` asserts the declaration and
- * the switch pair agree on every recipe, read off the switches rather than a list of ids.
+ * keyboard, and hands it to one whose second oscillator is on the other key. The switches say
+ * the same thing to the reader: each helper says what it costs in a note seen at the machine,
+ * and `test/moog-subsequent-37.test.ts` asserts the declaration and the switch pair agree on
+ * every recipe, read off the switches rather than a list of ids.
+ *
+ * **Which roles go to two.** `stab` and `pad` are two notes on every recipe, because the
+ * templates ask for more than one note of both. `lead` carries three one-note recipes and a
+ * two-note `clean` one: two oscillators tracking two keys is the sound this box is bought for,
+ * and refusing a two-note lead outright would have said the box does not do two notes, which
+ * is the wrong thing to say about a paraphonic synth. `bass-mid`, `sub` and `acid` stay on one
+ * note: the first has every character authored mono already, and the other two are one-note
+ * parts by nature, so a duo version would be a worse recipe rather than a missing one.
+ * `texture` is one note over a drone, which is the third rung and not the second. `arp` stays
+ * on one note for a different reason: the two characters any direction asks an arp for, `bright`
+ * and `clean`, are the two authored mono here, so a duo arp in any other character is a recipe
+ * nothing shipped can reach, and `test/reachability.test.ts` would list it as dark on arrival.
  *
  * ## The switch-gated scales, and what each recipe has to carry because of them
  *
@@ -274,8 +287,8 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
  * because their names make the second note the subject. They are the three species of two-voice
  * motion, so a reader with all three has three different lessons and not one lesson three
  * times: parallel (the pair moves together), contrary (the pair cross), oblique (one holds, one
- * moves). All three sit on `stab` and `pad`, the two roles whose recipes here spend the second
- * note.
+ * moves). All three sit on `stab` and `pad`, the two roles every recipe of which spends the
+ * second note.
  *
  * **The order is editorial, and it is the reading order.** The box was seen browsing
  * alphabetically during the reading that produced `SHIPPED_PATCHES` — no page states a browse
@@ -1187,7 +1200,7 @@ const recipes: Recipe[] = [
     ],
   },
 
-  // ---- lead: one note, and everything the box has behind it --------------
+  // ---- lead: three on one note, and one on two --------------------------
   {
     id: 'sub37-lead-bright',
     role: 'lead',
@@ -1254,8 +1267,37 @@ const recipes: Recipe[] = [
       ...lfoSynced('1/8', modOver({ source: 'Ramp', pitchAmt: 3, osc: '2' })),
     ],
   },
+  {
+    id: 'sub37-lead-clean',
+    role: 'lead',
+    character: 'clean',
+    voice: 'voice',
+    verified: false,
+    title: 'Two keys on two oscillators, every mixer channel at or under five',
+    params: [
+      ...program(50),
+      // No glide: with the oscillators on separate keys, sliding each independently under the
+      // one filter smears the interval, the same call `sub37-pad-dark` makes.
+      ...glide({ on: 'OFF', type: 'LCR', osc: 'BOTH', time: 0, gated: 'OFF', legato: 'OFF' }),
+      ...osc1("8'", 'TRIANGLE'),
+      ...osc2("8'", 'SAWTOOTH', 'OFF', 'OFF'),
+      // The interval is in the two keys held, not in the knob: p.26, KB CTRL at HI puts OSC 2 on
+      // the higher key and OSC 1 on the lower, and one key held alone is both oscillators on
+      // it. FREQUENCY stays centred so the second key sounds where it was played.
+      ...duo('HI', 0, 0.5),
+      // Every channel at or under five, so nothing overdrives the filter (p.27).
+      ...mix(5, 1, 5, 0, 0),
+      // KB TRACK at 1.0 so the two notes, which may sit an octave apart, get the same brightness.
+      ...filt(2000, 1.5, 0, '24', 2.5, 1),
+      ...filterEg(5, 250, 4, 200),
+      ...ampEg(5, 400, 8, 220, 'OFF'),
+      // p.23: "modulation at normal vibrato rates (between 5 and 10Hz) is possible". On BOTH,
+      // so the interval moves together rather than one note wobbling against the other.
+      ...lfoFree(5.5, 'OFF', modOver({ pitchAmt: 0.5, osc: 'BOTH' })),
+    ],
+  },
 
-  // ---- stab: the only role that spends the second note ------------------
+  // ---- stab: the first role that spends the second note -----------------
   {
     id: 'sub37-stab-hard',
     role: 'stab',
@@ -1268,7 +1310,7 @@ const recipes: Recipe[] = [
       ...glide({ on: 'OFF', type: 'LCR', osc: 'BOTH', time: 0, gated: 'OFF', legato: 'OFF' }),
       ...osc1("8'", 'SAWTOOTH'),
       ...osc2("8'", 'SAWTOOTH', 'OFF', 'ON'),
-      // DUO MODE on with KB CTRL at HI: this is the one recipe pair that plays two notes.
+      // DUO MODE on with KB CTRL at HI: two notes, one per oscillator.
       ...duo('HI', 0, 0.5),
       ...mix(7, 2, 7, 0, 0),
       ...filt(1400, 4.5, 3.5, '24', 4, 1),
@@ -1414,9 +1456,10 @@ const recipes: Recipe[] = [
  * The eight roles one paraphonic analog voice can honestly claim.
  *
  * `bass-mid`, `sub` and `acid` are why the box is in a rack at all; `lead` and `arp` are the
- * other monophonic uses of the same voice; `stab` and `pad` are the two that spend the second
- * note, and the two the templates ask for more notes of than this box has; `texture` is the
- * sustaining, non-melodic use of the same signal path.
+ * other melodic uses of the same voice, the lead on one note or on two; `stab` and `pad` are
+ * the two that spend the second note on every recipe, and the two the templates ask for more
+ * notes of than this box has; `texture` is the sustaining, non-melodic use of the same signal
+ * path.
  *
  * **A role is declared on what the voice can be asked to do, never on how well it will do it at
  * a given size, and never on whether anybody has authored a recipe yet.** Those are three
