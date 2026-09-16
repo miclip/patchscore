@@ -3259,7 +3259,7 @@ page, folds every patch into a native `<details>`, closed — every entry, whate
 with the name and the use on the summary line and the recipe claim and the figure link inside.
 The page at `/devices/<id>/presets` lays every entry open, and the page at
 `/devices/<id>/presets/<patch>` is the figure itself (#598). `generateStaticParams` enumerates
-the boxes `presetSession` answers for — one today — and, for the figure route, the entries with a
+the boxes `presetSession` answers for — three today — and, for the figure route, the entries with a
 figure; `dynamicParams` is off on both, so every other box and every patch nobody wrote a figure
 for 404s rather than rendering a page with a claim in its title and nothing under it. A folder
 that declares both halves gets the panel, the index, the figure pages and the sitemap entries
