@@ -456,6 +456,7 @@ describe('the riff page exists exactly where a record-named entry does (#598)', 
     expect(generateStaticParams().map((p) => p.id)).toEqual(RECORD_RIFFS.map((riff) => riff.id))
     expect(RECORD_RIFFS.map((riff) => riff.id)).toEqual([
       'acid-tracks-line',
+      'an-ending-ascent-pad',
       'blade-runner-blues-lead',
       'blue-monday-bass',
       'show-me-love-organ-stab',
@@ -532,7 +533,7 @@ describe('the riff page exists exactly where a record-named entry does (#598)', 
     }
   })
 
-  it('the index lists the five record-named entries, links each to its own page, and lists no other', () => {
+  it('the index lists the six record-named entries, links each to its own page, and lists no other', () => {
     const markup = renderToStaticMarkup(createElement(RiffIndexPage))
     for (const riff of RECORD_RIFFS) {
       expect(markup, riff.id).toContain(`href="/riffs/${riff.id}"`)
@@ -546,9 +547,9 @@ describe('the riff page exists exactly where a record-named entry does (#598)', 
       expect(markup, riff.id).not.toContain(`href="/riffs/${riff.id}"`)
       expect(text(markup), riff.id).not.toContain(riff.name)
     }
-    expect(markup.match(/href="\/riffs\//g)?.length).toBe(5)
-    expect(text(markup)).toContain('5 techniques.')
-    expect(text(markup)).toContain('5 riffs')
+    expect(markup.match(/href="\/riffs\//g)?.length).toBe(6)
+    expect(text(markup)).toContain('6 techniques.')
+    expect(text(markup)).toContain('6 riffs')
   })
 })
 

@@ -24,9 +24,12 @@ import { at, on, variant } from '@/lib/core'
 import { chordRows, ruleLines } from '@/lib/studio/riff-text'
 import { gridOf } from './fixtures'
 import { DEVICES } from '@/lib/devices/registry.generated'
+import { presetSession } from '@/lib/studio/preset-session'
+import { readFileSync } from 'node:fs'
 import {
   RIFFS,
   aegeanOrganPhrygianFigure,
+  anEndingAscentPad,
   bellbounceSparseBellPattern,
   bladeRunnerBluesLead,
   blueMondayBass,
@@ -511,13 +514,14 @@ describe('the riff library (§5A)', () => {
   /**
    * An exact pin, where this used to be a range. Six entries was the library's own headcount and
    * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
-   * hold seventeen would hold anything. The number is content: five records, the twelve
+   * hold seventeen would hold anything. The number is content: six records, the twelve
    * factory-patch definitions for the Muse, and the twelve for the minilogue xd's programs
-   * (#618), and an entry added or dropped moves it and has to say so here.
+   * (#618), and an entry added or dropped moves it and has to say so here. The sixth record is
+   * `an-ending-ascent-pad` (#627), the first record-named pad.
    */
-  it('has exactly twenty-nine entries: five records and twenty-four factory patches (#566, #569, #618)', () => {
-    expect(RIFFS.length).toBe(29)
-    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(5)
+  it('has exactly thirty entries: six records and twenty-four factory patches (#566, #569, #618, #627)', () => {
+    expect(RIFFS.length).toBe(30)
+    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(6)
     expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(24)
   })
 
@@ -613,13 +617,13 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is six roles over twenty-nine entries, six of them pads', () => {
+  it('is six roles over thirty entries, seven of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
     // the minilogue xd's roles — four pads (two of them held voicings for an arpeggiated
     // program), three leads, three stabs, two basses — and no `arp`, since that box declares
-    // none.
+    // none. #627 added the first record-named pad, which is the seventh.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
@@ -627,13 +631,14 @@ describe('the riff library (§5A)', () => {
       arp: 1,
       'bass-mid': 4,
       lead: 9,
-      pad: 6,
+      pad: 7,
       stab: 8,
     })
-    expect(RIFFS).toHaveLength(29)
-    // And the six pads are the six held riffs: no grid, no flag, on all of them.
+    expect(RIFFS).toHaveLength(30)
+    // And the seven pads are the seven held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
+      'an-ending-ascent-pad',
       'brew-time-major-seventh-hold',
       'cloud-level-shared-top-drift',
       'moog-55-strings-suspension-writing',
@@ -1760,7 +1765,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(29)
+      expect(RIFFS).toHaveLength(30)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
@@ -2690,4 +2695,153 @@ describe('the eleven resolve to the pitches the definitions asked for (#569)', (
       }
     })
   }
+})
+
+/**
+ * §5A/#627. **The An Ending (Ascent) pad**: the first record-named `pad`, and the first figure
+ * with a shape across the whole of it rather than a loop. What is pinned here is what makes it
+ * that figure: one held note a chord across sixteen bars, every entry on the bar head, a climb by
+ * step to one peak that nothing follows, and two fourths left unresolved by design. The last
+ * block is the one the docstring is for: written for a vox humana sound, it carries no affinity
+ * for the patch of that name, because no recipe on the box that ships it builds that sound; and
+ * it must not become the Vox Humana Explore figure, which `presetSession` is what says.
+ */
+describe('the An Ending (Ascent) pad (§5A/#627)', () => {
+  const riff = anEndingAscentPad
+  const resolved = resolveHook(riff.hook, riff.key)
+  if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+  const notes = resolved.hook.notes
+  const CYCLE = 16 * STEPS_PER_BAR
+
+  it('is sixteen bars from bar 1, eight chords at two bars each, one note per chord', () => {
+    expect(riff.figureStartsAtBar).toBe(1)
+    expect(riff.harmony?.cycleBars).toBe(16)
+    expect(riff.harmony?.progression.map((s) => [s.degree, s.bars])).toEqual([
+      ['i', 2],
+      ['VI', 2],
+      ['iv', 2],
+      ['III', 2],
+      ['VII', 2],
+      ['VI', 2],
+      ['iv', 2],
+      ['III', 2],
+    ])
+    expect(riff.hook.bars).toBe(16)
+    expect(riff.hook.notes).toHaveLength(8)
+    // Each note sits on its own chord occurrence, and every occurrence has exactly one note.
+    const starts = riff.hook.notes.map((n) => chordOccurrenceAt(riff, n.step)?.startStep)
+    expect(new Set(starts).size).toBe(8)
+  })
+
+  it('resolves to the operator’s pitches, from F4 up to the Gb5 peak', () => {
+    expect(riff.hook.baseOctave).toBe(3)
+    expect(riff.key).toBe('Bb minor')
+    expect(notes.map((n) => [n.note, chordAtStep(riff, n.step)])).toEqual([
+      ['F4', 'i'],
+      ['Gb4', 'VI'],
+      ['Ab4', 'iv'],
+      ['Bb4', 'III'],
+      ['C5', 'VII'],
+      ['Db5', 'VI'],
+      ['Eb5', 'iv'],
+      ['Gb5', 'III'],
+    ])
+    expect(notes.map((n) => n.midi)).toEqual([65, 66, 68, 70, 72, 73, 75, 78])
+  })
+
+  it('enters every chord on its first step and holds the whole chord, with no offset rule', () => {
+    for (const n of riff.hook.notes) {
+      expect(chordOccurrenceAt(riff, n.step)?.startStep, `step ${String(n.step)}`).toBe(n.step)
+      expect(n.len, `step ${String(n.step)}`).toBe(2 * STEPS_PER_BAR)
+    }
+    expect(riff.hook.notes.map((n) => n.step)).toEqual([1, 33, 65, 97, 129, 161, 193, 225])
+    // An offset of zero cannot be stated as data (`minSteps` is at least 1), so there is no
+    // `onsetOffset`, and no other rule either: the two fourths must not be resolved by one.
+    expect(riff.constraints).toBeUndefined()
+    expect(riffConstraintViolations(riff)).toEqual([])
+  })
+
+  it('climbs by step to a single peak, leaps a minor third to reach it, and stops there', () => {
+    const midi = notes.map((n) => n.midi)
+    const intervals = midi.slice(1).map((m, i) => m - (midi[i] as number))
+    // Seven steps, a semitone or a tone each, then the one leap.
+    expect(intervals.slice(0, -1).every((i) => i === 1 || i === 2)).toBe(true)
+    expect(intervals.at(-1)).toBe(3)
+    // The peak is the last note and the highest, and it sounds to the end of the cycle.
+    const last = riff.hook.notes.at(-1)
+    if (last === undefined) throw new Error('no notes')
+    expect(Math.max(...midi)).toBe(midi.at(-1))
+    expect(last.step + last.len - 1).toBe(CYCLE)
+    // A shape across the whole figure, which the two other slow pads do not have: both loop.
+    expect(moog55StringsSuspensionWriting.harmony?.cycleBars).toBe(8)
+    expect(softOrchestraSlowChanges.harmony?.cycleBars).toBe(8)
+  })
+
+  it('leaves both fourths unresolved: the Ab over the Eb minor and the closing Gb over the Db', () => {
+    const fourths = [65, 225]
+    for (const step of fourths) {
+      const note = notes.find((n) => n.step === step)
+      const chord = chordAtStep(riff, step)
+      if (note === undefined || chord === undefined) throw new Error(`nothing at ${String(step)}`)
+      const spelled = spellChord(chord, riff.key)
+      if (spelled.outcome !== 'resolved') throw new Error(chord)
+      const root = pitchClassOf(spelled.chord.notes[0] ?? '')
+      const tones = spelled.chord.notes.map((name) => pitchClassOf(name))
+      const pc = note.midi % 12
+      // A perfect fourth above the root, and not in the chord.
+      expect((pc - (root ?? 0) + 12) % 12, `step ${String(step)}`).toBe(5)
+      expect(tones, `step ${String(step)}`).not.toContain(pc)
+      // Nothing else sounds over that chord, so nothing resolves it.
+      const occurrence = chordOccurrenceAt(riff, step)
+      const over = riff.hook.notes.filter(
+        (n) => chordOccurrenceAt(riff, n.step)?.startStep === occurrence?.startStep,
+      )
+      expect(over.map((n) => n.step), `step ${String(step)}`).toEqual([step])
+    }
+    expect(notes.find((n) => n.step === 65)?.note).toBe('Ab4')
+    expect(notes.find((n) => n.step === 225)?.note).toBe('Gb5')
+    expect(riff.constraints?.forbiddenDegrees).toBeUndefined()
+    // And the technique says to leave them, in words, since no rule can.
+    expect(riff.technique.some((p) => p.includes('Neither resolves'))).toBe(true)
+  })
+
+  it('is a soft pad with no grid and no flag, one voice, as the two other slow pads are', () => {
+    expect(riff.request.role).toBe('pad')
+    expect(riff.request.character).toBe('soft')
+    expect(riff.request.sustain).toBe('continuous')
+    expect(riff.request.polyphony).toBeUndefined()
+    expect(riff.hook.forRole).toBe('pad')
+    expect(riff.pattern).toBeUndefined()
+    expect(riff.request.reArticulatesHook).toBeUndefined()
+    expect(RiffSchema.safeParse(riff).success).toBe(true)
+  })
+
+  it('is named for the record, carries no affinity, and is not the Vox Humana Explore figure', () => {
+    expect(riff.reference).toEqual({ kind: 'record', name: 'An Ending (Ascent)' })
+    expect(riff.id).toBe('an-ending-ascent-pad')
+    // No affinity, and for a reason: the box that ships *Vox Humana* pairs no recipe with it,
+    // since none builds a formant, so an affinity would name a patch no recipe authors and
+    // render nothing. The two-id pin above stays at two.
+    expect(riff.patchAffinities).toBeUndefined()
+    const shipsVox = DEVICES.filter((d) => d.factoryPatches?.some((p) => p.name === 'Vox Humana'))
+    expect(shipsVox.map((d) => d.id)).toEqual(['moog-muse'])
+    for (const d of shipsVox) {
+      expect(d.recipes.some((r) => r.factoryPatch?.name === 'Vox Humana'), d.id).toBe(false)
+    }
+    // `presetSession` links a patch to one figure and throws on a second, so the Vox Humana
+    // page still carries the rigid line and not this one — and would throw, not silently swap,
+    // if this entry were ever refiled as a patch reference.
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')
+    if (muse === undefined) throw new Error('no moog-muse')
+    const session = presetSession(muse)
+    const vox = session?.entries.find((e) => e.patch.name === 'Vox Humana')
+    expect(vox?.figure?.riff.id).toBe('vox-humana-rigid-cold-pop-line')
+    expect(session?.entries.some((e) => e.figure?.riff.id === riff.id)).toBe(false)
+    // The docstring is where the next person reads why, so it has to say it (§5A.5).
+    const source = readFileSync(new URL('../lib/riffs/an-ending-ascent-pad.ts', import.meta.url), 'utf8')
+    expect(source).toContain('not transcribed from one')
+    expect(source).toContain('has no recipe that builds that sound')
+    expect(source).toContain('vox-humana-rigid-cold-pop-line')
+    expect(source).toContain('must not be displaced')
+  })
 })
