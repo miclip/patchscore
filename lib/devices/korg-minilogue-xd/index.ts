@@ -1018,12 +1018,17 @@ const recipes: Recipe[] = [
  *    four-note voicings is a value read off the wrong printed scale, exactly as `SHAPE` under
  *    NOISE is. `ARP` is the column's word; the panel switch on p.17 says `ARP/LATCH`.
  *  - **`Author`** is a credit p.65 prints, and a use line may lean on it because of that.
- *  - **`No` is not carried.** A slot number moves across firmware and across any owner who has
- *    reordered a bank, and a maker printing it in a table does not make it stable.
+ *  - **`No` is not carried, in either field.** Not as `bank`: a slot number moves across
+ *    firmware and across any owner who has reordered a bank, and a maker printing it in a table
+ *    does not make it stable. Not as `slot` either (#629), and deliberately: `slot` is where a
+ *    patch sat when somebody looked, and nobody has looked. A printed number says the maker
+ *    shipped the program in that position, not that it is there now on any unit, and the two
+ *    lists that carry an address in this library carry it because an operator navigated to it
+ *    and found the name there. This box gets one when somebody does the same, not from the page.
  *
  * Counts, off the same reading: Template 50, Poly Synth 47, Bass 25, Lead 20, Pad 17, Arp 14,
  * SFX 10, Drum 10, Chord 7; POLY 119, CHORD 51, UNISON 15, ARP 15. `ShippedPatch` carries a
- * name and a bank and nothing else, so `factoryPatches` below is a projection of this table.
+ * name, a bank and nothing else here, so `factoryPatches` below is a projection of this table.
  * Exported for `test/korg-minilogue-xd.test.ts`, which holds every figure written for one of
  * these programs to the mode printed beside it; the generator reads `device` and nothing else.
  */

@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { CAPABILITY_FACTS, DeviceSchema, FACTORY_PATCHES_FACT, shippedPatchKey } from '@/lib/core'
+import {
+  CAPABILITY_FACTS,
+  DeviceSchema,
+  FACTORY_PATCHES_FACT,
+  PatchUseSchema,
+  patchUseIssues,
+  shippedPatchKey,
+} from '@/lib/core'
 import type { Device, ShippedPatch } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
+import { presetSlug } from '@/lib/studio/catalogue'
 import { device as fixtureDevice, recipe } from './fixtures'
 
 /**
@@ -21,6 +29,10 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    this unit has it. A list with no citation, a citation with no list, `false`, and a `maker`
  *    citation are all refused;
  *  - the list is **nonempty and its `(name, bank)` keys are unique**;
+ *  - a patch may say **where it sat**, and the address is not an identity (#629): `slot` is
+ *    accepted by the strict schema, absent from `shippedPatchKey`, absent from `presetSlug`,
+ *    and invisible to `patchUses`, so two entries differing only by address are one patch
+ *    declared twice;
  *  - the Muse declares **exactly the twelve** the operator named; the minilogue xd declares its
  *    200 off pp.61-64 (#618, asserted in `test/korg-minilogue-xd.test.ts`); the Subsequent 37
  *    declares the twenty read off its unit (#624, asserted in `test/moog-subsequent-37.test.ts`);
@@ -145,6 +157,63 @@ describe('factoryPatches is a positive claim read off a page or off the unit (§
   })
 })
 
+describe('a patch may say where it sat, and the address is not an identity (§2.6/#629)', () => {
+  const at = { name: 'TRIPLET 5THS', slot: '9.11' } as const
+
+  it('accepts an address on some entries and not others, with and without a bank', () => {
+    expect(
+      DeviceSchema.safeParse(declared([at, { name: 'SAW LEAD' }], OBSERVED)).success,
+    ).toBe(true)
+    expect(
+      DeviceSchema.safeParse(
+        declared([{ name: 'Aegean Organ', bank: 'KEYS', slot: '5.14' }], OBSERVED),
+      ).success,
+    ).toBe(true)
+  })
+
+  it('refuses an empty address: say where it sat or say nothing', () => {
+    expect(DeviceSchema.safeParse(declared([{ name: 'SAW LEAD', slot: '' }], OBSERVED)).success).toBe(
+      false,
+    )
+  })
+
+  it('two patches differing only by address are one patch declared twice', () => {
+    const parsed = DeviceSchema.safeParse(
+      declared(
+        [
+          { name: 'SAW LEAD', slot: '8.07' },
+          { name: 'SAW LEAD', slot: '8.08' },
+        ],
+        OBSERVED,
+      ),
+    )
+    expect(parsed.success).toBe(false)
+    expect(issues(parsed)).toContain('declared twice')
+    expect(shippedPatchKey({ name: 'A', slot: '1.1' })).toBe(shippedPatchKey({ name: 'A' }))
+    expect(shippedPatchKey({ name: 'A', bank: 'B', slot: '1.1' })).toBe(
+      shippedPatchKey({ name: 'A', bank: 'B' }),
+    )
+  })
+
+  it('the address is not in the slug, so a URL does not move when a slot does', () => {
+    expect(presetSlug(at)).toBe(presetSlug({ name: 'TRIPLET 5THS' }))
+    expect(presetSlug({ name: 'TRIPLET 5THS', slot: '9.12' })).toBe(presetSlug(at))
+  })
+
+  it('a use is keyed to name and bank and never carries or sees an address', () => {
+    expect(PatchUseSchema.safeParse({ name: 'TRIPLET 5THS', slot: '9.11', use: 'x' }).success).toBe(
+      false,
+    )
+    expect(patchUseIssues([at], [{ name: 'TRIPLET 5THS', use: 'Fifths in threes' }])).toEqual([])
+    expect(
+      patchUseIssues(
+        [{ name: 'Aegean Organ', bank: 'KEYS', slot: '5.14' }],
+        [{ name: 'Aegean Organ', bank: 'KEYS', use: 'Greek modal writing' }],
+      ),
+    ).toEqual([])
+  })
+})
+
 const muse = DEVICES.filter((d) => d.id === 'moog-muse')
 
 describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent 37 its twenty, and nothing else declares any (#592, #618, #624)', () => {
@@ -182,8 +251,35 @@ describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent
 
   it('carries no bank and no description, since neither was read', () => {
     for (const patch of device?.factoryPatches ?? []) {
-      expect(Object.keys(patch)).toEqual(['name'])
+      expect(Object.keys(patch).sort()).toEqual(['name', 'slot'])
     }
+  })
+
+  /**
+   * §2.6/#629. Each of the twelve carries where it sat, as the operator navigated to it at the
+   * same firmware 1.4.0, so the citation above covers it and the source string is unchanged.
+   * The complete mapping, exact, so a transposed digit is caught here and not on a reader's
+   * unit; `3 Osc Bass Love` at 8.6 and `Moog Pro Solo` at 9.6 were once both given as 9.6.
+   */
+  it('carries where each of the twelve sat, in the box’s own bank.patch numbering', () => {
+    const at = Object.fromEntries((device?.factoryPatches ?? []).map((p) => [p.name, p.slot]))
+    expect(at).toEqual({
+      'Vox Humana': '1.1',
+      'Muse Runner': '1.2',
+      'Soft Orchestra': '1.4',
+      'Hamamatsu Tines': '1.6',
+      'Moog 55 Strings': '2.1',
+      'Polyphonic Power': '2.10',
+      'Detroit Funk': '5.1',
+      "'70s Electro Pno": '5.4',
+      'Aegean Organ': '5.14',
+      Bellbounce: '7.1',
+      '3 Osc Bass Love': '8.6',
+      'Moog Pro Solo': '9.6',
+    })
+    // Twelve distinct addresses across six banks.
+    expect(new Set(Object.values(at)).size).toBe(12)
+    expect(new Set(Object.values(at).map((a) => a?.split('.')[0])).size).toBe(6)
   })
 
   it('every patch a Muse recipe reaches is one the Muse declares it ships', () => {

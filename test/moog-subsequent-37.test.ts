@@ -1308,18 +1308,54 @@ describe('the factory presets, off the unit at firmware 1.2.0 (§2.6/#617, #624)
     )
   })
 
-  it('carries a name and nothing else: no bank, no slot, no description', () => {
+  it('carries a name and where it sat, and nothing else: no bank, no description', () => {
     for (const p of patches) {
-      expect(Object.keys(p), p.name).toEqual(['name'])
+      expect(Object.keys(p).sort(), p.name).toEqual(['name', 'slot'])
       expect(p.name.trim(), p.name).toBe(p.name)
-      // A slot is a bank.preset address, and nothing here carries one under any spelling.
+      // The address is in its own field; the name never carries one under any spelling.
       expect(p.name, p.name).not.toMatch(/^\d+[.\-]\d+/)
     }
     for (const p of patches as Array<Record<string, unknown>>) {
-      expect(p).not.toHaveProperty('slot')
       expect(p).not.toHaveProperty('bank')
       expect(p).not.toHaveProperty('description')
     }
+  })
+
+  /**
+   * §2.6/#629. The twenty addresses, `bank.preset` in the box's own numbering, as the operator
+   * navigated to each at firmware 1.2.0 and found the name there. The complete mapping, exact:
+   * these were carried across from the reading and not re-derived from the decoded file, whose
+   * bank numbering is not the box's.
+   */
+  it('carries where each of the twenty sat, in the box’s own bank.preset numbering', () => {
+    const at = Object.fromEntries(patches.map((p) => [p.name, p.slot]))
+    expect(at).toEqual({
+      'BRASH B@SS': '1.04',
+      'LOW BASS': '1.13',
+      'Terror Bass': '2.08',
+      UBER_SUB: '2.11',
+      'FUNK ORGAN': '3.01',
+      '5TH IN LINE': '3.09',
+      '70s TV PI Theme': '3.10',
+      'Acid Wiggler': '3.13',
+      CELESTIAL: '4.11',
+      DRONE: '5.09',
+      'DUO ORG': '5.10',
+      'DUO WAVE MOD': '5.11',
+      'Duotronic Moogtrons': '5.12',
+      'Harp C Chord': '6.05',
+      Octavia: '7.05',
+      'SAW LEAD': '8.07',
+      'SAWTEETH DUO DANCER': '8.08',
+      'SYNTH GONG': '9.01',
+      'Triangle Lead': '9.08',
+      'TRIPLET 5THS': '9.11',
+    })
+    // Twenty distinct addresses across nine banks, none in the three Init Preset banks.
+    expect(new Set(Object.values(at)).size).toBe(20)
+    const banks = new Set(Object.values(at).map((a) => Number(a?.split('.')[0])))
+    expect(banks.size).toBe(9)
+    for (const b of banks) expect(b).toBeLessThanOrEqual(9)
   })
 
   it('spells the names as the screen prints them, punctuation and case included', () => {

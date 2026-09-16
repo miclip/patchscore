@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
 import { PresetFigureBody } from '@/components/catalogue/preset-figure'
+import { PatchName } from '@/components/catalogue/preset-section'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { deviceLabel, presetFigureHref, presetsHref } from '@/lib/studio/catalogue'
 import type { PresetEntry, PresetFigure, PresetSession } from '@/lib/studio/preset-session'
@@ -119,10 +120,7 @@ export default async function Page({
           use is the one sentence on the page about the patch rather than the figure.
         */}
         <p className="preset-figure-patch">
-          <span className="preset-name">{entry.patch.name}</span>
-          {entry.patch.bank === undefined ? null : (
-            <span className="preset-bank mono">{entry.patch.bank}</span>
-          )}
+          <PatchName entry={entry} />
           <span className="preset-use">{entry.use}</span>
         </p>
         <p className="note preset-back">

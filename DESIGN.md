@@ -724,8 +724,8 @@ change.
 **One fact takes two kinds of reading and no third: `factoryPatches`**
 ([#592](https://github.com/miclip/patchscore/issues/592),
 [#617](https://github.com/miclip/patchscore/issues/617)). `Device.factoryPatches` is the list of
-presets a box is known to ship, each `{ name, bank? }` as the box prints it and never a slot
-number, and its evidence is one entry at `factoryPatches` for the whole list. `DeviceSchema`
+presets a box is known to ship, each `{ name, bank?, slot? }` as the box prints it, where `bank`
+is never a slot number, and its evidence is one entry at `factoryPatches` for the whole list. `DeviceSchema`
 requires that entry behind a list, refuses one with no list behind it, refuses `false` as `middleC`
 does, and accepts `manual` or `observed` there, because each proves something the other does not:
 a page proves the maker ships the name, and a unit proves this unit has it, with the firmware in
@@ -737,7 +737,22 @@ off the screen: the twelve its riffs are named after and no more. The list is no
 `(name, bank)` keys are unique, so a declaration is always a claim and a box ships each patch once.
 The slot-number ban holds for a printed list too: Korg's `No` column is a slot, and a maker printing
 it in a table does not make it stable across firmware or across an owner who has reordered a bank;
-`bank` on that box carries the manual's `Category`. It carries no description, because what a patch
+`bank` on that box carries the manual's `Category`. **The ban is on identity, and it does not ban
+saying where a patch sat** ([#629](https://github.com/miclip/patchscore/issues/629)). `bank` is
+half of `shippedPatchKey`, what `patchUses` matches on, and an identity that moves when somebody
+reorders a bank is not one. Where a patch *was* when somebody looked is a different claim, one
+that can go stale without breaking anything provided nothing keys on it, and `slot` carries it:
+optional free text in the box's own words (`9.11`, `Bank 9, Preset 11`), free for `bank`'s reason,
+since one box navigates by bank and preset and another by one program number and a structured
+field would be a fifth vocabulary (invariant 3). Nothing keys on it: `shippedPatchKey` ignores it,
+so two entries differing only by address are one patch declared twice; the slug a figure page is
+addressed by (§3.7) is the name's alone; `patchUses` and a riff's `reference` match without it. It
+carries no evidence of its own, because it rides the reading the list already cites: it is declared
+only where somebody navigated to that address on a unit and found the name there, so it is
+`observed` by construction, and a device may carry it on some entries and not others. A printed
+slot column is not that reading. The minilogue xd's `No` says the maker shipped the program in
+that position, not that it is there now, and nobody has read one off a unit, so that box carries
+none. It carries no description, because what a patch
 sounds like is a claim a name cannot verify. It exists because two facts were sharing one field:
 `Recipe.factoryPatch` (§3) says a recipe's settings *reach* a shipped sound, which is a judgement
 #563 rightly declined for seven Muse patches, and the decline threw away the fact that the box
@@ -1603,7 +1618,9 @@ Authored parameter sets keyed on `(role, character)`, living inside the owning d
   ```
 
   By name and an optional bank, never by slot, since slots move across firmware and across any
-  owner who has reordered a bank. `observed` only on this field, and the schema enforces it:
+  owner who has reordered a bank. That is a rule about what identifies the patch; where it sat
+  when somebody looked is `ShippedPatch.slot` on the device-level list (§2.6/#629), an address
+  nothing keys on, and a recipe pairing does not repeat it. `observed` only on this field, and the schema enforces it:
   every pairing so far came off a unit, with the firmware in the source string, and the field is
   widened when a recipe first pairs with a name off a page. A maker can print the names — the
   minilogue xd's manual does, and the device-level list at §2.6's `factoryPatches` accepts that
@@ -3265,6 +3282,25 @@ for 404s rather than rendering a page with a claim in its title and nothing unde
 that declares both halves gets the panel, the index, the figure pages and the sitemap entries
 with no UI edit (invariant 2). `lib/studio/preset-text.ts` holds every sentence the surfaces
 share, on `kit-text.ts`'s pattern, and `PresetBody` is the one React reading of an entry.
+
+**The name is the ink, and where the patch sat is a hint beside it**
+([#629](https://github.com/miclip/patchscore/issues/629)). `PatchName` is the one reading of a
+patch's name on all three surfaces: the name at full ink in the prose face, since it is a title
+and the thing a reader scrolls a bank for (§3.2's rule); the bank after it where one was read, in
+the value face and dim; and after that the address where one was observed, in the value face,
+dim, a step smaller and never broken across a line, because `9.11` split in two is two numbers.
+All three sit in one shrinkable cell (`.preset-title`, #621's shape), so on a phone the name wraps
+and the address stays whole beside its last word rather than falling into the marker gutter. The
+address is a sibling of the name and part of nothing else: not the name's element, not the link
+to the figure, not the row's key, which is `shippedPatchKey` and ignores it, and **not inside any
+heading**. The presets page heads each card with the name, and a heading is what a screen reader
+announces and an outline lists, so the `<h3>` there is the name alone and the bank and the address
+stand beside it in the title row as siblings, the row being a `<div>` on that surface because a
+heading may not sit inside a `<span>`; on the panel and the figure page the row is a `<span>` of
+spans inside a `<summary>` cell and a `<p>`. One component draws all three, with the heading as
+its one switch. A box that carries none renders no element and no sentence about its absence, for
+invariant 5's reason. A reader on a Subsequent 37 reads `TRIPLET 5THS 9.11`, presses BANK 9 and
+PRESET 11, and is there.
 
 **No export, and the difference from the kit page is the reason.** The kit page carries Download
 Markdown and Print behind one client boundary because a kit is a build document somebody takes to

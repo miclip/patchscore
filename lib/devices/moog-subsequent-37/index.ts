@@ -1,4 +1,4 @@
-import type { Device, PatchUse, Recipe, SustainClaim } from '../../core/device'
+import type { Device, PatchUse, Recipe, ShippedPatch, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { SUBSEQUENT_37_PANEL } from './panel'
 
@@ -194,51 +194,64 @@ const SUSTAINS: SustainClaim = {
  *
  * `observed`, because there is no page to cite: the manual counts *"256 user-editable preset
  * locations, which are arranged in 16 banks of 16 patches per bank"* (p.12, and again on p.61)
- * and prints not one name. So the names came off the unit's own screen, browsed in
- * order at firmware 1.2.0, and the firmware is the load-bearing half of the citation — a preset
- * list is a thing a release can renumber or rename. The Muse's list is the same kind of reading
- * and this cites it the same way.
+ * and prints not one name. So the names came off the unit's own screen, navigated to one
+ * address at a time at firmware 1.2.0, and the firmware is the load-bearing half of the
+ * citation — a preset list is a thing a release can renumber or rename. The Muse's list is the
+ * same kind of reading and this cites it the same way.
  *
  * **Twenty, because twenty is what was read**, and the list is as wide as its reading and no
  * wider. A decoded bank file with 144 names exists and is not evidence: it came from a Sub 37,
  * a different instrument that takes the same dumps, and it disagreed with the screen in at least
  * one place (`SAWTEETH DUODANCER`, one word, where the screen prints three). The screen wins;
- * that is the whole reason the reading was required.
+ * that is the whole reason the reading was required. Three more names had to be settled at the
+ * box because six bits cannot separate `5` from `u`, `7` from `w` or `0` from `p`: `5TH IN
+ * LINE`, `70s TV PI Theme` and `TRIPLET 5THS` are as the screen prints them.
  *
- * **No slot numbers**, for `FactoryPatch`'s reason: a slot moves across firmware and across
- * any owner who reorders a bank, and the addresses used to find these are not facts about the
- * presets. **No `bank`**: every preset carries a category on the screen beside its name — p.12,
- * *"The last line shows the category (CAT) for that preset"* — and it was not collected, so the
- * field is left absent rather than inferred from a name. **No description**, as `ShippedPatch` refuses one: what a preset sounds
- * like is a claim a name cannot verify, and nobody who wrote this file has heard them.
+ * **Each carries where it sat** (`slot`, #629): `bank.preset` as the BANK and PRESET buttons
+ * navigate, in the box's own numbering. The decoded file was the checklist and the navigation
+ * is the evidence: the operator went to each address and found that name there, so the
+ * address-to-name pairing is observed on the same reading the names are, and `FACTORY_BANK`
+ * covers it. Nothing here is taken from the file's positions, whose bank numbering is not the
+ * box's. It is an address and not an identity: nothing keys on it, and a firmware or a
+ * reordered bank moves it without moving the preset; the ban on a slot number in `bank` is
+ * about identity and this is not one. Banks 10 to 12 read `Init Preset` throughout, so the
+ * factory set is 144 and not the 256 locations the manual counts.
  *
- * Alphabetical as the box browses them, case-insensitively, which is the order the reader
- * scrolls; `PATCH_USES` below is the editorial order and the page follows that one.
+ * **No `bank`**: every preset carries a category on the screen beside its name — p.12, *"The
+ * last line shows the category (CAT) for that preset"* — and it was not collected, so the field
+ * is left absent rather than inferred from a name. **No description**, as `ShippedPatch` refuses
+ * one: what a preset sounds like is a claim a name cannot verify, and nobody who wrote this file
+ * has heard them.
+ *
+ * Alphabetical, case-insensitively, which is the order a reader scans a list for a name;
+ * `PATCH_USES` below is the editorial order and the page follows that one.
  */
 const FACTORY_BANK = 'Subsequent 37, firmware 1.2.0'
 
-const SHIPPED_PATCHES = [
-  '5TH IN LINE',
-  '70s TV PI Theme',
-  'Acid Wiggler',
-  'BRASH B@SS',
-  'CELESTIAL',
-  'DRONE',
-  'DUO ORG',
-  'DUO WAVE MOD',
-  'Duotronic Moogtrons',
-  'FUNK ORGAN',
-  'Harp C Chord',
-  'LOW BASS',
-  'Octavia',
-  'SAW LEAD',
-  'SAWTEETH DUO DANCER',
-  'SYNTH GONG',
-  'Terror Bass',
-  'Triangle Lead',
-  'TRIPLET 5THS',
-  'UBER_SUB',
-].map((name) => ({ name }))
+const SHIPPED_PATCHES: ShippedPatch[] = (
+  [
+    ['5TH IN LINE', '3.09'],
+    ['70s TV PI Theme', '3.10'],
+    ['Acid Wiggler', '3.13'],
+    ['BRASH B@SS', '1.04'],
+    ['CELESTIAL', '4.11'],
+    ['DRONE', '5.09'],
+    ['DUO ORG', '5.10'],
+    ['DUO WAVE MOD', '5.11'],
+    ['Duotronic Moogtrons', '5.12'],
+    ['FUNK ORGAN', '3.01'],
+    ['Harp C Chord', '6.05'],
+    ['LOW BASS', '1.13'],
+    ['Octavia', '7.05'],
+    ['SAW LEAD', '8.07'],
+    ['SAWTEETH DUO DANCER', '8.08'],
+    ['SYNTH GONG', '9.01'],
+    ['Terror Bass', '2.08'],
+    ['Triangle Lead', '9.08'],
+    ['TRIPLET 5THS', '9.11'],
+    ['UBER_SUB', '2.11'],
+  ] satisfies [string, string][]
+).map(([name, slot]) => ({ name, slot }))
 
 /**
  * §2.6/#593, #617, #624. **What twelve of the twenty are for**, and the figure written for each

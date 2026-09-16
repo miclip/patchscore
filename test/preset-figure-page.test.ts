@@ -558,3 +558,36 @@ describe('link integrity across the moved surfaces (#598)', () => {
     expect(checked).toBeGreaterThan(40)
   })
 })
+
+/**
+ * §2.6/#629. **The figure page's patch line carries where the patch sat, beside the name and
+ * under the figure's title.** The same `PatchName` the panel and the index render, so the three
+ * surfaces cannot say the address differently; the `<h1>` is the figure's and carries none.
+ */
+describe('the figure page prints where the patch sat, beside the name and not in the title (#629)', () => {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/'/g, '&#x27;')
+
+  for (const id of ['moog-muse', 'moog-subsequent-37']) {
+    it(`${id}: every figure page`, async () => {
+      const entries = (presetSession(byId(id))?.entries ?? []).filter((e) => e.figure !== undefined)
+      expect(entries.length).toBeGreaterThan(0)
+      for (const entry of entries) {
+        const markup = await markupFor(id, entry.slug)
+        const { name, slot } = entry.patch
+        expect(slot, name).toBeDefined()
+        expect(markup, name).toContain(
+          `<p class="preset-figure-patch"><span class="preset-title">` +
+            `<span class="preset-name">${esc(name)}</span>` +
+            `<span class="preset-slot mono">${esc(slot ?? '')}</span></span>`,
+        )
+        // In no heading at all: the `<h1>` is the figure's, and the technique's and the
+        // settings' headings under it are theirs.
+        for (const h of markup.match(/<h[1-6][^>]*>[\s\S]*?<\/h[1-6]>/g) ?? []) {
+          expect(h, name).not.toContain('preset-slot')
+          expect(h, name).not.toContain('preset-bank')
+        }
+        expect((markup.match(/preset-slot/g) ?? []).length, name).toBe(1)
+      }
+    })
+  }
+})

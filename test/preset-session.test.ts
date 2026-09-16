@@ -195,6 +195,31 @@ describe('the session answers undefined without both declarations (§2.6/#593)',
       'reference of 2 riffs',
     )
   })
+
+  /**
+   * §2.6/#629. An address on the shipped patch is a hint and not an identity: the use still
+   * joins by `(name, bank)`, the riff still joins by name, the slug is still the name's, and the
+   * two patches that collided above still collide with two different addresses on them.
+   */
+  it('an address on a patch changes no join and no slug (#629)', () => {
+    const at: ShippedPatch = { ...BELL, slot: '7.1' }
+    const device = declared([ORGAN, at], [BELL_USE, ORGAN_USE])
+    const session = presetSession(device, [])
+    expect(session?.entries.map((e) => e.slug)).toEqual(['bellbounce', 'aegean-organ'])
+    expect(session?.entries[0]?.patch).toBe(device.factoryPatches?.[1])
+    // The riff join is by name and reaches the slotted patch: on this fixture that lands on
+    // the cannot-play throw, which names the patch, and is the same outcome as without a slot.
+    const bell = RIFFS.find((r) => r.reference.name === 'Bellbounce') as Riff
+    expect(() => presetSession(device, [bell])).toThrow(
+      "'bellbounce-sparse-bell-pattern' is written for factory patch 'Bellbounce'",
+    )
+    const twice: ShippedPatch[] = [
+      { name: 'Vox Humana', slot: '1.1' },
+      { name: 'Vox  Humana', slot: '1.2' },
+    ]
+    const uses: PatchUse[] = twice.map((p) => ({ name: p.name, use: 'A formant' }))
+    expect(() => presetSession(declared(twice, uses), [])).toThrow('share the address')
+  })
 })
 
 const muse = DEVICES.find((d) => d.id === 'moog-muse') as Device

@@ -73,17 +73,17 @@ export async function generateMetadata({
 }
 
 /**
- * One patch, open. The heading is the name as the box prints it, the line under it is what it
- * is for, and the body is the same `PresetBody` the panel folds away — one React reading of an
- * entry (§3.7's rule for the kit, kept here). The figure it links to is a page under this box
- * (#598), which is where the technique, the notes, the grid and this box's settings are.
+ * One patch, open. The heading is the name as the box prints it and nothing else — the bank and
+ * the address sit beside it in the title row, outside the heading, so what a heading announces
+ * is the name (#629) — the line under it is what it is for, and the body is the same
+ * `PresetBody` the panel folds away — one React reading of an entry (§3.7's rule for the kit,
+ * kept here). The figure it links to is a page under this box (#598), which is where the
+ * technique, the notes, the grid and this box's settings are.
  */
 function Entry({ device, entry }: { device: Device; entry: PresetEntry }) {
   return (
     <li className="preset-card">
-      <h3 className="preset-card-head">
-        <PatchName entry={entry} />
-      </h3>
+      <PatchName entry={entry} heading />
       <p className="preset-use">{entry.use}</p>
       <PresetBody device={device} entry={entry} />
     </li>
