@@ -480,7 +480,7 @@ describe('DUO MODE never means two notes on its own (p.26)', () => {
     // note there is no recipe on that role that plays two, so the answer is `unvoiced` rather
     // than a patch with OSC 2 on the same key or parked off the keyboard. Where they leave two,
     // the recipe still wins its own part exactly, which is what keeps the three DUO figures
-    // from #624 resolving.
+    // resolving (#624).
     const voice = expand(device)[0]
     if (voice === undefined) throw new Error('no assignable')
     for (const recipe of device.recipes) {
