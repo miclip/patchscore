@@ -1,4 +1,4 @@
-import type { Device, Recipe, SustainClaim } from '../../core/device'
+import type { Device, PatchUse, Recipe, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { SUBSEQUENT_37_PANEL } from './panel'
 
@@ -184,6 +184,114 @@ const SUSTAINS: SustainClaim = {
   control: { kind: 'parameters', params: ['AMP EG · SUSTAIN'] },
   evidence: { kind: 'manual', source: `${MANUAL}, pp.30, 32` },
 }
+
+// ---------------------------------------------------------------------------
+// The factory presets (§2.6/#592, #617, #624)
+// ---------------------------------------------------------------------------
+
+/**
+ * §2.6/#592, #617, #624. **The presets this box ships, by name, off the unit.**
+ *
+ * `observed`, because there is no page to cite: the manual counts *"256 user-editable preset
+ * locations, which are arranged in 16 banks of 16 patches per bank"* (p.12, and again on p.61)
+ * and prints not one name. So the names came off the unit's own screen, browsed in
+ * order at firmware 1.2.0, and the firmware is the load-bearing half of the citation — a preset
+ * list is a thing a release can renumber or rename. The Muse's list is the same kind of reading
+ * and this cites it the same way.
+ *
+ * **Twenty, because twenty is what was read**, and the list is as wide as its reading and no
+ * wider. A decoded bank file with 144 names exists and is not evidence: it came from a Sub 37,
+ * a different instrument that takes the same dumps, and it disagreed with the screen in at least
+ * one place (`SAWTEETH DUODANCER`, one word, where the screen prints three). The screen wins;
+ * that is the whole reason the reading was required.
+ *
+ * **No slot numbers**, for `FactoryPatch`'s reason: a slot moves across firmware and across
+ * any owner who reorders a bank, and the addresses used to find these are not facts about the
+ * presets. **No `bank`**: every preset carries a category on the screen beside its name — p.12,
+ * *"The last line shows the category (CAT) for that preset"* — and it was not collected, so the
+ * field is left absent rather than inferred from a name. **No description**, as `ShippedPatch` refuses one: what a preset sounds
+ * like is a claim a name cannot verify, and nobody who wrote this file has heard them.
+ *
+ * Alphabetical as the box browses them, case-insensitively, which is the order the reader
+ * scrolls; `PATCH_USES` below is the editorial order and the page follows that one.
+ */
+const FACTORY_BANK = 'Subsequent 37, firmware 1.2.0'
+
+const SHIPPED_PATCHES = [
+  '5TH IN LINE',
+  '70s TV PI Theme',
+  'Acid Wiggler',
+  'BRASH B@SS',
+  'CELESTIAL',
+  'DRONE',
+  'DUO ORG',
+  'DUO WAVE MOD',
+  'Duotronic Moogtrons',
+  'FUNK ORGAN',
+  'Harp C Chord',
+  'LOW BASS',
+  'Octavia',
+  'SAW LEAD',
+  'SAWTEETH DUO DANCER',
+  'SYNTH GONG',
+  'Terror Bass',
+  'Triangle Lead',
+  'TRIPLET 5THS',
+  'UBER_SUB',
+].map((name) => ({ name }))
+
+/**
+ * §2.6/#593, #617, #624. **What twelve of the twenty are for**, and the figure written for each
+ * is under `lib/riffs/` with a `patch` reference naming it. `SHIPPED_PATCHES` is the fact and
+ * this is the judgement beside it, keyed by name so the two cannot drift.
+ *
+ * **Uncited, as every `use` in the library is**, and with less to lean on than either list
+ * before it: the minilogue xd's page printed a Category, a Voice Mode and an author, the Muse's
+ * names carry a lineage. Here there is a name. So a line says **what to play**, never what the
+ * preset sounds like — nobody writing this has heard one — and where a line takes a name at its
+ * word it does so where a reader can see it: `LOW BASS`, `DRONE` and `TRIPLET 5THS` say a lot,
+ * `CELESTIAL` and `Duotronic Moogtrons` say less, and the figures say which reading they took.
+ *
+ * **Twelve of twenty** (#617): the judgement covers a subset of the fact so the fact can stay as
+ * wide as the reading. `Harp C Chord` and `DUO WAVE MOD` are the alternates if any of the
+ * three two-note entries disappoints; the other six carry a name and nothing else here.
+ *
+ * **Every figure is a line, because this box plays two notes** (p.9, `polyphony: 2` above).
+ * The harmony on each is context the line sits over, and the three entries that spend the
+ * second note — `DUO ORG`, `SAWTEETH DUO DANCER`, `Duotronic Moogtrons` — are in the twelve
+ * because their names make the second note the subject. They are the three species of two-voice
+ * motion, so a reader with all three has three different lessons and not one lesson three
+ * times: parallel (the pair moves together), contrary (the pair cross), oblique (one holds, one
+ * moves). All three sit on `stab` and `pad`, the two roles whose recipes here spend the second
+ * note.
+ *
+ * **The order is editorial, and it is the reading order.** The box browses alphabetically,
+ * which puts `DRONE` beside `DUO ORG` and `CELESTIAL` beside `BRASH B@SS`, pairs nobody
+ * compares. This walks from the single low line up: the three low-register parts, the arp, the
+ * two leads, the three struck sounds from one note to two, then the three held sounds from two
+ * notes back to one. The three two-note figures are adjacent so a reader choosing between them
+ * finds them on neighbouring rows, and the two organs are adjacent for the same reason. Change
+ * the order here and the page follows; nothing downstream sorts it.
+ */
+const PATCH_USES: PatchUse[] = [
+  // The low end: a sub, a bass, an acid line
+  { name: 'LOW BASS', use: 'Roots only, two strikes a bar, and room after each' },
+  { name: 'Terror Bass', use: 'Driving eighths with the semitone above closing in' },
+  { name: 'Acid Wiggler', use: 'Acid line whose wiggle widens a bar at a time' },
+  // The other sixteenth line
+  { name: 'TRIPLET 5THS', use: 'Fifths stacked three at a time, accented in threes across the beat' },
+  // Leads
+  { name: 'SAW LEAD', use: 'One note held long, cut, and thrown up an octave' },
+  { name: 'Triangle Lead', use: 'A line that rises by step to one peak and falls the same way' },
+  // Struck sounds, from one note to two
+  { name: 'FUNK ORGAN', use: 'Single-note funk stabs on the sixteenth pushes' },
+  { name: 'DUO ORG', use: 'Two notes struck as one, moving in parallel thirds' },
+  { name: 'SAWTEETH DUO DANCER', use: 'Two notes that cross each other every bar, in a dance rhythm' },
+  // Held sounds, from two notes back to one
+  { name: 'Duotronic Moogtrons', use: 'One note held while the other walks against it' },
+  { name: 'CELESTIAL', use: 'One high note held while four chords recolour it' },
+  { name: 'DRONE', use: 'The root held under the changes, dropped an octave at the end' },
+]
 
 /**
  * The scale this panel repeats more than any other: **`0 ... 10`**, on all five mixer levels
@@ -1355,6 +1463,12 @@ export const device: Device = {
 
   capabilityEvidence: {
     noteDuration: cite(17),
+    /**
+     * §2.6/#592, #617, #624. `observed`, and the schema accepts nothing else here: the manual
+     * counts 256 locations (p.12) and names none, so the names in `factoryPatches` come off the
+     * unit's screen and the firmware is the citation's load-bearing half.
+     */
+    factoryPatches: { kind: 'observed', source: FACTORY_BANK },
     'clock.preferredSource': {
       kind: 'unknown',
       reason:
@@ -1416,4 +1530,9 @@ export const device: Device = {
   },
 
   recipes,
+
+  /** §2.6/#592, #617, #624. The twenty read off the unit at firmware 1.2.0; see `SHIPPED_PATCHES`. */
+  factoryPatches: SHIPPED_PATCHES,
+  /** Twelve of them, each with a figure under `lib/riffs/`. The order is the page's; see `PATCH_USES`. */
+  patchUses: PATCH_USES,
 }

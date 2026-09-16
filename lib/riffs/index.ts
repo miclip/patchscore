@@ -30,6 +30,18 @@ import { pressureRepeatedNoteBuild } from './pressure-repeated-note-build'
 import { replicantXdInnerVoicePad } from './replicant-xd-inner-voice-pad'
 import { roadzBellSixthsBalladFigure } from './roadz-bell-sixths-ballad-figure'
 import { swollenPadStaggeredStack } from './swollen-pad-staggered-stack'
+import { acidWigglerWideningWiggleLine } from './acid-wiggler-widening-wiggle-line'
+import { celestialFixedStarPad } from './celestial-fixed-star-pad'
+import { droneTonicPedalUnderTheChanges } from './drone-tonic-pedal-under-the-changes'
+import { duoOrgParallelThirdsComp } from './duo-org-parallel-thirds-comp'
+import { duotronicMoogtronsPedalAndLinePad } from './duotronic-moogtrons-pedal-and-line-pad'
+import { funkOrganPushedSixteenthStabs } from './funk-organ-pushed-sixteenth-stabs'
+import { lowBassTwoStrikesRootLine } from './low-bass-two-strikes-root-line'
+import { sawLeadOctaveCut } from './saw-lead-octave-cut'
+import { sawteethDuoDancerCrossingStabs } from './sawteeth-duo-dancer-crossing-stabs'
+import { terrorBassClosingSemitoneLine } from './terror-bass-closing-semitone-line'
+import { triangleLeadRiseAndFallLine } from './triangle-lead-rise-and-fall-line'
+import { triplet5thsStackedFifthsLadder } from './triplet-5ths-stacked-fifths-ladder'
 
 /**
  * The riff registry (§5A). Hand-written and static, for the reason the template and inspiration
@@ -47,8 +59,8 @@ import { swollenPadStaggeredStack } from './swollen-pad-staggered-stack'
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
  * named one reference and filed itself under another cannot parse. Six entries are `record`
- * references and twenty-four are `patch` references, and the kind decides where an entry
- * surfaces (#598): the six are `/riffs`, and each of the twenty-four is a page under the box
+ * references and thirty-six are `patch` references, and the kind decides where an entry
+ * surfaces (#598): the six are `/riffs`, and each of the thirty-six is a page under the box
  * that ships its patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
@@ -120,11 +132,27 @@ import { swollenPadStaggeredStack } from './swollen-pad-staggered-stack'
  * ensemble), a staggered entry whose polyphony is what *sounds* rather than what *starts*
  * (`swollen-pad-…`), and a line whose every note is a chord (`lush-m7-…`).
  * `test/korg-minilogue-xd.test.ts` holds each to the printed mode.
+ *
+ * ## The twelve for the Subsequent 37's presets (§5A.5, #624)
+ *
+ * The third box with a patch list, off its own screen at firmware 1.2.0, and the first whose
+ * figures are single lines because the box plays two notes. Every one of the twelve carries a
+ * chord table, and on nine of them the harmony is context the line sits over rather than
+ * anything the part plays: one note at a time, by construction, on the sub, the bass, the acid
+ * line, the arp, both leads, one of the three stabs, one pad and the texture. The other three
+ * spend the second note on purpose, and they are the three ways two voices can move —
+ * `duo-org-…` parallel, `sawteeth-duo-dancer-…` contrary, `duotronic-moogtrons-…` oblique — on
+ * the two roles whose recipes on that box spend it, `stab` and `pad`. What the twelve add to
+ * the library is the first `sub` and the first `texture` (`low-bass-…`, `drone-…`), a second
+ * through-composed struck entry (the drone, whose two onsets share no grid step across two
+ * passes), and a line whose whole subject is a modal semitone (`terror-bass-…`, in phrygian).
+ * `test/moog-subsequent-37.test.ts` holds each to two notes at most.
  */
 export const RIFFS: readonly Riff[] = [
   threeOscBassLoveRootOctaveFigure,
   seventiesElectroPnoRhodesTurnaround,
   acidTracksLine,
+  acidWigglerWideningWiggleLine,
   aegeanOrganPhrygianFigure,
   anEndingAscentPad,
   bellbounceSparseBellPattern,
@@ -132,10 +160,16 @@ export const RIFFS: readonly Riff[] = [
   blueMondayBass,
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
+  celestialFixedStarPad,
   cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
+  droneTonicPedalUnderTheChanges,
+  duoOrgParallelThirdsComp,
+  duotronicMoogtronsPedalAndLinePad,
+  funkOrganPushedSixteenthStabs,
   hamamatsuTinesBalladFigure,
   hypnoAcidSixteenthLoop,
+  lowBassTwoStrikesRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
   mirroredbassInvertedAnswerLine,
@@ -147,15 +181,21 @@ export const RIFFS: readonly Riff[] = [
   pressureRepeatedNoteBuild,
   replicantXdInnerVoicePad,
   roadzBellSixthsBalladFigure,
+  sawLeadOctaveCut,
+  sawteethDuoDancerCrossingStabs,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
   swollenPadStaggeredStack,
+  terrorBassClosingSemitoneLine,
   thrillerSynthRiff,
+  triangleLeadRiseAndFallLine,
+  triplet5thsStackedFifthsLadder,
   voxHumanaRigidColdPopLine,
 ]
 
 export {
   acidTracksLine,
+  acidWigglerWideningWiggleLine,
   aegeanOrganPhrygianFigure,
   anEndingAscentPad,
   bellbounceSparseBellPattern,
@@ -163,10 +203,16 @@ export {
   blueMondayBass,
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
+  celestialFixedStarPad,
   cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
+  droneTonicPedalUnderTheChanges,
+  duoOrgParallelThirdsComp,
+  duotronicMoogtronsPedalAndLinePad,
+  funkOrganPushedSixteenthStabs,
   hamamatsuTinesBalladFigure,
   hypnoAcidSixteenthLoop,
+  lowBassTwoStrikesRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
   mirroredbassInvertedAnswerLine,
@@ -178,12 +224,17 @@ export {
   pressureRepeatedNoteBuild,
   replicantXdInnerVoicePad,
   roadzBellSixthsBalladFigure,
+  sawLeadOctaveCut,
+  sawteethDuoDancerCrossingStabs,
   seventiesElectroPnoRhodesTurnaround,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
   swollenPadStaggeredStack,
+  terrorBassClosingSemitoneLine,
   threeOscBassLoveRootOctaveFigure,
   thrillerSynthRiff,
+  triangleLeadRiseAndFallLine,
+  triplet5thsStackedFifthsLadder,
   voxHumanaRigidColdPopLine,
 }
 

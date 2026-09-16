@@ -515,14 +515,15 @@ describe('the riff library (§5A)', () => {
    * An exact pin, where this used to be a range. Six entries was the library's own headcount and
    * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
    * hold seventeen would hold anything. The number is content: six records, the twelve
-   * factory-patch definitions for the Muse, and the twelve for the minilogue xd's programs
-   * (#618), and an entry added or dropped moves it and has to say so here. The sixth record is
-   * `an-ending-ascent-pad` (#627), the first record-named pad.
+   * factory-patch definitions for the Muse, the twelve for the minilogue xd's programs (#618)
+   * and the twelve for the Subsequent 37's presets (#624), and an entry added or dropped moves
+   * it and has to say so here. The sixth record is `an-ending-ascent-pad` (#627), the first
+   * record-named pad.
    */
-  it('has exactly thirty entries: six records and twenty-four factory patches (#566, #569, #618, #627)', () => {
-    expect(RIFFS.length).toBe(30)
+  it('has exactly forty-two entries: six records and thirty-six factory patches (#566, #569, #618, #624, #627)', () => {
+    expect(RIFFS.length).toBe(42)
     expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(6)
-    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(24)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(36)
   })
 
   it('every entry parses', () => {
@@ -617,30 +618,37 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is six roles over thirty entries, seven of them pads', () => {
+  it('is eight roles over forty-two entries, nine of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
     // the minilogue xd's roles — four pads (two of them held voicings for an arpeggiated
     // program), three leads, three stabs, two basses — and no `arp`, since that box declares
-    // none. #627 added the first record-named pad, which is the seventh.
+    // none. #627 added the first record-named pad, which is the seventh. #624 added twelve on
+    // the Subsequent 37's eight roles, one line each because that box plays two notes: the
+    // first `sub` and the first `texture`, a second acid line and a second arp, one bass, two
+    // leads, three stabs and two pads.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
-      acid: 1,
-      arp: 1,
-      'bass-mid': 4,
-      lead: 9,
-      pad: 7,
-      stab: 8,
+      acid: 2,
+      arp: 2,
+      'bass-mid': 5,
+      lead: 11,
+      pad: 9,
+      stab: 11,
+      sub: 1,
+      texture: 1,
     })
-    expect(RIFFS).toHaveLength(30)
-    // And the seven pads are the seven held riffs: no grid, no flag, on all of them.
+    expect(RIFFS).toHaveLength(42)
+    // And the nine pads are the nine held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
       'an-ending-ascent-pad',
       'brew-time-major-seventh-hold',
+      'celestial-fixed-star-pad',
       'cloud-level-shared-top-drift',
+      'duotronic-moogtrons-pedal-and-line-pad',
       'moog-55-strings-suspension-writing',
       'replicant-xd-inner-voice-pad',
       'soft-orchestra-slow-changes',
@@ -1765,7 +1773,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(30)
+      expect(RIFFS).toHaveLength(42)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }

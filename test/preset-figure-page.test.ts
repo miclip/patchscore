@@ -137,11 +137,11 @@ describe('the figure page exists exactly where a figure does, and nowhere it use
   it('is prerendered for the twelve, under the Muse, in the folder’s order', () => {
     expect(dynamicParams).toBe(false)
     const params = generateStaticParams()
-    // Two boxes carry a session since #618; the Muse's twelve are the ones this file renders.
+    // Three boxes carry a session since #624; the Muse's twelve are the ones this file renders.
     const museParams = params.filter((p) => p.id === 'moog-muse')
     expect(museParams).toEqual(FIGURED.map(({ entry }) => ({ id: 'moog-muse', patch: entry.slug })))
     expect(museParams).toHaveLength(12)
-    expect(params).toHaveLength(24)
+    expect(params).toHaveLength(36)
     // Every patch-named riff has a page here, under the box that ships its patch, and only those.
     const musePatches = new Set(byId('moog-muse').factoryPatches?.map((p) => p.name))
     const ids = new Set(FIGURED.map(({ figure }) => figure.riff.id))

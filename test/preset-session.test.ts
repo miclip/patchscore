@@ -291,9 +291,9 @@ describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #5
 
   it('no other box has a session', () => {
     const declaring = DEVICES.filter((d) => presetSession(d) !== undefined).map((d) => d.id)
-    expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse'])
+    expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse', 'moog-subsequent-37'])
     for (const d of DEVICES) {
-      if (d.id === 'moog-muse' || d.id === 'korg-minilogue-xd') continue
+      if (declaring.includes(d.id)) continue
       expect(d.patchUses, d.id).toBeUndefined()
       expect(presetSession(d), d.id).toBeUndefined()
     }

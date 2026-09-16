@@ -198,9 +198,9 @@ describe('the Muse declares the twelve, the minilogue xd its 200, and nothing el
 
   it('no other box declares a list', () => {
     const declaring = DEVICES.filter((d) => d.factoryPatches !== undefined).map((d) => d.id)
-    expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse'])
+    expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse', 'moog-subsequent-37'])
     for (const d of DEVICES) {
-      if (d.id === 'moog-muse' || d.id === 'korg-minilogue-xd') continue
+      if (declaring.includes(d.id)) continue
       expect(d.factoryPatches, d.id).toBeUndefined()
       expect(d.capabilityEvidence?.[FACTORY_PATCHES_FACT], d.id).toBeUndefined()
     }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { Device, Recipe } from '@/lib/core'
-import { assign, moodState, realisationOf, resolveRiff } from '@/lib/core'
+import type { Assignable, Device, Recipe } from '@/lib/core'
+import { assign, crowdOf, moodState, realisationOf, resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS, blueMondayBass, showMeLoveOrganStab, thrillerSynthRiff } from '@/lib/riffs'
 import { asRoleRequest, gridOf, heldRiff } from './fixtures'
@@ -336,6 +336,7 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
         d.id,
       ),
     )
+    const deviceTies: string[] = []
     for (const riff of RIFFS) {
       const resolution = resolveRiff(riff, rig)
       const template = withRoles([asRoleRequest(riff.request)])
@@ -343,21 +344,48 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
       expect(resolution.outcome, riff.id).toBe('played')
       expect(search, riff.id).toBeDefined()
       if (resolution.outcome !== 'played' || search === undefined) continue
-      expect(resolution.voice.device.id, riff.id).toBe(search.deviceId)
       expect(resolution.voice.stackWidth, riff.id).toBe(search.assignables.length)
       /*
-       * The recipe too, with one exception the design makes rather than this test: a seed
-       * permutes only among *exactly equal* costs (§7.2), and `resolveRiff` carries no seed, so
-       * where two candidates tie on every key the two paths may pick differently. The library
-       * has exactly one such tie: the Tracker Mini writes each synth recipe on both of its pools
-       * as one patch (`sharedAs`, §2.3/#25), and a four-note pad stacked across either pool
-       * costs the same. `assign` flips between the twins by seed; `resolveRiff` takes the
+       * The device and the recipe too, with one exception the design makes rather than this
+       * test: a seed permutes only among *exactly equal* costs (§7.2), and `resolveRiff` carries
+       * no seed, so where two candidates tie on every key the two paths may pick differently.
+       * The library has two such ties, one at each level.
+       *
+       * Between two boxes: `sub / dark` is authored on all four of these, at the same role index,
+       * on a voice each is comfortable spending, so `low-bass-two-strikes-root-line` (#624) ties
+       * four ways on every key `bestVoiceCandidate` and `Score` rank on. `assign` hands it to a
+       * different box per seed; `resolveRiff` takes the first assignable key. An exact tie is
+       * read off the keys that could separate the two: both exact on character, the same stack
+       * width, the same realisation, the same role index and the same crowd. Anything looser is
+       * a different cost, and the two must then agree on the box.
+       *
+       * Between two recipes on one box: the Tracker Mini writes each synth recipe on both of its
+       * pools as one patch (`sharedAs`, §2.3/#25), and a four-note pad stacked across either
+       * pool costs the same. `assign` flips between the twins by seed; `resolveRiff` takes the
        * first key. Equal, or declared one patch — nothing looser; see `declaredOnePatch`.
        */
+      const role = riff.request.role
+      const searchVoice = search.assignables[0] as Assignable
+      const searchDevice = rig.find((d) => d.id === search.deviceId) as Device
+      const deviceTie =
+        resolution.voice.device.id !== search.deviceId &&
+        !resolution.voice.substituted &&
+        search.outcome === 'exact' &&
+        realisationOf(resolution.voice.recipe) === realisationOf(search.recipe) &&
+        resolution.voice.assignables[0]?.roles.indexOf(role) === searchVoice.roles.indexOf(role) &&
+        crowdOf(resolution.voice.device, resolution.voice.stackWidth) ===
+          crowdOf(searchDevice, search.assignables.length)
+      if (deviceTie) {
+        deviceTies.push(riff.id)
+        continue
+      }
+      expect(resolution.voice.device.id, riff.id).toBe(search.deviceId)
       if (!declaredOnePatch(resolution.voice.recipe, search.recipe)) {
         expect(resolution.voice.recipe.id, riff.id).toBe(search.recipe.id)
       }
     }
+    // Pinned, so the exception cannot widen without saying so here.
+    expect(deviceTies).toEqual(['low-bass-two-strikes-root-line'])
   })
 
   /**
