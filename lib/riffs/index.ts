@@ -4,6 +4,7 @@ import { threeOscBassLoveRootOctaveFigure } from './3-osc-bass-love-root-octave-
 import { seventiesElectroPnoRhodesTurnaround } from './70s-electro-pno-rhodes-turnaround'
 import { acidTracksLine } from './acid-tracks-line'
 import { aegeanOrganPhrygianFigure } from './aegean-organ-phrygian-figure'
+import { anEndingAscentPad } from './an-ending-ascent-pad'
 import { bellbounceSparseBellPattern } from './bellbounce-sparse-bell-pattern'
 import { bladeRunnerBluesLead } from './blade-runner-blues-lead'
 import { blueMondayBass } from './blue-monday-bass'
@@ -45,15 +46,15 @@ import { swollenPadStaggeredStack } from './swollen-pad-staggered-stack'
  * §5A.5, and it is the rule that shapes this whole folder. A technique is found by the recording
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
- * named one reference and filed itself under another cannot parse. Five entries are `record`
+ * named one reference and filed itself under another cannot parse. Six entries are `record`
  * references and twenty-four are `patch` references, and the kind decides where an entry
- * surfaces (#598): the five are `/riffs`, and each of the twenty-four is a page under the box
+ * surfaces (#598): the six are `/riffs`, and each of the twenty-four is a page under the box
  * that ships its patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
  * the reference stands for. A reader who wants the record should go and listen to the record.
  *
- * ## The five records, which is not five of the same thing
+ * ## The six records, which is not six of the same thing
  *
  * `blue-monday-bass` and `acid-tracks-line` are both monophonic sixteenth lines and are the pair
  * that proves the difference between two such parts is *which sixteenths are silent* rather than
@@ -67,6 +68,11 @@ import { swollenPadStaggeredStack } from './swollen-pad-staggered-stack'
  * *progression*, and the entry `Riff.harmony` and `HookNote.alter` exist for. A melody whose
  * thirds are raised because the chord under them is borrowed, where printing the degree alone
  * would say `3rd` over two different pitches.
+ *
+ * `an-ending-ascent-pad` is the first record-named `pad` (#627), and the first figure with a
+ * shape across the whole of it: one held note a chord over sixteen bars, climbing by step to
+ * one peak and stopping there, with two fourths left unresolved. Every other record-named
+ * entry is a struck part with a grid; this one is a hook alone, as every pad is (§5A.2).
  *
  * ## The twelve patches (§5A.5, #566, #569)
  *
@@ -120,6 +126,7 @@ export const RIFFS: readonly Riff[] = [
   seventiesElectroPnoRhodesTurnaround,
   acidTracksLine,
   aegeanOrganPhrygianFigure,
+  anEndingAscentPad,
   bellbounceSparseBellPattern,
   bladeRunnerBluesLead,
   blueMondayBass,
@@ -150,6 +157,7 @@ export const RIFFS: readonly Riff[] = [
 export {
   acidTracksLine,
   aegeanOrganPhrygianFigure,
+  anEndingAscentPad,
   bellbounceSparseBellPattern,
   bladeRunnerBluesLead,
   blueMondayBass,
@@ -180,7 +188,7 @@ export {
 }
 
 /**
- * §5A.7/#598. **The entries `/riffs` lists: the five named for a record.** A figure named for a
+ * §5A.7/#598. **The entries `/riffs` lists: the six named for a record.** A figure named for a
  * factory patch surfaces on the box that ships the patch, at `/devices/<id>/presets/<patch>`,
  * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
  * catalogue, its static routes, the search and the sitemap cannot disagree about which twelve
