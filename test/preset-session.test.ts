@@ -20,7 +20,8 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    the fact alone shows nothing;
  *  - the Muse's session carries **the twelve in the folder's order**, joins **all twelve** to
  *    the riff whose reference names them, **resolves all twelve on the Muse** as `played`,
- *    carries **nothing about a recipe** (#598), and every other box has no session;
+ *    carries **nothing about a recipe** (#598), and no box beyond the three that declare
+ *    both halves — the Muse, the minilogue xd (#618) and the Subsequent 37 (#624) — has one;
  *  - a figure the box **cannot play throws** rather than becoming a gap on a page (#598), and
  *    two patches slugging to one address throw too.
  */
@@ -289,11 +290,11 @@ describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #5
     }
   })
 
-  it('no other box has a session', () => {
+  it('no fourth box has a session', () => {
     const declaring = DEVICES.filter((d) => presetSession(d) !== undefined).map((d) => d.id)
-    expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse'])
+    expect(declaring.sort()).toEqual(['korg-minilogue-xd', 'moog-muse', 'moog-subsequent-37'])
     for (const d of DEVICES) {
-      if (d.id === 'moog-muse' || d.id === 'korg-minilogue-xd') continue
+      if (declaring.includes(d.id)) continue
       expect(d.patchUses, d.id).toBeUndefined()
       expect(presetSession(d), d.id).toBeUndefined()
     }

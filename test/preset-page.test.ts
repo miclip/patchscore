@@ -59,7 +59,7 @@ describe('the presets page exists exactly where a session does (#593)', () => {
     const ids = generateStaticParams().map((p) => p.id)
     const declaring = DEVICES.filter((d) => presetSession(d) !== undefined).map((d) => d.id)
     expect(ids).toEqual(declaring)
-    expect(ids).toEqual(['korg-minilogue-xd', 'moog-muse'])
+    expect(ids).toEqual(['korg-minilogue-xd', 'moog-muse', 'moog-subsequent-37'])
   })
 
   it('404s on every other device, rather than rendering an empty claim', async () => {
@@ -67,7 +67,7 @@ describe('the presets page exists exactly where a session does (#593)', () => {
     // devices at all, so what is asserted here is the case the router would otherwise allow: a
     // real device with no declared patches.
     for (const device of DEVICES) {
-      if (device.id === 'moog-muse' || device.id === 'korg-minilogue-xd') continue
+      if (presetSession(device) !== undefined) continue
       await expect(markupFor(device.id), device.id).rejects.toThrow(/404/)
       expect(await generateMetadata({ params: Promise.resolve({ id: device.id }) })).toEqual({})
     }
@@ -79,6 +79,7 @@ describe('the presets page exists exactly where a session does (#593)', () => {
     expect(listed).toEqual([
       'https://patchscore.app/devices/korg-minilogue-xd/presets',
       'https://patchscore.app/devices/moog-muse/presets',
+      'https://patchscore.app/devices/moog-subsequent-37/presets',
     ])
     for (const device of DEVICES) {
       expect(presetsHref(device)).toBe(`/devices/${device.id}/presets`)

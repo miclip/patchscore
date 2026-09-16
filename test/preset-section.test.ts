@@ -59,7 +59,7 @@ const PANEL_TEXT = text(PANEL)
 const session = presetSession(byId('moog-muse'))
 if (session === undefined) throw new Error('the Muse has no preset session')
 
-describe('the Explore your device panel is on the Muse and on no other box (#593)', () => {
+describe('the Explore your device panel is on the three boxes with a session and on no other (#593, #618, #624)', () => {
   it('renders twelve closed entries on the Muse', () => {
     expect(PRESET_HEADING).toBe('Explore your device')
     expect(MUSE).toContain(`>${PRESET_HEADING}<`)
@@ -69,7 +69,7 @@ describe('the Explore your device panel is on the Muse and on no other box (#593
 
   it('renders no panel, no heading and no link on every other box', async () => {
     for (const device of DEVICES) {
-      if (device.id === 'moog-muse' || device.id === 'korg-minilogue-xd') continue
+      if (presetSession(device) !== undefined) continue
       const markup = await markupFor(device.id)
       expect(markup, device.id).not.toContain('preset-section')
       expect(markup, device.id).not.toContain(`>${PRESET_HEADING}<`)
@@ -103,7 +103,7 @@ describe('each entry says what the model says', () => {
    */
   it('links every entry to its figure page under the device, and nowhere into /riffs', () => {
     const patchRiffs = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patchRiffs.length).toBe(24)
+    expect(patchRiffs.length).toBe(36)
     for (const entry of session.entries) {
       expect(entry.figure, entry.patch.name).toBeDefined()
       expect(MUSE, entry.patch.name).toContain(

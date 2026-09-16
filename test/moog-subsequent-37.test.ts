@@ -4,6 +4,7 @@ import type { Device } from '../lib/core/index'
 import {
   CHARACTERS,
   DeviceSchema,
+  FACTORY_PATCHES_FACT,
   NEUTRAL_MOOD,
   assignableKey,
   expand,
@@ -15,12 +16,17 @@ import {
   resolve,
   type Assignable,
   type AuthoredParam,
+  type HookNote,
   type Recipe,
+  type Riff,
   type RoleRequest,
 } from '../lib/core/index'
 import { device } from '../lib/devices/moog-subsequent-37/index'
 import { SUBSEQUENT_37_PANEL } from '../lib/devices/moog-subsequent-37/panel'
 import { DEVICES } from '../lib/devices/registry.generated'
+import { RIFFS } from '../lib/riffs/index'
+import { presetSession } from '../lib/studio/preset-session'
+import { presetLead } from '../lib/studio/preset-text'
 import { TEMPLATES, ambientDub, industrialTechno } from '../lib/templates/index'
 import { template } from './fixtures'
 
@@ -1257,5 +1263,281 @@ describe('sustain claims (§3/#506)', () => {
     for (const r of device.recipes) {
       if (!heldRoles.has(r.role)) expect(r.sustain, r.id).toBeUndefined()
     }
+  })
+})
+
+/**
+ * §2.6/#617, #624. **The factory presets are a fact off the unit**, read on its own screen at
+ * firmware 1.2.0, and the list is exactly as wide as that reading. The manual counts 256
+ * locations (p.12, p.61) and names none, so the citation is `observed` and the firmware is the
+ * load-bearing half of it.
+ */
+describe('the factory presets, off the unit at firmware 1.2.0 (§2.6/#617, #624)', () => {
+  const patches = device.factoryPatches ?? []
+  const names = patches.map((p) => p.name)
+
+  it('declares the twenty that were read, cited observed with the firmware', () => {
+    expect(patches).toHaveLength(20)
+    expect(device.capabilityEvidence?.[FACTORY_PATCHES_FACT]).toEqual({
+      kind: 'observed',
+      source: 'Subsequent 37, firmware 1.2.0',
+    })
+    expect([...names].sort()).toEqual(
+      [
+        '5TH IN LINE',
+        '70s TV PI Theme',
+        'Acid Wiggler',
+        'BRASH B@SS',
+        'CELESTIAL',
+        'DRONE',
+        'DUO ORG',
+        'DUO WAVE MOD',
+        'Duotronic Moogtrons',
+        'FUNK ORGAN',
+        'Harp C Chord',
+        'LOW BASS',
+        'Octavia',
+        'SAW LEAD',
+        'SAWTEETH DUO DANCER',
+        'SYNTH GONG',
+        'Terror Bass',
+        'Triangle Lead',
+        'TRIPLET 5THS',
+        'UBER_SUB',
+      ].sort(),
+    )
+  })
+
+  it('carries a name and nothing else: no bank, no slot, no description', () => {
+    for (const p of patches) {
+      expect(Object.keys(p), p.name).toEqual(['name'])
+      expect(p.name.trim(), p.name).toBe(p.name)
+      // A slot is a bank.preset address, and nothing here carries one under any spelling.
+      expect(p.name, p.name).not.toMatch(/^\d+[.\-]\d+/)
+    }
+    for (const p of patches as Array<Record<string, unknown>>) {
+      expect(p).not.toHaveProperty('slot')
+      expect(p).not.toHaveProperty('bank')
+      expect(p).not.toHaveProperty('description')
+    }
+  })
+
+  it('spells the names as the screen prints them, punctuation and case included', () => {
+    const set = new Set(names)
+    expect(set.has('BRASH B@SS')).toBe(true)
+    expect(set.has('UBER_SUB')).toBe(true)
+    expect(set.has('70s TV PI Theme')).toBe(true)
+    expect(set.has('5TH IN LINE')).toBe(true)
+    // Three words on the screen where a decoded bank file printed two: the screen wins.
+    expect(set.has('SAWTEETH DUO DANCER')).toBe(true)
+    expect(set.has('SAWTEETH DUODANCER')).toBe(false)
+    // Nothing here carries the initials prefix the other bank's files all did: those were
+    // not this box's presets, and none of its own reads that way.
+    for (const name of names) expect(name, name).not.toMatch(/^P[Dd] /)
+  })
+
+  it('has no name read twice, so each keys once', () => {
+    expect(new Set(names).size).toBe(20)
+  })
+})
+
+/**
+ * §2.6/#593, §3.7/#598, #624. **Twelve of the twenty carry a use and a figure**, and every
+ * figure is a line, because this box plays two notes (p.9, `polyphony: 2`). Nine of the twelve
+ * never sound two notes at once; the three whose names make the second note the subject sound
+ * exactly two, and only on the roles whose recipes here spend the second note.
+ */
+describe('twelve presets carry a use and a figure, each playable within two notes (#624)', () => {
+  const uses = device.patchUses ?? []
+  const session = presetSession(device)
+  const entries = session?.entries ?? []
+  const figureOf = (name: string): Riff => {
+    const riff = entries.find((e) => e.patch.name === name)?.figure?.riff
+    if (riff === undefined) throw new Error(`no figure for ${name}`)
+    return riff
+  }
+
+  /** The notes in force at one step of a hook. */
+  function sounding(riff: Riff, step: number): HookNote[] {
+    return riff.hook.notes.filter((n) => step >= n.step && step < n.step + n.len)
+  }
+  /** What sounds at the widest step of a hook. */
+  function peakOf(riff: Riff): number {
+    let peak = 0
+    for (let step = 1; step <= riff.hook.bars * 16; step += 1) {
+      peak = Math.max(peak, sounding(riff, step).length)
+    }
+    return peak
+  }
+  /** A note's height in scale steps from the hook's origin, so contour can be compared. */
+  const height = (n: HookNote): number => n.degree + 7 * n.octave
+
+  it('describes exactly twelve, in the editorial order, keyed to the shipped name', () => {
+    expect(uses.map((u) => u.name)).toEqual([
+      'LOW BASS',
+      'Terror Bass',
+      'Acid Wiggler',
+      'TRIPLET 5THS',
+      'SAW LEAD',
+      'Triangle Lead',
+      'FUNK ORGAN',
+      'DUO ORG',
+      'SAWTEETH DUO DANCER',
+      'Duotronic Moogtrons',
+      'CELESTIAL',
+      'DRONE',
+    ])
+    const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
+    for (const use of uses) {
+      expect(shipped.has(use.name), use.name).toBe(true)
+      expect(use.bank, use.name).toBeUndefined()
+    }
+  })
+
+  it('describes a subset of the fact, and the two alternates are among the eight without a line (#617)', () => {
+    const described = new Set(uses.map((u) => u.name))
+    expect(described.size).toBe(12)
+    const silent = (device.factoryPatches ?? []).filter((p) => !described.has(p.name)).map((p) => p.name)
+    expect(silent).toHaveLength(8)
+    expect(silent).toContain('Harp C Chord')
+    expect(silent).toContain('DUO WAVE MOD')
+    // The session carries an entry per use and none for the rest; the fact stays at twenty.
+    expect(session?.named).toBe(20)
+    expect(session?.reading).toBe('observed')
+    expect(entries).toHaveLength(12)
+  })
+
+  it('writes every use unhedged, as what to play, and names no box, bank or slot', () => {
+    for (const use of uses) {
+      expect(use.use.trim().length, use.name).toBeGreaterThan(0)
+      expect(use.use, use.name).not.toMatch(/\b(probably|maybe|roughly|perhaps|might|could)\b/i)
+      expect(use.use, use.name).not.toMatch(/\b(sounds like|reminiscent|-ish)\b/i)
+      expect(use.use, use.name).not.toMatch(/Subsequent|Moog|firmware|bank|slot|preset \d/i)
+    }
+  })
+
+  it('joins every use to exactly one figure, resolved played on this box alone', () => {
+    for (const entry of entries) {
+      expect(entry.figure, entry.patch.name).toBeDefined()
+      expect(entry.figure?.riff.reference, entry.patch.name).toEqual({ kind: 'patch', name: entry.patch.name })
+      expect(entry.figure?.resolution.outcome, entry.patch.name).toBe('played')
+      expect(entry.figure?.voice.device.id, entry.patch.name).toBe('moog-subsequent-37')
+      expect(entry.figure?.voice.stackWidth, entry.patch.name).toBe(1)
+    }
+    const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
+    const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
+    expect(naming).toHaveLength(12)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(12)
+  })
+
+  it('substitutes on exactly two, where the honest character is one this box does not author on the role', () => {
+    // A triangle lead is clean and a celestial pad is soft; the box authors neither on that
+    // role, so each lands on the nearest recipe (§3.5) and the page names the character it got.
+    const substituted = entries.filter((e) => e.figure?.voice.substituted).map((e) => e.patch.name)
+    expect(substituted.sort()).toEqual(['CELESTIAL', 'Triangle Lead'])
+    expect(figureOf('Triangle Lead').request.character).toBe('clean')
+    expect(figureOf('CELESTIAL').request.character).toBe('soft')
+  })
+
+  it('never needs a third note, and spends the second on exactly the three DUO presets', () => {
+    const two: string[] = []
+    for (const entry of entries) {
+      const riff = figureOf(entry.patch.name)
+      const peak = peakOf(riff)
+      expect(peak, entry.patch.name).toBeLessThanOrEqual(2)
+      expect(riff.request.polyphony ?? 1, riff.id).toBe(peak)
+      if (peak === 2) two.push(entry.patch.name)
+    }
+    expect(two).toEqual(['DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons'])
+  })
+
+  it('lands each two-note figure on a recipe that spends the second note', () => {
+    // DUO MODE alone never means two notes on this box (p.26): the pair `DUO MODE` on with
+    // `KB CTRL` at HI or LO does. Read off the resolved settings of the recipe each figure
+    // reached, so the claim rests on what the page prints and not on the role alone. The
+    // converse is not a rule: a one-note figure on a two-note recipe is a figure with a note
+    // to spare, and FUNK ORGAN and CELESTIAL are exactly that, since every stab and pad recipe
+    // here spends both notes.
+    const spare: string[] = []
+    for (const entry of entries) {
+      const params = entry.figure?.voice.params ?? []
+      const duo = params.find((p) => p.name === 'OSC · DUO MODE')?.value
+      const kb = params.find((p) => p.name === 'OSC · KB CTRL')?.value
+      const twoNotes = duo === 'ON' && kb !== 'OFF'
+      const peak = peakOf(figureOf(entry.patch.name))
+      if (peak === 2) expect(twoNotes, `${entry.patch.name} on ${entry.figure?.voice.recipe.id ?? '?'}`).toBe(true)
+      else if (twoNotes) spare.push(entry.patch.name)
+    }
+    expect(spare).toEqual(['FUNK ORGAN', 'CELESTIAL'])
+    // And the three are on the two roles the manifest confines `duo()` to.
+    const roles = new Set(['DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons'].map((n) => figureOf(n).request.role))
+    expect([...roles].sort()).toEqual(['pad', 'stab'])
+  })
+
+  it('writes the three two-note figures as the three species of two-voice motion', () => {
+    // Parallel: every dyad of DUO ORG is a third, both notes on one step for one length.
+    const org = figureOf('DUO ORG')
+    const byStep = new Map<number, HookNote[]>()
+    for (const n of org.hook.notes) byStep.set(n.step, [...(byStep.get(n.step) ?? []), n])
+    expect(byStep.size).toBe(12)
+    for (const [step, pair] of byStep) {
+      expect(pair, `DUO ORG step ${String(step)}`).toHaveLength(2)
+      const [a, b] = pair as [HookNote, HookNote]
+      expect(a.len).toBe(b.len)
+      expect(Math.abs(height(a) - height(b)), `DUO ORG step ${String(step)}`).toBe(2)
+    }
+    // Contrary: in every bar of the DANCER the top voice falls a step per stab and the bottom
+    // rises one, so they cross in the middle and end the bar on each other's notes.
+    const dancer = figureOf('SAWTEETH DUO DANCER')
+    for (let bar = 0; bar < 4; bar += 1) {
+      const stabs = [1, 4, 7, 9, 12, 15].map((s) => s + bar * 16)
+      const tops: number[] = []
+      const bottoms: number[] = []
+      for (const step of stabs) {
+        const pair = dancer.hook.notes.filter((n) => n.step === step)
+        expect(pair, `DANCER step ${String(step)}`).toHaveLength(2)
+        const hs = pair.map(height)
+        // Which voice is "top" is fixed by the first stab of the bar, so the crossing shows.
+        tops.push(hs[0] as number)
+        bottoms.push(hs[1] as number)
+      }
+      for (let i = 1; i < 6; i += 1) {
+        expect((tops[i] as number) - (tops[i - 1] as number), `DANCER bar ${String(bar + 1)}`).toBe(-1)
+        expect((bottoms[i] as number) - (bottoms[i - 1] as number), `DANCER bar ${String(bar + 1)}`).toBe(1)
+      }
+      expect(tops[0]).toBe(bottoms[5])
+      expect(bottoms[0]).toBe(tops[5])
+      expect((tops[0] as number) - (bottoms[0] as number)).toBe(5)
+    }
+    // Oblique: one note of the Moogtrons pad spans the whole hook, and every other is above it.
+    const trons = figureOf('Duotronic Moogtrons')
+    const pedal = trons.hook.notes.find((n) => n.step === 1 && n.len === trons.hook.bars * 16)
+    expect(pedal).toBeDefined()
+    const line = trons.hook.notes.filter((n) => n !== pedal)
+    expect(line).toHaveLength(8)
+    for (const n of line) expect(height(n), `step ${String(n.step)}`).toBeGreaterThan(height(pedal as HookNote))
+    expect(line.map((n) => n.step)).toEqual([1, 17, 33, 49, 65, 81, 97, 113])
+  })
+
+  it('writes the drone through-composed, and every other struck line on a grid', () => {
+    const drone = figureOf('DRONE')
+    expect(drone.request.role).toBe('texture')
+    expect(drone.request.reArticulatesHook).toBe(false)
+    expect(drone.pattern).toBeUndefined()
+    expect(drone.hook.notes).toHaveLength(2)
+    for (const entry of entries) {
+      const riff = figureOf(entry.patch.name)
+      if (riff.request.role === 'pad' || riff.id === drone.id) continue
+      expect(riff.request.reArticulatesHook, riff.id).toBe(true)
+      expect(riff.pattern, riff.id).toBeDefined()
+    }
+  })
+
+  it('reads on the device page under the observed lead, with no count', () => {
+    if (session === undefined) throw new Error('no session')
+    expect(presetLead(session)).toBe(
+      'The ones worth knowing, what each is for, and the figure written for it where one exists.',
+    )
+    expect(presetLead(session)).not.toMatch(/\d/)
   })
 })
