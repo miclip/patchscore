@@ -1,4 +1,4 @@
-import type { Device, PatchUse, Recipe, SustainClaim } from '../../core/device'
+import type { Device, PatchUse, Recipe, ShippedPatch, SustainClaim } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange, ParamScope } from '../../core/params'
 import { MUSE_PANEL } from './panel'
 
@@ -490,21 +490,31 @@ function factoryPatch(name: string) {
  * patch in one. No description on this list, because what a patch sounds like is a claim this
  * file cannot verify from a name; that judgement has its own field. Same reading, same
  * firmware, as `FACTORY_BANK` — one unit, one list.
+ *
+ * **Each carries where it sat** (`slot`, #629): `bank.patch` as the box navigates, read at the
+ * same firmware 1.4.0 as `FACTORY_BANK`, so the citation above covers it. The operator
+ * navigated to each address and found the name there, so the pairing is observed rather than
+ * stitched from two readings. It is an address and not an identity: nothing keys on it, and a
+ * later firmware or a reordered bank moves it without moving the patch. p.12's bank order puts
+ * bank 8 at BASS with `3 Osc Bass Love` in it and bank 9 at LEAD with `Moog Pro Solo`, which is
+ * corroboration and not a reading; no bank *name* came off the screen, so `bank` stays absent.
  */
-const SHIPPED_PATCHES = [
-  "'70s Electro Pno",
-  '3 Osc Bass Love',
-  'Aegean Organ',
-  'Bellbounce',
-  'Detroit Funk',
-  'Hamamatsu Tines',
-  'Moog 55 Strings',
-  'Moog Pro Solo',
-  'Muse Runner',
-  'Polyphonic Power',
-  'Soft Orchestra',
-  'Vox Humana',
-].map((name) => ({ name }))
+const SHIPPED_PATCHES: ShippedPatch[] = (
+  [
+    ["'70s Electro Pno", '5.4'],
+    ['3 Osc Bass Love', '8.6'],
+    ['Aegean Organ', '5.14'],
+    ['Bellbounce', '7.1'],
+    ['Detroit Funk', '5.1'],
+    ['Hamamatsu Tines', '1.6'],
+    ['Moog 55 Strings', '2.1'],
+    ['Moog Pro Solo', '9.6'],
+    ['Muse Runner', '1.2'],
+    ['Polyphonic Power', '2.10'],
+    ['Soft Orchestra', '1.4'],
+    ['Vox Humana', '1.1'],
+  ] satisfies [string, string][]
+).map(([name, slot]) => ({ name, slot }))
 
 /**
  * §2.6/#593. **What each of the twelve is for**, in the operator's words, off the same unit.

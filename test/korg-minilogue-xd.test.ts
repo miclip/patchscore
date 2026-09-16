@@ -1130,7 +1130,9 @@ describe('the factory programs, pp.61-64 (§2.6/#617, #618)', () => {
       expect(p.name, p.name).not.toMatch(/^\d+\s/)
       expect(p.name.trim(), p.name).toBe(p.name)
     }
-    // A slot number is what Korg's `No` column prints, and nothing here carries it under any name.
+    // A slot number is what Korg's `No` column prints, and nothing here carries it under any
+    // name. Not even `slot` (#629): that field is where a patch sat when somebody looked, and
+    // a printed number is not a reading off a unit.
     for (const p of patches as Array<Record<string, unknown>>) {
       expect(p).not.toHaveProperty('no')
       expect(p).not.toHaveProperty('slot')

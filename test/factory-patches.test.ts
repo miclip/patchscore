@@ -251,8 +251,35 @@ describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent
 
   it('carries no bank and no description, since neither was read', () => {
     for (const patch of device?.factoryPatches ?? []) {
-      expect(Object.keys(patch)).toEqual(['name'])
+      expect(Object.keys(patch).sort()).toEqual(['name', 'slot'])
     }
+  })
+
+  /**
+   * §2.6/#629. Each of the twelve carries where it sat, as the operator navigated to it at the
+   * same firmware 1.4.0, so the citation above covers it and the source string is unchanged.
+   * The complete mapping, exact, so a transposed digit is caught here and not on a reader's
+   * unit; `3 Osc Bass Love` at 8.6 and `Moog Pro Solo` at 9.6 were once both given as 9.6.
+   */
+  it('carries where each of the twelve sat, in the box’s own bank.patch numbering', () => {
+    const at = Object.fromEntries((device?.factoryPatches ?? []).map((p) => [p.name, p.slot]))
+    expect(at).toEqual({
+      'Vox Humana': '1.1',
+      'Muse Runner': '1.2',
+      'Soft Orchestra': '1.4',
+      'Hamamatsu Tines': '1.6',
+      'Moog 55 Strings': '2.1',
+      'Polyphonic Power': '2.10',
+      'Detroit Funk': '5.1',
+      "'70s Electro Pno": '5.4',
+      'Aegean Organ': '5.14',
+      Bellbounce: '7.1',
+      '3 Osc Bass Love': '8.6',
+      'Moog Pro Solo': '9.6',
+    })
+    // Twelve distinct addresses across six banks.
+    expect(new Set(Object.values(at)).size).toBe(12)
+    expect(new Set(Object.values(at).map((a) => a?.split('.')[0])).size).toBe(6)
   })
 
   it('every patch a Muse recipe reaches is one the Muse declares it ships', () => {
