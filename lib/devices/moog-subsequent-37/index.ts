@@ -278,9 +278,11 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
  * moves). All three sit on `stab` and `pad`, the two roles whose recipes here spend the second
  * note.
  *
- * **The order is editorial, and it is the reading order.** The box browses alphabetically,
- * which puts `DRONE` beside `DUO ORG` and `CELESTIAL` beside `BRASH B@SS`, pairs nobody
- * compares. This walks from the single low line up: the three low-register parts, the arp, the
+ * **The order is editorial, and it is the reading order.** The box was seen browsing
+ * alphabetically during the reading that produced `SHIPPED_PATCHES` — no page states a browse
+ * order, and this is the only claim here that rests on watching the screen rather than on a
+ * name read off it. Alphabetical puts `DRONE` beside `DUO ORG` and `CELESTIAL` beside
+ * `BRASH B@SS`, pairs nobody compares. This walks from the single low line up: the three low-register parts, the arp, the
  * two leads, the three struck sounds from one note to two, then the three held sounds from two
  * notes back to one. The three two-note figures are adjacent so a reader choosing between them
  * finds them on neighbouring rows, and the two organs are adjacent for the same reason. Change
