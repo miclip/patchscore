@@ -42,6 +42,9 @@ import { sawteethDuoDancerCrossingStabs } from './sawteeth-duo-dancer-crossing-s
 import { terrorBassClosingSemitoneLine } from './terror-bass-closing-semitone-line'
 import { triangleLeadRiseAndFallLine } from './triangle-lead-rise-and-fall-line'
 import { triplet5thsStackedFifthsLadder } from './triplet-5ths-stacked-fifths-ladder'
+import { iFeelLoveOneShapeArp } from './i-feel-love-one-shape-arp'
+import { innerCityLifeHeldSub } from './inner-city-life-held-sub'
+import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-stab'
 
 /**
  * The riff registry (§5A). Hand-written and static, for the reason the template and inspiration
@@ -58,15 +61,15 @@ import { triplet5thsStackedFifthsLadder } from './triplet-5ths-stacked-fifths-la
  * §5A.5, and it is the rule that shapes this whole folder. A technique is found by the recording
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
- * named one reference and filed itself under another cannot parse. Six entries are `record`
+ * named one reference and filed itself under another cannot parse. Nine entries are `record`
  * references and thirty-six are `patch` references, and the kind decides where an entry
- * surfaces (#598): the six are `/riffs`, and each of the thirty-six is a page under the box
+ * surfaces (#598): the nine are `/riffs`, and each of the thirty-six is a page under the box
  * that ships its patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
  * the reference stands for. A reader who wants the record should go and listen to the record.
  *
- * ## The six records, which is not six of the same thing
+ * ## The nine records, which is not nine of the same thing
  *
  * `blue-monday-bass` and `acid-tracks-line` are both monophonic sixteenth lines and are the pair
  * that proves the difference between two such parts is *which sixteenths are silent* rather than
@@ -85,6 +88,16 @@ import { triplet5thsStackedFifthsLadder } from './triplet-5ths-stacked-fifths-la
  * shape across the whole of it: one held note a chord over sixteen bars, climbing by step to
  * one peak and stopping there, with two fourths left unresolved. Every other record-named
  * entry is a struck part with a grid; this one is a hook alone, as every pad is (§5A.2).
+ *
+ * The last three close the gaps the first six shared (#638): every one of the six was in a
+ * minor key, none ran above 128, and `sub`, `arp` and `texture` had none.
+ * `strings-of-life-walking-entry-stab` is the first in a major key, one pitch entering a
+ * sixteenth later each bar and never on a beat, reheard as four chords pass under it. `inner-city-life-held-sub` is the first above
+ * 128 and the first record-named `sub`, roots held for whole bars at 170, and the one entry
+ * whose lesson is where a note does not move. `i-feel-love-one-shape-arp` is the first
+ * record-named `arp`, one interval shape in sixteenths that never varies. All three were
+ * written as tables at a desk; none is transcribed from its record, which is the whole of
+ * what §5A.5 asks and all that is claimed.
  *
  * ## The twelve patches (§5A.5, #566, #569)
  *
@@ -169,6 +182,8 @@ export const RIFFS: readonly Riff[] = [
   funkOrganPushedSixteenthStabs,
   hamamatsuTinesBalladFigure,
   hypnoAcidSixteenthLoop,
+  iFeelLoveOneShapeArp,
+  innerCityLifeHeldSub,
   lowBassTwoStrikesRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
@@ -185,6 +200,7 @@ export const RIFFS: readonly Riff[] = [
   sawteethDuoDancerCrossingStabs,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
+  stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
   terrorBassClosingSemitoneLine,
   thrillerSynthRiff,
@@ -212,6 +228,8 @@ export {
   funkOrganPushedSixteenthStabs,
   hamamatsuTinesBalladFigure,
   hypnoAcidSixteenthLoop,
+  iFeelLoveOneShapeArp,
+  innerCityLifeHeldSub,
   lowBassTwoStrikesRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
@@ -229,6 +247,7 @@ export {
   seventiesElectroPnoRhodesTurnaround,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
+  stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
   terrorBassClosingSemitoneLine,
   threeOscBassLoveRootOctaveFigure,
@@ -239,12 +258,13 @@ export {
 }
 
 /**
- * §5A.7/#598. **The entries `/riffs` lists: the six named for a record.** A figure named for a
+ * §5A.7/#598. **The entries `/riffs` lists: the nine named for a record.** A figure named for a
  * factory patch surfaces on the box that ships the patch, at `/devices/<id>/presets/<patch>`,
  * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
- * catalogue, its static routes, the search and the sitemap cannot disagree about which twelve
- * left. Not a second content type: the twelve stay in this folder, under the same schema and
- * the same tests, and `presetSession` finds each by the patch its `reference` names.
+ * catalogue, its static routes, the search and the sitemap cannot disagree about which
+ * thirty-six left. Not a second content type: the thirty-six stay in this folder, under the
+ * same schema and the same tests, and `presetSession` finds each by the patch its `reference`
+ * names.
  */
 export const RECORD_RIFFS: readonly Riff[] = RIFFS.filter((r) => r.reference.kind === 'record')
 

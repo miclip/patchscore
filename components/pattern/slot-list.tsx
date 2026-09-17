@@ -52,6 +52,15 @@ export function SlotList({
  * One slot's hits as steps, with a shared velocity hoisted to the end: `2, 4, 6, 8 (all vel 42)`
  * rather than eight copies of `(vel 42)`. The guide's Markdown sibling words it the same way — a
  * band-3 ghost slot is eight sixteenths, and per-hit it wraps three times on a phone (§10).
+ *
+ * **In step order across every pass** (#613, #638). A hit is expanded to the figure steps it
+ * strikes before anything is printed, and the list is sorted once, whether or not the hits
+ * carry a velocity. The per-hit branch used to expand each hit and join the groups, which under
+ * a repeating grid printed `3, 19, 35, 51, 7, 23, …` for a slot the export listed as
+ * `3, 7, 11, …`: one pass at a time down the page and four passes at once in the Markdown. A
+ * velocity stays beside the step it belongs to, so a slot whose hits differ in velocity reads
+ * `4 (vel 118), 12 (vel 104), 68 (vel 118), …` and never separates a number from its weight.
+ * With one pass, which is every guide, the bytes are what they were.
  */
 function slotSteps(hits: readonly PatternHit[], gridLength: number, passes: number): string {
   const first = hits[0] as PatternHit
@@ -59,16 +68,18 @@ function slotSteps(hits: readonly PatternHit[], gridLength: number, passes: numb
     hits.length > 1 &&
     first.velocity !== undefined &&
     hits.every((h) => h.velocity === first.velocity)
-  const across = (step: number): number[] =>
-    Array.from({ length: passes }, (_, pass) => step + pass * gridLength)
+  const across = hits
+    .flatMap((h) =>
+      Array.from({ length: passes }, (_, pass) => ({
+        step: h.step + pass * gridLength,
+        velocity: h.velocity,
+      })),
+    )
+    .sort((a, b) => a.step - b.step)
   if (uniform) {
-    const steps = hits.flatMap((h) => across(h.step)).sort((a, b) => a - b)
-    return `${steps.map(num).join(', ')} (all vel ${num(first.velocity as number)})`
+    return `${across.map((h) => num(h.step)).join(', ')} (all vel ${num(first.velocity as number)})`
   }
-  return hits
-    .map((h) => {
-      const steps = across(h.step).map(num).join(', ')
-      return h.velocity === undefined ? steps : `${steps} (vel ${num(h.velocity)})`
-    })
+  return across
+    .map((h) => (h.velocity === undefined ? num(h.step) : `${num(h.step)} (vel ${num(h.velocity)})`))
     .join(', ')
 }
