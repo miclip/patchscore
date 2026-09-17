@@ -16,11 +16,15 @@ import type { Riff } from '../core/riff'
  *
  * ## Four loops over one cycle (#623)
  *
- * The line is the operator's, played on this patch over `i VI iv I IV v` in F# minor, two bars a
- * chord, twelve bars a pass. The first published version was three notes over four bars of a
+ * The line was played on this patch over `i VI iv I IV v` in F# minor, two bars a chord, twelve
+ * bars a pass. **Played and vetted at the instrument, not composed there** — it came in as a
+ * chord-and-melody table from elsewhere, and what makes it this library's is that somebody sat
+ * at a Muse with it: the twelve-bar ceiling was challenged there, the progression was corrected
+ * from Blade Runner's to this patch's, and the `D#` over the `v` was defended there rather than
+ * softened to `D`. The first published version was three notes over four bars of a
  * different cycle, cut down because its docstring believed a riff's grid capped the figure at
  * four bars (#603). Then it was the first pass alone, thirteen notes over twelve bars (#603).
- * Now it is the four the operator wrote, forty notes over forty-eight bars, and the harmony
+ * Now it is all four loops, forty notes over forty-eight bars, and the harmony
  * repeats under it: `cycleBars` stays 12 and `chordOccurrenceAt` takes the bar modulo the cycle
  * (§5A.2), so the fourth `I` is the same chord as the first and is checked as its own entry.
  *
@@ -45,7 +49,7 @@ import type { Riff } from '../core/riff'
  * ## Where the entries sit
  *
  * `onsetOffset.minSteps: 8`. Every ordinary entry lands eight steps into its chord, half a bar
- * after the pad has changed. Two entries the operator marked *very late* land twenty-four steps
+ * after the pad has changed. Two entries the source table marks *very late* land twenty-four steps
  * in, a bar and a half: the `A#4` of Loop 3's `I` and the `A5` of Loop 4's `VI`. The moves within
  * a chord are not entries and the offset does not apply to them. Loop 4's `i` has no entry at
  * all; the `G#4` closing Loop 3 releases two steps into it, as every last note of a chord does,
