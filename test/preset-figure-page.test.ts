@@ -551,7 +551,7 @@ describe('link integrity across the moved surfaces (#598)', () => {
         expect(known.has(href) || NOT_IN_SITEMAP.has(href), `${name} links to ${href}`).toBe(true)
         // And in particular never into the twelve's old addresses.
         expect(href, `${name} links to ${href}`).not.toMatch(
-          /^\/riffs\/(?!acid-tracks-line$|an-ending-ascent-pad$|blade-runner-blues-lead$|blue-monday-bass$|show-me-love-organ-stab$|thriller-synth-riff$)/,
+          /^\/riffs\/(?!acid-tracks-line$|an-ending-ascent-pad$|blade-runner-blues-lead$|blue-monday-bass$|i-feel-love-one-shape-arp$|inner-city-life-held-sub$|show-me-love-organ-stab$|strings-of-life-walking-entry-stab$|thriller-synth-riff$)/,
         )
       }
     }

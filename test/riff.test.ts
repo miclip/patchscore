@@ -16,6 +16,7 @@ import {
   referenceSlug,
   spellChord,
   spellDegree,
+  transposableKeys,
   type FactoryPatch,
   type HookNote,
   type Riff,
@@ -35,6 +36,8 @@ import {
   blueMondayBass,
   detroitFunkAeolianMachineLoop,
   hamamatsuTinesBalladFigure,
+  iFeelLoveOneShapeArp,
+  innerCityLifeHeldSub,
   moog55StringsSuspensionWriting,
   moogProSoloGlideLead,
   museRunnerFloatingArrivalLead,
@@ -43,6 +46,7 @@ import {
   seventiesElectroPnoRhodesTurnaround,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
+  stringsOfLifeWalkingEntryStab,
   threeOscBassLoveRootOctaveFigure,
   thrillerSynthRiff,
   voxHumanaRigidColdPopLine,
@@ -514,15 +518,16 @@ describe('the riff library (§5A)', () => {
   /**
    * An exact pin, where this used to be a range. Six entries was the library's own headcount and
    * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
-   * hold seventeen would hold anything. The number is content: six records, the twelve
+   * hold seventeen would hold anything. The number is content: nine records, the twelve
    * factory-patch definitions for the Muse, the twelve for the minilogue xd's programs (#618)
    * and the twelve for the Subsequent 37's presets (#624), and an entry added or dropped moves
    * it and has to say so here. The sixth record is `an-ending-ascent-pad` (#627), the first
-   * record-named pad.
+   * record-named pad; the seventh, eighth and ninth are #638's three, which close the gaps the
+   * first six shared: a major key, a tempo above 128, and a `sub` and an `arp`.
    */
-  it('has exactly forty-two entries: six records and thirty-six factory patches (#566, #569, #618, #624, #627)', () => {
-    expect(RIFFS.length).toBe(42)
-    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(6)
+  it('has exactly forty-five entries: nine records and thirty-six factory patches (#566, #569, #618, #624, #627, #638)', () => {
+    expect(RIFFS.length).toBe(45)
+    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(9)
     expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(36)
   })
 
@@ -618,7 +623,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is eight roles over forty-two entries, nine of them pads', () => {
+  it('is eight roles over forty-five entries, nine of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -627,20 +632,21 @@ describe('the riff library (§5A)', () => {
     // none. #627 added the first record-named pad, which is the seventh. #624 added twelve on
     // the Subsequent 37's eight roles, one line each because that box plays two notes: the
     // first `sub` and the first `texture`, a second acid line and a second arp, one bass, two
-    // leads, three stabs and two pads.
+    // leads, three stabs and two pads. #638 added three record-named entries on the roles
+    // `/riffs` was thinnest on: a stab in a major key, a sub at 170 and an arp.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
       acid: 2,
-      arp: 2,
+      arp: 3,
       'bass-mid': 5,
       lead: 11,
       pad: 9,
-      stab: 11,
-      sub: 1,
+      stab: 12,
+      sub: 2,
       texture: 1,
     })
-    expect(RIFFS).toHaveLength(42)
+    expect(RIFFS).toHaveLength(45)
     // And the nine pads are the nine held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
@@ -1773,7 +1779,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(42)
+      expect(RIFFS).toHaveLength(45)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
@@ -2851,5 +2857,250 @@ describe('the An Ending (Ascent) pad (§5A/#627)', () => {
     expect(source).toContain('has no recipe that builds that sound')
     expect(source).toContain('vox-humana-rigid-cold-pop-line')
     expect(source).toContain('must not be displaced')
+  })
+})
+
+/**
+ * §5A/#638. **The three that close the gaps `/riffs` had.** The six record-named entries before
+ * them were all in a minor key, none ran above 128, and none was a `sub` or an `arp`. What is
+ * pinned here is what each was written to be, off the issue's tables: the pitches, since a
+ * degree is derived from a pitch and a wrong degree is a wrong note in print; the progression,
+ * with the `V` of E minor kept major so its `D#` survives every key the page offers; and the
+ * one claim each figure makes about itself, which a later edit could break without a schema
+ * noticing. The last block holds the docstrings to §5A.5 and to #637: none of the three was
+ * played, vetted or tested anywhere, and none may say it was.
+ */
+describe('the three record-named figures of #638', () => {
+  const trio = [stringsOfLifeWalkingEntryStab, innerCityLifeHeldSub, iFeelLoveOneShapeArp]
+
+  function resolvedNotes(riff: Riff) {
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    return resolved.hook.notes
+  }
+
+  it('are record references in three keys the library did not have, on three roles it was short of', () => {
+    expect(trio.map((r) => r.reference)).toEqual([
+      { kind: 'record', name: 'Strings of Life' },
+      { kind: 'record', name: 'Inner City Life' },
+      { kind: 'record', name: 'I Feel Love' },
+    ])
+    expect(trio.map((r) => r.key)).toEqual(['F major', 'E minor', 'D minor'])
+    expect(trio.map((r) => r.request.role)).toEqual(['stab', 'sub', 'arp'])
+    const others = RIFFS.filter((r) => r.reference.kind === 'record' && !trio.includes(r))
+    expect(others).toHaveLength(6)
+    for (const key of trio.map((r) => r.key)) {
+      expect(others.map((r) => r.key), key).not.toContain(key)
+    }
+    // The first major key, and the first above 128, among the record-named entries.
+    for (const r of others) {
+      expect(r.key.endsWith(' minor'), r.id).toBe(true)
+      expect(r.bpm.default, r.id).toBeLessThanOrEqual(128)
+    }
+    expect(stringsOfLifeWalkingEntryStab.bpm.default).toBe(125)
+    expect(innerCityLifeHeldSub.bpm.default).toBe(170)
+    expect(iFeelLoveOneShapeArp.bpm.default).toBe(125)
+  })
+
+  it('carry no affinity, so the two-id pin stays at two', () => {
+    for (const r of trio) expect(r.patchAffinities, r.id).toBeUndefined()
+  })
+
+  describe('the Strings of Life walking-entry stab', () => {
+    const riff = stringsOfLifeWalkingEntryStab
+    const notes = resolvedNotes(riff)
+
+    it('is I vi IV V in F major, one bar a chord, spelt as the table has it', () => {
+      expect(riff.figureStartsAtBar).toBe(1)
+      expect(riff.harmony?.cycleBars).toBe(4)
+      expect(riff.harmony?.progression.map((s) => [s.degree, s.bars])).toEqual([
+        ['I', 1],
+        ['vi', 1],
+        ['IV', 1],
+        ['V', 1],
+      ])
+      const spelt = (degree: string) => {
+        const c = spellChord(degree, riff.key)
+        return c.outcome === 'resolved' ? c.chord.notes : c.detail
+      }
+      expect(['I', 'vi', 'IV', 'V'].map(spelt)).toEqual([
+        ['F', 'A', 'C'],
+        ['D', 'F', 'A'],
+        ['Bb', 'D', 'F'],
+        ['C', 'E', 'G'],
+      ])
+    })
+
+    it('is one pitch, C5, four times, and the hook carries nothing of the chords', () => {
+      expect(notes.map((n) => [n.step, n.note, n.midi])).toEqual([
+        [2, 'C5', 72],
+        [19, 'C5', 72],
+        [36, 'C5', 72],
+        [54, 'C5', 72],
+      ])
+      // One voice: no `polyphony`, and never two notes at once.
+      expect(riff.request.polyphony).toBeUndefined()
+      expect(riff.hook.notes.every((n) => n.degree === 5 && n.octave === 0)).toBe(true)
+      // The four meanings are the chord table's: the fifth of F, the seventh of D minor, the
+      // ninth of Bb, the root of C. Read off the chords, so a table edit that lost one fails.
+      const c = pitchClassOf('C')
+      const chords = ['I', 'vi', 'IV', 'V'].map((d) => {
+        const r = spellChord(d, riff.key)
+        return r.outcome === 'resolved' ? r.chord.notes : []
+      })
+      expect(chords.map((n) => n.map(pitchClassOf).indexOf(c))).toEqual([2, -1, -1, 0])
+    })
+
+    it('enters a sixteenth later each bar and never on a beat', () => {
+      const entries = [...new Set(riff.hook.notes.map((n) => n.step))]
+      expect(entries).toEqual([2, 19, 36, 54])
+      // Within its bar: the "e" of one, the "and" of one, the "a" of one, the "e" of two.
+      expect(entries.map((s) => ((s - 1) % STEPS_PER_BAR) + 1)).toEqual([2, 3, 4, 6])
+      for (const s of entries) expect((s - 1) % 4, `step ${String(s)}`).not.toBe(0)
+      // Each entry is on the chord the table puts it on.
+      expect(entries.map((s) => chordAtStep(riff, s))).toEqual(['I', 'vi', 'IV', 'V'])
+      expect(riff.constraints?.onsetOffset?.minSteps).toBe(1)
+      expect(riff.constraints?.forbiddenDegrees).toBeUndefined()
+    })
+
+    it('is short: an eighth each, and the grid is the four entries in one pass', () => {
+      for (const n of riff.hook.notes) expect(n.len, `step ${String(n.step)}`).toBe(2)
+      expect(riff.request.reArticulatesHook).toBe(true)
+      expect(gridOf(riff).length).toBe(64)
+      expect(gridOf(riff).hits.map((h) => h.step)).toEqual([2, 19, 36, 54])
+      expect(gridOf(riff).hits.map((h) => h.slot)).toEqual(['accent', 'offbeat', 'offbeat', 'offbeat'])
+    })
+  })
+
+  describe('the Inner City Life held sub', () => {
+    const riff = innerCityLifeHeldSub
+    const notes = resolvedNotes(riff)
+
+    it('is i VI V in E minor with the V major, so the D# is the chord’s third in every key', () => {
+      expect(riff.figureStartsAtBar).toBe(1)
+      expect(riff.harmony?.cycleBars).toBe(4)
+      expect(riff.harmony?.progression.map((s) => [s.degree, s.bars])).toEqual([
+        ['i', 2],
+        ['VI', 1],
+        ['V', 1],
+      ])
+      const v = spellChord('V', riff.key)
+      expect(v.outcome === 'resolved' ? v.chord.notes : v.detail).toEqual(['B', 'D#', 'F#'])
+      // The raised seventh is the pitch the key does not have, and it is the chord's, not the
+      // line's: no note of the bass is altered, and the line never sounds it.
+      const raised = spellDegree(7, 1, riff.key)
+      expect(raised.outcome === 'resolved' ? raised.pitchClass : raised.detail).toBe('D#')
+      for (const n of riff.hook.notes) expect(n.alter, `step ${String(n.step)}`).toBeUndefined()
+      expect(notes.map((n) => pitchClassOf(n.note))).not.toContain(pitchClassOf('D#'))
+      // And it holds in all twelve keys the page offers: a `V` that could not be spelt would
+      // print `UNSPELLABLE_CHORD` in one of them.
+      for (const key of transposableKeys(riff.key)) {
+        expect(spellChord('V', key).outcome, key).toBe('resolved')
+      }
+    })
+
+    it('plays the root of every chord, held for the whole chord, and moves in the last beat only', () => {
+      expect(notes.map((n) => [n.step, n.len, n.note, chordAtStep(riff, n.step)])).toEqual([
+        [1, 32, 'E1', 'i'],
+        [33, 16, 'C2', 'VI'],
+        [49, 12, 'B1', 'V'],
+        [63, 1, 'D2', 'V'],
+        [64, 1, 'C2', 'V'],
+      ])
+      expect(notes.map((n) => n.midi)).toEqual([28, 36, 35, 38, 36])
+      // The two sixteenths are the last two of the cycle, so they land straight on the E1 that
+      // opens the next pass; the B1 lets go at the end of beat three and nothing sounds at 61
+      // or 62.
+      const sounding = (step: number) =>
+        riff.hook.notes.filter((n) => step >= n.step && step < n.step + n.len)
+      expect(sounding(61)).toEqual([])
+      expect(sounding(62)).toEqual([])
+      expect(riff.request.polyphony).toBeUndefined()
+    })
+
+    it('has a one-pass grid of five strikes, the last two as the closing beat’s fill', () => {
+      expect(riff.request.reArticulatesHook).toBe(true)
+      expect(gridOf(riff).length).toBe(64)
+      expect(gridOf(riff).hits.map((h) => [h.step, h.slot])).toEqual([
+        [1, 'accent'],
+        [33, 'downbeat'],
+        [49, 'downbeat'],
+        [63, 'fill'],
+        [64, 'fill'],
+      ])
+      expect(riff.constraints).toBeUndefined()
+    })
+  })
+
+  describe('the I Feel Love one-shape arp', () => {
+    const riff = iFeelLoveOneShapeArp
+    const notes = resolvedNotes(riff)
+
+    it('is i VI VII in D minor, two bars then one and one', () => {
+      expect(riff.figureStartsAtBar).toBe(1)
+      expect(riff.harmony?.cycleBars).toBe(4)
+      expect(riff.harmony?.progression.map((s) => [s.degree, s.bars])).toEqual([
+        ['i', 2],
+        ['VI', 1],
+        ['VII', 1],
+      ])
+    })
+
+    it('is one shape, root octave fifth octave, on every beat of every bar', () => {
+      expect(riff.hook.bars).toBe(4)
+      expect(notes).toHaveLength(64)
+      expect(notes.map((n) => n.step)).toEqual(Array.from({ length: 64 }, (_, i) => i + 1))
+      for (const n of riff.hook.notes) expect(n.len, `step ${String(n.step)}`).toBe(1)
+      const beats: string[][] = []
+      for (let b = 0; b < 16; b += 1) beats.push(notes.slice(b * 4, b * 4 + 4).map((n) => n.note))
+      expect(beats.slice(0, 8).every((beat) => beat.join(' ') === 'D3 D4 A3 D4')).toBe(true)
+      expect(beats.slice(8, 12).every((beat) => beat.join(' ') === 'Bb2 Bb3 F3 Bb3')).toBe(true)
+      expect(beats.slice(12, 16).every((beat) => beat.join(' ') === 'C3 C4 G3 C4')).toBe(true)
+      // The shape as intervals from the root, the same on all sixteen beats: 0, 12, 7, 12.
+      for (let b = 0; b < 16; b += 1) {
+        const midi = notes.slice(b * 4, b * 4 + 4).map((n) => n.midi)
+        const root = midi[0] as number
+        expect(midi.map((m) => m - root), `beat ${String(b + 1)}`).toEqual([0, 12, 7, 12])
+      }
+      // No third anywhere: the chord table carries the thirds and the arp carries the frame.
+      const thirds = ['F', 'D', 'E'].map(pitchClassOf)
+      for (const [i, n] of notes.entries()) {
+        const chord = chordAtStep(riff, n.step)
+        const third = thirds[['i', 'VI', 'VII'].indexOf(chord ?? '')]
+        expect(pitchClassOf(n.note), `note ${String(i + 1)} over ${chord ?? '?'}`).not.toBe(third)
+      }
+      expect(riff.request.polyphony).toBeUndefined()
+      expect(riff.constraints).toBeUndefined()
+    })
+
+    it('has a sixteen-step grid that strikes every step, repeated four times', () => {
+      expect(riff.request.reArticulatesHook).toBe(true)
+      expect(gridOf(riff).length).toBe(16)
+      expect(gridOf(riff).hits.map((h) => h.step)).toEqual(Array.from({ length: 16 }, (_, i) => i + 1))
+      expect(gridOf(riff).hits.filter((h) => h.slot === 'accent').map((h) => h.step)).toEqual([1])
+      expect(gridOf(riff).hits.filter((h) => h.slot === 'downbeat').map((h) => h.step)).toEqual([5, 9, 13])
+      expect(gridOf(riff).hits.filter((h) => h.slot === 'offbeat').map((h) => h.step)).toEqual([3, 7, 11, 15])
+      expect(gridOf(riff).hits.filter((h) => h.slot === 'ghost').map((h) => h.step)).toEqual([2, 4, 6, 8, 10, 12, 14, 16])
+    })
+  })
+
+  /**
+   * §5A.5 and #637. These tables were written at a desk. The one claim a docstring may make is
+   * the one §5A.5 rests on: nothing is transcribed and the notes are the library's own. A
+   * docstring that said a figure was played, vetted or tested, or credited it to the operator,
+   * would be the attribution #637 corrected this morning, made three more times.
+   */
+  it('say they are not transcribed, and never that they were played, vetted or tested', () => {
+    for (const riff of trio) {
+      const source = readFileSync(new URL(`../lib/riffs/${riff.id}.ts`, import.meta.url), 'utf8')
+      expect(source, riff.id).toContain('not transcribed from one')
+      const claims = source.toLowerCase()
+      for (const word of ['played and vetted', 'vetted', 'tested', 'operator', 'at the instrument', 'at the machine']) {
+        expect(claims.includes(word), `${riff.id} claims "${word}"`).toBe(false)
+      }
+      for (const paragraph of riff.technique) {
+        expect(paragraph.includes('—'), `${riff.id}: an em dash in technique`).toBe(false)
+      }
+    }
   })
 })

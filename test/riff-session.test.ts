@@ -353,8 +353,10 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
        *
        * Between two boxes: `sub / dark` is authored on all four of these, at the same role index,
        * on a voice each is comfortable spending, so `low-bass-two-strikes-root-line` (#624) ties
-       * four ways on every key `bestVoiceCandidate` and `Score` rank on. `assign` hands it to a
-       * different box per seed; `resolveRiff` takes the first assignable key. An exact tie is
+       * four ways on every key `bestVoiceCandidate` and `Score` rank on, and so does
+       * `inner-city-life-held-sub` (#638), the second `sub / dark` entry, for the same reason.
+       * `assign` hands each to a different box per seed; `resolveRiff` takes the first
+       * assignable key. An exact tie is
        * read off the keys that could separate the two: both exact on character, the same stack
        * width, the same realisation, the same role index and the same crowd. Anything looser is
        * a different cost, and the two must then agree on the box.
@@ -385,7 +387,7 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
       }
     }
     // Pinned, so the exception cannot widen without saying so here.
-    expect(deviceTies).toEqual(['low-bass-two-strikes-root-line'])
+    expect(deviceTies).toEqual(['inner-city-life-held-sub', 'low-bass-two-strikes-root-line'])
   })
 
   /**

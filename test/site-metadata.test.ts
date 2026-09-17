@@ -81,7 +81,7 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
         RECORD_RIFFS.length +
         SAMPLE_TARGETS.length,
     )
-    expect(RECORD_RIFFS).toHaveLength(6)
+    expect(RECORD_RIFFS).toHaveLength(9)
 
     // Derived rather than listed, and in source order: authoring a manifest or a template adds its
     // page here without an edit (invariant 2). The last entry is the exception and is meant to be:
