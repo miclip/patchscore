@@ -6,6 +6,7 @@ import type {
   Device,
   MiddleCNotice,
   NoteDurationNotice,
+  PartAddressingNotice,
 } from './device'
 import {
   clockJackNotes,
@@ -16,6 +17,7 @@ import {
   controlPositionNotice,
   middleCNotice,
   noteDurationNotice,
+  partAddressingNotice,
   patternEntryNotice,
   noteOffSteps,
   printsNoteDuration,
@@ -2881,6 +2883,32 @@ function middleCLines(notice: MiddleCNotice): Line[] {
 }
 
 /**
+ * §2.6/§8/#653. **How the parts on this box are reached**, said once for the device, above its
+ * parts, and only where it carries more than one — a box carrying one part prints nothing,
+ * because its default is already right and the line would be noise.
+ *
+ * Restated in `components/guide/phase-sound.tsx` for the web guide, exactly as `middleCText` is,
+ * and local for the same reason: the two renderers are siblings that share no code path (#33).
+ * `partAddressingNotice` decides whether there is anything to say and hands over the routes the
+ * device authored; each renderer writes the label and the stop around them.
+ *
+ * **One line per route, labelled by its condition.** The guide knows the parts and not what
+ * plays them, so it does not pick: a player takes the hand line, a sequencer the other. Two
+ * bullets rather than one sentence of conditions, because §8's reader has both hands busy and
+ * reads the line that is theirs.
+ */
+function partAddressingHeading(notice: PartAddressingNotice): string {
+  return `${count(notice.parts, 'part')} on this box`
+}
+
+function partAddressingLines(notice: PartAddressingNotice): Line[] {
+  const out: Line[] = ['', `**${partAddressingHeading(notice)}**`, '']
+  if (notice.played !== undefined) out.push(`- Played by hand: ${notice.played}.`)
+  if (notice.sequenced !== undefined) out.push(`- Played from a sequencer: ${notice.sequenced}.`)
+  return out
+}
+
+/**
  * §4.1/#571. The condition a trigger note carries on a box where middle C is a setting, as a
  * tail on its line: `· with middle C set to \`C-5\``. Empty for every other box. Restated in
  * `components/guide/phase-steps.tsx`, `lib/studio/riff-markdown.ts`, `lib/studio/sample-markdown.ts`
@@ -3087,6 +3115,11 @@ function soundShared(
   // has to do something about it.
   const middleC = middleCNotice(device)
   if (middleC !== undefined) out.push(...middleCLines(middleC))
+  // §2.6/§8/#653. Once for the box, and only where it carries more than one part: how the parts
+  // are reached is a setup step done before any of them is set, and a box carrying one part
+  // has nothing to be told.
+  const addressing = partAddressingNotice(device, mine.length)
+  if (addressing !== undefined) out.push(...partAddressingLines(addressing))
   // #107. Above the parts, because that is the order it is done at the box: set the one
   // control the pattern shares, then work through the voices.
   const hoist = hoistedParams(mine.map((a) => a.params))

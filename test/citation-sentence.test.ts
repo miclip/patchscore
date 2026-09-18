@@ -424,7 +424,7 @@ describe('the sentence counts what is rendered, not what is assigned (§8/#107)'
     expect(citedShare(resolvedClaims(rendered(muse, 'moog-muse'))).total).toBe(shown)
     // Every hoisted name appears exactly once in the rendered set, however many parts carry it.
     const names = rendered(muse, 'moog-muse').map((param) => param.name)
-    expect(names.filter((name) => name === 'MULTI MODE')).toHaveLength(1)
+    expect(names.filter((name) => name === 'MULTI IN B CHANNEL')).toHaveLength(1)
   })
 
   it('reduces two parts sharing one pattern-wide control to one line', () => {

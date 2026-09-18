@@ -81,15 +81,12 @@ Mono sawtooth with the filter tracking the keyboard one to one
   - **DYNAMIC VOICE ALLOCATION** `OFF`
     - ↳ note: Its printed default. On, a busy timbre steals from the other and the count above stops holding
     - ↳ hint: VOICE CONTROL, then MORE
-  - **MULTI MODE** `ON`
-    - ↳ note: Its printed default, and what makes the two timbres separately playable
-    - ↳ hint: PROGRAMMER, MENU, MIDI
 - **● PROGRAMMER**
   - **MIDI IN CHANNEL** `1`
     - ↳ note: TIMBRE A listens here
     - ↳ hint: PROGRAMMER, MENU, MIDI
   - **MULTI IN B CHANNEL** `2`
-    - ↳ note: TIMBRE B listens here. Both default to 1, so this must be changed or the two timbres double on one channel
+    - ↳ note: TIMBRE B listens here under MULTI MODE. Both default to 1, so this must differ or the two timbres double on one channel
     - ↳ hint: PROGRAMMER, MENU, MIDI
   - **RECIEVE CC** `ON`
     - ↳ note: Defaults to OFF, so the box ignores CC until this is set. The manual's spelling

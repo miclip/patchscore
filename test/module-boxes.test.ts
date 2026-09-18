@@ -447,27 +447,26 @@ describe('the Muse authors a module on every parameter (#385)', () => {
     expect(missing).toEqual([])
   })
 
-  it('places the fourteen controls whose names carry no prefix', () => {
+  it('places the thirteen controls whose names carry no prefix', () => {
     /*
      * The bare ones are the whole reason this is authoring rather than a name parse: #385 counted
      * the ` · ` prefix at 3,419 params against 10,884 without, one consistent device in
      * thirty-nine, and fourteen of this box's own bare — including the voice-control settings a
-     * `VOICE CONTROL` box most wants to hold.
+     * `VOICE CONTROL` box most wants to hold. Thirteen since #653, which took `MULTI MODE` off
+     * the recipes: its right option depends on what plays the box, so it is an instruction on
+     * the manifest (`partAddressing`) rather than a value a recipe states. It was the one place
+     * the hint and the module disagreed, deliberately — reached through `PROGRAMMER, MENU, MIDI`
+     * and boxed under `VOICE CONTROL` for what it governs — and with it gone every bare control
+     * here sits in the module its hint points at.
      *
      * Pinned by name so a later edit that moves one has to say so. `panel.ts` draws `PROGRAMMER`
      * and `VOICE CONTROL` as real panel groups, and the device's own authored hints corroborate
-     * most of the table: the voice settings hint `VOICE CONTROL, then MORE` and the MIDI channel
+     * the table: the voice settings hint `VOICE CONTROL, then MORE` and the MIDI channel
      * settings hint `PROGRAMMER, MENU, MIDI`.
-     *
-     * **`MULTI MODE` is the one place the hint and the module disagree, deliberately.** It is
-     * reached through `PROGRAMMER, MENU, MIDI` and it decides whether the box is two independently
-     * played timbres at all — the same subject as the two voice settings beside it. A control is
-     * grouped by what it governs; the hint still says where the box hides it.
      */
     const expected: Record<string, string> = {
       'TIMBRE A VOICE COUNT': 'VOICE CONTROL',
       'DYNAMIC VOICE ALLOCATION': 'VOICE CONTROL',
-      'MULTI MODE': 'VOICE CONTROL',
       'MIDI IN CHANNEL': 'PROGRAMMER',
       'MULTI IN B CHANNEL': 'PROGRAMMER',
       'RECIEVE CC': 'PROGRAMMER',
@@ -535,9 +534,9 @@ describe('a real Muse guide renders panel boxes, in both renderers (#385)', () =
 
   it("groups #107's song-wide block by module instead of alphabetising the panel", () => {
     /*
-     * The ordering claim, and the reason `hoistOrder` exists. The Muse hoists ten song-wide
+     * The ordering claim, and the reason `hoistOrder` exists. The Muse hoists its song-wide
      * settings across three modules. Sorted by name they read `DELAY · …` ×7, `DYNAMIC VOICE
-     * ALLOCATION`, `MIDI IN CHANNEL`, `MULTI IN B CHANNEL`, `MULTI MODE`, `RECIEVE CC`, `TIMBRE A
+     * ALLOCATION`, `MIDI IN CHANNEL`, `MULTI IN B CHANNEL`, `RECIEVE CC`, `TIMBRE A
      * VOICE COUNT` — which interleaves VOICE CONTROL and PROGRAMMER and, because `groupedParams`
      * cuts on adjacent runs, comes out as five boxes for three modules.
      *

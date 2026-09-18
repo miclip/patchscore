@@ -25,18 +25,22 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
  * conflicts"*, and the field itself *"restricts a certain number of voices to TIMBRE A so that
  * TIMBRE B cannot steal voices from TIMBRE A."* One part on the box wants all eight of them.
  *
- * **The other three do not move, and two of them for reasons the issue did not have in front of
- * it.** They read as split-support settings and they are not:
+ * **The other three did not move under #424, and two of them for reasons the issue did not have
+ * in front of it.** They read as split-support settings and they are not:
  *
- *  - **`MULTI MODE` stays `ON`.** p.110 gives the OFF branch in full — *"If OFF, Muse will handle
- *    incoming MIDI messages as if the local keyboard were being used"* — and the NOTE under it
- *    adds *"In MULTI MODE the STACK and SPLIT buttons in VOICE CONTROL are ignored."* So this is
- *    not a setting that exists to address timbre B. It is what pins the incoming channel to
- *    TIMBRE A **and nothing else**, whatever STACK and SPLIT happen to be doing. Turn it off and
- *    those two panel buttons go live; no recipe here sets either, and p.105 says engaging STACK
- *    *"reduces available polyphony by half (or more)"* — which would take back the eight voices
- *    this issue is trying to win. Of the four, it is the one whose removal can make the reported
- *    symptom worse.
+ *  - **`MULTI MODE` stayed `ON` under #424, and #653 took it off the recipes altogether.** This
+ *    file used to pin it, on the argument that p.110's NOTE — *"In MULTI MODE the STACK and SPLIT
+ *    buttons in VOICE CONTROL are ignored"* — made `ON` the safe state: turn it off and STACK goes
+ *    live, and p.105 says STACK *"reduces available polyphony by half (or more)"*. That argument
+ *    was about a box carrying one part, and it holds there. It was wrong for two. Two parts on
+ *    the box **by hand** need `SPLIT`, and `SPLIT` needs `MULTI MODE OFF`; two parts from a
+ *    sequencer need `ON` and the two channels. Which the reader needs depends on what plays the
+ *    box, which no recipe knows, so an unconditional `ON` on every recipe was a guess dressed as a
+ *    setting. It is now `partAddressing` on the manifest — both routes with their condition,
+ *    printed once where the box carries two parts and not at all where it carries one, which is
+ *    where the printed default is already right. `test/part-addressing.test.ts` holds the engine
+ *    half; the pins below hold that this box prints the instruction at two parts and nothing at
+ *    one.
  *  - **`MULTI IN B CHANNEL` stays `2`.** p.110: `MIDI IN CHANNEL (OMNI, 1-16. DEFAULT: 1)` and
  *    `MULTI IN B CHANNEL (OMNI, 1-16. DEFAULT: 1)`. **Both default to one.** Left alone, the idle
  *    timbre receives the same notes as the used one on the same channel. Whether a timbre holding
@@ -47,7 +51,7 @@ import { TEMPLATES, industrialTechno } from '../lib/templates/index'
  *    an argument for leaving the box's own printed default (`DEFAULT: OFF`) stated rather than
  *    for dropping it. It is also what makes the count above hold rather than drift.
  *
- * So the fix is **one number**, not four settings, and the three pins below are as load-bearing as
+ * So #424's fix was **one number**, not four settings, and the pins below are as load-bearing as
  * the failing assertions: they say what a fix is not allowed to take away.
  *
  * ## `DETUNE` is deliberately not asserted to move
@@ -229,18 +233,25 @@ describe('the four-box rig #424 was reported from (#424)', () => {
     expect(mdValue(reported(), 'DETUNE')).toBe('15')
   })
 
-  /** The three the manual keeps. Same reasoning as the one-box case; see the head note. */
-  it('still states MULTI MODE, MULTI IN B CHANNEL and DYNAMIC VOICE ALLOCATION', () => {
+  /** The two the manual keeps. Same reasoning as the one-box case; see the head note. */
+  it('still states MULTI IN B CHANNEL and DYNAMIC VOICE ALLOCATION, and no MULTI MODE line', () => {
     const result = reported()
 
-    expect(mdValue(result, 'MULTI MODE')).toBe('ON')
+    expect(mdLines(result, 'MULTI MODE')).toHaveLength(0)
     expect(mdValue(result, 'MULTI IN B CHANNEL')).toBe('2')
     expect(mdValue(result, 'DYNAMIC VOICE ALLOCATION')).toBe('OFF')
 
     const page = pageText(result)
-    expect(page).toContain('MULTI MODE ON')
+    expect(page).not.toContain('MULTI MODE ON')
     expect(page).toContain('MULTI IN B CHANNEL 2')
     expect(page).toContain('DYNAMIC VOICE ALLOCATION OFF')
+  })
+
+  /** One part on the Muse here, so the addressing instruction has nothing to say (#653). */
+  it('prints no addressing instruction for a Muse left with one part', () => {
+    const result = reported()
+    expect(renderGuide(result)).not.toContain('parts on this box')
+    expect(pageText(result)).not.toContain('parts on this box')
   })
 })
 
@@ -279,22 +290,40 @@ describe('a Muse carrying one part is given the whole box (#424)', () => {
   })
 
   /**
-   * PASSES before the fix, and is a pin rather than a discovery: #424 asks whether these three
-   * should drop out at one part and the manual says no. See the head note — `MULTI MODE OFF`
-   * hands the box back to STACK and SPLIT (p.110's NOTE), `MULTI IN B CHANNEL` is what stops the
-   * idle timbre sharing a channel with the used one (p.110, both default to 1), and `DYNAMIC
-   * VOICE ALLOCATION OFF` is the box's printed default and what makes the count above hold.
+   * PASSED before #424's fix, and is a pin rather than a discovery: #424 asks whether these
+   * should drop out at one part and the manual says no. See the head note — `MULTI IN B CHANNEL`
+   * is what stops the idle timbre sharing a channel with the used one (p.110, both default to 1),
+   * and `DYNAMIC VOICE ALLOCATION OFF` is the box's printed default and what makes the count
+   * above hold. `MULTI MODE` is no longer among them (#653): the box's default is the right
+   * state for one part, and the routing for two is an instruction rather than a setting.
    */
-  it('still states the three settings that are not arithmetic, in both renderers', () => {
+  it('still states the two settings that are not arithmetic, in both renderers', () => {
     const result = run(ONE_PART, 1)
-    expect(mdValue(result, 'MULTI MODE')).toBe('ON')
+    expect(mdLines(result, 'MULTI MODE')).toHaveLength(0)
     expect(mdValue(result, 'MULTI IN B CHANNEL')).toBe('2')
     expect(mdValue(result, 'DYNAMIC VOICE ALLOCATION')).toBe('OFF')
 
     const page = pageText(result)
-    expect(page).toContain('MULTI MODE ON')
+    // The value line, not the name: `MULTI IN B CHANNEL`'s note still says which mode it listens under.
+    expect(page).not.toContain('MULTI MODE ON')
+    expect(page).not.toContain('MULTI MODE OFF')
     expect(page).toContain('MULTI IN B CHANNEL 2')
     expect(page).toContain('DYNAMIC VOICE ALLOCATION OFF')
+  })
+
+  /**
+   * #653. One part on the box and the default `MULTI MODE ON` is already right: `MIDI IN CHANNEL`
+   * reaches TIMBRE A with all eight voices, and by hand the keyboard plays. An instruction here
+   * would be noise, so the notice is silent — in both renderers, at every seed that leaves one
+   * part on the box.
+   */
+  it('prints no addressing instruction, because there is nothing to address', () => {
+    for (const seed of SEEDS) {
+      const result = run(ONE_PART, seed)
+      expect(museParts(result), `seed ${String(seed)}`).toHaveLength(1)
+      expect(renderGuide(result)).not.toContain('parts on this box')
+      expect(pageText(result)).not.toContain('parts on this box')
+    }
   })
 
   /**
@@ -315,20 +344,50 @@ describe('a Muse carrying two parts still splits four and four (#424)', () => {
    * eight voices for timbre A and none for timbre B — one part silent, which is a worse guide
    * than the one being repaired.
    */
-  it('keeps all four settings at their split values in the Markdown guide', () => {
+  it('keeps the three settings at their split values in the Markdown guide', () => {
     const result = run(TWO_PARTS, 1)
     expect(mdValue(result, 'TIMBRE A VOICE COUNT')).toBe('4')
     expect(mdValue(result, 'DYNAMIC VOICE ALLOCATION')).toBe('OFF')
-    expect(mdValue(result, 'MULTI MODE')).toBe('ON')
     expect(mdValue(result, 'MULTI IN B CHANNEL')).toBe('2')
   })
 
-  it('keeps all four settings at their split values on the page', () => {
+  it('keeps the three settings at their split values on the page', () => {
     const page = pageText(run(TWO_PARTS, 1))
     expect(page).toContain('TIMBRE A VOICE COUNT 4')
     expect(page).toContain('DYNAMIC VOICE ALLOCATION OFF')
-    expect(page).toContain('MULTI MODE ON')
     expect(page).toContain('MULTI IN B CHANNEL 2')
+  })
+
+  /**
+   * #653. Two parts on the box, and the guide says how they are reached — both routes, each with
+   * its condition, because what plays the box is not something the guide knows. `MULTI MODE` is
+   * named in the instruction and on no parameter line: a setting whose right value depends on
+   * the reader's rig is an instruction, not a value a recipe states.
+   */
+  it('tells the reader how the two parts are addressed, in both renderers', () => {
+    const result = run(TWO_PARTS, 1)
+    const md = renderGuide(result)
+    expect(md).toContain('**2 parts on this box**')
+    expect(md).toContain('- Played by hand: MULTI MODE OFF')
+    expect(md).toContain('then SPLIT in VOICE CONTROL')
+    expect(md).toContain('TIMBRE A plays left of the split point and TIMBRE B right')
+    expect(md).toContain('- Played from a sequencer: MULTI MODE ON')
+    expect(md).toContain('TIMBRE A answers MIDI IN CHANNEL and TIMBRE B answers MULTI IN B CHANNEL')
+    expect(mdLines(result, 'MULTI MODE')).toHaveLength(0)
+
+    const page = pageText(result)
+    expect(page).toContain('2 parts on this box')
+    expect(page).toContain('Played by hand: MULTI MODE OFF')
+    expect(page).toContain('Played from a sequencer: MULTI MODE ON')
+  })
+
+  it('prints the instruction once, at every seed that puts two parts on the box', () => {
+    for (const seed of SEEDS) {
+      const result = run(TWO_PARTS, seed)
+      expect(museParts(result), `seed ${String(seed)}`).toHaveLength(2)
+      const md = renderGuide(result)
+      expect(md.split('parts on this box').length - 1, `seed ${String(seed)}`).toBe(1)
+    }
   })
 
   it('reads 4 in every direction and seed that puts two parts on the box', () => {

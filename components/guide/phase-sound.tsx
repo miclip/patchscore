@@ -20,6 +20,7 @@ import {
   inertBlocks,
   inertNotice,
   middleCNotice,
+  partAddressingNotice,
   renderedParams,
   sourceLengthLine,
 } from '@/lib/core'
@@ -30,6 +31,7 @@ import type {
   InertFinding,
   MiddleCNotice,
   ParamGroup,
+  PartAddressingNotice,
   ParamScope,
   ScopedParams,
 } from '@/lib/core'
@@ -437,6 +439,35 @@ function MiddleCBlock({ notice }: { notice: MiddleCNotice }) {
 }
 
 /**
+ * §2.6/§8/#653. **How the parts on this box are reached**, once for the box and only where it
+ * carries more than one part.
+ *
+ * Hand-written to match `partAddressingLines` in `lib/core/render.ts` word for word, the
+ * arrangement `middleCText` above lives under: `partAddressingNotice` decides whether there is
+ * anything to say and hands over the routes the device authored; the label on each and the stop
+ * after it are this renderer's own. One line per route, labelled by its condition, because the
+ * guide knows the parts and not what plays them and does not pick.
+ *
+ * `test/part-addressing.test.ts` asserts the lines in both renderers and both layouts, because
+ * two copies of one sentence is exactly the thing that drifts.
+ */
+function PartAddressingBlock({ notice }: { notice: PartAddressingNotice }) {
+  return (
+    <div className="callout">
+      <p>
+        <strong>{count(notice.parts, 'part')} on this box</strong>
+      </p>
+      <ul>
+        {notice.played === undefined ? null : <li>Played by hand: {notice.played}.</li>}
+        {notice.sequenced === undefined ? null : (
+          <li>Played from a sequencer: {notice.sequenced}.</li>
+        )}
+      </ul>
+    </div>
+  )
+}
+
+/**
  * #107's heading and its reason, hand-written to match the Markdown renderer word for word — the
  * same arrangement `realisationInstruction` above already lives under. The two renderers share no
  * code path by design (#33), so importing the sentence from `lib/core/render.ts` would make this
@@ -513,6 +544,9 @@ export function SoundShared({
   // §4.1/#571. Computed here for the same reason: where the box puts middle C asks nothing
   // about which parts were assigned.
   const middleC = middleCNotice(device)
+  // §2.6/§8/#653. The one notice here that does ask which parts were assigned: how many of them
+  // there are is the whole condition, and `perPart` is one entry per part on the box.
+  const addressing = partAddressingNotice(device, perPart.length)
   // §3.2. The markdown renderer's own sentence, so the two cannot say different things — and
   // over the same set, which is the half that would drift silently if each counted its own way.
   const cites = citationSentence(resolvedClaims(renderedParams(hoist, perPart)))
@@ -533,6 +567,11 @@ export function SoundShared({
           puts middle C is true of every note on every part below, and prints only where a
           reader has to do something about it. */}
       {middleC === undefined ? null : <MiddleCBlock notice={middleC} />}
+
+      {/* §2.6/§8/#653, once for the box and only where it carries more than one part: how the
+          parts are reached is a setup step done before any of them is set, and a box carrying
+          one part has nothing to be told. */}
+      {addressing === undefined ? null : <PartAddressingBlock notice={addressing} />}
 
       {/* #107, above the parts: the order it is done at the box — set the one control the
           pattern shares, then work through the voices. */}
