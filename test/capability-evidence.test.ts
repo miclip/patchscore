@@ -8,6 +8,7 @@ import {
   PATTERN_ENTRY_FACT,
   CONTROL_POSITION_FACT,
   MIDDLE_C_FACT,
+  PART_ADDRESSING_FACT,
   CapabilityEvidenceSchema,
   DeviceSchema,
   clockJackNotes,
@@ -189,7 +190,13 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
                         // claim a riff's held chord costs one voice on, and the fixture's
                         // features are kept beside it (`test/arpeggiated-hold.test.ts`).
                         { features: { perStep: ['velocity'], arpeggiator: true } as const }
-                      : {}
+                      : fact === PART_ADDRESSING_FACT
+                        ? // §2.6/§8/#653. The eighth: how a box reaches two parts is a positive
+                          // claim read off its manual, and a page with no declaration is refused
+                          // (`test/part-addressing.test.ts`). The fixture's two fixed voices are
+                          // the two assignables the declaration needs.
+                          { partAddressing: { sequenced: 'one part per MIDI channel' } }
+                        : {}
       /**
        * §3.1/#324 is the one path that refuses a citation rather than requiring one: what it
        * declares is that no page maps a panel mark to a value, and no page asserts an absence.

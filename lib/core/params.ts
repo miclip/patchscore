@@ -183,8 +183,14 @@ export const ParamScopeSchema = z.enum(PARAM_SCOPES)
  * `song`-scoped field that sets one box-wide value, unhoist it, and print it twice.
  *
  * **Numeric only.** A width is a number and so is a share. An enum whose option depended on the
- * allocation would need a mapping from a count onto an authored option set, which nothing has
- * asked for, and a text param is a written instruction rather than a control.
+ * allocation would need a mapping from a count onto an authored option set, and a text param is
+ * a written instruction rather than a control. **One enum did ask, and the answer was not here**
+ * (#653): the Muse's `MULTI MODE` is right at `OFF` for two parts played by hand and `ON` for two
+ * parts from a sequencer, so its option depends on the allocation *and* on what plays the box,
+ * which no allocation fact carries. That is a setup step, not a control a recipe values, and it
+ * is `Device.partAddressing` (`device.ts`) — rendered once where the box carries two parts and
+ * not at all where it carries one. The next enum that seems to want a source should be read
+ * against that first.
  */
 export const PARAM_VALUE_SOURCES = ['stack-width', 'device-part-share'] as const
 

@@ -163,6 +163,11 @@ Note length is set per note here — `GATE`.
 
 *This block draws on the Muse User's Manual v1.4.0, pp.27-111 and the instrument at firmware 1.4.0; its values are starting points.*
 
+**2 parts on this box**
+
+- Played by hand: MULTI MODE OFF in the PROGRAMMER MIDI page, then SPLIT in VOICE CONTROL; TIMBRE A plays left of the split point and TIMBRE B right, with SPLIT POINT set under VOICE CONTROL MORE.
+- Played from a sequencer: MULTI MODE ON, its default; TIMBRE A answers MIDI IN CHANNEL and TIMBRE B answers MULTI IN B CHANNEL.
+
 **Song-wide**
 
 One setting for the whole song — set it once, not once per part below.
@@ -174,15 +179,12 @@ One setting for the whole song — set it once, not once per part below.
   - **DYNAMIC VOICE ALLOCATION** `OFF`
     - ↳ note: Its printed default. On, a busy timbre steals from the other and the count above stops holding
     - ↳ hint: VOICE CONTROL, then MORE
-  - **MULTI MODE** `ON`
-    - ↳ note: Its printed default, and what makes the two timbres separately playable
-    - ↳ hint: PROGRAMMER, MENU, MIDI
 - **● PROGRAMMER**
   - **MIDI IN CHANNEL** `1`
     - ↳ note: TIMBRE A listens here
     - ↳ hint: PROGRAMMER, MENU, MIDI
   - **MULTI IN B CHANNEL** `2`
-    - ↳ note: TIMBRE B listens here. Both default to 1, so this must be changed or the two timbres double on one channel
+    - ↳ note: TIMBRE B listens here under MULTI MODE. Both default to 1, so this must differ or the two timbres double on one channel
     - ↳ hint: PROGRAMMER, MENU, MIDI
   - **RECIEVE CC** `ON`
     - ↳ note: Defaults to OFF, so the box ignores CC until this is set. The manual's spelling

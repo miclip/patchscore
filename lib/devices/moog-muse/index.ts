@@ -23,9 +23,10 @@ import { MUSE_PANEL } from './panel'
  * and p.110 closes it: `MULTI MODE (OFF/ON. DEFAULT: ON)`, *"allowing Muse's two timbres to be
  * controlled independently via external MIDI control. If ON, messages at MIDI CHANNEL IN will
  * control TIMBRE A of Muse while TIMBRE B will be independently controlled via messages at MULTI
- * IN B CHANNEL."* In a rig driven over MIDI — which is every rig this generator describes — the
- * Muse plays **two parts at once, on two channels, by default.** Declaring one assignable would
- * throw that away and let the guide use half an instrument.
+ * IN B CHANNEL."* Driven over MIDI, the Muse plays **two parts at once, on two channels, by
+ * default** — and played by hand it plays two at once under `SPLIT`, one each side of a key
+ * (p.104, p.106). Declaring one assignable would throw both away and let the guide use half an
+ * instrument. Which of the two routes a reader needs is `partAddressing`'s question, below.
  *
  * **It is not eight assignables either.** There is no per-voice patch; a voice is not a part.
  *
@@ -90,7 +91,7 @@ import { MUSE_PANEL } from './panel'
  *
  * **The last row is the finding: with UNISON engaged a chord does not sound as a chord.**
  * `DYNAMIC VOICE ALLOCATION` is ruled out in both of its states, and `STACK` is not involved —
- * it was off, and every recipe here sets `MULTI MODE ON`, under which it is ignored anyway.
+ * it was off, and the box was in its default `MULTI MODE ON`, under which it is ignored anyway.
  *
  * **The authority for that last clause is p.110, not p.105** (#424). p.105 describes STACK and
  * says nothing about MULTI MODE; the NOTE that rules it out is under MULTI MODE on p.110 — *"In
@@ -1738,12 +1739,23 @@ function sharedDelay(): AuthoredParam[] {
  * control TIMBRE A of Muse while TIMBRE B will be independently controlled via messages at MULTI
  * IN B CHANNEL"* — and then gives `MIDI IN CHANNEL (OMNI, 1-16. DEFAULT: 1)` and `MULTI IN B
  * CHANNEL (OMNI, 1-16. DEFAULT: 1)`. Both default to **1**. So the mode that makes this box two
- * parts is already on, and the two channels it splits them by are the same channel until somebody
- * changes one.
+ * parts over MIDI is already on, and the two channels it splits them by are the same channel
+ * until somebody changes one. Two settings, stated once for the box: A on 1, B on 2.
  *
- * That is the whole basis of this manifest's `pool` of two (see the module note), so leaving it
- * unstated would be describing a two-part instrument and then handing the reader a rig where both
- * parts double on one channel. Two settings, stated once for the box: A on 1, B on 2.
+ * **`MULTI MODE` is not a parameter here any more (#653), and it used to be.** Every recipe set
+ * it `ON`, unconditionally, and the argument was the one above: over MIDI, that is what makes the
+ * two timbres two parts. It is — and it is also what makes them *unreachable* by hand. p.110's
+ * NOTE: *"In MULTI MODE the STACK and SPLIT buttons in VOICE CONTROL are ignored."* A reader with
+ * two parts on this box and no sequencer needs `SPLIT`, and `SPLIT` needs `MULTI MODE OFF`. So
+ * the right option depends on what plays the box, which no recipe knows, and the guide knows the
+ * parts but not that. That is the enum-on-the-allocation case `lib/core/params.ts` declined for
+ * `valueFrom`, and the answer is not a parameter at all: it is `partAddressing` on the manifest,
+ * one route per condition, printed once where the box carries two parts and not at all where it
+ * carries one — where the printed default is already right and `SPLIT` has nothing to divide.
+ *
+ * The two channels stay. Under `MULTI MODE ON` they are the routing; under `OFF` p.110 has the box
+ * *"handle incoming MIDI messages as if the local keyboard were being used"*, so a B channel set
+ * to 2 is inert rather than wrong.
  *
  * `scope: 'song'` because they are global settings rather than per-part ones — the guide should
  * say them once above the parts, not once per part.
@@ -1753,26 +1765,6 @@ function sharedDelay(): AuthoredParam[] {
  */
 function midiSetup(): AuthoredParam[] {
   return [
-    /*
-     * **`MULTI MODE` is grouped by what it governs, not by the menu it is reached through.**
-     *
-     * The one control in this file where those two answers differ. Its hint is `PROGRAMMER, MENU,
-     * MIDI` — the gesture — while what it decides is whether the box is two independently played
-     * timbres at all, which is the same subject as `TIMBRE A VOICE COUNT` and `DYNAMIC VOICE
-     * ALLOCATION` beside it in `voice()`. A reader working the VOICE CONTROL section wants all
-     * three together; nobody sets this while thinking about MIDI channels.
-     *
-     * The hint still says how to get there, so nothing is lost by boxing it here: the module says
-     * what a control belongs to and the hint says where the box hides it, and on a menu-driven
-     * setting those are allowed to disagree.
-     */
-    ...inModule('VOICE CONTROL', [
-      sw('MULTI MODE', 'ON', OFF_ON, 110, {
-        scope: 'song',
-        hint: 'midi-settings',
-        note: 'Its printed default, and what makes the two timbres separately playable',
-      }),
-    ]),
     ...inModule('PROGRAMMER', [
     sw('MIDI IN CHANNEL', '1', MIDI_CHANNELS, 110, {
       scope: 'song',
@@ -1782,7 +1774,7 @@ function midiSetup(): AuthoredParam[] {
     sw('MULTI IN B CHANNEL', '2', MIDI_CHANNELS, 110, {
       scope: 'song',
       hint: 'midi-settings',
-      note: 'TIMBRE B listens here. Both default to 1, so this must be changed or the two timbres double on one channel',
+      note: 'TIMBRE B listens here under MULTI MODE. Both default to 1, so this must differ or the two timbres double on one channel',
     }),
     // Without this every `Send MIDI CC …` note above is inert, which makes it the same shape as
     // `MIDI CLOCK OUT` defaulting to off (§7.4/#104): one unstated setting that stalls everything
@@ -2931,6 +2923,46 @@ export const device: Device = {
         'p.116 gives `SOUND ENGINE  Analog` and lists every module — oscillators, ring modulator, noise, mixer, filters, envelopes, VCA, delay — with no sample player among them, and pp.117-118 show no audio input of any kind; the 224 factory patches p.12 counts are stored panel settings rather than audio a recipe could load, so no recipe here carries `sourceAudio`',
     },
     noteDuration: { kind: 'manual', source: `${MANUAL}, p.84` },
+    /**
+     * §2.6/§8/#653. Both routes off the pages the module note already reads. p.104 has `SPLIT`
+     * *"splitting the keyboard, allowing you to control TIMBRE A and TIMBRE B from two different
+     * zones"*, p.106 has `SPLIT POINT` and the positional rule, and p.110 has `MULTI MODE`, its
+     * two channels, and the NOTE that makes the two routes exclusive.
+     */
+    partAddressing: { kind: 'manual', source: `${MANUAL}, pp.104, 106, 110` },
+  },
+
+  /**
+   * §2.6/§8/#653. **How two parts on this box are reached, one line per way of playing it.**
+   *
+   * The resolver puts two parts on the Muse in most resolves, and the voice count above is
+   * derived for it. This is the other half: the reader has to put the box in one of two modes
+   * before the second part answers, and which one depends on what plays the box — a thing the
+   * guide does not know. So both are stated, with their condition, and the reader takes theirs.
+   *
+   * **Played by hand: `MULTI MODE OFF`, then `SPLIT`.** p.110 defaults `MULTI MODE` to `ON` and
+   * its NOTE says *"In MULTI MODE the STACK and SPLIT buttons in VOICE CONTROL are ignored"*, so a
+   * reader who presses `SPLIT` without turning it off gets nothing. p.106 decides the sides —
+   * *"TIMBRE A will always be to the left of the split point and TIMBRE B to the right"* — and
+   * puts `SPLIT POINT` in the VOICE CONTROL MORE menu, where the reader chooses the key. The
+   * point is theirs: no page suggests one and this file does not either.
+   *
+   * **Played from a sequencer: `MULTI MODE ON` and the two channels.** p.110: *"messages at MIDI
+   * CHANNEL IN will control TIMBRE A of Muse while TIMBRE B will be independently controlled via
+   * messages at MULTI IN B CHANNEL."* The channels are the two `PROGRAMMER` settings every
+   * recipe carries, so the line names the controls and the values are beside it.
+   *
+   * **Not on one part.** A single part on the box under the default `ON` answers `MIDI IN
+   * CHANNEL` with all eight voices, and by hand plays as a keyboard does; there is nothing to set
+   * and `partAddressingNotice` prints nothing.
+   *
+   * Plain text, in the panel's own capitals: the same string reaches the web guide as React text.
+   */
+  partAddressing: {
+    played:
+      'MULTI MODE OFF in the PROGRAMMER MIDI page, then SPLIT in VOICE CONTROL; TIMBRE A plays left of the split point and TIMBRE B right, with SPLIT POINT set under VOICE CONTROL MORE',
+    sequenced:
+      'MULTI MODE ON, its default; TIMBRE A answers MIDI IN CHANNEL and TIMBRE B answers MULTI IN B CHANNEL',
   },
 
   /**

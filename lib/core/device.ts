@@ -1332,6 +1332,132 @@ export function middleCNotice(device: Device | undefined): MiddleCNotice | undef
 }
 
 /**
+ * §2.6/§8/#653. **How a box carrying more than one part is addressed**, and only then.
+ *
+ * The Muse expands to two assignables, and the resolver puts two parts on it in 76 of 104
+ * resolves across the shipped directions. The voice half of that was modelled at #424:
+ * `TIMBRE A VOICE COUNT` reads the allocation and prints `4`. The routing half was absent. Two
+ * parts on one keyboard, and nothing said whether one pair of hands reaches them by splitting
+ * the keyboard or a sequencer reaches them on two MIDI channels — which on that box are two
+ * mutually exclusive setups (p.110: *"In MULTI MODE the STACK and SPLIT buttons in VOICE
+ * CONTROL are ignored"*), and only one of them is playable by hand.
+ *
+ * ## An instruction, not a parameter, and the boundary `valueFrom` drew is why
+ *
+ * `MULTI MODE` and `SPLIT` are enums whose correct option depends on the allocation, which is
+ * precisely the mapping from a count onto an authored option set `PARAM_VALUE_SOURCES` declined
+ * (`lib/core/params.ts`). The decline still stands, and this is the caller it anticipated,
+ * answered the other way: the routing is a **setup step** a reader does once for the box, not a
+ * control whose value a recipe states. Widening `valueFrom` to enums would have put the mode on
+ * every recipe as a per-recipe fact about a box-wide state and needed a mapping table nothing
+ * else wants. So it is a device-level declaration, rendered once per device block beside
+ * `content`, `controlPositions` and `middleC`, and rendered **only where the box carries more
+ * than one part**. A box carrying one part says nothing new, because its printed default is
+ * already right and an instruction there is noise (§8).
+ *
+ * ## Two routes, and the guide cannot know which
+ *
+ * The guide knows the parts but not what plays them. A player at the keyboard needs the split;
+ * a sequencer needs the channels; the same allocation is right under both. So a device authors
+ * **both routes with their condition**, in its own control names, and the reader takes the line
+ * that matches what they are doing. Either may be omitted where the box has no such route — a
+ * module with no keyboard has no `played`, a box with one MIDI channel has no `sequenced` — and
+ * at least one is required, because a declaration with neither says nothing.
+ *
+ * **Plain text.** Each route is printed verbatim by two renderers that share no code path
+ * (#33), and one of them is React text where a backtick is a backtick. No markup, no trailing
+ * full stop: the renderer labels and punctuates.
+ *
+ * **Refused on a box that expands to one assignable.** Such a box never carries two parts, so
+ * the instruction could never print, and a declaration nothing can render is a sentence nobody
+ * will ever check.
+ *
+ * ## The third state is the absence of the field
+ *
+ * As at `content`, `noteDuration` and `middleC`: absence is the default, and most multi-voice
+ * boxes are expected to stay absent. A drum machine's eight voices or a tracker's eight tracks
+ * are addressed by the track the reader is standing on, and there is nothing to say. The field
+ * is for the box where two parts share one keyboard and one MIDI input and the reader has to
+ * put the box in a mode before either part answers. A reasoned non-claim lives in
+ * `capabilityEvidence` at `partAddressing`, and a citation there with no declaration is
+ * refused, as it is at `middleC`.
+ */
+export const PART_ADDRESSING_FACT = 'partAddressing'
+
+export type PartAddressing = {
+  /** How one player reaches every part from the box's own keyboard. Omitted where it has none. */
+  played?: string
+  /** How a sequencer reaches each part over MIDI. Omitted where the box offers no such route. */
+  sequenced?: string
+}
+
+/**
+ * A route is one plain sentence without its full stop. The renderer adds the label and the stop,
+ * so an authored one would print twice; markup would print literally in the web guide.
+ */
+const PartAddressingRouteSchema = z
+  .string()
+  .min(1, 'a route says how the parts are reached, or is omitted')
+  .refine((text) => !/[.!?]$/.test(text), {
+    message: 'a route ends without a full stop; the renderer punctuates it',
+  })
+  .refine((text) => !/[`*_]/.test(text), {
+    message: 'a route is plain text; the web guide prints markup literally',
+  })
+
+export const PartAddressingSchema = z
+  .strictObject({
+    played: PartAddressingRouteSchema.optional(),
+    sequenced: PartAddressingRouteSchema.optional(),
+  })
+  .refine((a) => a.played !== undefined || a.sequenced !== undefined, {
+    message: 'partAddressing names at least one route; a declaration with neither says nothing',
+  })
+
+/** How many parts this box can carry at once — every assignable it expands to (§2.2). */
+export function assignableCount(device: Pick<Device, 'voices'>): number {
+  let total = 0
+  for (const voice of device.voices) total += voice.kind === 'pool' ? voice.count : 1
+  return total
+}
+
+/**
+ * §2.6/§8/#653. **What a guide should say about reaching this box's parts, once, above them** —
+ * or nothing, which is the ordinary case and the deliberate one.
+ *
+ * Nothing for a box that declares nothing, nothing for one whose evidence is not a citation, and
+ * nothing for a box carrying one part, where the default is already right. `parts` is how many
+ * the allocation put on the box, which is the renderer's to count: the notice is a fact about
+ * the guide's allocation as much as about the device, and the device alone cannot answer it.
+ * The decision lives here and the sentences live in each renderer, the arrangement `contentNotice`,
+ * `controlPositionNotice` and `middleCNotice` already sit in (#33).
+ */
+export type PartAddressingNotice = {
+  parts: number
+  played?: string
+  sequenced?: string
+  evidence: Cite
+}
+
+export function partAddressingNotice(
+  device: Device | undefined,
+  parts: number,
+): PartAddressingNotice | undefined {
+  if (device === undefined) return undefined
+  const declared = device.partAddressing
+  if (declared === undefined) return undefined
+  if (parts < 2) return undefined
+  const evidence = evidenceFor(device, PART_ADDRESSING_FACT)
+  if (evidence === undefined || !isCite(evidence)) return undefined
+  return {
+    parts,
+    ...(declared.played === undefined ? {} : { played: declared.played }),
+    ...(declared.sequenced === undefined ? {} : { sequenced: declared.sequenced }),
+    evidence,
+  }
+}
+
+/**
  * §2.6/#592. **The factory patches a box ships, by name, as a device-level fact.**
  *
  * `Recipe.factoryPatch` (§3/#553) says *this recipe's parameters reach a sound the box also
@@ -1544,6 +1670,7 @@ export const CAPABILITY_FACTS = [
   DAW_TRANSPORT_FACT,
   CONTROL_POSITION_FACT,
   MIDDLE_C_FACT,
+  PART_ADDRESSING_FACT,
   FACTORY_PATCHES_FACT,
 ] as const
 
@@ -4129,6 +4256,12 @@ export type Device = {
    */
   middleC?: MiddleC
   /**
+   * §2.6/§8/#653. How more than one part on this box is reached, in the box's own control names
+   * and by route — see `PART_ADDRESSING_FACT`. Optional, and absent on every box whose parts are
+   * addressed by the track the reader is standing on; cited at `partAddressing` in the map below.
+   */
+  partAddressing?: PartAddressing
+  /**
    * §2.6/#592. The factory patches this box ships, by name — see `ShippedPatch`. Optional, and
    * absent on every box nobody has read a list off; the evidence for the whole list sits at
    * `factoryPatches` in the map below and is `manual` where a page prints the names or
@@ -4239,6 +4372,7 @@ export const DeviceSchema = z
     dawTransport: DawTransportSchema.optional(),
     controlPositions: ControlPositionsSchema.optional(),
     middleC: MiddleCSchema.optional(),
+    partAddressing: PartAddressingSchema.optional(),
     factoryPatches: ShippedPatchesSchema.optional(),
     patchUses: PatchUsesSchema.optional(),
     capabilityEvidence: z
@@ -4803,6 +4937,44 @@ export const DeviceSchema = z
         code: 'custom',
         message: `'${MIDDLE_C_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§4.1/#571)`,
         path: ['capabilityEvidence', MIDDLE_C_FACT],
+      })
+    }
+
+    /**
+     * §2.6/§8/#653. **How the parts are addressed is a positive claim about the box and carries
+     * a citation**, in the same two directions as `middleC`, and `false` is refused for the same
+     * reason. One more rule: a box that expands to one assignable never carries two parts, so an
+     * instruction on it could never print, and a declaration nothing can render is refused
+     * rather than left to read as a fact somebody checked.
+     */
+    const addressingEvidence = evidence[PART_ADDRESSING_FACT]
+    if (device.partAddressing !== undefined) {
+      if (addressingEvidence === undefined || !isCite(addressingEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `partAddressing is declared with no citation at '${PART_ADDRESSING_FACT}'; how a box reaches two parts is read off its manual (§2.6/#653)`,
+          path: ['capabilityEvidence', PART_ADDRESSING_FACT],
+        })
+      }
+      if (assignableCount(device) < 2) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `partAddressing is declared on a box that expands to ${String(assignableCount(device))} assignable, which never carries two parts, so the instruction could never print (§2.6/#653)`,
+          path: ['partAddressing'],
+        })
+      }
+    } else if (addressingEvidence !== undefined && isCite(addressingEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${PART_ADDRESSING_FACT}' carries a citation but no partAddressing is declared; a reading that supports no claim is 'cited-against' (§2.6/#653)`,
+        path: ['capabilityEvidence', PART_ADDRESSING_FACT],
+      })
+    }
+    if (addressingEvidence === false) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${PART_ADDRESSING_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§2.6/#653)`,
+        path: ['capabilityEvidence', PART_ADDRESSING_FACT],
       })
     }
 

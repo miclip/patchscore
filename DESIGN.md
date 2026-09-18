@@ -844,7 +844,9 @@ and does not say* (or the `unread` or `cited-against` wording); `controlPosition
 reading it made rather than a result about the document; `noteDurationText` says when how a box
 ends a note is not established here. `middleCText` (§4.1/#571) is the one that prints nothing for
 its unsettled state, on purpose: the fact is true of every note on the page rather than of a
-line, and thirty-odd blocks each confessing the same gap is not honesty a reader can act on. Two lines are not like that — a clock jack note and a
+line, and thirty-odd blocks each confessing the same gap is not honesty a reader can act on.
+`partAddressing` (§3.1/#653) prints nothing for its unsettled state for the same reason, and
+nothing for a box carrying one part besides, because there the default is already right. Two lines are not like that — a clock jack note and a
 clock-source setup path (§7.4) were bare device assertions whose only qualifier was the mark — and
 those now read the same whether a manual was read, was not read, or was read and is silent. That
 is a real loss of the honesty invariant 5 asks for, it is recorded here rather than argued away,
@@ -2347,9 +2349,9 @@ four by `ambient-dub`. A recipe authored `3` is silently wrong for the four-note
 way the missing setting was wrong for the three.
 
 ```ts
-type ParamValueSource     = 'stack-width'                 // a closed list, and meant to stay small
+type ParamValueSource     = 'stack-width' | 'device-part-share'   // a closed list, meant to stay small
 type AuthoredNumericParam = { …; valueFrom?: ParamValueSource }
-type AuthoredEnumParam    = { …  }                        // a width is a number
+type AuthoredEnumParam    = { …  }                        // a width is a number, and so is a share
 type AuthoredTextParam    = { …  }                        // an instruction is not a control
 type ResolvedParam        = { …  }                        // unchanged: the value is just the value
 ```
@@ -2387,8 +2389,77 @@ splits every other value on that box.
 
 **Not a general expression language, and not a fifth shared vocabulary** (invariant 3). No template
 names a source and nothing joins on one. Each member is a specific number the resolver already
-knows and a device may ask for by name; a second is a decision to take on its own evidence, the way
-a split-timbre voice count (#424) would be.
+knows and a device may ask for by name; the second was taken on its own evidence, exactly as this
+paragraph said it would have to be. **`device-part-share` is the box's pool capacity divided by the
+parts the search put on it** (#424): a Muse left carrying one part still printed `TIMBRE A VOICE
+COUNT 4`, so half the instrument was locked away on behalf of nobody, and the same recipe is right
+at `8` alone and at `4` sharing. It is one number for the whole device however many parts read it,
+which is what lets a `song`-scoped control carrying it hoist above the parts and print once; a
+stack width is *this part's* footprint and differs part by part, and the two are not merged.
+
+**Numeric only, and the enum case that asked was answered elsewhere** (#653). An enum whose option
+depended on the allocation would need a mapping from a count onto an authored option set, and the
+first caller to want one — the Muse's `MULTI MODE`, whose right option depends on how many parts
+the box carries *and on what plays them* — turned out not to be a control whose value a recipe
+states at all. It is a setup step, and it is `partAddressing`, below.
+
+### `partAddressing`, the setup step a box carrying two parts needs said once (#653)
+
+**The guide allocated voices for two parts on one keyboard and never said how the two are
+reached.** The Muse expands to two assignables (§2.1) and the resolver puts two parts on it in 76
+of 104 resolves across the shipped directions — `ambient-dub` on every seed. #424 derived the voice
+count for that and printed `TIMBRE A VOICE COUNT 4`; nothing printed how a reader addresses the
+second timbre. On this box there are two ways, and they are mutually exclusive: `SPLIT` divides the
+keyboard at a key (p.104, p.106, *"TIMBRE A will always be to the left of the split point and
+TIMBRE B to the right"*), and `MULTI MODE` puts the timbres on two MIDI channels (p.110), under
+which *"the STACK and SPLIT buttons in VOICE CONTROL are ignored"*. `MULTI MODE` defaults `ON`, so
+a reader who touched nothing was already in the mode where the split does nothing — and every
+recipe set it `ON` again, unconditionally, which made the hand-played route unreachable from the
+guide.
+
+**Three shapes were on the table, and the second was taken.** Widening `valueFrom` to enums was
+the general answer, and its cost is the one the paragraph above already names: a mapping table
+from a count onto an option set, on every recipe, for a fact about the whole box. Authoring both
+options on every recipe and letting the reader choose is what the guide was doing by saying
+nothing. What was built is a **device-level instruction**, because that is what the routing is: a
+thing done once for the box before any part on it is set, not a control whose value a recipe
+states. `AuthoredParam`'s own note that *a text param is a written instruction rather than a
+control* cuts the same way from the other side.
+
+```ts
+partAddressing?: {
+  played?:    string   // how one player reaches every part from the box's own keyboard
+  sequenced?: string   // how a sequencer reaches each part over MIDI
+}
+```
+
+- **Two routes, each with its condition, because the guide cannot know which.** It knows the parts
+  and not what plays them: a player at the keyboard needs the split, a sequencer needs the
+  channels, and the same allocation is right under both. So the box authors both in its own
+  control names and the reader takes the line that is theirs. Either may be omitted where the box
+  has no such route; at least one is required, since a declaration with neither says nothing.
+- **Rendered once per device block, and only where the box carries more than one part.** Both
+  renderers print a heading counting the parts and one bullet per route — `Played by hand: …` and
+  `Played from a sequencer: …` — beside `content`, `controlPositions` and `middleC`, and above the
+  hoisted settings, because that is the order it is done at the machine. A box carrying one part
+  prints nothing: its default is already right, and an instruction there is noise §8's reader has
+  no hands free for. The count is the renderer's to supply, since the device alone cannot answer
+  it.
+- **Plain text, no full stop.** The routes reach the web guide as React text, where a backtick is
+  a backtick, and the renderer adds the label and the stop; the schema refuses both.
+- **A cited capability fact at the closed path `partAddressing`**, checked in both directions as
+  `middleC` is: a declaration with no page behind it and a page with no declaration behind it both
+  fail, `false` is refused, and a box that expands to one assignable is refused because the
+  instruction on it could never print. Absence is the third state and the expected one for most
+  multi-voice boxes — a drum machine's eight voices or a tracker's eight tracks are addressed by
+  the track the reader is standing on, and there is nothing to say.
+
+**What moved on the Muse.** `MULTI MODE` is no longer a parameter on any recipe. The two MIDI
+channels stay as `song`-scoped settings: under `MULTI MODE ON` they are the routing, and under
+`OFF` p.110 has the box treat incoming MIDI as the local keyboard, so a B channel set to `2` is
+inert rather than wrong. Twenty recipes lost one enum line each; the two-part `muse` golden gained
+the block and the four one-part riff goldens gained nothing, which is the silence the field
+promises.
 
 **The guide's own heading moved to make room.** §8's realisation sentence was headed `Polyphony`,
 which is what the Tracker Mini prints on the control this fixes — one word for *how many notes the
