@@ -56,8 +56,7 @@ export const sawLeadQuestionAndAnswerLine: Riff = {
       'lean harder into the E as the bottom of the answer, and then let the next pass start ' +
       'on the D a step below it.',
     'Hold each note to the next strike so the climb and the fall are lines and not steps. ' +
-      'Let the E go two sixteenths before the bar line, so the D that opens the next pass ' +
-      'lands on silence.',
+      'Hold the E to the bar line, and let the D that opens the next pass take over from it.',
     'The last chord is A major, and its third is C sharp. Never play C natural while it is ' +
       'sounding; the E is its fifth, and the C sharp is what pulls the next pass back to D.',
     'If the sound moves on its own while a note is held, the two held bars are where it ' +
@@ -101,7 +100,7 @@ export const sawLeadQuestionAndAnswerLine: Riff = {
   figureStartsAtBar: 1,
   /**
    * Four bars, ten notes. Bars one and three strike steps 1, 7, 9 and 15 of the bar, held six,
-   * two, six and two. Bar two is one note of sixteen; bar four is one of fourteen.
+   * two, six and two. Bars two and four are one note of sixteen each.
    */
   hook: {
     id: 'saw-lead-question-and-answer-line-hook',
@@ -121,8 +120,8 @@ export const sawLeadQuestionAndAnswerLine: Riff = {
       { step: 39, degree: 1, octave: 1, len: 2 },
       { step: 41, degree: 5, octave: 0, len: 6 },
       { step: 47, degree: 3, octave: 0, len: 2 },
-      // `V`: E4, held, released two steps early.
-      { step: 49, degree: 2, octave: 0, len: 14 },
+      // `V`: E4, held for the whole bar.
+      { step: 49, degree: 2, octave: 0, len: 16 },
     ],
   },
   /**

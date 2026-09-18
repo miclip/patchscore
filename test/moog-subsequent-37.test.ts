@@ -1798,9 +1798,9 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
         expect(Math.sign((question[i] as number) - (question[i - 1] as number)), `question step ${String(i)}`).toBe(1)
         expect(Math.sign((answer[i] as number) - (answer[i - 1] as number)), `answer step ${String(i)}`).toBe(-1)
       }
-      // The two held notes are whole bars, the second let go two sixteenths early.
+      // The two held notes are whole bars, both of them.
       expect(riff.hook.notes[4]).toEqual({ step: 17, degree: 3, octave: 1, len: 16 })
-      expect(riff.hook.notes[9]).toEqual({ step: 49, degree: 2, octave: 0, len: 14 })
+      expect(riff.hook.notes[9]).toEqual({ step: 49, degree: 2, octave: 0, len: 16 })
       expect(riff.pattern?.hits.filter((h) => h.slot === 'accent').map((h) => h.step)).toEqual([17, 49])
       expect(riff.constraints?.forbiddenDegrees).toEqual([expect.objectContaining({ chord: 'V', degree: 7 })])
       expect(riffConstraintViolations(riff)).toEqual([])
