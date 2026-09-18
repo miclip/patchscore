@@ -679,7 +679,13 @@ describe('the riff library (§5A)', () => {
       expect(r.request.reArticulatesHook === undefined, r.id).toBe(held)
       expect(r.pattern !== undefined, r.id).toBe(r.request.reArticulatesHook === true)
     }
-    expect(RIFFS.filter((r) => r.arpeggiatedHold).map((r) => r.id)).toEqual(['harp-c-chord-arpeggiated-hold'])
+    // #645. Three, on the two boxes that declare an arpeggiator. The minilogue xd's pair were
+    // true before the field existed and went unsaid, because four voices never refused them.
+    expect(RIFFS.filter((r) => r.arpeggiatedHold).map((r) => r.id).sort()).toEqual([
+      'brew-time-major-seventh-hold',
+      'cloud-level-shared-top-drift',
+      'harp-c-chord-arpeggiated-hold',
+    ])
   })
 
   /**

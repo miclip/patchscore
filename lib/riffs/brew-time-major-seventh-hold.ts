@@ -28,6 +28,12 @@ export const brewTimeMajorSeventhHold: Riff = {
   reference: { kind: 'patch', name: '#brew time' },
   bpm: { min: 80, max: 96, default: 88 },
   key: 'C major',
+  /**
+   * §12.4/#645. The voicing is held and the arpeggiator sounds it one note at a time, so
+   * it costs one voice rather than four. True before this field existed; it went unsaid
+   * because this box has four voices and nothing refused it.
+   */
+  arpeggiatedHold: true,
   technique: [
     'Hold four notes and change them every two bars. The arpeggiator does the playing; your ' +
       'job is the voicing and the moment you move to the next one.',
@@ -50,7 +56,8 @@ export const brewTimeMajorSeventhHold: Riff = {
     character: 'soft',
     sustain: 'continuous',
     // §12.4. Four held notes: the widest voicing, and the most an arpeggiator here has to run.
-    polyphony: 4,
+    // §12.4/#645. One voice: the arpeggiator sounds the held voicing a note at a time.
+    polyphony: 1,
   },
   /**
    * §5A/#554. The fourth over the `I` as data.
