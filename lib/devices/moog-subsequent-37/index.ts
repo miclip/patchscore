@@ -106,8 +106,8 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  *    keep the unshifted tick marks, so nothing on the panel tells a reader which layer they are
  *    looking at. Every recipe states `KNOB SHIFT` off before it states a single envelope time.
  *  - **`ARPEGGIATOR RATE`** — `2 BPM` to `280 BPM`, replaced by clock divisions under the
- *    arpeggiator's own `SYNC` (p.15). No recipe touches it; no recipe states an arpeggiator
- *    setting at all (see below), so the trap is recorded rather than handled.
+ *    arpeggiator's own `SYNC` (p.15). Handled the way the LFO is: `arp()` states `SYNC` on and
+ *    a division off p.52, and no recipe ever prints a BPM figure for it (#647).
  *
  * ## What is left out, and why
  *
@@ -131,12 +131,14 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  * settings, so a recipe that needs one modulation route states one and leaves the other where
  * the preset had it — the same call the minilogue xd makes for the two effects it does not name.
  *
- * **No recipe states an arpeggiator or sequencer setting.** Patterns are template-owned (§4.3),
- * so no recipe carries step hits, and `features.perStep` is omitted: this box's per-step data is
- * note, velocity and ratchet recording rather than a vocabulary of per-step switches. The
- * arpeggiator itself is declared as a capability fact (`features.arpeggiator`, below), because a
- * riff holding a chord under it needs the box to say it has one; what the reader dials on it is
- * the figure's to say.
+ * **No recipe states a sequencer setting, and only the two `arp` recipes state the
+ * arpeggiator's** (#647). Patterns are template-owned (§4.3), so no recipe carries step hits, and
+ * `features.perStep` is omitted: this box's per-step data is note, velocity and ratchet recording
+ * rather than a vocabulary of per-step switches. The arpeggiator is declared as a capability fact
+ * (`features.arpeggiator`, below), because a riff holding a chord under it needs the box to say
+ * it has one; and the two recipes that riff can land on state what the panel section is set to,
+ * because a figure that says "switch the arpeggiator on and pick a pattern" over a recipe that
+ * states neither is instruction without values. `arp()` says which pattern and why.
  *
  * Also unmodelled: `FINE TUNE` (a tuning control, not a sound-design one), the master and
  * headphone `VOLUME` knobs (monitoring), the CONTROLLERS menu's per-controller modulation
@@ -473,6 +475,22 @@ const CLOCK_DIVISIONS = [
   '1/2', '1/4 DOT', '1/2 T', '1/4', '1/8 DOT', '1/4 T', '1/8',
   '1/16 DOT', '1/8 T', '1/16', '1/16 T', '1/32', '1/32 T', '1/64 T',
 ] as const
+/**
+ * p.16, the PATTERN knob, all six positions in the knob's order. Four are patterns — *"When UP is
+ * selected, held notes will play back in order of pitch from lowest to highest"*, DWN the
+ * reverse, ORDR *"in the order they were held"*, RND *"in a completely random order"* — and two
+ * select the step sequencer: REC records one and SEQ plays it back (p.17). The NRPN chart gives
+ * `ARP PATTERN` six values (p.56), so the set is the knob's and not the four a recipe is likely
+ * to pick; `SEQ` is a value the reader of a struck part needs, see `arp()`.
+ */
+const ARP_PATTERNS = ['UP', 'DWN', 'ORDR', 'RND', 'SEQ', 'REC'] as const
+/**
+ * p.15, the five LEDs over the RANGE buttons: *"-2 octaves, -1 octave, 0 octaves, +1 octave, or
+ * +2 octaves"*. The same paragraph describes a sixth and seventh state — pressing past ±2 lights
+ * `0` and `±2` together and the arpeggio climbs three octaves — which the NRPN chart counts
+ * (`ARP RANGE`, 7 values, p.56) and the panel prints no name for, so they are not listed here.
+ */
+const ARP_RANGES = ['-2', '-1', '0', '+1', '+2'] as const
 
 // ---------------------------------------------------------------------------
 // Sections, in panel order. Every recipe is these blocks in this sequence.
@@ -483,11 +501,12 @@ const CLOCK_DIVISIONS = [
  * does it — the block helper is the authority, because the block *is* the section.
  *
  * The Muse was #385's one box; this is the second, and the reason it is the second is that its
- * panel is a harder case in exactly the way that matters. The silkscreen carries **six** named
- * sections over the controls a recipe touches, and the parameter names carry **eleven** different
+ * panel is a harder case in exactly the way that matters. The silkscreen carries **seven** named
+ * sections over the controls a recipe touches, and the parameter names carry **twelve** different
  * prefixes. Those are not the same list and the difference is not sloppiness:
  *
  *     panel section          name prefixes it holds
+ *     ARPEGGIATOR            ARPEGGIATOR
  *     GLIDE                  GLIDE
  *     MOD 1                  MOD 1
  *     OSCILLATORS            OSC, OSC 1, OSC 2
@@ -495,15 +514,15 @@ const CLOCK_DIVISIONS = [
  *     FILTER                 FILTER, and CUTOFF / RESONANCE / MULTIDRIVE bare
  *     ENVELOPE GENERATORS    ENV, FILTER EG, AMP EG
  *
- * `panel.ts` draws five of those six as labelled `group` features off the Quickstart legend, and
- * the sixth off the same reading — the GLIDE section is the unlabelled group at x=96.6, with
- * ARPEGGIATOR and MOD 1 either side of it. So the module is a fact about the metal, and a name
- * prefix is a fact about how somebody wrote the name.
+ * `panel.ts` draws five of those seven as labelled `group` features off the Quickstart legend,
+ * and the other two off the same reading — ARPEGGIATOR is the unlabelled group at x=42.9 and
+ * GLIDE the one at x=96.6, with MOD 1 after them. So the module is a fact about the metal, and a
+ * name prefix is a fact about how somebody wrote the name.
  *
  * **Which is why nothing here derives a module from a name**, and this box is the demonstration
  * rather than the Muse: reading the prefix would have given `OSC 1` and `OSC 2` two boxes the
  * panel draws as one, put `CUTOFF`, `RESONANCE` and `MULTIDRIVE` in no box at all, and split the
- * envelope pair three ways. Six sections is what a reader standing at the instrument sees.
+ * envelope pair three ways. Seven sections is what a reader standing at the instrument sees.
  *
  * **Names are left exactly as authored**, as on the Muse. `paramLabel` trims a prefix only when
  * it matches the module exactly, so `MIXER · SUB 1` reads `SUB 1` inside the MIXER box while
@@ -543,6 +562,67 @@ function program(swing: number): AuthoredParam[] {
       note: '50 is straight; it swings the onboard arpeggiator and sequencer, nothing played from elsewhere',
     }),
   ]
+}
+
+type ArpSpec = {
+  pattern: (typeof ARP_PATTERNS)[number]
+  division: (typeof CLOCK_DIVISIONS)[number]
+}
+
+/**
+ * The arpeggiator section (pp.15-16), stated by the two `arp` recipes and by nothing else
+ * (#647). A recipe that told a reader to switch the arpeggiator on and pick a pattern while
+ * stating neither was the one thing a recipe exists to prevent, and this is the block that
+ * states them: eight controls, every one a switch, every one stored with the preset (p.56's
+ * NRPN chart lists all eight, `ARP RUN` to `ARP CLK DIV`).
+ *
+ * **`RATE` is a division and never a BPM figure**, for the same reason `lfoSynced` gives: with
+ * `SYNC` lit *"the RATE knob is used to select clock divisions"* (p.15) off the list p.52 prints
+ * in full, and the knob's `2 BPM` to `280 BPM` scale has left the panel. A BPM value would be a
+ * tempo, and the tempo is the direction's. `SYNC` on is not free: p.15 warns that *"the
+ * arp/sequencer will not play unless MIDI clock is received"* outside tap tempo, so the switch
+ * carries that as its note, because a silent arpeggiator is the failure a reader cannot diagnose.
+ *
+ * **One recipe meets two readers, and `PATTERN` is where they differ.** DESIGN.md §5A.2: the
+ * `arp` role is a struck part a sequencer plays, and an arpeggiated hold (`Harp C Chord`, #645)
+ * is a riff shape that lands on the same recipe. On this box the struck part's sequencer is the
+ * onboard one — `noteDuration` is `tied-steps` off p.17 — and p.17 plays it back with this same
+ * knob at `SEQ` and this same `ON` button lit, at this same division. So the pattern a hold
+ * needs (`ORDR`, so the order the keys went down is the tune) is the wrong knob position for a
+ * sequence the reader has just recorded, and no single value serves both. The recipe carries the
+ * hold's value, because that is the reader for whom a wrong pattern silently changes the music,
+ * and the param's note names `SEQ` so the other reader is told in the same line. The division
+ * is not a judgement: at `SEQ` it is the step length, the grid the guide prints is sixteenths,
+ * and `1/16` is what both readers need.
+ *
+ * `RANGE 0`, `BACK / FORTH` off, `INVERT` off and `LATCH` off are stated rather than assumed
+ * because each one lit changes a held chord's tune: `BACK / FORTH` under `ORDR` plays *"in order
+ * and then in reverse order"* (p.16), `RANGE` adds octaves, `INVERT` interleaves them, and
+ * `LATCH` keeps the last chord sounding into the next. A preset left with any of them on from
+ * the last patch plays a different figure from the one the page describes.
+ *
+ * `GATE LENGTH`, `STEP 1 RESET` and `END NOTES` live in `PRESET EDIT > ARPEGGIATOR` (p.40) and
+ * are not stated, for the reason `SWING` is the only menu setting that is: nothing here depends
+ * on them, and a menu value under a panel section's box would be inventing a location.
+ */
+function arp(spec: ArpSpec): AuthoredParam[] {
+  return inModule('ARPEGGIATOR', [
+    sw('ARPEGGIATOR · ON', 'ON', OFF_ON, 16, { note: 'Lit, or nothing below does anything' }),
+    sw('ARPEGGIATOR · SYNC', 'ON', OFF_ON, 15, {
+      note: 'On, RATE picks a division; without MIDI clock or tap tempo the arp will not play',
+    }),
+    sw('ARPEGGIATOR · RATE (division)', spec.division, CLOCK_DIVISIONS, 52, {
+      hint: 'sync-divisions',
+      note: 'At SEQ this is the step length',
+    }),
+    sw('ARPEGGIATOR · RANGE', '0', ARP_RANGES, 15, { note: 'The notes held, and no octave above or below' }),
+    sw('ARPEGGIATOR · BACK / FORTH', 'OFF', OFF_ON, 16, { note: 'Off, or the pattern turns round at each end' }),
+    sw('ARPEGGIATOR · INVERT', 'OFF', OFF_ON, 16),
+    sw('ARPEGGIATOR · PATTERN', spec.pattern, ARP_PATTERNS, 16, {
+      note: 'ORDR sounds held notes in the order pressed; SEQ plays back a recorded step sequence',
+    }),
+    sw('ARPEGGIATOR · LATCH', 'OFF', OFF_ON, 15, { note: 'Off, so releasing the keys stops it' }),
+  ])
 }
 
 type GlideSpec = {
@@ -934,7 +1014,7 @@ function lfoSynced(
       sw('MOD 1 · SYNC', 'ON', OFF_ON, 23, {
         note: 'On, so the RATE knob picks a division and no longer reads in hertz',
       }),
-      sw('MOD 1 · LFO RATE (division)', division, CLOCK_DIVISIONS, 52, { hint: 'lfo-divisions' }),
+      sw('MOD 1 · LFO RATE (division)', division, CLOCK_DIVISIONS, 52, { hint: 'sync-divisions' }),
     ]),
     ...modTail(spec),
   ]
@@ -1436,6 +1516,8 @@ const recipes: Recipe[] = [
     title: 'Short pluck, two poles, the filter envelope opening on every note',
     params: [
       ...program(50),
+      // #647. ORDR: `Harp C Chord` lands here, and the order the keys went down is its tune.
+      ...arp({ pattern: 'ORDR', division: '1/16' }),
       ...glide({ on: 'OFF', type: 'LCR', osc: 'BOTH', time: 0, gated: 'OFF', legato: 'OFF' }),
       ...osc1("8'", 'SAWTOOTH'),
       ...osc2("4'", 'SQUARE', 'OFF', 'ON'),
@@ -1457,6 +1539,8 @@ const recipes: Recipe[] = [
     title: 'One oscillator, nothing over unity, decay just long enough to ring',
     params: [
       ...program(50),
+      // #647. UP: the plainest pattern, and nothing held under this recipe asks for another.
+      ...arp({ pattern: 'UP', division: '1/16' }),
       ...glide({ on: 'OFF', type: 'LCR', osc: 'BOTH', time: 0, gated: 'OFF', legato: 'OFF' }),
       ...osc1("8'", 'TRIANGLE'),
       ...osc2("8'", 'TRIANGLE', 'OFF', 'ON'),
@@ -1638,7 +1722,7 @@ export const device: Device = {
     'save-preset': 'SAVE, name it, hold SAVE again',
     'swing-menu': 'PRESET EDIT, ARPEGGIATOR, SWING',
     'self-oscillation': 'Above 7 the filter sings by itself',
-    'lfo-divisions': 'RATE picks divisions while SYNC is lit',
+    'sync-divisions': 'RATE picks divisions while SYNC is lit',
     'ext-in-key': 'External audio needs a key held down',
   },
 
