@@ -30,17 +30,16 @@ import { pressureRepeatedNoteBuild } from './pressure-repeated-note-build'
 import { replicantXdInnerVoicePad } from './replicant-xd-inner-voice-pad'
 import { roadzBellSixthsBalladFigure } from './roadz-bell-sixths-ballad-figure'
 import { swollenPadStaggeredStack } from './swollen-pad-staggered-stack'
-import { acidWigglerWideningWiggleLine } from './acid-wiggler-widening-wiggle-line'
-import { celestialFixedStarPad } from './celestial-fixed-star-pad'
-import { droneTonicPedalUnderTheChanges } from './drone-tonic-pedal-under-the-changes'
+import { acidWigglerSlideLine } from './acid-wiggler-slide-line'
+import { celestialConvergingVoicesPad } from './celestial-converging-voices-pad'
 import { duoOrgParallelThirdsComp } from './duo-org-parallel-thirds-comp'
 import { duotronicMoogtronsPedalAndLinePad } from './duotronic-moogtrons-pedal-and-line-pad'
-import { funkOrganPushedSixteenthStabs } from './funk-organ-pushed-sixteenth-stabs'
-import { lowBassTwoStrikesRootLine } from './low-bass-two-strikes-root-line'
-import { sawLeadOctaveCut } from './saw-lead-octave-cut'
+import { funkOrganEarlySixteenthStabs } from './funk-organ-early-sixteenth-stabs'
+import { lowBassEarlyRootLine } from './low-bass-early-root-line'
+import { sawLeadQuestionAndAnswerLine } from './saw-lead-question-and-answer-line'
 import { sawteethDuoDancerCrossingStabs } from './sawteeth-duo-dancer-crossing-stabs'
-import { terrorBassClosingSemitoneLine } from './terror-bass-closing-semitone-line'
-import { triangleLeadRiseAndFallLine } from './triangle-lead-rise-and-fall-line'
+import { terrorBassFlatTwoCadenceLine } from './terror-bass-flat-two-cadence-line'
+import { triangleLeadChromaticApproachLine } from './triangle-lead-chromatic-approach-line'
 import { triplet5thsStackedFifthsLadder } from './triplet-5ths-stacked-fifths-ladder'
 import { iFeelLoveOneShapeArp } from './i-feel-love-one-shape-arp'
 import { innerCityLifeHeldSub } from './inner-city-life-held-sub'
@@ -62,8 +61,8 @@ import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-s
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
  * named one reference and filed itself under another cannot parse. Nine entries are `record`
- * references and thirty-six are `patch` references, and the kind decides where an entry
- * surfaces (#598): the nine are `/riffs`, and each of the thirty-six is a page under the box
+ * references and thirty-five are `patch` references, and the kind decides where an entry
+ * surfaces (#598): the nine are `/riffs`, and each of the thirty-five is a page under the box
  * that ships its patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
@@ -146,26 +145,31 @@ import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-s
  * (`swollen-pad-…`), and a line whose every note is a chord (`lush-m7-…`).
  * `test/korg-minilogue-xd.test.ts` holds each to the printed mode.
  *
- * ## The twelve for the Subsequent 37's presets (§5A.5, #624)
+ * ## The eleven for the Subsequent 37's presets (§5A.5, #624, #643)
  *
  * The third box with a patch list, off its own screen at firmware 1.2.0, and the first whose
- * figures are single lines because the box plays two notes. Every one of the twelve carries a
- * chord table, and on nine of them the harmony is context the line sits over rather than
- * anything the part plays: one note at a time, by construction, on the sub, the bass, the acid
- * line, the arp, both leads, one of the three stabs, one pad and the texture. The other three
- * spend the second note on purpose, and they are the three ways two voices can move —
- * `duo-org-…` parallel, `sawteeth-duo-dancer-…` contrary, `duotronic-moogtrons-…` oblique — on
- * the two roles whose recipes on that box spend it, `stab` and `pad`. What the twelve add to
- * the library is the first `sub` and the first `texture` (`low-bass-…`, `drone-…`), a second
- * through-composed struck entry (the drone, whose two onsets share no grid step across two
- * passes), and a line whose whole subject is a modal semitone (`terror-bass-…`, in phrygian).
- * `test/moog-subsequent-37.test.ts` holds each to two notes at most.
+ * figures are lines of one or two notes because the box plays two. #624 wrote twelve, one per
+ * described preset, and #643 replaced eight of them: measured across the library, the entries
+ * written from a name alone had the fewest distinct pitches, and a figure has to be worth
+ * sitting down with. `DRONE` lost its figure outright and keeps a use line, the second use of
+ * #617's subset rule, so the box now describes twelve presets and eleven carry a figure. Five
+ * spend the second note: `duo-org-…` parallel, `sawteeth-duo-dancer-…` contrary and
+ * `duotronic-moogtrons-…` oblique, the three species of two-voice motion #624 wrote and #643
+ * left alone; `funk-organ-…`, dyads on the sixteenth before every beat; and `celestial-…`, two
+ * voices closing from an octave to a third. The six single lines are `sub`, `bass-mid`,
+ * `acid`, `arp` and both leads, and each has one thing to teach: a bass that arrives an eighth
+ * early, a flat-two cadence in phrygian, a 303 line where the slides are the notes, a question
+ * answered upside down, a chromatic approach to every bar head, and the stacked fifths #624
+ * wrote. What the eleven add to the library is the first `sub` (`low-bass-…`), the first
+ * one-bar figure (`acid-wiggler-…`, sixteen steps because that is the size of an acid loop),
+ * and the first two-note counterpoint on a two-note box. `test/moog-subsequent-37.test.ts`
+ * holds each to two notes at most, and #643's seven to their tables.
  */
 export const RIFFS: readonly Riff[] = [
   threeOscBassLoveRootOctaveFigure,
   seventiesElectroPnoRhodesTurnaround,
   acidTracksLine,
-  acidWigglerWideningWiggleLine,
+  acidWigglerSlideLine,
   aegeanOrganPhrygianFigure,
   anEndingAscentPad,
   bellbounceSparseBellPattern,
@@ -173,18 +177,17 @@ export const RIFFS: readonly Riff[] = [
   blueMondayBass,
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
-  celestialFixedStarPad,
+  celestialConvergingVoicesPad,
   cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
-  droneTonicPedalUnderTheChanges,
   duoOrgParallelThirdsComp,
   duotronicMoogtronsPedalAndLinePad,
-  funkOrganPushedSixteenthStabs,
+  funkOrganEarlySixteenthStabs,
   hamamatsuTinesBalladFigure,
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
-  lowBassTwoStrikesRootLine,
+  lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
   mirroredbassInvertedAnswerLine,
@@ -196,22 +199,22 @@ export const RIFFS: readonly Riff[] = [
   pressureRepeatedNoteBuild,
   replicantXdInnerVoicePad,
   roadzBellSixthsBalladFigure,
-  sawLeadOctaveCut,
+  sawLeadQuestionAndAnswerLine,
   sawteethDuoDancerCrossingStabs,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
   stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
-  terrorBassClosingSemitoneLine,
+  terrorBassFlatTwoCadenceLine,
   thrillerSynthRiff,
-  triangleLeadRiseAndFallLine,
+  triangleLeadChromaticApproachLine,
   triplet5thsStackedFifthsLadder,
   voxHumanaFourPartVoiceLeading,
 ]
 
 export {
   acidTracksLine,
-  acidWigglerWideningWiggleLine,
+  acidWigglerSlideLine,
   aegeanOrganPhrygianFigure,
   anEndingAscentPad,
   bellbounceSparseBellPattern,
@@ -219,18 +222,17 @@ export {
   blueMondayBass,
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
-  celestialFixedStarPad,
+  celestialConvergingVoicesPad,
   cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
-  droneTonicPedalUnderTheChanges,
   duoOrgParallelThirdsComp,
   duotronicMoogtronsPedalAndLinePad,
-  funkOrganPushedSixteenthStabs,
+  funkOrganEarlySixteenthStabs,
   hamamatsuTinesBalladFigure,
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
-  lowBassTwoStrikesRootLine,
+  lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
   mirroredbassInvertedAnswerLine,
@@ -242,17 +244,17 @@ export {
   pressureRepeatedNoteBuild,
   replicantXdInnerVoicePad,
   roadzBellSixthsBalladFigure,
-  sawLeadOctaveCut,
+  sawLeadQuestionAndAnswerLine,
   sawteethDuoDancerCrossingStabs,
   seventiesElectroPnoRhodesTurnaround,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
   stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
-  terrorBassClosingSemitoneLine,
+  terrorBassFlatTwoCadenceLine,
   threeOscBassLoveRootOctaveFigure,
   thrillerSynthRiff,
-  triangleLeadRiseAndFallLine,
+  triangleLeadChromaticApproachLine,
   triplet5thsStackedFifthsLadder,
   voxHumanaFourPartVoiceLeading,
 }
@@ -262,7 +264,7 @@ export {
  * factory patch surfaces on the box that ships the patch, at `/devices/<id>/presets/<patch>`,
  * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
  * catalogue, its static routes, the search and the sitemap cannot disagree about which
- * thirty-six left. Not a second content type: the thirty-six stay in this folder, under the
+ * thirty-five left. Not a second content type: the thirty-five stay in this folder, under the
  * same schema and the same tests, and `presetSession` finds each by the patch its `reference`
  * names.
  */

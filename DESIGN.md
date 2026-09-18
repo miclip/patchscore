@@ -3272,9 +3272,12 @@ choosing between *Moog 55 Strings* and *Soft Orchestra* finds them on adjacent r
 and both renderers walk the list as written and sort nothing.
 
 **Three surfaces, the kit's shape.** `PresetSection`, headed *Explore your device* on the device
-page, folds every patch into a native `<details>`, closed — every entry, whatever is under it —
-with the name and the use on the summary line and the recipe claim and the figure link inside.
-The page at `/devices/<id>/presets` lays every entry open, and the page at
+page, folds every patch with a figure into a native `<details>`, closed, with the name and the
+use on the summary line and the figure link inside. A patch with a use and no figure
+([#643](https://github.com/miclip/patchscore/issues/643), the Subsequent 37's *DRONE*) is the
+same row with nothing to open: a plain block, the marker's cell kept blank so the names stay in
+one column, and no `<details>`, for §2.6's reason — an expander opening onto an empty body
+tells a reader they missed something. The page at `/devices/<id>/presets` lays every entry open, and the page at
 `/devices/<id>/presets/<patch>` is the figure itself (#598). `generateStaticParams` enumerates
 the boxes `presetSession` answers for — three today — and, for the figure route, the entries with a
 figure; `dynamicParams` is off on both, so every other box and every patch nobody wrote a figure

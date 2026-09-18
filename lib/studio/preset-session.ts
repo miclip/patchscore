@@ -20,7 +20,8 @@ import { presetSlug } from './catalogue'
  * adds the two joins a reader looking down that list needs and the folder does not carry:
  *
  *  - **which figure was written for it** — the riff whose `reference` is of kind `patch` and
- *    names it (§5A.5). Twelve of twelve today.
+ *    names it (§5A.5), where one was: a use may stand without a figure (#617, #643), and the
+ *    entry then carries none.
  *  - **where that figure lands on this box** — `resolveRiff` against this one device (#598),
  *    which is the one thing here that resolves, and it resolves so the page at
  *    `presetFigureHref` can render the box's settings with no rig in the reader's hands.

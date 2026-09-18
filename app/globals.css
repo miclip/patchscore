@@ -1396,6 +1396,21 @@ body {
 }
 
 /*
+ * A use with no figure behind it (#643) is the same row with nothing to open: the summary's
+ * padding, no pointer, and the marker cell kept but empty so the names stay in one column.
+ */
+.preset-entry-plain {
+  padding: 12px 10px;
+  line-height: 20px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.preset-marker-none::before {
+  content: '';
+}
+
+/*
  * Name and bank together, as one grid cell (#621). `.preset-summary` is a grid, so two siblings
  * here are two cells: the bank fell into the marker gutter and set one letter per line. The
  * `minmax(0, …)` on the column only lets a cell wrap if the cell itself may shrink, hence

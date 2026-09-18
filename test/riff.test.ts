@@ -520,15 +520,16 @@ describe('the riff library (§5A)', () => {
    * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
    * hold seventeen would hold anything. The number is content: nine records, the twelve
    * factory-patch definitions for the Muse, the twelve for the minilogue xd's programs (#618)
-   * and the twelve for the Subsequent 37's presets (#624), and an entry added or dropped moves
-   * it and has to say so here. The sixth record is `an-ending-ascent-pad` (#627), the first
-   * record-named pad; the seventh, eighth and ninth are #638's three, which close the gaps the
-   * first six shared: a major key, a tempo above 128, and a `sub` and an `arp`.
+   * and the eleven for the Subsequent 37's presets (#624, less the drone #643 reduced to a use
+   * line), and an entry added or dropped moves it and has to say so here. The sixth record is
+   * `an-ending-ascent-pad` (#627), the first record-named pad; the seventh, eighth and ninth
+   * are #638's three, which close the gaps the first six shared: a major key, a tempo above
+   * 128, and a `sub` and an `arp`.
    */
-  it('has exactly forty-five entries: nine records and thirty-six factory patches (#566, #569, #618, #624, #627, #638)', () => {
-    expect(RIFFS.length).toBe(45)
+  it('has exactly forty-four entries: nine records and thirty-five factory patches (#566, #569, #618, #624, #627, #638, #643)', () => {
+    expect(RIFFS.length).toBe(44)
     expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(9)
-    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(36)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(35)
   })
 
   it('every entry parses', () => {
@@ -623,7 +624,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is eight roles over forty-five entries, ten of them pads', () => {
+  it('is seven roles over forty-four entries, ten of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -635,7 +636,9 @@ describe('the riff library (§5A)', () => {
     // leads, three stabs and two pads. #638 added three record-named entries on the roles
     // `/riffs` was thinnest on: a stab in a major key, a sub at 170 and an arp. #641 retired
     // the Vox Humana lead for a four-part pad on the same patch: one fewer lead, one more pad,
-    // and the count unchanged.
+    // and the count unchanged. #643 replaced seven of the Subsequent 37's figures on their own
+    // roles and reduced the eighth, the one `texture`, to a use line: one fewer entry, and no
+    // `texture` in the library until somebody writes one worth playing.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
@@ -646,15 +649,14 @@ describe('the riff library (§5A)', () => {
       pad: 10,
       stab: 12,
       sub: 2,
-      texture: 1,
     })
-    expect(RIFFS).toHaveLength(45)
+    expect(RIFFS).toHaveLength(44)
     // And the ten pads are the ten held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
       'an-ending-ascent-pad',
       'brew-time-major-seventh-hold',
-      'celestial-fixed-star-pad',
+      'celestial-converging-voices-pad',
       'cloud-level-shared-top-drift',
       'duotronic-moogtrons-pedal-and-line-pad',
       'moog-55-strings-suspension-writing',
@@ -1782,7 +1784,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(45)
+      expect(RIFFS).toHaveLength(44)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }

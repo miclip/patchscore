@@ -266,58 +266,64 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
 ).map(([name, slot]) => ({ name, slot }))
 
 /**
- * §2.6/#593, #617, #624. **What twelve of the twenty are for**, and the figure written for each
- * is under `lib/riffs/` with a `patch` reference naming it. `SHIPPED_PATCHES` is the fact and
- * this is the judgement beside it, keyed by name so the two cannot drift.
+ * §2.6/#593, #617, #624, #643. **What twelve of the twenty are for**, and the figure written
+ * for eleven of them is under `lib/riffs/` with a `patch` reference naming it. `SHIPPED_PATCHES`
+ * is the fact and this is the judgement beside it, keyed by name so the two cannot drift.
  *
  * **Uncited, as every `use` in the library is**, and with less to lean on than either list
  * before it: the minilogue xd's page printed a Category, a Voice Mode and an author, the Muse's
  * names carry a lineage. Here there is a name. So a line says **what to play**, never what the
- * preset sounds like — nobody writing this has heard one — and where a line takes a name at its
- * word it does so where a reader can see it: `LOW BASS`, `DRONE` and `TRIPLET 5THS` say a lot,
- * `CELESTIAL` and `Duotronic Moogtrons` say less, and the figures say which reading they took.
+ * preset sounds like, because nobody writing this has heard one. #624 let the name carry more
+ * than that, and where a line took a name at its word the figure it described had too little
+ * in it: eight of the twelve were replaced in #643 with figures written to be worth sitting
+ * down with, and the use lines followed them. A use now describes the figure and nothing about
+ * the name.
  *
- * **Twelve of twenty** (#617): the judgement covers a subset of the fact so the fact can stay as
- * wide as the reading. `Harp C Chord` and `DUO WAVE MOD` are the alternates if any of the
- * three two-note entries disappoints; the other six carry a name and nothing else here.
+ * **Twelve of twenty, and eleven figures** (#617, #643): the judgement covers a subset of the
+ * fact so the fact can stay as wide as the reading, and `DRONE` carries a use and no figure,
+ * because one note held under four chords is a use line and was never a figure. `Harp C
+ * Chord` and `DUO WAVE MOD` are the alternates if any of the two-note entries disappoints; the
+ * other six carry a name and nothing else here.
  *
- * **Every figure is a line, because this box plays two notes** (p.9, `polyphony: 2` above).
- * The harmony on each is context the line sits over, and the three entries that spend the
- * second note — `DUO ORG`, `SAWTEETH DUO DANCER`, `Duotronic Moogtrons` — are in the twelve
- * because their names make the second note the subject. They are the three species of two-voice
- * motion, so a reader with all three has three different lessons and not one lesson three
- * times: parallel (the pair moves together), contrary (the pair cross), oblique (one holds, one
- * moves). All three sit on `stab` and `pad`, the two roles every recipe of which spends the
- * second note.
+ * **Every figure is one or two notes, because this box plays two** (p.9, `polyphony: 2`
+ * above). The harmony on each is context the line sits over, and five entries spend the second
+ * note. Three are the three species of two-voice motion, and a reader with all three has three
+ * different lessons: parallel (`DUO ORG`, the pair moves together), contrary (`SAWTEETH DUO
+ * DANCER`, the pair cross), oblique (`Duotronic Moogtrons`, one holds, one moves). The other
+ * two are #643's: `FUNK ORGAN` strikes a dyad on the sixteenth before every beat, and
+ * `CELESTIAL` closes two voices from an octave to a third. All five sit on `stab` and `pad`,
+ * the two roles every recipe of which spends the second note. The six single lines are on the
+ * mono recipes (#632), and `Triangle Lead` is on the one duo lead, with a note to spare.
  *
  * **The order is editorial, and it is the reading order.** The box was seen browsing
  * alphabetically during the reading that produced `SHIPPED_PATCHES` — no page states a browse
  * order, and this is the only claim here that rests on watching the screen rather than on a
  * name read off it. Alphabetical puts `DRONE` beside `DUO ORG` and `CELESTIAL` beside
- * `BRASH B@SS`, pairs nobody compares. This walks from the single low line up: the three low-register parts, the arp, the
- * two leads, the three struck sounds from one note to two, then the three held sounds from two
- * notes back to one. The three two-note figures are adjacent so a reader choosing between them
- * finds them on neighbouring rows, and the two organs are adjacent for the same reason. Change
- * the order here and the page follows; nothing downstream sorts it.
+ * `BRASH B@SS`, pairs nobody compares. This walks from the single low line up: the three
+ * low-register parts, the arp, the two leads, the three struck sounds, then the three held
+ * sounds, ending on the one with a use and no figure. The three two-voice stabs are adjacent so
+ * a reader choosing between them finds them on neighbouring rows, and the two organs are
+ * adjacent for the same reason. Change the order here and the page follows; nothing downstream
+ * sorts it.
  */
 const PATCH_USES: PatchUse[] = [
   // The low end: a sub, a bass, an acid line
-  { name: 'LOW BASS', use: 'Roots only, two strikes a bar, and room after each' },
-  { name: 'Terror Bass', use: 'Driving eighths with the semitone above closing in' },
-  { name: 'Acid Wiggler', use: 'Acid line whose wiggle widens a bar at a time' },
+  { name: 'LOW BASS', use: 'Four strikes a bar, and the last one is the next chord’s root, an eighth early' },
+  { name: 'Terror Bass', use: 'Three bars of bass line and a fourth on the flat two, falling back onto the beat' },
+  { name: 'Acid Wiggler', use: 'One bar of sixteenths on the root, four of them slid into' },
   // The other sixteenth line
   { name: 'TRIPLET 5THS', use: 'Fifths stacked three at a time, accented in threes across the beat' },
   // Leads
-  { name: 'SAW LEAD', use: 'One note held long, cut, and thrown up an octave' },
-  { name: 'Triangle Lead', use: 'A line that rises by step to one peak and falls the same way' },
-  // Struck sounds, from one note to two
-  { name: 'FUNK ORGAN', use: 'Single-note funk stabs on the sixteenth pushes' },
+  { name: 'SAW LEAD', use: 'A bar climbing to a held note, then the same rhythm falling' },
+  { name: 'Triangle Lead', use: 'Chord tones, and every bar head reached by a semitone from below' },
+  // Struck sounds, all of them two notes
+  { name: 'FUNK ORGAN', use: 'Two-note stabs on the sixteenth before every beat, never on one' },
   { name: 'DUO ORG', use: 'Two notes struck as one, moving in parallel thirds' },
   { name: 'SAWTEETH DUO DANCER', use: 'Two notes that cross each other every bar, in a dance rhythm' },
-  // Held sounds, from two notes back to one
+  // Held sounds
   { name: 'Duotronic Moogtrons', use: 'One note held while the other walks against it' },
-  { name: 'CELESTIAL', use: 'One high note held while four chords recolour it' },
-  { name: 'DRONE', use: 'The root held under the changes, dropped an octave at the end' },
+  { name: 'CELESTIAL', use: 'Two notes an octave apart, closing to a third over four chords' },
+  { name: 'DRONE', use: 'The root held under the changes' },
 ]
 
 /**
@@ -1612,6 +1618,6 @@ export const device: Device = {
 
   /** §2.6/#592, #617, #624. The twenty read off the unit at firmware 1.2.0; see `SHIPPED_PATCHES`. */
   factoryPatches: SHIPPED_PATCHES,
-  /** Twelve of them, each with a figure under `lib/riffs/`. The order is the page's; see `PATCH_USES`. */
+  /** Twelve of them, eleven with a figure under `lib/riffs/` (#643). The order is the page's; see `PATCH_USES`. */
   patchUses: PATCH_USES,
 }
