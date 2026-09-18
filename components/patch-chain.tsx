@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { chainPath, crossingBelow, laneBetween, r } from './patch-chain-route'
+import type { Band, Point, Rect } from './patch-chain-route'
 
 /**
  * #138. The page's own chain: `out` → Direction → Inspiration.
@@ -39,54 +41,26 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
  * first Inspiration — which happens on a click, not on a frame.
  */
 
-type Point = { x: number; y: number }
-
-/** How far left of a column's edge the run sits when both ends are in that column. */
-const LANE_INSET = 8
-
 /**
- * The vertical strip a run travels down, chosen from the layout rather than assumed.
- *
- * A fixed page margin was the first attempt and it is right for exactly one layout. Above 900px
- * `.columns` becomes two, and on a phone held sideways that is the layout you get: `out` sits in
- * the left column and the Direction in the right, so routing via the far-left margin swept both
- * runs across the whole page and through the panels between. The screenshot of it is the reason
- * this function exists.
- *
- * The rule is the same one a person stringing a rack would use — go down the nearest empty
- * channel:
- *
- *  - **Ends in different columns** — the gutter *between* them, which is empty by construction.
- *  - **Ends in the same column** — just outside that column's left edge, which is the page
- *    margin for the left column and the same gutter for the right.
- *
- * In a single column both ends share the one band and it reduces to the page margin, which is
- * what the fixed constant used to do. Measured from the panels themselves, so a change to the
- * breakpoint or the gap needs no change here.
+ * What the route needs to know about the page: the column bands a socket can be in, and every
+ * panel's box. Both are properties of the *layout* rather than of any list's scroll position, so
+ * they are measured together and cached together (see `layoutRef`).
  */
-function laneBetween(a: Point, b: Point, bands: readonly Band[]): number {
-  const bandA = bands.find((n) => a.x >= n.left && a.x <= n.right)
-  const bandB = bands.find((n) => b.x >= n.left && b.x <= n.right)
-  if (bandA !== undefined && bandB !== undefined && bandA !== bandB) {
-    const [first, second] = bandA.left < bandB.left ? [bandA, bandB] : [bandB, bandA]
-    return (first.right + second.left) / 2
-  }
-  const band = bandA ?? bandB
-  return Math.max(4, (band?.left ?? LANE_INSET) - LANE_INSET)
-}
+type Layout = { bands: Band[]; panels: Rect[] }
 
-type Band = { left: number; right: number }
-
-/** The distinct column bands, deduplicated: full-width panels and a column share one entry. */
-function columnBands(area: HTMLElement, box: DOMRect): Band[] {
+function measureLayout(area: HTMLElement, box: DOMRect): Layout {
+  const panels: Rect[] = []
+  /** The distinct column bands, deduplicated: full-width panels and a column share one entry. */
   const seen = new Map<string, Band>()
   for (const panel of area.querySelectorAll<HTMLElement>(':scope > .panel')) {
-    const r = panel.getBoundingClientRect()
-    const band = { left: r.left - box.left, right: r.right - box.left }
+    const rect = panel.getBoundingClientRect()
+    const band = { left: rect.left - box.left, right: rect.right - box.left }
+    panels.push({ ...band, top: rect.top - box.top, bottom: rect.bottom - box.top })
     seen.set(`${String(Math.round(band.left))}:${String(Math.round(band.right))}`, band)
   }
-  // Widest first, so a full-width panel never shadows the narrower column a socket is really in.
-  return [...seen.values()].sort((x, y) => x.right - x.left - (y.right - y.left))
+  // Narrowest first, so a full-width panel never shadows the column a socket is really in.
+  const bands = [...seen.values()].sort((x, y) => x.right - x.left - (y.right - y.left))
+  return { bands, panels }
 }
 
 export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement | null> }) {
@@ -103,12 +77,12 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
   const lastBox = useRef<string | undefined>(undefined)
   const lastPath = useRef(new Map<string, string>())
   /**
-   * Column bands are a property of the *layout*, not of any list's scroll position: panels do
-   * not move when rows inside one of them scroll. Measuring all seven of them on every scroll
-   * event was the bulk of the per-frame read cost, so they are cached and refreshed only when
-   * something actually reflows.
+   * Column bands and panel boxes are a property of the *layout*, not of any list's scroll
+   * position: panels do not move when rows inside one of them scroll. Measuring all seven of
+   * them on every scroll event was the bulk of the per-frame read cost, so they are cached and
+   * refreshed only when something actually reflows.
    */
-  const bandsRef = useRef<Band[] | undefined>(undefined)
+  const layoutRef = useRef<Layout | undefined>(undefined)
   /** Only which links exist — never where. Changes on a click, never on a frame. */
   const [ids, setIds] = useState<readonly string[]>([])
 
@@ -169,24 +143,17 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
 
     const out = at('out')
     const direction = at('direction')
-    if (bandsRef.current === undefined) bandsRef.current = columnBands(area, box)
-    const bands = bandsRef.current
+    if (layoutRef.current === undefined) layoutRef.current = measureLayout(area, box)
+    const { bands, panels } = layoutRef.current
 
-    const geometry = (a: Point, b: Point): string => {
-      const lane = laneBetween(a, b, bands)
-      /**
-       * Controls level with their own endpoints, so the run leaves each socket *horizontally*,
-       * travels the channel and enters the next one horizontally. Offsetting them along the span
-       * instead pulled the curve diagonally and its shoulder clipped the panel headings.
-       *
-       * **Except when the channel is on the far side of the socket's own label.** `out` carries
-       * its own label immediately to its right and the legend directly above, so both a
-       * horizontal exit and an upward one crossed text. Downward clears the card in a few pixels.
-       */
-      return lane > a.x
-        ? `M ${r(a.x)} ${r(a.y)} C ${r(a.x)} ${r(a.y + 46)}, ${r(lane)} ${r(b.y + 46)}, ${r(b.x)} ${r(b.y)}`
-        : `M ${r(a.x)} ${r(a.y)} C ${r(lane)} ${r(a.y)}, ${r(lane)} ${r(b.y)}, ${r(b.x)} ${r(b.y)}`
-    }
+    /**
+     * Where a run goes is `patch-chain-route.ts`'s decision; this only hands it the layout. The
+     * lane is the channel between or beside the columns, and the crossing is the row gap under
+     * the source socket's own panel — the one leg a cross-column route needs that a lane alone
+     * cannot give it (#640). Both are read off the panels rather than assumed.
+     */
+    const geometry = (a: Point, b: Point): string =>
+      chainPath(a, b, laneBetween(a, b, bands), crossingBelow(a, panels))
 
     const next: { id: string; d: string }[] = []
     if (out !== undefined && direction !== undefined) {
@@ -254,9 +221,9 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
      * scroll-linked, and nothing is chasing them.
      */
     const schedule = () => {
-      // A reflow is the one thing that can move the columns, so the bands are dropped here and
+      // A reflow is the one thing that can move the columns, so the layout is dropped here and
       // nowhere else. Scrolling a list cannot move a panel.
-      bandsRef.current = undefined
+      layoutRef.current = undefined
       if (frame.current !== undefined) cancelAnimationFrame(frame.current)
       frame.current = requestAnimationFrame(measure)
     }
@@ -304,9 +271,4 @@ export function PatchChain({ areaRef }: { areaRef: React.RefObject<HTMLElement |
       ))}
     </svg>
   )
-}
-
-/** Two decimals is under a tenth of a device pixel here, and keeps the path data short. */
-function r(n: number): string {
-  return (Math.round(n * 100) / 100).toString()
 }
