@@ -1909,12 +1909,19 @@ describe('thirteen presets carry a use, twelve carry a figure, each sounding wit
       expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['i', 3], ['bII', 1]])
       // Bars one to three strike 1, 2&, 3, 4&; bar four strikes 1, 2&, 3 and beat 4 itself.
       expect(onsetsOf(riff)).toEqual([...[1, 2, 3].flatMap(fourStrikes), '4.1', '4.7', '4.9', '4.13'])
+      // Nothing climbs above the C until bar four. The `E3` and `D3` that used to sit in bars
+      // one and three were spending the ending early: by the time `F3` to `E3` arrived it was
+      // the third visit to that register rather than the first, and the octave stopped reading
+      // as an event. Played back, the low version is the one that holds together.
       expect(pitchesOf(riff)).toEqual([
-        'E2', 'B2', 'E3', 'D3',
-        'E2', 'G2', 'B2', 'A2',
-        'E2', 'E3', 'D3', 'B2',
+        'E2', 'B2', 'G2', 'A2',
+        'E2', 'G2', 'B2', 'C3',
+        'E2', 'A2', 'G2', 'B2',
         'F2', 'C3', 'F3', 'E3',
       ])
+      // The claim the figure now rests on, as data: bars one to three stay at or below the C.
+      const belowTheC = pitchesOf(riff).slice(0, 12)
+      expect(belowTheC.some((n) => /^(D3|E3|F3)$/.test(n))).toBe(false)
       // The arrival is the one strike on beat four in the figure, and it is the loudest.
       const onBeatFour = riff.pattern?.hits.filter((h) => (h.step - 1) % 16 === 12)
       expect(onBeatFour?.map((h) => h.step)).toEqual([61])
