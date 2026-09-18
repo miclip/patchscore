@@ -3,6 +3,7 @@ import type { Assignable, Device, Recipe } from '@/lib/core'
 import { assign, crowdOf, moodState, realisationOf, resolveRiff } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS, blueMondayBass, showMeLoveOrganStab, thrillerSynthRiff } from '@/lib/riffs'
+import { hasArpeggiator } from '../lib/core/device'
 import { asRoleRequest, gridOf, heldRiff } from './fixtures'
 import { box, makeRecipe, withRoles } from './rigs'
 
@@ -338,9 +339,35 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
     )
     const deviceTies: string[] = []
     for (const riff of RIFFS) {
-      const resolution = resolveRiff(riff, rig)
       const template = withRoles([asRoleRequest(riff.request)])
-      const search = assign({ devices: rig, template, mood: moodState(), seed: 1 }).assignments[0]
+      /*
+       * §12.4/#645, #648. **An arpeggiated hold narrows the rig here and not in the template**,
+       * because the two sides are answering different questions otherwise.
+       *
+       * `resolveRiff` holds the riff, so it knows the hold is arpeggiated and drops every box
+       * that does not declare `features.arpeggiator`. `assign` holds a template, and a template
+       * cannot ask for an arpeggiated part — that would be a direction naming a device
+       * capability, which invariant 3 forbids, so `RoleRequest` has no field for it and should
+       * not gain one.
+       *
+       * So the comparable `assign` call is the one against the boxes the riff could actually
+       * land on. Narrowing the rig is what makes this like-for-like; carrying the flag into the
+       * request would make a template device-aware to satisfy a test.
+       *
+       * The arp-capable set is taken from the whole library rather than from the four-box rig
+       * above, because that rig holds exactly one box with an arpeggiator and it cannot serve
+       * every role and character: `cloud-level-shared-top-drift` is `pad / bright` and the
+       * Subsequent 37 authors only `pad / dark`. One candidate is not a choice, and a test
+       * that agrees because there was nothing to disagree about proves nothing.
+       *
+       * It passed before #648 by coincidence: one entry carried the flag and both sides happened
+       * to pick the same box. Three entries carry it now and the coincidence is gone.
+       */
+      const searchRig =
+        riff.arpeggiatedHold === true ? DEVICES.filter(hasArpeggiator) : rig
+      const resolution = resolveRiff(riff, searchRig)
+      const search = assign({ devices: searchRig, template, mood: moodState(), seed: 1 })
+        .assignments[0]
       expect(resolution.outcome, riff.id).toBe('played')
       expect(search, riff.id).toBeDefined()
       if (resolution.outcome !== 'played' || search === undefined) continue

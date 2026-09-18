@@ -33,6 +33,12 @@ export const cloudLevelSharedTopDrift: Riff = {
   reference: { kind: 'patch', name: 'Cloud Level' },
   bpm: { min: 120, max: 132, default: 126 },
   key: 'F# minor',
+  /**
+   * §12.4/#645. The voicing is held and the arpeggiator sounds it one note at a time, so
+   * it costs one voice rather than four. True before this field existed; it went unsaid
+   * because this box has four voices and nothing refused it.
+   */
+  arpeggiatedHold: true,
   technique: [
     'Hold four notes and change three of them every two bars. The top E never moves; the ' +
       'three under it walk the chords, and the arpeggiator keeps coming back to the one note ' +
@@ -54,7 +60,8 @@ export const cloudLevelSharedTopDrift: Riff = {
     character: 'bright',
     sustain: 'continuous',
     // §12.4. Four held notes: the widest voicing.
-    polyphony: 4,
+    // §12.4/#645. One voice: the arpeggiator sounds the held voicing a note at a time.
+    polyphony: 1,
   },
   /**
    * §5A/#554. The raised sixth as data, reaching the whole piece because the key does not have
