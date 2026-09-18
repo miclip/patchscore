@@ -1368,6 +1368,18 @@ describe('the arp recipes state the arpeggiator section, and nothing else does (
     expect(bright.note).toContain('SEQ')
   })
 
+  it('cites RANGE as all seven states p.15 describes, the two unlabelled ones named after their LEDs', () => {
+    // Five LEDs, and pressing past either end lights `0` with `-2` or `+2` for a three-octave
+    // climb (p.15). p.56 counts `ARP RANGE` as seven, so five would be an incomplete legality
+    // claim for a control whose seventh state a reader can land on with one press too many.
+    for (const recipe of arpRecipes) {
+      const range = paramNamed(recipe, 'ARPEGGIATOR \u00b7 RANGE')
+      if (range?.kind !== 'enum') throw new Error(`${recipe.id}: no RANGE`)
+      expect(range.options.values).toEqual(['-2', '-1', '0', '+1', '+2', '0 & -2', '0 & +2'])
+      expect(range.options.verified).toEqual({ kind: 'manual', source: `${MANUAL}, p.15` })
+    }
+  })
+
   it('leaves range, direction, inversion and latch where a held chord is the tune it was pressed as', () => {
     for (const recipe of arpRecipes) {
       const value = (name: string) => {

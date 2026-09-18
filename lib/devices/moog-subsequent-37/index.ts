@@ -485,12 +485,15 @@ const CLOCK_DIVISIONS = [
  */
 const ARP_PATTERNS = ['UP', 'DWN', 'ORDR', 'RND', 'SEQ', 'REC'] as const
 /**
- * p.15, the five LEDs over the RANGE buttons: *"-2 octaves, -1 octave, 0 octaves, +1 octave, or
- * +2 octaves"*. The same paragraph describes a sixth and seventh state — pressing past ±2 lights
- * `0` and `±2` together and the arpeggio climbs three octaves — which the NRPN chart counts
- * (`ARP RANGE`, 7 values, p.56) and the panel prints no name for, so they are not listed here.
+ * p.15, all seven states of the RANGE buttons, in the order the page reaches them. Five are the
+ * LEDs — *"-2 octaves, -1 octave, 0 octaves, +1 octave, or +2 octaves"* — and two are what
+ * pressing past either end gives: *"you will light up both the 0 and the -2 or +2 LEDs. In this
+ * mode the arpeggiator will play all the notes in the original octave, the 2nd octave, the 3rd
+ * octave, and then back to the 2nd octave"*. The panel prints no name for those two, so they
+ * are named here after the two LEDs the page says are lit; the NRPN chart's `ARP RANGE` count
+ * of seven (p.56) is what confirms the page has described the whole set.
  */
-const ARP_RANGES = ['-2', '-1', '0', '+1', '+2'] as const
+const ARP_RANGES = ['-2', '-1', '0', '+1', '+2', '0 & -2', '0 & +2'] as const
 
 // ---------------------------------------------------------------------------
 // Sections, in panel order. Every recipe is these blocks in this sequence.
@@ -573,8 +576,11 @@ type ArpSpec = {
  * The arpeggiator section (pp.15-16), stated by the two `arp` recipes and by nothing else
  * (#647). A recipe that told a reader to switch the arpeggiator on and pick a pattern while
  * stating neither was the one thing a recipe exists to prevent, and this is the block that
- * states them: eight controls, every one a switch, every one stored with the preset (p.56's
- * NRPN chart lists all eight, `ARP RUN` to `ARP CLK DIV`).
+ * states them: eight controls, every one a switch, every one stored with the preset — p.14,
+ * *"In PRESET mode, the sound you hear reflects the position that the panel knobs and buttons
+ * were in when the preset was saved"*, which is the whole panel and so this section. p.56's NRPN
+ * chart enumerates the eight (`ARP RUN` to `ARP CLK DIV`) with their value counts, and is cited
+ * for the counts, not for the storage.
  *
  * **`RATE` is a division and never a BPM figure**, for the same reason `lfoSynced` gives: with
  * `SYNC` lit *"the RATE knob is used to select clock divisions"* (p.15) off the list p.52 prints
@@ -615,7 +621,9 @@ function arp(spec: ArpSpec): AuthoredParam[] {
       hint: 'sync-divisions',
       note: 'At SEQ this is the step length',
     }),
-    sw('ARPEGGIATOR · RANGE', '0', ARP_RANGES, 15, { note: 'The notes held, and no octave above or below' }),
+    sw('ARPEGGIATOR · RANGE', '0', ARP_RANGES, 15, {
+      note: 'The notes held, and no octave above or below; past either end lights two LEDs and spans three',
+    }),
     sw('ARPEGGIATOR · BACK / FORTH', 'OFF', OFF_ON, 16, { note: 'Off, or the pattern turns round at each end' }),
     sw('ARPEGGIATOR · INVERT', 'OFF', OFF_ON, 16),
     sw('ARPEGGIATOR · PATTERN', spec.pattern, ARP_PATTERNS, 16, {
