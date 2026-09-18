@@ -59,9 +59,14 @@ export const acidWigglerSlideLine: Riff = {
     'Beat one: A, A, slide to C, A. Beat two: E, A, A, slide to G below. Beat three: A, slide ' +
       'to the A above, A, C. Beat four: A, A, slide to E, A. The C at the end of beat three ' +
       'is struck; it is the one note away from the root that is.',
-    'Turn the glide on and keep it short, so a slide of a third arrives inside the sixteenth. ' +
-      'Hold the A and press the next key without releasing, and the slide is what happens. ' +
-      'Release both and strike the A that follows.',
+    'Two buttons have to be lit, not one: GLIDE and LEGATO. With GLIDE on and LEGATO off, ' +
+      'every note slides and the figure is unplayable as written; with LEGATO on, a slide ' +
+      'happens only where you press the next key while still holding the last. That is what ' +
+      'puts the four slides in your fingers instead of on a wheel. Check both before you start, ' +
+      'because a preset need not arrive with them set.',
+    'Then keep the glide short, so a slide of a third arrives inside the sixteenth. Hold the A ' +
+      'and press the next key without releasing, and the slide is what happens. Release both ' +
+      'and strike the A that follows.',
     'The bar head is the loud one and the struck C is next. Play the plain A steps under them, ' +
       'and play a slid step at the same weight as the A it came from, because it was never ' +
       'struck at all.',
