@@ -1305,7 +1305,11 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
         expect(mode, entry.patch.name).toMatch(/^(POLY|ARP)$/)
         expect(peak, `${entry.patch.name} is ${String(mode)}`).toBeLessThanOrEqual(4)
       }
-      expect(riff.request.polyphony ?? 1, riff.id).toBe(peak)
+      // #645. The request is what the box sounds at once, which is the widest voicing — except
+      // on an arpeggiated hold, where the box sounds the voicing a note at a time and the two
+      // deliberately differ. Both ARP programs here are that case.
+      expect(riff.request.polyphony ?? 1, riff.id).toBe(riff.arpeggiatedHold === true ? 1 : peak)
+      if (riff.arpeggiatedHold === true) expect(mode, riff.id).toBe('ARP')
     }
     // The four single-key programs and the two arpeggiated ones, by name, so the mode table
     // above is not the only thing this rests on.

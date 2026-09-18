@@ -1,4 +1,5 @@
 import type { Device, PatchUse, Recipe, SustainClaim } from '../../core/device'
+import { ARPEGGIATOR_FACT } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { MINILOGUE_XD_PANEL } from './panel'
 
@@ -1380,9 +1381,23 @@ export const device: Device = {
     unit: 'percent, 0% to 100%, turned in with PROGRAM/VALUE while the step button is held',
   },
 
+  /**
+   * §12.4/#645. p.18's VOICE MODE table: `ARP/LATCH` — *"Uses the arpeggiator to play up to 4
+   * voices"*, with twelve arpeggiator types and a latch.
+   *
+   * It is the fact `Riff.arpeggiatedHold` rests on, and two figures here need it: `#brew time`
+   * and `Cloud Level` are both `Arp` programs whose Voice Mode is `ARP`, and both hold a
+   * four-note voicing the arpeggiator sounds one note at a time. They resolved before this
+   * existed only because this box has four voices and the conflict never surfaced — on a
+   * two-voice box the same figure is refused, which is what #645 found.
+   */
+  features: { arpeggiator: true },
+
   capabilityEvidence: {
     /** §2.6/#142. p.27 and p.31 for the per-step gesture, p.41 for `[0%...100%]`. */
     noteDuration: { kind: 'manual', source: `${MANUAL}, pp.27, 31, 41` },
+    /** §2.6/#645. p.18, the VOICE MODE table's `ARP/LATCH` row. */
+    [ARPEGGIATOR_FACT]: cite(18),
     'clock.preferredSource': {
       kind: 'unknown',
       reason:
