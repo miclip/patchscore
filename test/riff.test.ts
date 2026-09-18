@@ -17,6 +17,7 @@ import {
   spellChord,
   spellDegree,
   transposableKeys,
+  widestHold,
   type FactoryPatch,
   type HookNote,
   type Riff,
@@ -2037,12 +2038,17 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // in force. The two counts agree on every entry that strikes its chords together and
     // differ on one that does not — `swollen-pad-staggered-stack` (#618) enters its four notes
     // a beat apart and holds all four, which is four voices however it is counted at the onset.
+    //
+    // §12.4/#645. The one exception is the arpeggiated hold, and it is an exception the other
+    // way: the box sounds the held notes one at a time, so the part asks for one voice however
+    // wide the hold, and the schema refuses a `polyphony` above it (`test/arpeggiated-hold.test.ts`).
     for (const entry of RIFFS) {
       let widest = 0
       for (let step = 1; step <= entry.hook.bars * 16; step += 1) {
         widest = Math.max(widest, sounding(entry, step).length)
       }
-      expect(entry.request.polyphony ?? 1, entry.id).toBe(widest)
+      expect(widest, entry.id).toBe(widestHold(entry.hook))
+      expect(entry.request.polyphony ?? 1, entry.id).toBe(entry.arpeggiatedHold ? 1 : widest)
     }
   })
 

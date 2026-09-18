@@ -1511,6 +1511,17 @@ export function patchUseIssues(
   return issues
 }
 
+/**
+ * §2.6/§12.4/#645. The path `features.arpeggiator` is cited at. See `DeviceFeatures.arpeggiator`:
+ * it is the one capability fact a riff reads, so the declaration is refused uncited.
+ */
+export const ARPEGGIATOR_FACT = 'features.arpeggiator'
+
+/** §12.4/#645. Whether this box declares an arpeggiator — the join `Riff.arpeggiatedHold` needs. */
+export function hasArpeggiator(device: Pick<Device, 'features'>): boolean {
+  return device.features?.arpeggiator === true
+}
+
 export const CAPABILITY_FACTS = [
   'clock.canSendClock',
   'clock.canReceiveClock',
@@ -1525,6 +1536,7 @@ export const CAPABILITY_FACTS = [
   'features.sidechain.internal',
   'features.sidechain.fromExternalAudio',
   'features.lfo',
+  ARPEGGIATOR_FACT,
   'resources',
   CONTENT_FACT,
   NOTE_DURATION_FACT,
@@ -3634,12 +3646,29 @@ export type DeviceFeatures = {
   perStepUnreachable?: string[]
   sidechain?: SidechainSpec
   lfo?: LfoSpec
+  /**
+   * §2.6/§12.4/#645. **The box has an arpeggiator: hold notes, and it sounds them one at a
+   * time.** Declared `true` or omitted, cited at `ARPEGGIATOR_FACT` like every other capability
+   * fact, and `DeviceSchema` refuses the declaration without a citation.
+   *
+   * It is the one capability a riff reads. A held chord under an arpeggiator costs **one**
+   * voice, whatever its width, and `Riff.arpeggiatedHold` claims exactly that; the claim is
+   * about the box rather than about the figure, so a riff may only make it where the box says
+   * so here. Without the join any figure could exempt itself from polyphony by asserting the
+   * arpeggiator, and `patchPolyphony` would become advisory.
+   *
+   * **Only the positive case is declarable.** A box with no arpeggiator says nothing, which is
+   * what most boxes say; a manifest that read the manual and found none records that at the
+   * fact's path as `cited-against`, and the omission is what the resolver reads either way.
+   */
+  arpeggiator?: true
 }
 
 export const DeviceFeaturesSchema = z.strictObject({
   perStep: z.array(z.string().min(1)).optional(),
   perStepUnreachable: z.array(z.string().min(1)).optional(),
   sidechain: z.strictObject({ internal: z.boolean(), fromExternalAudio: z.boolean() }).optional(),
+  arpeggiator: z.literal(true).optional(),
   lfo: z
     .strictObject({
       count: z.int().min(0),
@@ -4673,6 +4702,30 @@ export const DeviceSchema = z
         code: 'custom',
         message: `'${DAW_TRANSPORT_FACT}' carries a citation but no dawTransport is declared; a reading that supports no claim is 'cited-against' (§7.4/#79)`,
         path: ['capabilityEvidence', DAW_TRANSPORT_FACT],
+      })
+    }
+
+    /**
+     * §2.6/§12.4/#645. The same two directions once more, and this one is load-bearing in a way
+     * the others are not: `features.arpeggiator` is the fact a riff's `arpeggiatedHold` rests
+     * on, and the exemption from polyphony it buys is only as good as the page behind it. A
+     * declaration with no citation would let a figure off the check on nobody's reading, and a
+     * citation with no declaration is a reading supporting no claim.
+     */
+    const arpEvidence = evidence[ARPEGGIATOR_FACT]
+    if (hasArpeggiator(device)) {
+      if (arpEvidence === undefined || !isCite(arpEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `features.arpeggiator is declared with no citation at '${ARPEGGIATOR_FACT}'; a riff holds a chord under it for one voice, so the page that says the box has one is the whole claim (§2.6/§12.4/#645)`,
+          path: ['capabilityEvidence', ARPEGGIATOR_FACT],
+        })
+      }
+    } else if (arpEvidence !== undefined && isCite(arpEvidence)) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `'${ARPEGGIATOR_FACT}' carries a citation but no features.arpeggiator is declared; a reading that supports no claim is 'cited-against' (§2.6/#645)`,
+        path: ['capabilityEvidence', ARPEGGIATOR_FACT],
       })
     }
 

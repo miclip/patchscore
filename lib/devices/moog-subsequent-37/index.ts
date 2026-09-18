@@ -1,4 +1,5 @@
 import type { Device, PatchUse, Recipe, ShippedPatch, SustainClaim } from '../../core/device'
+import { ARPEGGIATOR_FACT } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { SUBSEQUENT_37_PANEL } from './panel'
 
@@ -105,8 +106,8 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  *    keep the unshifted tick marks, so nothing on the panel tells a reader which layer they are
  *    looking at. Every recipe states `KNOB SHIFT` off before it states a single envelope time.
  *  - **`ARPEGGIATOR RATE`** — `2 BPM` to `280 BPM`, replaced by clock divisions under the
- *    arpeggiator's own `SYNC` (p.15). No recipe touches it; the arpeggiator is not used at all
- *    (see below), so the trap is recorded rather than handled.
+ *    arpeggiator's own `SYNC` (p.15). No recipe touches it; no recipe states an arpeggiator
+ *    setting at all (see below), so the trap is recorded rather than handled.
  *
  * ## What is left out, and why
  *
@@ -130,9 +131,12 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  * settings, so a recipe that needs one modulation route states one and leaves the other where
  * the preset had it — the same call the minilogue xd makes for the two effects it does not name.
  *
- * **The arpeggiator and the 64-step sequencer are absent.** Patterns are template-owned (§4.3),
+ * **No recipe states an arpeggiator or sequencer setting.** Patterns are template-owned (§4.3),
  * so no recipe carries step hits, and `features.perStep` is omitted: this box's per-step data is
- * note, velocity and ratchet recording rather than a vocabulary of per-step switches.
+ * note, velocity and ratchet recording rather than a vocabulary of per-step switches. The
+ * arpeggiator itself is declared as a capability fact (`features.arpeggiator`, below), because a
+ * riff holding a chord under it needs the box to say it has one; what the reader dials on it is
+ * the figure's to say.
  *
  * Also unmodelled: `FINE TUNE` (a tuning control, not a sound-design one), the master and
  * headphone `VOLUME` knobs (monitoring), the CONTROLLERS menu's per-controller modulation
@@ -1546,8 +1550,23 @@ export const device: Device = {
    */
   noteDuration: { kind: 'tied-steps', control: 'TIE' },
 
+  /**
+   * §2.6/§12.4/#645. **The box has an arpeggiator, and it is part of the preset.** p.40 files it
+   * under `ARPEGGIATOR (PRESET EDIT 1.1)`, one sub menu above `SEQUENCER (PRESET EDIT 1.2)`:
+   * GATE LENGTH, CLOCK DIV, SWING, STEP 1 RESET and END NOTES are preset-edit parameters, so a
+   * preset can *be* an arp patch rather than the arp being a global switched on over anything.
+   * The same page has it sounding held notes one at a time — *"if you're arpeggiating C-E-G
+   * using the UP Pattern with the BACK/FORTH button illuminated, you get C-E-G-E-C"* — which is
+   * the fact a held chord costs one voice on, and the reason this box, `polyphony: 2` with its
+   * mono recipes at `patchPolyphony: 1`, can hold four notes at all. p.15 is the panel section
+   * and p.16 the PATTERN knob (`UP`, `DWN`, `ORDR`, `RND`); p.40 is cited because the preset is
+   * where the claim has to hold.
+   */
+  features: { arpeggiator: true },
+
   capabilityEvidence: {
     noteDuration: cite(17),
+    [ARPEGGIATOR_FACT]: cite(40),
     /**
      * §2.6/#592, #617, #624. `observed`, and the schema accepts nothing else here: the manual
      * counts 256 locations (p.12) and names none, so the names in `factoryPatches` come off the

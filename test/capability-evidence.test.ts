@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ARPEGGIATOR_FACT,
   CAPABILITY_FACTS,
   FACTORY_PATCHES_FACT,
   CONTENT_FACT,
@@ -183,7 +184,12 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
                       // accepted here as it is everywhere else (#617,
                       // `test/factory-patches.test.ts`).
                       { factoryPatches: [{ name: 'Aegean Organ' }] }
-                    : {}
+                    : fact === ARPEGGIATOR_FACT
+                      ? // §2.6/§12.4/#645. The seventh: that a box has an arpeggiator is the
+                        // claim a riff's held chord costs one voice on, and the fixture's
+                        // features are kept beside it (`test/arpeggiated-hold.test.ts`).
+                        { features: { perStep: ['velocity'], arpeggiator: true } as const }
+                      : {}
       /**
        * §3.1/#324 is the one path that refuses a citation rather than requiring one: what it
        * declares is that no page maps a panel mark to a value, and no page asserts an absence.

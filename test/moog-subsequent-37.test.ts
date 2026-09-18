@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { fxSources } from '../lib/core/fx'
 import type { Device } from '../lib/core/index'
 import {
+  ARPEGGIATOR_FACT,
   CHARACTERS,
   DeviceSchema,
   FACTORY_PATCHES_FACT,
@@ -10,6 +11,7 @@ import {
   assignableKey,
   expand,
   groupedParams,
+  hasArpeggiator,
   paramLabel,
   realisationOf,
   renderGuide,
@@ -171,6 +173,15 @@ describe('Subsequent 37 manifest', () => {
     // this panel whose scale a SYNC switch replaces (p.15).
     const names = new Set(every().map((p) => p.name))
     expect(names.has('ARPEGGIATOR · RATE')).toBe(false)
+  })
+
+  it('declares its arpeggiator as a capability fact, cited where the preset holds it (§2.6/#645)', () => {
+    // p.40 files the arpeggiator under `ARPEGGIATOR (PRESET EDIT 1.1)`, which is what makes a
+    // preset able to *be* an arp patch; the same page has it sounding C-E-G one note at a time.
+    // A held chord under it costs one voice, which is how a two-note box holds four
+    // (`test/arpeggiated-hold.test.ts`).
+    expect(hasArpeggiator(device)).toBe(true)
+    expect(device.capabilityEvidence?.[ARPEGGIATOR_FACT]).toEqual({ kind: 'manual', source: `${MANUAL}, p.40` })
   })
 })
 

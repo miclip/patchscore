@@ -382,6 +382,10 @@ export const device: Device = {
     // perStepUnreachable: ['automation'],
     sidechain: { internal: true, fromExternalAudio: false },
     lfo: { count: 1, syncable: true, destinations: ['filter', 'pitch', 'amp'] },
+    // §2.6/§12.4/#645. `true` or omitted, and refused without a citation at
+    // `features.arpeggiator`: it is the one feature a riff reads, since a chord held under an
+    // arpeggiator costs one voice. A drum machine declares none.
+    // arpeggiator: true,
   },
 
   hints: {
@@ -766,6 +770,20 @@ cover a subset (#617) — §3.7 has the surface, the join, and what the page doe
 covers. `Recipe.factoryPatch` and `Riff.patchAffinities` are unchanged by it; the recipe field
 stays `observed` only, since every pairing so far came off a unit and it is widened when one comes
 off a page.
+
+**One fact is read by a riff, and it is refused uncited for that reason: `features.arpeggiator`**
+([#645](https://github.com/miclip/patchscore/issues/645)). A box declares it `true` or not at
+all, and cites it at `ARPEGGIATOR_FACT` in the two directions `content`, `noteDuration` and
+`patternEntry` already take: a declaration with no citation is refused, and a citation with no
+declaration is a reading supporting no claim, which is `cited-against`. What makes it load-bearing
+where `features.lfo` is not is `Riff.arpeggiatedHold` (§5A.2, §12.4): a riff holding a chord for
+the arpeggiator to sound one note at a time is exempt from the polyphony its hold would otherwise
+need, and the exemption rests entirely on the box saying it has one. A declaration on nobody's
+reading would let a figure off the check on nobody's reading. The Subsequent 37 cites p.40, where
+the arpeggiator is filed under `ARPEGGIATOR (PRESET EDIT 1.1)` — part of the preset, so a preset
+can *be* an arp patch — and where the same page has it sounding C-E-G one note at a time. The
+panel section (p.15) and the PATTERN knob (p.16) are the reader's pages; the preset-edit page is
+where the claim has to hold.
 
 #### The three states past `Verified`
 
@@ -4734,6 +4752,19 @@ shared vocabulary every template and device articulation reasons about to work a
 mistake, and cutting the figure to fit a four-bar repeat is the truncation
 [#604](https://github.com/miclip/patchscore/issues/604) exists to undo.
 
+**An arpeggiated hold is the fourth shape, and it is held on every role**
+([#645](https://github.com/miclip/patchscore/issues/645)). `Riff.arpeggiatedHold: true` says the
+hook's chords are held for the box's arpeggiator, which sounds them one note at a time. The
+arpeggiator is the rhythm, so there is no grid and no `reArticulatesHook` in either spelling,
+whatever the role: a struck role's question is not asked, because the hand holds and the box
+strikes. The request asks for one voice, so `polyphony` is absent or 1 and a wider one is refused
+— the width of the hold is the hook's and is stated nowhere twice — and the hook holds more than
+one note at some step, since a hold of one has nothing for an arpeggiator to run through.
+`test/arpeggiated-hold.test.ts` holds the shape and every wrong combination. It is not the `arp`
+role: that is a struck part a sequencer plays, carrying a grid like any struck part, and the
+Subsequent 37's `TRIPLET 5THS` is one. An arpeggiated hold can sit on `arp`, on `pad`, or on
+whatever role the recipe answers to, and what it costs and where it may land is §12.4's.
+
 **The grid is capped and the hook is not, and a longer hook is played with the grid repeating
 beneath it** ([#603](https://github.com/miclip/patchscore/issues/603)). `PATTERN_LENGTHS` tops
 out at 64 steps; `Hook.bars` has no ceiling, and a direction already holds a texture for sixteen
@@ -4868,6 +4899,13 @@ that can never be produced.
 
 The notes are printed on both outcomes. A rig that cannot play the figure has not stopped the
 figure from having notes, and a reader deciding what to buy is better served seeing them.
+
+`no-capable-voice` has a third cause since #645, and it is a box rather than a setting:
+`no-arpeggiator` says the rig plays the part but the figure holds its chord under an arpeggiator
+(§5A.2, §12.4) and no box here declares one. It is reported only where something plays the role
+at all — nothing to hold the chord on comes first — and `roleVoices` names the voices that could
+have, so the page can say which box would play it and what it lacks. The sentence on the page
+(`riffGap`) says the arpeggiator is what to add.
 
 ### 5A.5 Every riff names its reference, and none of them carries its notes
 
@@ -7445,6 +7483,27 @@ exactly one assignable. Candidacy asks the recipe, not the voice alone; `Score` 
 `sampledChords` key, ranked **above `recipeDistance`**, so a rig holding both routes takes the
 real voice even at the cost of a character substitution. `Assignable.polyphony` does not move —
 it is still simultaneous notes, and a sampler playing a chord sample is still monophonic.
+
+*Amended again, for the other place the two claims come apart: an arpeggiator*
+([#645](https://github.com/miclip/patchscore/issues/645)). `realisation` is about how a voice
+makes the notes it sounds at once. An arpeggiator changes how many it sounds at once at all: hold
+four keys under one and the box plays them one at a time, so a held chord costs **one** voice
+however wide it is. That is the difference between how many notes a box *plays* and how many it
+*sounds*, and nothing in the model said it — the Subsequent 37 is `polyphony: 2` with its mono
+recipes at `patchPolyphony: 1` (#632), which rightly refuses a second simultaneous note and so
+refused a four-note hold on the one box a figure was written for, when the hold is the most
+useful thing the arpeggiator does on a one-note synth. So a riff may declare `arpeggiatedHold`
+(§5A.2), its request asks for one voice, and `patchVoiceCeiling` is satisfied by any recipe that
+sounds one. **The declaration is a claim about the box and is only honoured where the box makes
+it.** `resolveRiff` admits a candidate for an arpeggiated hold only from a device declaring
+`features.arpeggiator`, cited (§2.6); a box without it is not a candidate however many voices it
+has, because four voices holding a chord *as a chord* is a different figure from the one the
+riff wrote, and the gap says `no-arpeggiator` (§5A.4). Without that join any figure could
+exempt itself from polyphony by asserting an arpeggiator, and `patchPolyphony` would be
+advisory. Where a figure is written for a patch a box ships, `presetSession` is where the two
+meet at authoring time, and it throws there as it does for any figure the box cannot play.
+`Assignable.polyphony` and `patchPolyphony` do not move for any of it: the box still sounds what
+it sounds, and the arpeggiator is the reason one voice is enough.
 
 *Built — multi-assignable stacking, and the ordering the paragraph below used to defer.* A request
 of `n` notes may be satisfied by **`n` assignables of one pool on one device**, each carrying one
