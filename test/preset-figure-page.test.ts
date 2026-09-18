@@ -28,7 +28,7 @@ import { gridOf } from './fixtures'
  * §3.7/#598. **A preset figure page**, as the markup a reader receives: one figure, on the box
  * that ships the patch, with that box's settings and no rig picker.
  *
- * What is pinned: the route exists for exactly the twelve and 404s everywhere else, including
+ * What is pinned: the route exists for exactly the thirteen and 404s everywhere else, including
  * on the twelve's old `/riffs/` ids; every page carries the figure a riff page would (the
  * technique, the rules, the chords, the notes, the grid) and the block a riff page shows with
  * the Muse alone ticked, checked fact for fact against the Markdown renderer's reading of the
@@ -134,16 +134,17 @@ for (const { entry } of FIGURED) PAGES.set(entry.slug, await markupFor('moog-mus
 const MUSE_RUNNER = PAGES.get('muse-runner') as string
 
 describe('the figure page exists exactly where a figure does, and nowhere it used to (#598)', () => {
-  it('is prerendered for the twelve, under the Muse, in the folder’s order', () => {
+  it('is prerendered for the thirteen, under the Muse, in the folder’s order', () => {
     expect(dynamicParams).toBe(false)
     const params = generateStaticParams()
-    // Three boxes carry a session since #624; the Muse's twelve are the ones this file renders.
+    // Three boxes carry a session since #624; the Muse's thirteen are the ones this file
+    // renders.
     const museParams = params.filter((p) => p.id === 'moog-muse')
     expect(museParams).toEqual(FIGURED.map(({ entry }) => ({ id: 'moog-muse', patch: entry.slug })))
-    expect(museParams).toHaveLength(12)
-    // Thirty-six since #645: the Subsequent 37's DRONE keeps a use and has no figure page
-    // (#643), and its Harp C Chord gained one.
-    expect(params).toHaveLength(36)
+    expect(museParams).toHaveLength(13)
+    // Thirty-seven since #654: the Subsequent 37's DRONE keeps a use and has no figure page
+    // (#643), its Harp C Chord gained one (#645), and the Muse's Mirror Interior gained one.
+    expect(params).toHaveLength(37)
     // Every patch-named riff has a page here, under the box that ships its patch, and only those.
     const musePatches = new Set(byId('moog-muse').factoryPatches?.map((p) => p.name))
     const ids = new Set(FIGURED.map(({ figure }) => figure.riff.id))
@@ -486,7 +487,7 @@ describe('what a preset figure page does not have', () => {
         expect(page.toLowerCase(), `${entry.patch.name}: ${phrase}`).not.toContain(phrase)
       }
       expect(page).not.toMatch(/\b224\b/)
-      expect(page).not.toMatch(/twelve of|12 of/i)
+      expect(page).not.toMatch(/twelve of|12 of|thirteen of|13 of/i)
     }
   })
 

@@ -39,6 +39,7 @@ import {
   hamamatsuTinesBalladFigure,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
+  mirrorInteriorTwoHandSplit,
   moog55StringsSuspensionWriting,
   moogProSoloGlideLead,
   museRunnerFloatingArrivalLead,
@@ -520,18 +521,18 @@ describe('the riff library (§5A)', () => {
    * An exact pin, where this used to be a range. Six entries was the library's own headcount and
    * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
    * hold seventeen would hold anything. The number is content: nine records, the twelve
-   * factory-patch definitions for the Muse, the twelve for the minilogue xd's programs (#618)
-   * and the twelve for the Subsequent 37's presets (#624, less the drone #643 reduced to a use
-   * line, plus the arpeggiated hold #645 added), and an entry added or dropped moves it and has
-   * to say so here. The sixth record is
+   * factory-patch definitions for the Muse plus the split #654 added, the twelve for the
+   * minilogue xd's programs (#618) and the twelve for the Subsequent 37's presets (#624, less
+   * the drone #643 reduced to a use line, plus the arpeggiated hold #645 added), and an entry
+   * added or dropped moves it and has to say so here. The sixth record is
    * `an-ending-ascent-pad` (#627), the first record-named pad; the seventh, eighth and ninth
    * are #638's three, which close the gaps the first six shared: a major key, a tempo above
    * 128, and a `sub` and an `arp`.
    */
-  it('has exactly forty-five entries: nine records and thirty-six factory patches (#566, #569, #618, #624, #627, #638, #643, #645)', () => {
-    expect(RIFFS.length).toBe(45)
+  it('has exactly forty-six entries: nine records and thirty-seven factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654)', () => {
+    expect(RIFFS.length).toBe(46)
     expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(9)
-    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(36)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(37)
   })
 
   it('every entry parses', () => {
@@ -626,7 +627,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is seven roles over forty-five entries, ten of them pads', () => {
+  it('is seven roles over forty-six entries, ten of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -643,19 +644,21 @@ describe('the riff library (§5A)', () => {
     // `texture` in the library until somebody writes one worth playing. #645 added a fourth
     // `arp`, the library's first arpeggiated hold: four notes held on that role for the box's
     // arpeggiator, so it is an `arp` with no grid, and the only entry on a struck role that
-    // carries neither a grid nor `reArticulatesHook`.
+    // carries neither a grid nor `reArticulatesHook`. #654 added a fifth `arp`, a split with a
+    // bass played under a held triad: `polyphony: 4`, `reArticulatesHook: false` and no grid,
+    // and no `arpeggiatedHold`, since only half of it is.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
       acid: 2,
-      arp: 4,
+      arp: 5,
       'bass-mid': 5,
       lead: 10,
       pad: 10,
       stab: 12,
       sub: 2,
     })
-    expect(RIFFS).toHaveLength(45)
+    expect(RIFFS).toHaveLength(46)
     // And the ten pads are the ten held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
@@ -1799,7 +1802,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(45)
+      expect(RIFFS).toHaveLength(46)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
@@ -1964,14 +1967,17 @@ const MUSE_PATCH_RIFFS = (() => {
 })()
 
 describe('the eleven factory-patch entries keep their rules as data (#569, #554)', () => {
-  it('covers every Muse patch entry but Muse Runner, which has its own suite', () => {
-    // Scoped to the Muse's twelve: the minilogue xd's twelve (#618) are held to their printed
-    // voice modes in `test/korg-minilogue-xd.test.ts`, and this suite is the Muse definitions.
+  it('covers every Muse patch entry but Muse Runner and the split, which have their own suites', () => {
+    // Scoped to the Muse's twelve definitions: the minilogue xd's twelve (#618) are held to
+    // their printed voice modes in `test/korg-minilogue-xd.test.ts`, and this suite is the Muse
+    // definitions. The thirteenth Muse entry (#654) was written from an issue's table, states
+    // no rule as data, and is held to that table in its own suite below.
     const covered = new Set(MUSE_ELEVEN.map((c) => c.riff.id))
     covered.add(moogProSoloGlideLead.id)
     covered.add(museRunnerFloatingArrivalLead.id)
+    covered.add(mirrorInteriorTwoHandSplit.id)
     const patches = MUSE_PATCH_RIFFS.map((r) => r.id)
-    expect(patches).toHaveLength(12)
+    expect(patches).toHaveLength(13)
     expect([...covered].sort()).toEqual([...patches].sort())
   })
 
@@ -2690,12 +2696,15 @@ const FIDELITY: readonly FidelityRow[] = [
 ]
 
 describe('the eleven resolve to the pitches the definitions asked for (#569)', () => {
-  it('covers every Muse patch entry but Muse Runner', () => {
+  it('covers every Muse patch entry but Muse Runner and the split', () => {
     // The Muse's twelve, less the one with its own suite. The minilogue xd's twelve (#618) have
     // no definitions to be faithful to — the figures were written here — and are held to their
-    // printed voice modes in `test/korg-minilogue-xd.test.ts` instead.
+    // printed voice modes in `test/korg-minilogue-xd.test.ts` instead. The split (#654) has
+    // its own table and its own suite.
     const covered = FIDELITY.map((r) => r.riff.id).sort()
-    const eleven = MUSE_PATCH_RIFFS.filter((r) => r.id !== museRunnerFloatingArrivalLead.id)
+    const eleven = MUSE_PATCH_RIFFS.filter(
+      (r) => r.id !== museRunnerFloatingArrivalLead.id && r.id !== mirrorInteriorTwoHandSplit.id,
+    )
       .map((r) => r.id)
       .sort()
     expect(eleven).toHaveLength(11)
@@ -3028,6 +3037,153 @@ describe('the Vox Humana four-part voice leading (§5A/#641)', () => {
     // Set against the other two pads on the box by name, so the three lessons stay three.
     expect(source).toContain('moog-55-strings-suspension-writing')
     expect(source).toContain('soft-orchestra-slow-changes')
+  })
+})
+
+/**
+ * §5A/#654. **The Mirror Interior two-hand split**: the Muse's thirteenth patch entry, and the
+ * one figure in the library written for a patch that loads with the keyboard split. What is
+ * pinned first is the property the figure exists to teach and that no schema can see: the two
+ * hands move in contrary motion, the bass falling `E2 C2 B1 A1` while the top of the held
+ * voicing climbs `B4 C5 D5 F#5`, and it is checked as a direction on the resolved MIDI and not
+ * only as four names. The pitches are pinned too, since the degrees were derived from them, and
+ * the `C#` under the D is the one note E minor does not own. The modelling decision is pinned
+ * as data: four held, no `arpeggiatedHold`, no grid, and the flag answered `false`, because a
+ * grid that marked the bass would re-strike the chord under it. Nobody has played the figure,
+ * and the last test holds the docstring to that.
+ */
+describe('the Mirror Interior two-hand split (§5A/#654)', () => {
+  const riff = mirrorInteriorTwoHandSplit
+  const resolved = resolveHook(riff.hook, riff.key)
+  if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+  const CHORD = 2 * STEPS_PER_BAR
+  const HEADS = [1, 33, 65, 97]
+
+  /** Every resolved note at one step, in authored order, which is bottom to top. */
+  const notesAt = (step: number) => resolved.hook.notes.filter((n) => n.step === step)
+
+  /** The bass: every note below the voicings, in step order. Thirty-two of them. */
+  const bass = resolved.hook.notes.filter((n) => n.len < CHORD).sort((a, b) => a.step - b.step)
+
+  /** The four voicings, one per chord head, each in authored order. */
+  const voicings = HEADS.map((step) => notesAt(step).filter((n) => n.len === CHORD))
+
+  it('is E minor, i VI III VII, two bars a chord, from bar 1', () => {
+    expect(riff.key).toBe('E minor')
+    expect(riff.figureStartsAtBar).toBe(1)
+    expect(riff.harmony?.cycleBars).toBe(8)
+    expect(riff.harmony?.progression.map((s) => [s.degree, s.bars])).toEqual([
+      ['i', 2],
+      ['VI', 2],
+      ['III', 2],
+      ['VII', 2],
+    ])
+    expect(HEADS.map((step) => chordAtStep(riff, step))).toEqual(['i', 'VI', 'III', 'VII'])
+    expect(riff.hook.bars).toBe(8)
+    expect(riff.hook.notes).toHaveLength(44)
+  })
+
+  it('the bass descends E2, C2, B1, A1 across the four chords, and each step down is a step down in MIDI', () => {
+    const roots = HEADS.map((step) => notesAt(step)[0])
+    expect(roots.map((n) => n?.note)).toEqual(['E2', 'C2', 'B1', 'A1'])
+    const midi = roots.map((n) => n?.midi ?? Number.NaN)
+    for (let i = 1; i < midi.length; i += 1) {
+      expect(midi[i], `chord ${String(i + 1)} does not fall`).toBeLessThan(midi[i - 1] ?? Number.NaN)
+    }
+  })
+
+  it('the top of the arpeggiated voicing climbs B4, C5, D5, F#5, and each step up is a step up in MIDI', () => {
+    const tops = voicings.map((v) => v[v.length - 1])
+    expect(tops.map((n) => n?.note)).toEqual(['B4', 'C5', 'D5', 'F#5'])
+    const midi = tops.map((n) => n?.midi ?? Number.NaN)
+    for (let i = 1; i < midi.length; i += 1) {
+      expect(midi[i], `chord ${String(i + 1)} does not rise`).toBeGreaterThan(midi[i - 1] ?? Number.NaN)
+    }
+  })
+
+  it('the voicings are the close triads the table gives, bottom to top, held for their two bars', () => {
+    expect(voicings.map((v) => v.map((n) => n.note).join(' '))).toEqual([
+      'E4 G4 B4',
+      'E4 G4 C5',
+      'G4 B4 D5',
+      'A4 D5 F#5',
+    ])
+    for (const [i, v] of voicings.entries()) {
+      expect(v, `chord ${String(i + 1)}`).toHaveLength(3)
+      const midi = v.map((n) => n.midi)
+      expect([...midi].sort((a, b) => a - b)).toEqual(midi)
+      for (const n of v) expect(n.len).toBe(CHORD)
+    }
+  })
+
+  it('the bass is root, root, third, root a bar, on 1, the and of 2, 3 and the and of 4, each held to the next', () => {
+    expect(bass).toHaveLength(32)
+    const bars = [
+      ['E2', 'E2', 'G2', 'E2'],
+      ['C2', 'C2', 'E2', 'C2'],
+      ['B1', 'B1', 'D2', 'B1'],
+      ['A1', 'A1', 'C#2', 'A1'],
+    ]
+    for (let bar = 0; bar < 8; bar += 1) {
+      const inBar = bass.slice(bar * 4, bar * 4 + 4)
+      const head = bar * STEPS_PER_BAR
+      expect(inBar.map((n) => n.step), `bar ${String(bar + 1)}`).toEqual([head + 1, head + 7, head + 9, head + 15])
+      expect(inBar.map((n) => n.len), `bar ${String(bar + 1)}`).toEqual([6, 2, 6, 2])
+      expect(inBar.map((n) => n.note), `bar ${String(bar + 1)}`).toEqual(bars[Math.floor(bar / 2)])
+    }
+    // The C# is the raised sixth of E minor, D's seventh, and the only altered note.
+    const altered = riff.hook.notes.filter((n) => n.alter !== undefined)
+    expect(altered.map((n) => [n.step, n.degree, n.alter])).toEqual([
+      [105, 6, 1],
+      [121, 6, 1],
+    ])
+  })
+
+  it('is four held on an arp with no grid, and not an arpeggiated hold, because only half of it is', () => {
+    expect(riff.request.role).toBe('arp')
+    expect(riff.hook.forRole).toBe('arp')
+    expect(riff.request.polyphony).toBe(4)
+    expect(widestHold(riff.hook)).toBe(4)
+    expect(riff.arpeggiatedHold).toBeUndefined()
+    expect(riff.request.reArticulatesHook).toBe(false)
+    expect(riff.pattern).toBeUndefined()
+    expect(riff.constraints).toBeUndefined()
+    expect(riffConstraintViolations(riff)).toEqual([])
+    expect(riff.bpm.default).toBe(108)
+  })
+
+  it('is the Mirror Interior Explore entry on the box that ships the patch, on one four-voice timbre', () => {
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')
+    if (muse === undefined) throw new Error('no moog-muse')
+    expect(muse.factoryPatches?.find((p) => p.name === 'Mirror Interior')?.slot).toBe('12.4')
+    const use = muse.patchUses?.find((u) => u.name === 'Mirror Interior')?.use ?? ''
+    expect(use).toMatch(/split/i)
+    const resolution = resolveRiff(riff, [muse])
+    if (resolution.outcome !== 'played') throw new Error(resolution.gap.reason)
+    expect(resolution.voice.device.id).toBe('moog-muse')
+    expect(resolution.voice.assignables).toHaveLength(1)
+    expect(resolution.voice.assignables[0]?.polyphony).toBe(4)
+    const session = presetSession(muse)
+    const entry = session?.entries.find((e) => e.patch.name === 'Mirror Interior')
+    expect(entry?.figure?.riff.id).toBe(riff.id)
+  })
+
+  it('says it is a split and names no device, and no docstring says it was played, vetted or tested (#637)', () => {
+    const prose = riff.technique.join('\n')
+    expect(prose).toMatch(/split/)
+    expect(prose).toMatch(/two instruments at once/)
+    expect(prose).toMatch(/opposite directions/)
+    for (const paragraph of riff.technique) {
+      expect(paragraph.includes('—'), 'an em dash in technique').toBe(false)
+      expect(paragraph).not.toMatch(/Muse|Moog\b|TIMBRE/)
+    }
+    const source = readFileSync(new URL('../lib/riffs/mirror-interior-two-hand-split.ts', import.meta.url), 'utf8')
+    expect(source).toContain('figure authored here')
+    expect(source).toContain('nobody has played it')
+    const lower = source.toLowerCase()
+    for (const claim of ['played and vetted', 'vetted', 'tested', 'operator', 'at the instrument', 'at the machine']) {
+      expect(lower.includes(claim), `claims "${claim}"`).toBe(false)
+    }
   })
 })
 

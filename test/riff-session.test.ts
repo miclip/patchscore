@@ -382,6 +382,10 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
        * on a voice each is comfortable spending, so `low-bass-early-root-line` (#624, #643) ties
        * four ways on every key `bestVoiceCandidate` and `Score` rank on, and so does
        * `inner-city-life-held-sub` (#638), the second `sub / dark` entry, for the same reason.
+       * `mirror-interior-two-hand-split` (#654) is the third and the first at a stack: `arp /
+       * clean` at four notes is a four-wide stack on the Digitakt II and on the Tracker Mini,
+       * exact on both, one pool each, at the same role index and the same crowd, so the two
+       * cost the same and only the seed separates them.
        * `assign` hands each to a different box per seed; `resolveRiff` takes the first
        * assignable key. An exact tie is
        * read off the keys that could separate the two: both exact on character, the same stack
@@ -414,7 +418,11 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
       }
     }
     // Pinned, so the exception cannot widen without saying so here.
-    expect(deviceTies).toEqual(['inner-city-life-held-sub', 'low-bass-early-root-line'])
+    expect(deviceTies).toEqual([
+      'inner-city-life-held-sub',
+      'low-bass-early-root-line',
+      'mirror-interior-two-hand-split',
+    ])
   })
 
   /**

@@ -33,7 +33,7 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    accepted by the strict schema, absent from `shippedPatchKey`, absent from `presetSlug`,
  *    and invisible to `patchUses`, so two entries differing only by address are one patch
  *    declared twice;
- *  - the Muse declares **exactly the twelve** the operator named; the minilogue xd declares its
+ *  - the Muse declares **exactly the thirteen** the operator named; the minilogue xd declares its
  *    200 off pp.61-64 (#618, asserted in `test/korg-minilogue-xd.test.ts`); the Subsequent 37
  *    declares the twenty read off its unit (#624, asserted in `test/moog-subsequent-37.test.ts`);
  *    no other box declares any.
@@ -216,16 +216,17 @@ describe('a patch may say where it sat, and the address is not an identity (§2.
 
 const muse = DEVICES.filter((d) => d.id === 'moog-muse')
 
-describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent 37 its twenty, and nothing else declares any (#592, #618, #624)', () => {
+describe('the Muse declares the thirteen, the minilogue xd its 200, the Subsequent 37 its twenty, and nothing else declares any (#592, #618, #624, #654)', () => {
   const [device] = muse
 
   /**
-   * The twelve the operator read off the unit, spelled out rather than derived from the riff
-   * library: a riff carries no device identity (invariant 3), so a future patch-named riff may
-   * belong to another box, and a test that summed the references would then demand the Muse
-   * declare a patch it does not ship.
+   * The twelve the operator read off the unit, and the thirteenth (#654) read off it later at
+   * the same firmware, spelled out rather than derived from the riff library: a riff carries no
+   * device identity (invariant 3), so a future patch-named riff may belong to another box, and
+   * a test that summed the references would then demand the Muse declare a patch it does not
+   * ship.
    */
-  it('declares exactly the twelve names the operator supplied, observed at 1.4.0', () => {
+  it('declares exactly the thirteen names the operator supplied, observed at 1.4.0', () => {
     const names = (device?.factoryPatches ?? []).map((p) => p.name).sort()
     expect(names).toEqual(
       [
@@ -235,6 +236,7 @@ describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent
         'Bellbounce',
         'Detroit Funk',
         'Hamamatsu Tines',
+        'Mirror Interior',
         'Moog 55 Strings',
         'Moog Pro Solo',
         'Muse Runner',
@@ -256,12 +258,14 @@ describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent
   })
 
   /**
-   * §2.6/#629. Each of the twelve carries where it sat, as the operator navigated to it at the
-   * same firmware 1.4.0, so the citation above covers it and the source string is unchanged.
-   * The complete mapping, exact, so a transposed digit is caught here and not on a reader's
-   * unit; `3 Osc Bass Love` at 8.6 and `Moog Pro Solo` at 9.6 were once both given as 9.6.
+   * §2.6/#629. Each of the thirteen carries where it sat, as the operator navigated to it at
+   * the same firmware 1.4.0, so the citation above covers it and the source string is
+   * unchanged. The complete mapping, exact, so a transposed digit is caught here and not on a
+   * reader's unit; `3 Osc Bass Love` at 8.6 and `Moog Pro Solo` at 9.6 were once both given as
+   * 9.6. `Mirror Interior` at 12.4 (#654) is the one address in bank 12, which p.12's order
+   * puts at ARP.
    */
-  it('carries where each of the twelve sat, in the box’s own bank.patch numbering', () => {
+  it('carries where each of the thirteen sat, in the box’s own bank.patch numbering', () => {
     const at = Object.fromEntries((device?.factoryPatches ?? []).map((p) => [p.name, p.slot]))
     expect(at).toEqual({
       'Vox Humana': '1.1',
@@ -276,10 +280,11 @@ describe('the Muse declares the twelve, the minilogue xd its 200, the Subsequent
       Bellbounce: '7.1',
       '3 Osc Bass Love': '8.6',
       'Moog Pro Solo': '9.6',
+      'Mirror Interior': '12.4',
     })
-    // Twelve distinct addresses across six banks.
-    expect(new Set(Object.values(at)).size).toBe(12)
-    expect(new Set(Object.values(at).map((a) => a?.split('.')[0])).size).toBe(6)
+    // Thirteen distinct addresses across seven banks.
+    expect(new Set(Object.values(at)).size).toBe(13)
+    expect(new Set(Object.values(at).map((a) => a?.split('.')[0])).size).toBe(7)
   })
 
   it('every patch a Muse recipe reaches is one the Muse declares it ships', () => {

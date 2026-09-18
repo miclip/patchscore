@@ -49,17 +49,17 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
     expect(presets.map((d) => d.id)).toEqual(['korg-minilogue-xd', 'moog-muse', 'moog-subsequent-37'])
     /*
      * §3.7/#598 adds one entry per patch with a figure written for it, under its box's index —
-     * the Muse's twelve, the minilogue xd's twelve and the Subsequent 37's eleven (#643: DRONE
+     * the Muse's thirteen, the minilogue xd's twelve and the Subsequent 37's eleven (#643: DRONE
      * has a use and no figure, so no page) — by the same test. Derived from `presetSession`,
-     * which is also what prerenders those pages, and the Muse's are the twelve that left
-     * `/riffs`.
+     * which is also what prerenders those pages, and twelve of the Muse's are the twelve that
+     * left `/riffs`.
      */
     const figuresOf = (d: (typeof DEVICES)[number]) =>
       (presetSession(d)?.entries ?? []).flatMap((e) =>
         e.figure === undefined ? [] : [`${SITE_ORIGIN}/devices/${d.id}/presets/${e.slug}`],
       )
     const figures = presets.flatMap(figuresOf)
-    expect(figures).toHaveLength(36)
+    expect(figures).toHaveLength(37)
     /*
      * §5A/#503 adds `/riffs` and one entry per authored figure, on the same test as everything
      * else here: there is a page at each whose canonical is itself. Derived from `lib/riffs`, so

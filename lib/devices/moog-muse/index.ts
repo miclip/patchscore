@@ -478,26 +478,35 @@ function factoryPatch(name: string) {
 }
 
 /**
- * §2.6/#592. **The twelve factory patches this box is known to ship, by name.** The other half
- * of the split above: that a patch called *Aegean Organ* exists is a fact from the unit, and the
- * seven declined pairings threw it away with the judgement. This list is the fact alone; what
- * each patch is for is `PATCH_USES` below, keyed to it (#593). The five that `factoryPatch()`
- * pairs with a recipe are here too, because the box ships them whether or not a recipe reaches
- * them.
+ * §2.6/#592. **The thirteen factory patches this box is known to ship, by name.** The other
+ * half of the split above: that a patch called *Aegean Organ* exists is a fact from the unit,
+ * and the seven declined pairings threw it away with the judgement. This list is the fact
+ * alone; what each patch is for is `PATCH_USES` below, keyed to it (#593). The five that
+ * `factoryPatch()` pairs with a recipe are here too, because the box ships them whether or not
+ * a recipe reaches them.
  *
- * Twelve and not 224: p.12 counts them and names none, and twelve is what was read off the
- * screen. No bank, because none was read; p.12's fourteen bank names are not enough to place a
- * patch in one. No description on this list, because what a patch sounds like is a claim this
- * file cannot verify from a name; that judgement has its own field. Same reading, same
- * firmware, as `FACTORY_BANK` — one unit, one list.
+ * Thirteen and not 224: p.12 counts them and names none, and thirteen is what was read off the
+ * screen, twelve in one reading (#592) and *Mirror Interior* in a later one at the same
+ * firmware (#654). No bank, because none was read; p.12's fourteen bank names are not enough
+ * to place a patch in one. No description on this list, because what a patch sounds like is a
+ * claim this file cannot verify from a name; that judgement has its own field. Same reading,
+ * same firmware, as `FACTORY_BANK` — one unit, one list.
  *
  * **Each carries where it sat** (`slot`, #629): `bank.patch` as the box navigates, read at the
  * same firmware 1.4.0 as `FACTORY_BANK`, so the citation above covers it. The operator
  * navigated to each address and found the name there, so the pairing is observed rather than
  * stitched from two readings. It is an address and not an identity: nothing keys on it, and a
  * later firmware or a reordered bank moves it without moving the patch. p.12's bank order puts
- * bank 8 at BASS with `3 Osc Bass Love` in it and bank 9 at LEAD with `Moog Pro Solo`, which is
- * corroboration and not a reading; no bank *name* came off the screen, so `bank` stays absent.
+ * bank 8 at BASS with `3 Osc Bass Love` in it, bank 9 at LEAD with `Moog Pro Solo` and bank 12
+ * at ARP with `Mirror Interior`, which is corroboration and not a reading; no bank *name* came
+ * off the screen, so `bank` stays absent.
+ *
+ * **`Mirror Interior` loads split** (#654). The unit shows it with the two timbres divided
+ * across the keyboard, the left half sustaining and the right half arpeggiated, and p.106 says
+ * which is which: *"TIMBRE A will always be to the left of the split point and TIMBRE B to the
+ * right."* So the sustaining half is TIMBRE A and the arpeggiated half is TIMBRE B. That is a
+ * fact about the patch, and the `use` line below carries it, because a reader who loads it
+ * needs to know the keyboard is divided before the left half sounds different from the right.
  */
 const SHIPPED_PATCHES: ShippedPatch[] = (
   [
@@ -507,6 +516,7 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
     ['Bellbounce', '7.1'],
     ['Detroit Funk', '5.1'],
     ['Hamamatsu Tines', '1.6'],
+    ['Mirror Interior', '12.4'],
     ['Moog 55 Strings', '2.1'],
     ['Moog Pro Solo', '9.6'],
     ['Muse Runner', '1.2'],
@@ -517,7 +527,7 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
 ).map(([name, slot]) => ({ name, slot }))
 
 /**
- * §2.6/#593. **What each of the twelve is for**, in the operator's words, off the same unit.
+ * §2.6/#593. **What each of the thirteen is for**, in the operator's words, off the same unit.
  * `SHIPPED_PATCHES` is the fact and this is the judgement beside it, keyed by name so the two
  * cannot drift: `DeviceSchema` refuses a line here for a patch the list above does not carry,
  * and a patch above with no line here.
@@ -529,7 +539,9 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
  * the two stabs, then the two string ensembles. Within a group the nearest pair sits together —
  * the two Moog-lineage leads before the two Polymoog-era ones, the two electric pianos before
  * the bell — so a reader choosing between *Moog 55 Strings* and *Soft Orchestra* finds them on
- * adjacent rows. Change the order here and the page follows; nothing downstream sorts it.
+ * adjacent rows. *Mirror Interior* closes the list on its own, after the held chord, because it
+ * is two parts at once and belongs in none of the groups above (#654). Change the order here
+ * and the page follows; nothing downstream sorts it.
  */
 const PATCH_USES: PatchUse[] = [
   // Bass
@@ -549,6 +561,11 @@ const PATCH_USES: PatchUse[] = [
   // String ensembles
   { name: 'Moog 55 Strings', use: 'Large modular string ensemble, orchestral pacing' },
   { name: 'Soft Orchestra', use: 'Divide-down string ensemble' },
+  // Split
+  {
+    name: 'Mirror Interior',
+    use: 'Keyboard split: a sustaining sound on the left of the split point, an arpeggiated one on the right',
+  },
 ]
 
 /**
