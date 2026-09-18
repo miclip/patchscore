@@ -1372,10 +1372,11 @@ describe('the arp recipes state the arpeggiator section, and nothing else does (
     // Five LEDs, and pressing past either end lights `0` with `-2` or `+2` for a three-octave
     // climb (p.15). p.56 counts `ARP RANGE` as seven, so five would be an incomplete legality
     // claim for a control whose seventh state a reader can land on with one press too many.
+    // The set is in the order the buttons walk it: the combined states sit past each end.
     for (const recipe of arpRecipes) {
       const range = paramNamed(recipe, 'ARPEGGIATOR \u00b7 RANGE')
       if (range?.kind !== 'enum') throw new Error(`${recipe.id}: no RANGE`)
-      expect(range.options.values).toEqual(['-2', '-1', '0', '+1', '+2', '0 & -2', '0 & +2'])
+      expect(range.options.values).toEqual(['0 & -2', '-2', '-1', '0', '+1', '+2', '0 & +2'])
       expect(range.options.verified).toEqual({ kind: 'manual', source: `${MANUAL}, p.15` })
     }
   })

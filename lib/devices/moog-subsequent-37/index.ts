@@ -485,15 +485,17 @@ const CLOCK_DIVISIONS = [
  */
 const ARP_PATTERNS = ['UP', 'DWN', 'ORDR', 'RND', 'SEQ', 'REC'] as const
 /**
- * p.15, all seven states of the RANGE buttons, in the order the page reaches them. Five are the
- * LEDs — *"-2 octaves, -1 octave, 0 octaves, +1 octave, or +2 octaves"* — and two are what
- * pressing past either end gives: *"you will light up both the 0 and the -2 or +2 LEDs. In this
- * mode the arpeggiator will play all the notes in the original octave, the 2nd octave, the 3rd
- * octave, and then back to the 2nd octave"*. The panel prints no name for those two, so they
- * are named here after the two LEDs the page says are lit; the NRPN chart's `ARP RANGE` count
- * of seven (p.56) is what confirms the page has described the whole set.
+ * p.15, all seven states of the RANGE buttons, in the order the two buttons walk them. Five are
+ * the LEDs — *"-2 octaves, -1 octave, 0 octaves, +1 octave, or +2 octaves"* — and one more sits
+ * past each end: *"If you press either RANGE button more than two times you will light up both
+ * the 0 and the -2 or +2 LEDs. In this mode the arpeggiator will play all the notes in the
+ * original octave, the 2nd octave, the 3rd octave, and then back to the 2nd octave"*. So the
+ * combined negative state is one press past `-2` and the combined positive one press past
+ * `+2`, which is where each sits below. The panel prints no name for those two, so they are
+ * named here after the two LEDs the page says are lit; the NRPN chart's `ARP RANGE` count of
+ * seven (p.56) is what confirms the page has described the whole set.
  */
-const ARP_RANGES = ['-2', '-1', '0', '+1', '+2', '0 & -2', '0 & +2'] as const
+const ARP_RANGES = ['0 & -2', '-2', '-1', '0', '+1', '+2', '0 & +2'] as const
 
 // ---------------------------------------------------------------------------
 // Sections, in panel order. Every recipe is these blocks in this sequence.
