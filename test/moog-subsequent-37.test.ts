@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { fxSources } from '../lib/core/fx'
 import type { Device } from '../lib/core/index'
@@ -14,6 +15,8 @@ import {
   renderGuide,
   requiredVoicePolyphony,
   resolve,
+  resolveHook,
+  riffConstraintViolations,
   type Assignable,
   type AuthoredParam,
   type HookNote,
@@ -1444,7 +1447,7 @@ describe('the factory presets, off the unit at firmware 1.2.0 (§2.6/#617, #624)
  * never sound two notes at once; the three whose names make the second note the subject sound
  * exactly two, and only on the roles whose recipes here spend the second note.
  */
-describe('twelve presets carry a use and a figure, each playable within two notes (#624)', () => {
+describe('twelve presets carry a use, eleven carry a figure, each playable within two notes (#624, #643)', () => {
   const uses = device.patchUses ?? []
   const session = presetSession(device)
   const entries = session?.entries ?? []
@@ -1453,6 +1456,8 @@ describe('twelve presets carry a use and a figure, each playable within two note
     if (riff === undefined) throw new Error(`no figure for ${name}`)
     return riff
   }
+  /** The eleven with a figure, in the folder's order. */
+  const figured = entries.filter((e) => e.figure !== undefined)
 
   /** The notes in force at one step of a hook. */
   function sounding(riff: Riff, step: number): HookNote[] {
@@ -1468,6 +1473,25 @@ describe('twelve presets carry a use and a figure, each playable within two note
   }
   /** A note's height in scale steps from the hook's origin, so contour can be compared. */
   const height = (n: HookNote): number => n.degree + 7 * n.octave
+  /**
+   * The resolved pitches of a hook, one entry per onset step in step order, a dyad joined
+   * bottom to top with `+`. What #643's tables are checked against.
+   */
+  function pitchesOf(riff: Riff): string[] {
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const byStep = new Map<number, { note: string; midi: number }[]>()
+    for (const n of resolved.hook.notes) byStep.set(n.step, [...(byStep.get(n.step) ?? []), n])
+    return [...byStep.entries()]
+      .sort((a, b) => a[0] - b[0])
+      .map(([, notes]) => [...notes].sort((a, b) => a.midi - b.midi).map((n) => n.note).join('+'))
+  }
+  /** The onset steps of a hook, in order, as `bar.step` strings a table can be read against. */
+  function onsetsOf(riff: Riff): string[] {
+    return [...new Set(riff.hook.notes.map((n) => n.step))]
+      .sort((a, b) => a - b)
+      .map((step) => `${String(Math.floor((step - 1) / 16) + 1)}.${String(((step - 1) % 16) + 1)}`)
+  }
 
   it('describes exactly twelve, in the editorial order, keyed to the shipped name', () => {
     expect(uses.map((u) => u.name)).toEqual([
@@ -1513,9 +1537,16 @@ describe('twelve presets carry a use and a figure, each playable within two note
     }
   })
 
-  it('joins every use to exactly one figure, resolved played on this box alone', () => {
-    for (const entry of entries) {
-      expect(entry.figure, entry.patch.name).toBeDefined()
+  it('joins eleven uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643)', () => {
+    // #643. `DRONE` keeps a use and loses its figure: one note held under four chords is a use
+    // line, and the second use of #617's subset rule. The entry is still in the session, with
+    // no `figure`, so the panel and the presets page list it without a link.
+    const drone = entries.find((e) => e.patch.name === 'DRONE')
+    expect(drone).toBeDefined()
+    expect(drone?.figure).toBeUndefined()
+    expect(drone?.use).toBe('The root held under the changes')
+    expect(figured.map((e) => e.patch.name)).toEqual(uses.map((u) => u.name).filter((n) => n !== 'DRONE'))
+    for (const entry of figured) {
       expect(entry.figure?.riff.reference, entry.patch.name).toEqual({ kind: 'patch', name: entry.patch.name })
       expect(entry.figure?.resolution.outcome, entry.patch.name).toBe('played')
       expect(entry.figure?.voice.device.id, entry.patch.name).toBe('moog-subsequent-37')
@@ -1523,8 +1554,9 @@ describe('twelve presets carry a use and a figure, each playable within two note
     }
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
     const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
-    expect(naming).toHaveLength(12)
-    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(12)
+    expect(naming).toHaveLength(11)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(11)
+    expect(naming.some((r) => r.reference.name === 'DRONE')).toBe(false)
   })
 
   it('substitutes on exactly one, where the honest character is one this box does not author on the role', () => {
@@ -1541,43 +1573,58 @@ describe('twelve presets carry a use and a figure, each playable within two note
     )
   })
 
-  it('never needs a third note, and spends the second on exactly the three DUO presets', () => {
+  it('never needs a third note, and spends the second on exactly the five stab and pad figures (#643)', () => {
     const two: string[] = []
-    for (const entry of entries) {
+    for (const entry of figured) {
       const riff = figureOf(entry.patch.name)
       const peak = peakOf(riff)
       expect(peak, entry.patch.name).toBeLessThanOrEqual(2)
       expect(riff.request.polyphony ?? 1, riff.id).toBe(peak)
       if (peak === 2) two.push(entry.patch.name)
     }
-    expect(two).toEqual(['DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons'])
+    expect(two).toEqual(['FUNK ORGAN', 'DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons', 'CELESTIAL'])
   })
 
-  it('lands each two-note figure on a recipe that spends the second note', () => {
+  it('lands each two-note figure on a recipe that spends the second note, and each mono role on a mono recipe (#632, #643)', () => {
     // DUO MODE alone never means two notes on this box (p.26): the pair `DUO MODE` on with
     // `KB CTRL` at HI or LO does. Read off the resolved settings of the recipe each figure
     // reached, so the claim rests on what the page prints and not on the role alone. The
     // converse is not a rule: a one-note figure on a two-note recipe is a figure with a note
-    // to spare. FUNK ORGAN and CELESTIAL are that because every stab and pad recipe here spends
-    // both notes, and Triangle Lead is that because the clean lead it asks for is the duo one
+    // to spare, and Triangle Lead is that because the clean lead it asks for is the duo one
     // (#632); p.26 has one key held sounding on both oscillators, so the line plays as written.
+    // Every other single line is on a `patchPolyphony: 1` recipe, which is what refuses a
+    // second note (#632), and the two-note figures are all on recipes that omit it.
     const spare: string[] = []
-    for (const entry of entries) {
+    for (const entry of figured) {
       const params = entry.figure?.voice.params ?? []
       const duo = params.find((p) => p.name === 'OSC · DUO MODE')?.value
       const kb = params.find((p) => p.name === 'OSC · KB CTRL')?.value
       const twoNotes = duo === 'ON' && kb !== 'OFF'
-      const peak = peakOf(figureOf(entry.patch.name))
-      if (peak === 2) expect(twoNotes, `${entry.patch.name} on ${entry.figure?.voice.recipe.id ?? '?'}`).toBe(true)
-      else if (twoNotes) spare.push(entry.patch.name)
+      const riff = figureOf(entry.patch.name)
+      const peak = peakOf(riff)
+      const recipe = entry.figure?.voice.recipe
+      if (peak === 2) {
+        expect(twoNotes, `${entry.patch.name} on ${recipe?.id ?? '?'}`).toBe(true)
+        expect(recipe?.patchPolyphony, entry.patch.name).toBeUndefined()
+      } else if (twoNotes) {
+        spare.push(entry.patch.name)
+        expect(recipe?.patchPolyphony, entry.patch.name).toBeUndefined()
+      } else {
+        expect(recipe?.patchPolyphony, entry.patch.name).toBe(1)
+      }
     }
-    expect(spare).toEqual(['Triangle Lead', 'FUNK ORGAN', 'CELESTIAL'])
-    // And the three two-note figures are on the two roles that spend the second note on every recipe.
-    const roles = new Set(['DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons'].map((n) => figureOf(n).request.role))
+    expect(spare).toEqual(['Triangle Lead'])
+    // The five two-note figures are on the two roles that spend the second note on every recipe.
+    const roles = new Set(
+      ['FUNK ORGAN', 'DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons', 'CELESTIAL'].map((n) => figureOf(n).request.role),
+    )
     expect([...roles].sort()).toEqual(['pad', 'stab'])
+    // And the six single lines are on the roles #632 made mono.
+    const mono = figured.filter((e) => peakOf(figureOf(e.patch.name)) === 1).map((e) => figureOf(e.patch.name).request.role)
+    expect(mono).toEqual(['sub', 'bass-mid', 'acid', 'arp', 'lead', 'lead'])
   })
 
-  it('writes the three two-note figures as the three species of two-voice motion', () => {
+  it('writes the three keepers as the three species of two-voice motion', () => {
     // Parallel: every dyad of DUO ORG is a third, both notes on one step for one length.
     const org = figureOf('DUO ORG')
     const byStep = new Map<number, HookNote[]>()
@@ -1622,18 +1669,276 @@ describe('twelve presets carry a use and a figure, each playable within two note
     expect(line.map((n) => n.step)).toEqual([1, 17, 33, 49, 65, 81, 97, 113])
   })
 
-  it('writes the drone through-composed, and every other struck line on a grid', () => {
-    const drone = figureOf('DRONE')
-    expect(drone.request.role).toBe('texture')
-    expect(drone.request.reArticulatesHook).toBe(false)
-    expect(drone.pattern).toBeUndefined()
-    expect(drone.hook.notes).toHaveLength(2)
-    for (const entry of entries) {
+  it('puts every struck figure on a grid, now that the through-composed drone is gone (#643)', () => {
+    for (const entry of figured) {
       const riff = figureOf(entry.patch.name)
-      if (riff.request.role === 'pad' || riff.id === drone.id) continue
+      if (riff.request.role === 'pad') {
+        expect(riff.request.reArticulatesHook, riff.id).toBeUndefined()
+        expect(riff.pattern, riff.id).toBeUndefined()
+        continue
+      }
       expect(riff.request.reArticulatesHook, riff.id).toBe(true)
       expect(riff.pattern, riff.id).toBeDefined()
     }
+  })
+
+  /**
+   * #643. **The seven replacements, held to the tables the issue wrote.** The pitches are
+   * derived by `resolveHook` from the authored degrees, so a wrong `alter` or octave shows up
+   * as a wrong note name here and not as a page somebody has to play. Timing is the onset
+   * steps; the mono/duo split is the peak and the recipe each lands on, above.
+   */
+  describe('the seven #643 replacements resolve to their tables', () => {
+    /** Beats 1, 2&, 3 and 4& of a bar, as onset steps. */
+    const fourStrikes = (bar: number): string[] => [1, 7, 9, 15].map((s) => `${String(bar)}.${String(s)}`)
+
+    it('LOW BASS: i VI III V in C minor at 120, and the fourth note of every bar is the next root', () => {
+      const riff = figureOf('LOW BASS')
+      expect(riff.key).toBe('C minor')
+      expect(riff.bpm.default).toBe(120)
+      expect(riff.request.role).toBe('sub')
+      expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['i', 1], ['VI', 1], ['III', 1], ['V', 1]])
+      expect(onsetsOf(riff)).toEqual([1, 2, 3, 4].flatMap(fourStrikes))
+      const pitches = pitchesOf(riff)
+      expect(pitches).toEqual([
+        'C2', 'C3', 'G2', 'Ab2',
+        'Ab2', 'Ab3', 'Eb3', 'Eb2',
+        'Eb2', 'Eb3', 'Bb2', 'G2',
+        'G2', 'G3', 'D3', 'C2',
+      ])
+      // Arrive early: the fourth note of each bar is the pitch class the next bar opens on.
+      for (let bar = 0; bar < 4; bar += 1) {
+        const early = pitches[bar * 4 + 3]?.replace(/\d+$/, '')
+        const next = pitches[((bar + 1) % 4) * 4]?.replace(/\d+$/, '')
+        expect(early, `bar ${String(bar + 1)}`).toBe(next)
+      }
+      // The whole cycle in one 64-step pass, every onset struck, and the early roots leaned on.
+      expect(riff.pattern?.length).toBe(64)
+      expect(riff.pattern?.hits.map((h) => h.step)).toEqual([1, 7, 9, 15, 17, 23, 25, 31, 33, 39, 41, 47, 49, 55, 57, 63])
+      expect(riff.pattern?.hits.filter((h) => h.slot === 'accent').map((h) => h.step)).toEqual([1, 15, 17, 31, 33, 47, 49, 63])
+      expect(riff.constraints?.forbiddenDegrees).toEqual([expect.objectContaining({ chord: 'V', degree: 7 })])
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('Terror Bass: i i i bII in E phrygian at 130, and the F3 to E3 lands on beat four', () => {
+      const riff = figureOf('Terror Bass')
+      expect(riff.key).toBe('E phrygian')
+      expect(riff.bpm.default).toBe(130)
+      expect(riff.request.role).toBe('bass-mid')
+      expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['i', 3], ['bII', 1]])
+      // Bars one to three strike 1, 2&, 3, 4&; bar four strikes 1, 2&, 3 and beat 4 itself.
+      expect(onsetsOf(riff)).toEqual([...[1, 2, 3].flatMap(fourStrikes), '4.1', '4.7', '4.9', '4.13'])
+      expect(pitchesOf(riff)).toEqual([
+        'E2', 'B2', 'E3', 'D3',
+        'E2', 'G2', 'B2', 'A2',
+        'E2', 'E3', 'D3', 'B2',
+        'F2', 'C3', 'F3', 'E3',
+      ])
+      // The arrival is the one strike on beat four in the figure, and it is the loudest.
+      const onBeatFour = riff.pattern?.hits.filter((h) => (h.step - 1) % 16 === 12)
+      expect(onBeatFour?.map((h) => h.step)).toEqual([61])
+      const loudest = Math.max(...(riff.pattern?.hits.map((h) => h.velocity ?? 0) ?? []))
+      expect(onBeatFour?.[0]?.velocity).toBe(loudest)
+      // The raised second is forbidden across the piece, and neither chord carries it.
+      expect(riff.constraints?.forbiddenDegrees).toEqual([expect.objectContaining({ chord: 'i', degree: 2, alter: 1 })])
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('Acid Wiggler: one bar of sixteenths in A minor at 132, five pitches, and the four slid steps are never struck', () => {
+      const riff = figureOf('Acid Wiggler')
+      expect(riff.key).toBe('A minor')
+      expect(riff.bpm.default).toBe(132)
+      expect(riff.request.role).toBe('acid')
+      expect(riff.harmony).toBeUndefined()
+      expect(riff.hook.bars).toBe(1)
+      expect(riff.hook.notes).toHaveLength(16)
+      expect(riff.hook.notes.every((n) => n.len === 1)).toBe(true)
+      const pitches = pitchesOf(riff)
+      expect(pitches).toEqual([
+        'A1', 'A1', 'C2', 'A1',
+        'E2', 'A1', 'A1', 'G1',
+        'A1', 'A2', 'A1', 'C2',
+        'A1', 'A1', 'E2', 'A1',
+      ])
+      // Deliberately five pitches: the subject, not a symptom.
+      expect(new Set(pitches).size).toBe(5)
+      // The slide is the note: steps 3, 8, 10 and 15 are in the hook and absent from the grid,
+      // and the twelve struck steps are every other one.
+      const slid = [3, 8, 10, 15]
+      const struck = riff.pattern?.hits.map((h) => h.step) ?? []
+      expect(riff.pattern?.length).toBe(16)
+      expect(struck).toEqual([1, 2, 4, 5, 6, 7, 9, 11, 12, 13, 14, 16])
+      for (const step of slid) {
+        expect(sounding(riff, step), `step ${String(step)}`).toHaveLength(1)
+        expect(struck.includes(step), `step ${String(step)} is slid, not struck`).toBe(false)
+      }
+      // The one note away from the root that is struck is the C2 at the end of beat three.
+      const strikesOffRoot = struck.filter((step) => pitches[step - 1] !== 'A1')
+      expect(strikesOffRoot).toEqual([5, 12])
+      expect(riff.pattern?.hits.find((h) => h.step === 12)?.slot).toBe('accent')
+      expect(riff.constraints).toBeUndefined()
+    })
+
+    it('SAW LEAD: i VI III V in D minor at 124, a climbing bar and a held F5, then the mirror falling to a held E4', () => {
+      const riff = figureOf('SAW LEAD')
+      expect(riff.key).toBe('D minor')
+      expect(riff.bpm.default).toBe(124)
+      expect(riff.request.role).toBe('lead')
+      expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['i', 1], ['VI', 1], ['III', 1], ['V', 1]])
+      expect(onsetsOf(riff)).toEqual([...fourStrikes(1), '2.1', ...fourStrikes(3), '4.1'])
+      const pitches = pitchesOf(riff)
+      expect(pitches).toEqual(['D4', 'F4', 'A4', 'D5', 'F5', 'F5', 'D5', 'A4', 'F4', 'E4'])
+      // Bars three and four mirror bars one and two in rhythm and invert them in direction.
+      const resolved = resolveHook(riff.hook, riff.key)
+      if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+      const midi = resolved.hook.notes.map((n) => n.midi)
+      const question = midi.slice(0, 4)
+      const answer = midi.slice(5, 9)
+      for (let i = 1; i < 4; i += 1) {
+        expect(Math.sign((question[i] as number) - (question[i - 1] as number)), `question step ${String(i)}`).toBe(1)
+        expect(Math.sign((answer[i] as number) - (answer[i - 1] as number)), `answer step ${String(i)}`).toBe(-1)
+      }
+      // The two held notes are whole bars, the second let go two sixteenths early.
+      expect(riff.hook.notes[4]).toEqual({ step: 17, degree: 3, octave: 1, len: 16 })
+      expect(riff.hook.notes[9]).toEqual({ step: 49, degree: 2, octave: 0, len: 14 })
+      expect(riff.pattern?.hits.filter((h) => h.slot === 'accent').map((h) => h.step)).toEqual([17, 49])
+      expect(riff.constraints?.forbiddenDegrees).toEqual([expect.objectContaining({ chord: 'V', degree: 7 })])
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('Triangle Lead: i VI iv V in G minor at 96, and every bar head is reached by a semitone from below', () => {
+      const riff = figureOf('Triangle Lead')
+      expect(riff.key).toBe('G minor')
+      expect(riff.bpm.default).toBe(96)
+      expect(riff.request.role).toBe('lead')
+      expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['i', 1], ['VI', 1], ['iv', 1], ['V', 1]])
+      expect(onsetsOf(riff)).toEqual([1, 2, 3, 4].flatMap(fourStrikes))
+      expect(pitchesOf(riff)).toEqual([
+        'G4', 'Bb4', 'D5', 'D5',
+        'Eb5', 'D5', 'Bb4', 'B4',
+        'C5', 'Eb5', 'G4', 'C#5',
+        'D5', 'F#5', 'A4', 'F#4',
+      ])
+      // Chromatic approach: the last note of each bar is one semitone below the next bar's
+      // first, the wrap to the next pass included.
+      const resolved = resolveHook(riff.hook, riff.key)
+      if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+      const midi = resolved.hook.notes.map((n) => n.midi)
+      for (let bar = 0; bar < 4; bar += 1) {
+        const approach = midi[bar * 4 + 3] as number
+        const target = midi[((bar + 1) % 4) * 4] as number
+        expect(target - approach, `bar ${String(bar + 1)}`).toBe(1)
+      }
+      // B, C# and F# are outside G minor and are authored as `alter`, never as a key change:
+      // the three approach notes and the F#5 that is the D chord's own third.
+      const altered = riff.hook.notes.filter((n) => n.alter !== undefined)
+      expect(altered.map((n) => [n.step, n.degree, n.alter])).toEqual([[31, 3, 1], [47, 4, 1], [55, 7, 1], [63, 7, 1]])
+      // Not the arch: the line does not rise by step to one peak and fall the same way.
+      expect(riff.id).not.toContain('rise')
+      expect(riff.constraints?.forbiddenDegrees).toEqual([expect.objectContaining({ chord: 'V', degree: 7 })])
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('FUNK ORGAN: i iv VII III in E minor at 112, two notes on the sixteenth before every beat and never on one', () => {
+      const riff = figureOf('FUNK ORGAN')
+      expect(riff.key).toBe('E minor')
+      expect(riff.bpm.default).toBe(112)
+      expect(riff.request.role).toBe('stab')
+      expect(riff.request.polyphony).toBe(2)
+      expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['i', 1], ['iv', 1], ['VII', 1], ['III', 1]])
+      // Steps 4, 8, 12 and 16 of every bar: the sixteenth before beats 2, 3, 4 and the next 1.
+      expect(onsetsOf(riff)).toEqual([1, 2, 3, 4].flatMap((bar) => [4, 8, 12, 16].map((s) => `${String(bar)}.${String(s)}`)))
+      for (const n of riff.hook.notes) {
+        expect((n.step - 1) % 4, `step ${String(n.step)}`).toBe(3)
+        expect(n.len).toBe(1)
+      }
+      expect(pitchesOf(riff)).toEqual([
+        'B4+E5', 'B4+E5', 'B4+E5', 'B4+E5',
+        'C5+E5', 'C5+E5', 'C5+E5', 'C5+E5',
+        'D5+F#5', 'D5+F#5', 'D5+F#5', 'D5+F#5',
+        'D5+G5', 'D5+G5', 'D5+G5', 'D5+G5',
+      ])
+      // Every strike is on the grid, and none lands on a beat.
+      expect(riff.pattern?.hits.map((h) => h.step)).toEqual(riff.hook.notes.map((n) => n.step).filter((s, i, a) => a.indexOf(s) === i))
+      expect(riff.pattern?.hits.some((h) => (h.step - 1) % 4 === 0)).toBe(false)
+      // Consistently early, as data: three steps into every chord, which is the other stab's
+      // lesson turned round (strings-of-life walks later each bar).
+      expect(riff.constraints?.onsetOffset?.minSteps).toBe(3)
+      expect(riffConstraintViolations(riff)).toEqual([])
+    })
+
+    it('CELESTIAL: I vi IV V in A major at 72, two voices closing from an octave to a third, on the duo pad by substitution', () => {
+      const riff = figureOf('CELESTIAL')
+      expect(riff.key).toBe('A major')
+      expect(riff.bpm.default).toBe(72)
+      expect(riff.request.role).toBe('pad')
+      expect(riff.request.polyphony).toBe(2)
+      expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['I', 2], ['vi', 2], ['IV', 2], ['V', 2]])
+      expect(onsetsOf(riff)).toEqual(['1.1', '3.1', '5.1', '7.1'])
+      // Sounding at the head of each chord, bottom to top, and the interval between the two.
+      const resolved = resolveHook(riff.hook, riff.key)
+      if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+      const at = (step: number) =>
+        resolved.hook.notes.filter((n) => step >= n.step && step < n.step + n.len).sort((a, b) => a.midi - b.midi)
+      const heads = [1, 33, 65, 97].map(at)
+      expect(heads.map((pair) => pair.map((n) => n.note))).toEqual([['A3', 'A4'], ['C#4', 'A4'], ['D4', 'A4'], ['E4', 'G#4']])
+      expect(heads.map((pair) => (pair[1]?.midi ?? 0) - (pair[0]?.midi ?? 0))).toEqual([12, 8, 7, 4])
+      // Two notes for the whole figure, and the upper voice moves once, at the end.
+      for (let step = 1; step <= 128; step += 1) expect(sounding(riff, step), `step ${String(step)}`).toHaveLength(2)
+      expect(riff.hook.notes.filter((n) => n.octave === 1 || n.degree === 7).map((n) => [n.step, n.len])).toEqual([[1, 96], [97, 32]])
+      // It asks for `soft`, the box authors only `dark`, and the substitution lands on the duo
+      // pad with both notes: the check the issue asked for.
+      const figure = entries.find((e) => e.patch.name === 'CELESTIAL')?.figure
+      expect(figure?.voice.substituted).toBe(true)
+      expect(figure?.voice.recipe.id).toBe('sub37-pad-dark')
+      expect(figure?.voice.recipe.patchPolyphony).toBeUndefined()
+      expect(figure?.voice.params.find((p) => p.name === 'OSC · DUO MODE')?.value).toBe('ON')
+      expect(figure?.voice.params.find((p) => p.name === 'OSC · KB CTRL')?.value).not.toBe('OFF')
+      expect(riff.constraints).toBeUndefined()
+    })
+
+    it('a mono role refuses a second note on this box, and the duo recipes take one (#632)', () => {
+      // The mechanism the seven rest on, stated once. A two-note request on `sub`, `bass-mid`
+      // or `acid` has no recipe here at all, since every recipe on those roles is
+      // `patchPolyphony: 1`, so the gap is `no-recipe` on a voice that could carry two. A
+      // two-note `lead / bright` is redirected to the one duo lead, `lead / clean`, which is
+      // the recipe Triangle Lead lands on. `stab` and `pad` take two on every recipe. So a
+      // replacement that grew a second note on the sub, the bass or the acid line would stop
+      // resolving rather than resolve wrong, and one on the bright lead would change recipe.
+      for (const [role, character] of [['sub', 'dark'], ['bass-mid', 'hard'], ['acid', 'dirty']] as const) {
+        const result = rig([ask({ id: `r-${role}`, role, character, polyphony: 2 })])
+        expect(result.assignments, `${role} / ${character}`).toEqual([])
+        expect(result.shortfalls[0]?.reason, `${role} / ${character}`).toBe('no-recipe')
+      }
+      const lead = rig([ask({ id: 'r-lead', role: 'lead', character: 'bright', polyphony: 2 })])
+      expect(lead.shortfalls).toEqual([])
+      expect(lead.assignments[0]?.recipe.id).toBe('sub37-lead-clean')
+      expect(lead.assignments[0]?.notes).toBe(2)
+      for (const [role, character] of [['stab', 'hard'], ['pad', 'dark']] as const) {
+        const result = rig([ask({ id: `r-${role}`, role, character, polyphony: 2 })])
+        expect(result.shortfalls, `${role} / ${character}`).toEqual([])
+        expect(result.assignments[0]?.notes, `${role} / ${character}`).toBe(2)
+      }
+    })
+
+    it('says nothing was played, vetted or tested, and attributes nothing to the operator (#637, #643)', () => {
+      // #643's watch-out: nobody has played any of this, and #637 corrected a docstring that
+      // said otherwise once. Scanned on the source of every one of the eleven, the keepers
+      // included, and on the technique paragraphs a reader sees.
+      for (const entry of figured) {
+        const riff = figureOf(entry.patch.name)
+        const source = readFileSync(new URL(`../lib/riffs/${riff.id}.ts`, import.meta.url), 'utf8')
+        const lower = source.toLowerCase()
+        for (const claim of ['played and vetted', 'vetted', 'tested', 'operator', 'at the instrument', 'at the machine']) {
+          expect(lower.includes(claim), `${riff.id} claims "${claim}"`).toBe(false)
+        }
+        expect(source, riff.id).toContain('figure authored here')
+        for (const paragraph of riff.technique) {
+          expect(paragraph.includes('—'), `${riff.id}: an em dash in technique`).toBe(false)
+          expect(paragraph, riff.id).not.toMatch(/Subsequent|Moog\b/)
+        }
+      }
+    })
   })
 
   it('reads on the device page under the observed lead, with no count', () => {

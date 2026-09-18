@@ -104,7 +104,7 @@ describe('each entry says what the model says', () => {
    */
   it('links every entry to its figure page under the device, and nowhere into /riffs', () => {
     const patchRiffs = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patchRiffs.length).toBe(36)
+    expect(patchRiffs.length).toBe(35)
     for (const entry of session.entries) {
       expect(entry.figure, entry.patch.name).toBeDefined()
       expect(MUSE, entry.patch.name).toContain(
@@ -233,7 +233,9 @@ describe('a list off a manual page states the total and how many are here (#617)
       'The manual names 2 factory patches, and 1 of them is here: what each is for, and the figure written for it where one exists.',
     )
     expect(body).toContain(presetLead(session))
-    expect(markup.match(/class="disclosure preset-entry"/g)?.length).toBe(1)
+    // One row, and with no figure behind it, a plain row and no expander (#643).
+    expect(markup.match(/class="disclosure preset-entry preset-entry-plain"/g)?.length).toBe(1)
+    expect(markup).not.toContain('<details')
     expect(markup).toContain('Replicant xd')
     expect(markup).not.toContain('TPL Snare')
     expect(body).not.toMatch(/nobody has|not yet written|backlog/i)
@@ -263,8 +265,8 @@ describe('a list off a manual page states the total and how many are here (#617)
   })
 })
 
-describe('every entry is a closed details, whatever is under it', () => {
-  it('draws a closed expander for a patch no recipe and no riff reaches', () => {
+describe('every entry with a figure is a closed details, and one without is a plain row (#643)', () => {
+  it('draws a closed expander for the patch a riff reaches, and a plain row for the one none does', () => {
     // A box that plays the Bellbounce figure (an `arp`), since #598 resolves every figure on
     // the box that ships its patch and refuses one it cannot play.
     const device = fixtureDevice({
@@ -286,8 +288,16 @@ describe('every entry is a closed details, whatever is under it', () => {
     const markup = renderToStaticMarkup(
       createElement(PresetSection, { session: presetSession(device, RIFFS) }),
     )
-    expect(markup.match(/class="disclosure preset-entry"/g)?.length).toBe(2)
+    // §3.7/#643. The Bellbounce entry has a figure and folds; *Nothing Reaches Me* has a use
+    // and no figure, and an expander over nothing would tell a reader they missed something
+    // (§2.6's rule for a silent capability fact), so it is the same summary in a plain block
+    // with the marker cell blank. Neither surface grows an empty `disclosure-body`.
+    expect(markup.match(/class="disclosure preset-entry"/g)?.length).toBe(1)
+    expect(markup.match(/class="disclosure preset-entry preset-entry-plain"/g)?.length).toBe(1)
+    expect(markup.match(/<details/g)?.length).toBe(1)
     expect(markup).not.toContain('preset-entry" open')
+    expect(markup).not.toContain('<div class="disclosure-body"></div>')
+    expect(markup).toContain('preset-marker preset-marker-none')
     expect(markup).toContain('Nothing Reaches Me')
     expect(markup).toContain('A pad')
     // The Bellbounce entry links its figure; the other has nothing to link and links nothing.

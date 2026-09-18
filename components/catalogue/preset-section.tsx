@@ -117,24 +117,42 @@ export function PresetBody({ device, entry }: { device: Device; entry: PresetEnt
  * One patch in the panel: closed, it is the name and what it is for; open, it is the figure
  * written for it.
  *
- * **A native `<details>`, closed by default, on every entry** — the shape #593 specifies, for
- * the kit's reason (§3.7/#478): twelve of these open is a page nobody skims, and native means
- * the page keeps its zero client boundaries and a crawler receives every link already written
- * out. The summary is a grid inside the `<summary>` and draws its own marker, because a
- * `<summary>` lays the native one on the first line box of its content, which a grid child is
- * not — `.kit-summary` measured this and this row is the same shape.
+ * **A native `<details>`, closed by default, on every entry with a figure** — the shape #593
+ * specifies, for the kit's reason (§3.7/#478): twelve of these open is a page nobody skims, and
+ * native means the page keeps its zero client boundaries and a crawler receives every link
+ * already written out. The summary is a grid inside the `<summary>` and draws its own marker,
+ * because a `<summary>` lays the native one on the first line box of its content, which a grid
+ * child is not — `.kit-summary` measured this and this row is the same shape.
+ *
+ * **An entry with a use and no figure is the same row with nothing to open** (#643). A `use`
+ * may stand alone (#617), and the first one to do so is the Subsequent 37's `DRONE`. A
+ * `<details>` around it would be an expander over an empty body, which
+ * `test/param-provenance.test.ts` refuses on every device page, and a marker promising
+ * something behind the row. So the row is the same grid in a plain block, with the marker's
+ * cell kept and left blank so the names stay in one column.
  */
 function PresetRow({ device, entry }: { device: Device; entry: PresetEntry }) {
+  const summary = (
+    <span className="preset-summary">
+      <span
+        className={entry.figure === undefined ? 'preset-marker preset-marker-none' : 'preset-marker'}
+        aria-hidden="true"
+      />
+      <PatchName entry={entry} />
+      <span className="preset-use">{entry.use}</span>
+    </span>
+  )
+  if (entry.figure === undefined) {
+    return (
+      <li>
+        <div className="disclosure preset-entry preset-entry-plain">{summary}</div>
+      </li>
+    )
+  }
   return (
     <li>
       <details className="disclosure preset-entry">
-        <summary>
-          <span className="preset-summary">
-            <span className="preset-marker" aria-hidden="true" />
-            <PatchName entry={entry} />
-            <span className="preset-use">{entry.use}</span>
-          </span>
-        </summary>
+        <summary>{summary}</summary>
         <div className="disclosure-body">
           <PresetBody device={device} entry={entry} />
         </div>

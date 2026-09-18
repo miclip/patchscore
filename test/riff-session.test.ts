@@ -352,7 +352,7 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
        * The library has two such ties, one at each level.
        *
        * Between two boxes: `sub / dark` is authored on all four of these, at the same role index,
-       * on a voice each is comfortable spending, so `low-bass-two-strikes-root-line` (#624) ties
+       * on a voice each is comfortable spending, so `low-bass-early-root-line` (#624, #643) ties
        * four ways on every key `bestVoiceCandidate` and `Score` rank on, and so does
        * `inner-city-life-held-sub` (#638), the second `sub / dark` entry, for the same reason.
        * `assign` hands each to a different box per seed; `resolveRiff` takes the first
@@ -387,7 +387,7 @@ describe('resolveRiff prices the voices a candidate spends (§7.1)', () => {
       }
     }
     // Pinned, so the exception cannot widen without saying so here.
-    expect(deviceTies).toEqual(['inner-city-life-held-sub', 'low-bass-two-strikes-root-line'])
+    expect(deviceTies).toEqual(['inner-city-life-held-sub', 'low-bass-early-root-line'])
   })
 
   /**
