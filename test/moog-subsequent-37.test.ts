@@ -18,6 +18,7 @@ import {
   requiredVoicePolyphony,
   resolve,
   resolveHook,
+  resolveRiff,
   riffConstraintViolations,
   type Assignable,
   type AuthoredParam,
@@ -169,10 +170,12 @@ describe('Subsequent 37 manifest', () => {
   it('carries no step data, because patterns are template-owned (§4.3)', () => {
     expect(device.features?.perStep).toBeUndefined()
     expect(device.recipes.every((r) => r.articulation === undefined)).toBe(true)
-    // Nor does any recipe reach for the arpeggiator, whose RATE knob is the fourth control on
-    // this panel whose scale a SYNC switch replaces (p.15).
+    // The arpeggiator's RATE knob is the fourth control on this panel whose scale a SYNC switch
+    // replaces (p.15), and the recipes that reach for it (#647) reach for the division and never
+    // the BPM figure, exactly as `MOD 1 · LFO RATE` is handled.
     const names = new Set(every().map((p) => p.name))
     expect(names.has('ARPEGGIATOR · RATE')).toBe(false)
+    expect(names.has('ARPEGGIATOR · RATE (division)')).toBe(true)
   })
 
   it('declares its arpeggiator as a capability fact, cited where the preset holds it (§2.6/#645)', () => {
@@ -1098,15 +1101,15 @@ describe('the glide section collapses when it is off (#319)', () => {
 })
 
 /**
- * §3.1/#385. **Six boxes, and the panel is what decides them.**
+ * §3.1/#385. **Seven boxes, and the panel is what decides them.**
  *
  * This is the second device in the library to author `module`, and it is here rather than
- * somewhere else because its panel and its parameter names disagree. Eleven name prefixes sit
- * under six silkscreened sections: `OSC`, `OSC 1` and `OSC 2` are all one **OSCILLATORS**
+ * somewhere else because its panel and its parameter names disagree. Twelve name prefixes sit
+ * under seven silkscreened sections: `OSC`, `OSC 1` and `OSC 2` are all one **OSCILLATORS**
  * section; `ENV`, `FILTER EG` and `AMP EG` are all one **ENVELOPE GENERATORS**; and `CUTOFF`,
  * `RESONANCE` and `MULTIDRIVE` carry no prefix at all while sitting inside **FILTER**.
  *
- * So a module derived from a name would have drawn eleven boxes, three of them empty of the
+ * So a module derived from a name would have drawn twelve boxes, three of them empty of the
  * three controls a filter box most needs. What is asserted below is the mapping itself, pinned
  * by name, because it is a reading of the instrument and a later edit that moves one has to say
  * so.
@@ -1114,6 +1117,7 @@ describe('the glide section collapses when it is off (#319)', () => {
 describe('every control is boxed by the panel section it sits on (#385)', () => {
   /** The reading. Left is the name (or its ` · ` prefix); right is the silkscreen above it. */
   const SECTIONS: Record<string, string> = {
+    'ARPEGGIATOR': 'ARPEGGIATOR',
     'GLIDE': 'GLIDE',
     'MOD 1': 'MOD 1',
     'OSC': 'OSCILLATORS',
@@ -1155,10 +1159,11 @@ describe('every control is boxed by the panel section it sits on (#385)', () => 
     expect([...(byName.get('SWING') ?? [])]).toEqual(['(none)'])
   })
 
-  it('draws exactly the six sections the panel names, and no eleventh prefix box', () => {
+  it('draws exactly the seven sections the panel names, and no twelfth prefix box', () => {
     const modules = new Set<string>()
     for (const mods of byName.values()) for (const m of mods) if (m !== '(none)') modules.add(m)
     expect([...modules].sort()).toEqual([
+      'ARPEGGIATOR',
       'ENVELOPE GENERATORS',
       'FILTER',
       'GLIDE',
@@ -1229,7 +1234,9 @@ describe('every control is boxed by the panel section it sits on (#385)', () => 
  * boxes carrying the same label — and that is an authoring-order defect the device folder owns.
  * Every recipe here runs `program`, `glide`, the three oscillator blocks, `mix`, `filt`, the two
  * envelopes and the modulation bus, in that sequence, so each part renders seven runs and each
- * section appears once.
+ * section appears once. The two `arp` recipes run `arp` between `program` and `glide` (#647),
+ * which is the panel's order too, and render eight; that box is asserted with the arpeggiated
+ * hold that lands on it, below.
  */
 describe('a real Subsequent 37 guide renders one box per section (#385)', () => {
   const result = resolve({
@@ -1283,6 +1290,131 @@ describe('a real Subsequent 37 guide renders one box per section (#385)', () => 
     // And the two oscillators keep theirs, because OSCILLATORS is not the prefix.
     expect(bullets.some((line) => line.includes('**OSC 1 \u00b7 OCTAVE**'))).toBe(true)
     expect(bullets.some((line) => line.includes('**OSC 2 \u00b7 OCTAVE**'))).toBe(true)
+  })
+})
+
+/**
+ * #647. **The two `arp` recipes state the arpeggiator, and no other recipe does.** `Harp C
+ * Chord` (#645) lands on `sub37-arp-bright` and its technique tells a reader to switch the
+ * arpeggiator on and set the pattern to the order the keys went down; before #647 the recipe
+ * stated neither. Now the section is eight cited switches, and the pattern is the one the hold
+ * needs.
+ *
+ * `RATE` is a division and not a BPM, for the reason `MOD 1 · LFO RATE` is: with SYNC lit the
+ * knob has left its BPM scale (p.15), and the tempo is the direction's anyway. `1/16` on both,
+ * because at the knob's `SEQ` position the same division is the step length of the onboard
+ * sequencer (p.17, p.40) and the grid the guide prints is sixteenths.
+ */
+describe('the arp recipes state the arpeggiator section, and nothing else does (#647)', () => {
+  const ARP_NAMES = [
+    'ARPEGGIATOR \u00b7 ON',
+    'ARPEGGIATOR \u00b7 SYNC',
+    'ARPEGGIATOR \u00b7 RATE (division)',
+    'ARPEGGIATOR \u00b7 RANGE',
+    'ARPEGGIATOR \u00b7 BACK / FORTH',
+    'ARPEGGIATOR \u00b7 INVERT',
+    'ARPEGGIATOR \u00b7 PATTERN',
+    'ARPEGGIATOR \u00b7 LATCH',
+  ]
+  const arpRecipes = device.recipes.filter((r) => r.role === 'arp')
+  const others = device.recipes.filter((r) => r.role !== 'arp')
+
+  it('carries the whole section on both arp recipes, in panel order, and on no other recipe', () => {
+    expect(arpRecipes.map((r) => r.id).sort()).toEqual(['sub37-arp-bright', 'sub37-arp-clean'])
+    for (const recipe of arpRecipes) {
+      const names = params(recipe)
+        .filter((p) => p.module === 'ARPEGGIATOR')
+        .map((p) => p.name)
+      expect(names, recipe.id).toEqual(ARP_NAMES)
+    }
+    for (const recipe of others) {
+      expect(
+        params(recipe).filter((p) => p.name.startsWith('ARPEGGIATOR')),
+        recipe.id,
+      ).toEqual([])
+    }
+  })
+
+  it('switches it on, syncs it, and names a division off p.52 rather than a BPM', () => {
+    for (const recipe of arpRecipes) {
+      const on = paramNamed(recipe, 'ARPEGGIATOR \u00b7 ON')
+      const sync = paramNamed(recipe, 'ARPEGGIATOR \u00b7 SYNC')
+      const rate = paramNamed(recipe, 'ARPEGGIATOR \u00b7 RATE (division)')
+      if (on?.kind !== 'enum' || sync?.kind !== 'enum' || rate?.kind !== 'enum') {
+        throw new Error(`${recipe.id}: arpeggiator switches missing`)
+      }
+      expect(on.value).toBe('ON')
+      expect(sync.value).toBe('ON')
+      expect(rate.value).toBe('1/16')
+      expect(rate.options.values).toHaveLength(21)
+      expect(rate.options.verified).toEqual({ kind: 'manual', source: `${MANUAL}, p.52` })
+      expect(rate.hint).toBe('sync-divisions')
+      // p.15's warning is the one thing that makes a synced arpeggiator silent, so it is on the line.
+      expect(sync.note).toContain('will not play')
+    }
+  })
+
+  it('cites the PATTERN knob as all six positions, sequencer included, and picks a pattern', () => {
+    // p.16 prints four patterns and two sequencer positions on one knob, and p.56 counts `ARP
+    // PATTERN` as six values. `SEQ` is in the set because a struck part recorded on the onboard
+    // sequencer (p.17) is played back at it, and the note says so.
+    const bright = paramNamed(arpRecipes.find((r) => r.id === 'sub37-arp-bright') as Recipe, 'ARPEGGIATOR \u00b7 PATTERN')
+    const clean = paramNamed(arpRecipes.find((r) => r.id === 'sub37-arp-clean') as Recipe, 'ARPEGGIATOR \u00b7 PATTERN')
+    if (bright?.kind !== 'enum' || clean?.kind !== 'enum') throw new Error('no PATTERN')
+    expect(bright.options.values).toEqual(['UP', 'DWN', 'ORDR', 'RND', 'SEQ', 'REC'])
+    expect(bright.options.verified).toEqual({ kind: 'manual', source: `${MANUAL}, p.16` })
+    expect(bright.value).toBe('ORDR')
+    expect(clean.value).toBe('UP')
+    expect(bright.note).toContain('SEQ')
+  })
+
+  it('cites RANGE as all seven states p.15 describes, the two unlabelled ones named after their LEDs', () => {
+    // Five LEDs, and pressing past either end lights `0` with `-2` or `+2` for a three-octave
+    // climb (p.15). p.56 counts `ARP RANGE` as seven, so five would be an incomplete legality
+    // claim for a control whose seventh state a reader can land on with one press too many.
+    // The set is in the order the buttons walk it: the combined states sit past each end.
+    for (const recipe of arpRecipes) {
+      const range = paramNamed(recipe, 'ARPEGGIATOR \u00b7 RANGE')
+      if (range?.kind !== 'enum') throw new Error(`${recipe.id}: no RANGE`)
+      expect(range.options.values).toEqual(['0 & -2', '-2', '-1', '0', '+1', '+2', '0 & +2'])
+      expect(range.options.verified).toEqual({ kind: 'manual', source: `${MANUAL}, p.15` })
+    }
+  })
+
+  it('leaves range, direction, inversion and latch where a held chord is the tune it was pressed as', () => {
+    for (const recipe of arpRecipes) {
+      const value = (name: string) => {
+        const p = paramNamed(recipe, `ARPEGGIATOR \u00b7 ${name}`)
+        if (p?.kind !== 'enum') throw new Error(`${recipe.id}: no ${name}`)
+        return p.value
+      }
+      expect(value('RANGE')).toBe('0')
+      expect(value('BACK / FORTH')).toBe('OFF')
+      expect(value('INVERT')).toBe('OFF')
+      expect(value('LATCH')).toBe('OFF')
+    }
+  })
+
+  it('renders the Harp C Chord hold with the section as one box, pattern ORDR, on the bright arp', () => {
+    const harp = RIFFS.find((r) => r.id === 'harp-c-chord-arpeggiated-hold') as Riff
+    const result = resolveRiff(harp, [device])
+    expect(result.outcome).toBe('played')
+    if (result.outcome !== 'played') return
+    expect(result.voice.recipe.id).toBe('sub37-arp-bright')
+    const groups = groupedParams(result.voice.params)
+    expect(groups.map((g) => g.module)).toEqual([
+      undefined,
+      'ARPEGGIATOR',
+      'GLIDE',
+      'OSCILLATORS',
+      'MIXER',
+      'FILTER',
+      'ENVELOPE GENERATORS',
+      'MOD 1',
+    ])
+    const pattern = result.voice.params.find((p) => p.name === 'ARPEGGIATOR \u00b7 PATTERN')
+    expect(pattern?.value).toBe('ORDR')
+    expect(pattern?.provenance).toEqual({ state: 'provisional' })
   })
 })
 

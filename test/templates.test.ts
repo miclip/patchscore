@@ -150,10 +150,17 @@ const SHARED_VOCABULARY = new Set(
  * lands *on the beat*, or that a part *fades out* is using English, and none of those three words
  * can identify a box: no device is named a bare preposition and none could be.
  *
+ * **`back` is the tenth** (#647). The Subsequent 37's arpeggiator has a `BACK / FORTH` button,
+ * silkscreened exactly so (p.16), and the day its two `arp` recipes stated it, Hip-Hop's section
+ * `Back Harder` and Hard Techno's *"the kick coming back after the breakdown"* were caught. A
+ * section returning is what the word means in a set list; the button on the panel is named
+ * after the same ordinary sense; and no box is called Back.
+ *
  * The line this list draws is the same every time: a word that appears on a panel **and** names
  * nothing on its own is English, and the guard is for words that identify hardware.
  */
 const NON_IDENTIFYING_ENGLISH = new Set([
+  'back',
   'bars',
   'hand',
   'in',
@@ -279,12 +286,14 @@ describe('invariant 3 — a template never names a device', () => {
    * substrings which no token exemption can reach. Every word here is one that identifies nothing
    * on its own, which is why exempting it opens no hole.
    */
-  it('exempts exactly nine English words, and adding a tenth is a decision', () => {
+  it('exempts exactly ten English words, and adding an eleventh is a decision', () => {
     // Three arrived together with Slow Noir, and the standard three paragraphs up is what they
     // were held to: `in`, `on` and `out` reach the forbidden set off parameter names, and none of
     // them can identify a box on its own. They are `up`'s argument applied to the rest of its
-    // part of speech — see the note on the set itself.
+    // part of speech — see the note on the set itself. `back` arrived with the Subsequent 37's
+    // `BACK / FORTH` button (#647) and was held to the same standard.
     expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual([
+      'back',
       'bars',
       'hand',
       'in',
