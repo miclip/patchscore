@@ -283,14 +283,12 @@ describe('the Subsequent 37 holds four notes under its arpeggiator and no other 
     // The preset session is where a figure meets the box that ships its patch, and a figure the
     // box cannot play throws there rather than rendering a gap at somebody standing at it. Here
     // the box is the Subsequent 37 with its declaration stripped, and a figure named for a
-    // patch it ships, holding four notes under an arpeggiator it no longer says it has.
+    // patch it ships and describes, holding four notes under an arpeggiator it no longer says
+    // it has.
     const { [ARPEGGIATOR_FACT]: _cite, ...evidence } = sub37.capabilityEvidence ?? {}
     const { features: _features, ...rest } = sub37
-    const stripped: Device = {
-      ...rest,
-      capabilityEvidence: evidence,
-      patchUses: [...(sub37.patchUses ?? []), { name: 'Harp C Chord', use: 'A chord, held' }],
-    }
+    const stripped: Device = { ...rest, capabilityEvidence: evidence }
+    expect(sub37.patchUses?.some((u) => u.name === 'Harp C Chord')).toBe(true)
     const figure = arpHold({
       id: 'harp-c-chord-fixture',
       name: 'The Harp C Chord fixture',
@@ -300,11 +298,7 @@ describe('the Subsequent 37 holds four notes under its arpeggiator and no other 
     })
     expect(() => presetSession(stripped, [figure])).toThrow(/no-capable-voice/)
     // And lands, on the box as shipped.
-    const session = presetSession(
-      { ...sub37, patchUses: stripped.patchUses },
-      [figure],
-    )
-    const entry = session?.entries.find((e) => e.patch.name === 'Harp C Chord')
+    const entry = presetSession(sub37, [figure])?.entries.find((e) => e.patch.name === 'Harp C Chord')
     expect(entry?.figure?.resolution.outcome).toBe('played')
     expect(entry?.figure?.voice.stackWidth).toBe(1)
   })

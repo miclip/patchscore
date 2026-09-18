@@ -1453,12 +1453,14 @@ describe('the factory presets, off the unit at firmware 1.2.0 (§2.6/#617, #624)
 })
 
 /**
- * §2.6/#593, §3.7/#598, #624. **Twelve of the twenty carry a use and a figure**, and every
- * figure is a line, because this box plays two notes (p.9, `polyphony: 2`). Nine of the twelve
- * never sound two notes at once; the three whose names make the second note the subject sound
- * exactly two, and only on the roles whose recipes here spend the second note.
+ * §2.6/#593, §3.7/#598, #624, #645. **Thirteen of the twenty carry a use and twelve a figure**,
+ * and every figure sounds one or two notes, because this box plays two (p.9, `polyphony: 2`).
+ * Six of the twelve never sound two notes at once; five spend the second note, and only on the
+ * roles whose recipes here spend it; and one holds four keys down under the arpeggiator, which
+ * sounds them one at a time (#645), so its hold is four wide and its voice cost is one. The
+ * two counts are kept apart below, since the whole of #645 is that they are different claims.
  */
-describe('twelve presets carry a use, eleven carry a figure, each playable within two notes (#624, #643)', () => {
+describe('thirteen presets carry a use, twelve carry a figure, each sounding within two notes (#624, #643, #645)', () => {
   const uses = device.patchUses ?? []
   const session = presetSession(device)
   const entries = session?.entries ?? []
@@ -1504,12 +1506,13 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
       .map((step) => `${String(Math.floor((step - 1) / 16) + 1)}.${String(((step - 1) % 16) + 1)}`)
   }
 
-  it('describes exactly twelve, in the editorial order, keyed to the shipped name', () => {
+  it('describes exactly thirteen, in the editorial order, keyed to the shipped name', () => {
     expect(uses.map((u) => u.name)).toEqual([
       'LOW BASS',
       'Terror Bass',
       'Acid Wiggler',
       'TRIPLET 5THS',
+      'Harp C Chord',
       'SAW LEAD',
       'Triangle Lead',
       'FUNK ORGAN',
@@ -1526,17 +1529,18 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
     }
   })
 
-  it('describes a subset of the fact, and the two alternates are among the eight without a line (#617)', () => {
+  it('describes a subset of the fact, and the one alternate is among the seven without a line (#617, #645)', () => {
     const described = new Set(uses.map((u) => u.name))
-    expect(described.size).toBe(12)
+    expect(described.size).toBe(13)
     const silent = (device.factoryPatches ?? []).filter((p) => !described.has(p.name)).map((p) => p.name)
-    expect(silent).toHaveLength(8)
-    expect(silent).toContain('Harp C Chord')
+    expect(silent).toHaveLength(7)
+    // #645 took `Harp C Chord` off this list; `DUO WAVE MOD` is the alternate left.
+    expect(silent).not.toContain('Harp C Chord')
     expect(silent).toContain('DUO WAVE MOD')
     // The session carries an entry per use and none for the rest; the fact stays at twenty.
     expect(session?.named).toBe(20)
     expect(session?.reading).toBe('observed')
-    expect(entries).toHaveLength(12)
+    expect(entries).toHaveLength(13)
   })
 
   it('writes every use unhedged, as what to play, and names no box, bank or slot', () => {
@@ -1548,7 +1552,7 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
     }
   })
 
-  it('joins eleven uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643)', () => {
+  it('joins twelve uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643, #645)', () => {
     // #643. `DRONE` keeps a use and loses its figure: one note held under four chords is a use
     // line, and the second use of #617's subset rule. The entry is still in the session, with
     // no `figure`, so the panel and the presets page list it without a link.
@@ -1565,8 +1569,8 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
     }
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
     const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
-    expect(naming).toHaveLength(11)
-    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(11)
+    expect(naming).toHaveLength(12)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(12)
     expect(naming.some((r) => r.reference.name === 'DRONE')).toBe(false)
   })
 
@@ -1584,16 +1588,31 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
     )
   })
 
-  it('never needs a third note, and spends the second on exactly the five stab and pad figures (#643)', () => {
+  it('never sounds a third note, and spends the second on exactly the five stab and pad figures (#643, #645)', () => {
+    // Two counts, kept apart (#645). `peakOf` is what the hand holds: the most notes in force
+    // at one step. What the box has to sound at once is the request's `polyphony`, and the two
+    // agree on every figure but the arpeggiated hold, where the hand holds four and the
+    // arpeggiator sounds one, so the request asks for one. `Harp C Chord` is that figure, and
+    // the only one wider than two in the hand.
     const two: string[] = []
+    const held: string[] = []
     for (const entry of figured) {
       const riff = figureOf(entry.patch.name)
       const peak = peakOf(riff)
+      const sounds = riff.request.polyphony ?? 1
+      expect(sounds, entry.patch.name).toBeLessThanOrEqual(2)
+      if (riff.arpeggiatedHold) {
+        held.push(entry.patch.name)
+        expect(sounds, riff.id).toBe(1)
+        expect(peak, riff.id).toBe(4)
+        continue
+      }
       expect(peak, entry.patch.name).toBeLessThanOrEqual(2)
-      expect(riff.request.polyphony ?? 1, riff.id).toBe(peak)
+      expect(sounds, riff.id).toBe(peak)
       if (peak === 2) two.push(entry.patch.name)
     }
     expect(two).toEqual(['FUNK ORGAN', 'DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons', 'CELESTIAL'])
+    expect(held).toEqual(['Harp C Chord'])
   })
 
   it('lands each two-note figure on a recipe that spends the second note, and each mono role on a mono recipe (#632, #643)', () => {
@@ -1612,7 +1631,9 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
       const kb = params.find((p) => p.name === 'OSC · KB CTRL')?.value
       const twoNotes = duo === 'ON' && kb !== 'OFF'
       const riff = figureOf(entry.patch.name)
-      const peak = peakOf(riff)
+      // #645. The arpeggiated hold is four in the hand and one in the voice; it is the mono
+      // recipe's case below, and `peakOf` would put it in the duo one.
+      const peak = riff.arpeggiatedHold ? 1 : peakOf(riff)
       const recipe = entry.figure?.voice.recipe
       if (peak === 2) {
         expect(twoNotes, `${entry.patch.name} on ${recipe?.id ?? '?'}`).toBe(true)
@@ -1630,9 +1651,12 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
       ['FUNK ORGAN', 'DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons', 'CELESTIAL'].map((n) => figureOf(n).request.role),
     )
     expect([...roles].sort()).toEqual(['pad', 'stab'])
-    // And the six single lines are on the roles #632 made mono.
-    const mono = figured.filter((e) => peakOf(figureOf(e.patch.name)) === 1).map((e) => figureOf(e.patch.name).request.role)
-    expect(mono).toEqual(['sub', 'bass-mid', 'acid', 'arp', 'lead', 'lead'])
+    // And the six single lines are on the roles #632 made mono, with the arpeggiated hold on
+    // the second `arp`: one voice sounding, four keys down (#645).
+    const mono = figured
+      .filter((e) => (figureOf(e.patch.name).request.polyphony ?? 1) === 1)
+      .map((e) => figureOf(e.patch.name).request.role)
+    expect(mono).toEqual(['sub', 'bass-mid', 'acid', 'arp', 'arp', 'lead', 'lead'])
   })
 
   it('writes the three keepers as the three species of two-voice motion', () => {
@@ -1680,10 +1704,10 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
     expect(line.map((n) => n.step)).toEqual([1, 17, 33, 49, 65, 81, 97, 113])
   })
 
-  it('puts every struck figure on a grid, now that the through-composed drone is gone (#643)', () => {
+  it('puts every struck figure on a grid, and the arpeggiated hold on none (#643, #645)', () => {
     for (const entry of figured) {
       const riff = figureOf(entry.patch.name)
-      if (riff.request.role === 'pad') {
+      if (riff.request.role === 'pad' || riff.arpeggiatedHold) {
         expect(riff.request.reArticulatesHook, riff.id).toBeUndefined()
         expect(riff.pattern, riff.id).toBeUndefined()
         continue
@@ -1691,6 +1715,20 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
       expect(riff.request.reArticulatesHook, riff.id).toBe(true)
       expect(riff.pattern, riff.id).toBeDefined()
     }
+    // Two figures on `arp`, and they must not converge: the ladder is struck, one note a step
+    // on a grid; the hold is four keys down with no grid, and the two are on different
+    // characters so they land on different recipes.
+    const ladder = figureOf('TRIPLET 5THS')
+    const hold = figureOf('Harp C Chord')
+    expect(ladder.pattern).toBeDefined()
+    expect(ladder.arpeggiatedHold).toBeUndefined()
+    expect(peakOf(ladder)).toBe(1)
+    expect(hold.arpeggiatedHold).toBe(true)
+    expect(hold.pattern).toBeUndefined()
+    expect(hold.request.character).not.toBe(ladder.request.character)
+    expect(entries.find((e) => e.patch.name === 'Harp C Chord')?.figure?.voice.recipe.id).not.toBe(
+      entries.find((e) => e.patch.name === 'TRIPLET 5THS')?.figure?.voice.recipe.id,
+    )
   })
 
   /**
@@ -1930,6 +1968,43 @@ describe('twelve presets carry a use, eleven carry a figure, each playable withi
         expect(result.shortfalls, `${role} / ${character}`).toEqual([])
         expect(result.assignments[0]?.notes, `${role} / ${character}`).toBe(2)
       }
+    })
+
+    it('Harp C Chord: I vi IV V in C major at 112, four voicings of two bars, the same shape moved (#645)', () => {
+      // The issue's table, pitch by pitch, from the authored degrees and octaves.
+      const riff = figureOf('Harp C Chord')
+      expect(riff.key).toBe('C major')
+      expect(riff.bpm.default).toBe(112)
+      expect(riff.request.role).toBe('arp')
+      expect(riff.arpeggiatedHold).toBe(true)
+      expect(riff.request.polyphony).toBeUndefined()
+      expect(riff.harmony?.progression.map((p) => [p.degree, p.bars])).toEqual([['I', 2], ['vi', 2], ['IV', 2], ['V', 2]])
+      expect(riff.hook.bars).toBe(8)
+      expect(onsetsOf(riff)).toEqual(['1.1', '3.1', '5.1', '7.1'])
+      expect(pitchesOf(riff)).toEqual(['C3+E3+G3+C4', 'A2+C3+E3+A3', 'F2+A2+C3+F3', 'G2+B2+D3+G3'])
+      // Every note is held for its whole two bars, and every voicing is root, third, fifth,
+      // octave: the top note an octave above the bottom, and the same shape at each root.
+      expect(riff.hook.notes.every((n) => n.len === 32)).toBe(true)
+      const resolved = resolveHook(riff.hook, riff.key)
+      if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+      for (const step of [1, 33, 65, 97]) {
+        const midi = resolved.hook.notes.filter((n) => n.step === step).map((n) => n.midi).sort((a, b) => a - b)
+        const root = midi[0] as number
+        expect(midi.map((m) => m - root), `step ${String(step)}`).toEqual(
+          step === 33 ? [0, 3, 7, 12] : [0, 4, 7, 12],
+        )
+      }
+      // No grid and no flag: the arpeggiator is the rhythm. The lesson the prose carries and
+      // the two figures it must not restate: both pattern settings are taught, and the change
+      // on the bar head is not.
+      expect(riff.pattern).toBeUndefined()
+      expect(riff.request.reArticulatesHook).toBeUndefined()
+      const prose = riff.technique.join(' ')
+      expect(prose).toMatch(/only way to hold four notes/)
+      expect(prose).toMatch(/order you pressed them/)
+      expect(prose).toMatch(/ORDR/)
+      expect(prose).not.toMatch(/bar head/)
+      expect(riffConstraintViolations(riff)).toEqual([])
     })
 
     it('says nothing was played, vetted or tested, and attributes nothing to the operator (#637, #643)', () => {

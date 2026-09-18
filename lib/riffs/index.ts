@@ -35,6 +35,7 @@ import { celestialConvergingVoicesPad } from './celestial-converging-voices-pad'
 import { duoOrgParallelThirdsComp } from './duo-org-parallel-thirds-comp'
 import { duotronicMoogtronsPedalAndLinePad } from './duotronic-moogtrons-pedal-and-line-pad'
 import { funkOrganEarlySixteenthStabs } from './funk-organ-early-sixteenth-stabs'
+import { harpCChordArpeggiatedHold } from './harp-c-chord-arpeggiated-hold'
 import { lowBassEarlyRootLine } from './low-bass-early-root-line'
 import { sawLeadQuestionAndAnswerLine } from './saw-lead-question-and-answer-line'
 import { sawteethDuoDancerCrossingStabs } from './sawteeth-duo-dancer-crossing-stabs'
@@ -139,20 +140,26 @@ import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-s
  * many voices the box has, so the four figures on those (`mirroredbass-…`, `hypno-acid-…`,
  * `metalfnklead-…`, `lush-m7-…`) never overlap a note; an ARP program plays what the hand
  * holds, so the two on those (`brew-time-…`, `cloud-level-…`) are `pad`s of held voicings with
- * no grid, four notes at most; and every POLY figure peaks at four. What the twelve add to the
+ * no grid, four notes at most, asking for four voices because the box has them and nothing
+ * yet cites its arpeggiator (`features.arpeggiator`, #645); and every POLY figure peaks at
+ * four. What the twelve add to the
  * library is the first four-note `pad`s (the first seventeen's two pads are the top voice of an
  * ensemble), a staggered entry whose polyphony is what *sounds* rather than what *starts*
  * (`swollen-pad-…`), and a line whose every note is a chord (`lush-m7-…`).
  * `test/korg-minilogue-xd.test.ts` holds each to the printed mode.
  *
- * ## The eleven for the Subsequent 37's presets (§5A.5, #624, #643)
+ * ## The twelve for the Subsequent 37's presets (§5A.5, #624, #643, #645)
  *
  * The third box with a patch list, off its own screen at firmware 1.2.0, and the first whose
  * figures are lines of one or two notes because the box plays two. #624 wrote twelve, one per
  * described preset, and #643 replaced eight of them: measured across the library, the entries
  * written from a name alone had the fewest distinct pitches, and a figure has to be worth
  * sitting down with. `DRONE` lost its figure outright and keeps a use line, the second use of
- * #617's subset rule, so the box now describes twelve presets and eleven carry a figure. Five
+ * #617's subset rule. #645 added `harp-c-chord-…`, the library's first arpeggiated hold
+ * (§5A.2, §12.4): four notes held for the box's arpeggiator to sound one at a time, so the
+ * hand holds four and the part costs one voice, and a two-note box plays a four-note hold on
+ * a one-note recipe. That is the one figure on this box wider than two notes, and it is wider
+ * only in the hand. The box now describes thirteen presets and twelve carry a figure. Five
  * spend the second note: `duo-org-…` parallel, `sawteeth-duo-dancer-…` contrary and
  * `duotronic-moogtrons-…` oblique, the three species of two-voice motion #624 wrote and #643
  * left alone; `funk-organ-…`, dyads on the sixteenth before every beat; and `celestial-…`, two
@@ -160,10 +167,11 @@ import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-s
  * `acid`, `arp` and both leads, and each has one thing to teach: a bass that arrives an eighth
  * early, a flat-two cadence in phrygian, a 303 line where the slides are the notes, a question
  * answered upside down, a chromatic approach to every bar head, and the stacked fifths #624
- * wrote. What the eleven add to the library is the first `sub` (`low-bass-…`), the first
+ * wrote. What the twelve add to the library is the first `sub` (`low-bass-…`), the first
  * one-bar figure (`acid-wiggler-…`, sixteen steps because that is the size of an acid loop),
- * and the first two-note counterpoint on a two-note box. `test/moog-subsequent-37.test.ts`
- * holds each to two notes at most, and #643's seven to their tables.
+ * the first two-note counterpoint on a two-note box, and the first arpeggiated hold.
+ * `test/moog-subsequent-37.test.ts` holds each to two notes sounding at most, and #643's seven
+ * to their tables.
  */
 export const RIFFS: readonly Riff[] = [
   threeOscBassLoveRootOctaveFigure,
@@ -184,6 +192,7 @@ export const RIFFS: readonly Riff[] = [
   duotronicMoogtronsPedalAndLinePad,
   funkOrganEarlySixteenthStabs,
   hamamatsuTinesBalladFigure,
+  harpCChordArpeggiatedHold,
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
@@ -229,6 +238,7 @@ export {
   duotronicMoogtronsPedalAndLinePad,
   funkOrganEarlySixteenthStabs,
   hamamatsuTinesBalladFigure,
+  harpCChordArpeggiatedHold,
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
@@ -264,7 +274,7 @@ export {
  * factory patch surfaces on the box that ships the patch, at `/devices/<id>/presets/<patch>`,
  * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
  * catalogue, its static routes, the search and the sitemap cannot disagree about which
- * thirty-five left. Not a second content type: the thirty-five stay in this folder, under the
+ * thirty-six left. Not a second content type: the thirty-six stay in this folder, under the
  * same schema and the same tests, and `presetSession` finds each by the patch its `reference`
  * names.
  */
