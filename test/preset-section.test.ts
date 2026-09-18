@@ -21,7 +21,7 @@ import { device as fixtureDevice, recipe } from './fixtures'
  * What is pinned: the panel is on the one box with a session and on no other; every entry is a
  * closed disclosure whose summary carries the name and what it is for; the body carries the
  * link to the figure written for it and nothing about a recipe (#598); the order is the
- * folder's; the Muse's panel counts nothing, since its twelve came off a unit; and a list off a
+ * folder's; the Muse's panel counts nothing, since its thirteen came off a unit; and a list off a
  * manual page states the total the manual names and how many are here, with no row for a
  * patch nobody described (#617).
  */
@@ -61,10 +61,10 @@ const session = presetSession(byId('moog-muse'))
 if (session === undefined) throw new Error('the Muse has no preset session')
 
 describe('the Explore your device panel is on the three boxes with a session and on no other (#593, #618, #624)', () => {
-  it('renders twelve closed entries on the Muse', () => {
+  it('renders thirteen closed entries on the Muse', () => {
     expect(PRESET_HEADING).toBe('Explore your device')
     expect(MUSE).toContain(`>${PRESET_HEADING}<`)
-    expect(MUSE.match(/class="disclosure preset-entry"/g)?.length).toBe(12)
+    expect(MUSE.match(/class="disclosure preset-entry"/g)?.length).toBe(13)
     expect(MUSE).not.toContain('preset-entry" open')
   })
 
@@ -104,7 +104,7 @@ describe('each entry says what the model says', () => {
    */
   it('links every entry to its figure page under the device, and nowhere into /riffs', () => {
     const patchRiffs = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patchRiffs.length).toBe(36)
+    expect(patchRiffs.length).toBe(37)
     for (const entry of session.entries) {
       expect(entry.figure, entry.patch.name).toBeDefined()
       expect(MUSE, entry.patch.name).toContain(
@@ -192,12 +192,12 @@ describe('each entry says what the model says', () => {
   })
 
   it('says nothing about the patches it does not list', () => {
-    // The Muse ships 224 and declares twelve off a unit. A denominator on an observed reading
+    // The Muse ships 224 and declares thirteen off a unit. A denominator on an observed reading
     // turns a fact into a score of our authoring, and the operator's decision was to list the
-    // twelve and say nothing else.
+    // ones read and say nothing else.
     expect(session.reading).toBe('observed')
     expect(PANEL_TEXT).not.toMatch(/\b224\b/)
-    expect(PANEL_TEXT).not.toMatch(/twelve of|12 of/i)
+    expect(PANEL_TEXT).not.toMatch(/twelve of|12 of|thirteen of|13 of/i)
     expect(PANEL_TEXT).not.toMatch(/nobody has|not yet written|backlog/i)
   })
 })

@@ -18,8 +18,8 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    page;
  *  - the session answers **`undefined` for a box without both declarations**, so a box with
  *    the fact alone shows nothing;
- *  - the Muse's session carries **the twelve in the folder's order**, joins **all twelve** to
- *    the riff whose reference names them, **resolves all twelve on the Muse** as `played`,
+ *  - the Muse's session carries **the thirteen in the folder's order**, joins **all thirteen**
+ *    to the riff whose reference names them, **resolves all thirteen on the Muse** as `played`,
  *    carries **nothing about a recipe** (#598), and no box beyond the three that declare
  *    both halves — the Muse, the minilogue xd (#618) and the Subsequent 37 (#624) — has one;
  *  - a figure the box **cannot play throws** rather than becoming a gap on a page (#598), and
@@ -224,13 +224,13 @@ describe('the session answers undefined without both declarations (§2.6/#593)',
 
 const muse = DEVICES.find((d) => d.id === 'moog-muse') as Device
 
-describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #598)', () => {
+describe('the Muse session: thirteen entries, thirteen figures, no recipes (#593, #598, #654)', () => {
   const session = presetSession(muse)
 
-  it('carries the twelve, one per shipped patch, in the order the folder authored them', () => {
+  it('carries the thirteen, one per shipped patch, in the order the folder authored them', () => {
     expect(session).toBeDefined()
     const names = session?.entries.map((e) => e.patch.name) ?? []
-    expect(names).toHaveLength(12)
+    expect(names).toHaveLength(13)
     expect([...names].sort()).toEqual(
       (muse.factoryPatches ?? []).map((p) => p.name).sort(),
     )
@@ -259,7 +259,7 @@ describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #5
     }
   })
 
-  it('links all twelve to the riff whose reference names the patch', () => {
+  it('links all thirteen to the riff whose reference names the patch', () => {
     for (const entry of session?.entries ?? []) {
       expect(entry.figure, entry.patch.name).toBeDefined()
       expect(entry.figure?.riff.reference, entry.patch.name).toEqual({
@@ -268,7 +268,7 @@ describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #5
       })
     }
     const linked = new Set((session?.entries ?? []).map((e) => e.figure?.riff.id))
-    expect(linked.size).toBe(12)
+    expect(linked.size).toBe(13)
   })
 
   /**
@@ -276,7 +276,7 @@ describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #5
    * Muse alone: the same voice, recipe and settings a riff page would show with only that box
    * ticked, so nothing here is a second resolver.
    */
-  it('resolves all twelve on the Muse, as a riff page would with the Muse alone ticked', () => {
+  it('resolves all thirteen on the Muse, as a riff page would with the Muse alone ticked', () => {
     for (const entry of session?.entries ?? []) {
       const figure = entry.figure
       if (figure === undefined) throw new Error(entry.patch.name)
@@ -292,7 +292,7 @@ describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #5
     }
   })
 
-  it('addresses each of the twelve by the slug of the name the box prints', () => {
+  it('addresses each of the thirteen by the slug of the name the box prints', () => {
     const slugs = (session?.entries ?? []).map((e) => e.slug)
     expect(slugs).toEqual([
       '3-osc-bass-love',
@@ -307,8 +307,9 @@ describe('the Muse session: twelve entries, twelve figures, no recipes (#593, #5
       'polyphonic-power',
       'moog-55-strings',
       'soft-orchestra',
+      'mirror-interior',
     ])
-    expect(new Set(slugs).size).toBe(12)
+    expect(new Set(slugs).size).toBe(13)
     // The figure's id opens with the same slug (§5A.5), so address and figure agree.
     for (const entry of session?.entries ?? []) {
       expect(entry.figure?.riff.id.startsWith(`${entry.slug}-`), entry.patch.name).toBe(true)

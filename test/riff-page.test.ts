@@ -474,12 +474,12 @@ describe('the riff page exists exactly where a record-named entry does (#598)', 
 
   /**
    * §5A.7/#598. A figure named for a factory patch is a page under the box that ships the
-   * patch and has no page here. Every one of the twelve, so a thirteenth added to `lib/riffs`
-   * with a `patch` reference 404s here without an edit.
+   * patch and has no page here. Every one of them, so another added to `lib/riffs` with a
+   * `patch` reference 404s here without an edit.
    */
   it('404s on every patch-named id, which is a page under its box instead', async () => {
     const patches = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patches).toHaveLength(36)
+    expect(patches).toHaveLength(37)
     for (const riff of patches) {
       await expect(markupFor(riff.id), riff.id).rejects.toThrow(/404/)
       expect(await generateMetadata({ params: Promise.resolve({ id: riff.id }) }), riff.id).toEqual(

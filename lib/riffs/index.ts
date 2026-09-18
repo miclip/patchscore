@@ -24,6 +24,7 @@ import { cloudLevelSharedTopDrift } from './cloud-level-shared-top-drift'
 import { hypnoAcidSixteenthLoop } from './hypno-acid-sixteenth-loop'
 import { lushM7ParallelRootLine } from './lush-m7-parallel-root-line'
 import { metalfnkleadSyncopatedFunkLine } from './metalfnklead-syncopated-funk-line'
+import { mirrorInteriorTwoHandSplit } from './mirror-interior-two-hand-split'
 import { mirroredbassInvertedAnswerLine } from './mirroredbass-inverted-answer-line'
 import { petrichorOffbeatCompingFigure } from './petrichor-offbeat-comping-figure'
 import { pressureRepeatedNoteBuild } from './pressure-repeated-note-build'
@@ -62,8 +63,8 @@ import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-s
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
  * named one reference and filed itself under another cannot parse. Nine entries are `record`
- * references and thirty-five are `patch` references, and the kind decides where an entry
- * surfaces (#598): the nine are `/riffs`, and each of the thirty-five is a page under the box
+ * references and thirty-seven are `patch` references, and the kind decides where an entry
+ * surfaces (#598): the nine are `/riffs`, and each of the thirty-seven is a page under the box
  * that ships its patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
@@ -113,6 +114,14 @@ import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-s
  * with no grid (`moog-55-strings-suspension-writing`, `soft-orchestra-slow-changes`). Both
  * were filed as `lead` while `RiffSchema` refused a held role; #608 removed that rule and put
  * them on the role their definitions named (§5A.2).
+ *
+ * The thirteenth on that box is `mirror-interior-two-hand-split` (#654), and it is the one
+ * entry in the library written for a patch that loads with the keyboard split: a bass walked
+ * in the left hand under a triad the right hand holds for the arpeggiator, with the two moving
+ * in contrary motion. It is an `arp` with `polyphony: 4` and no grid, and it does not carry
+ * `arpeggiatedHold`, because that flag says the whole figure is held under an arpeggiator and
+ * only half of this one is. Four held overstates what sounds, and the entry says so; one voice
+ * would understate it and claim the bass is arpeggiated, which it is not.
  *
  * ## Two entries name the patch their sound is (§5A.5, #585)
  *
@@ -199,6 +208,7 @@ export const RIFFS: readonly Riff[] = [
   lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
+  mirrorInteriorTwoHandSplit,
   mirroredbassInvertedAnswerLine,
   moog55StringsSuspensionWriting,
   moogProSoloGlideLead,
@@ -245,6 +255,7 @@ export {
   lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
+  mirrorInteriorTwoHandSplit,
   mirroredbassInvertedAnswerLine,
   moog55StringsSuspensionWriting,
   moogProSoloGlideLead,
@@ -274,7 +285,7 @@ export {
  * factory patch surfaces on the box that ships the patch, at `/devices/<id>/presets/<patch>`,
  * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
  * catalogue, its static routes, the search and the sitemap cannot disagree about which
- * thirty-six left. Not a second content type: the thirty-six stay in this folder, under the
+ * thirty-seven left. Not a second content type: the thirty-seven stay in this folder, under the
  * same schema and the same tests, and `presetSession` finds each by the patch its `reference`
  * names.
  */

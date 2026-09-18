@@ -110,7 +110,7 @@ describe('the page says what the model says, every entry open', () => {
     // The same sentence the panel says, from the one function both call (#617).
     expect(MUSE).toContain(`<p class="preset-lead">${presetLead(session)}</p>`)
     expect(MUSE_TEXT).toContain(presetLead(session))
-    expect(MUSE.match(/class="preset-card"/g)?.length).toBe(12)
+    expect(MUSE.match(/class="preset-card"/g)?.length).toBe(13)
     // No disclosure anywhere: the page is the open reading.
     expect(MUSE).not.toContain('<details')
     // The name is the card's heading, and the heading is the name alone (#629).
@@ -167,7 +167,7 @@ describe('the page says what the model says, every entry open', () => {
     expect(MUSE_TEXT).not.toMatch(/Download|Print/)
     expect(MUSE_TEXT).not.toMatch(/\bmood\b|\bseed\b|\btempo\b/i)
     expect(MUSE_TEXT).not.toMatch(/\b224\b/)
-    expect(MUSE_TEXT).not.toMatch(/twelve of|12 of/i)
+    expect(MUSE_TEXT).not.toMatch(/twelve of|12 of|thirteen of|13 of/i)
     expect(MUSE_TEXT).not.toMatch(/nobody has|not yet written|backlog/i)
   })
 
