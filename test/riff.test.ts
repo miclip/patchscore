@@ -17,6 +17,7 @@ import {
   spellChord,
   spellDegree,
   transposableKeys,
+  widestHold,
   type FactoryPatch,
   type HookNote,
   type Riff,
@@ -520,16 +521,17 @@ describe('the riff library (§5A)', () => {
    * the range was a proxy for *not many*; #569 landed eleven at once, and a range wide enough to
    * hold seventeen would hold anything. The number is content: nine records, the twelve
    * factory-patch definitions for the Muse, the twelve for the minilogue xd's programs (#618)
-   * and the eleven for the Subsequent 37's presets (#624, less the drone #643 reduced to a use
-   * line), and an entry added or dropped moves it and has to say so here. The sixth record is
+   * and the twelve for the Subsequent 37's presets (#624, less the drone #643 reduced to a use
+   * line, plus the arpeggiated hold #645 added), and an entry added or dropped moves it and has
+   * to say so here. The sixth record is
    * `an-ending-ascent-pad` (#627), the first record-named pad; the seventh, eighth and ninth
    * are #638's three, which close the gaps the first six shared: a major key, a tempo above
    * 128, and a `sub` and an `arp`.
    */
-  it('has exactly forty-four entries: nine records and thirty-five factory patches (#566, #569, #618, #624, #627, #638, #643)', () => {
-    expect(RIFFS.length).toBe(44)
+  it('has exactly forty-five entries: nine records and thirty-six factory patches (#566, #569, #618, #624, #627, #638, #643, #645)', () => {
+    expect(RIFFS.length).toBe(45)
     expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(9)
-    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(35)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(36)
   })
 
   it('every entry parses', () => {
@@ -624,7 +626,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is seven roles over forty-four entries, ten of them pads', () => {
+  it('is seven roles over forty-five entries, ten of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -638,19 +640,22 @@ describe('the riff library (§5A)', () => {
     // the Vox Humana lead for a four-part pad on the same patch: one fewer lead, one more pad,
     // and the count unchanged. #643 replaced seven of the Subsequent 37's figures on their own
     // roles and reduced the eighth, the one `texture`, to a use line: one fewer entry, and no
-    // `texture` in the library until somebody writes one worth playing.
+    // `texture` in the library until somebody writes one worth playing. #645 added a fourth
+    // `arp`, the library's first arpeggiated hold: four notes held on that role for the box's
+    // arpeggiator, so it is an `arp` with no grid, and the only entry on a struck role that
+    // carries neither a grid nor `reArticulatesHook`.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
       acid: 2,
-      arp: 3,
+      arp: 4,
       'bass-mid': 5,
       lead: 10,
       pad: 10,
       stab: 12,
       sub: 2,
     })
-    expect(RIFFS).toHaveLength(44)
+    expect(RIFFS).toHaveLength(45)
     // And the ten pads are the ten held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
@@ -666,11 +671,15 @@ describe('the riff library (§5A)', () => {
       'vox-humana-four-part-voice-leading',
     ])
     // The flag is a struck role's question (#623): every held riff leaves it unanswered, every
-    // struck riff answers it, and the grid is there exactly where the answer is `true`.
+    // struck riff answers it, and the grid is there exactly where the answer is `true`. An
+    // arpeggiated hold is held on any role (#645), so it is never asked either, and it is the
+    // one entry on a struck role with neither flag nor grid.
     for (const r of RIFFS) {
-      expect(r.request.reArticulatesHook === undefined, r.id).toBe(!bearsPattern(r.request.role))
+      const held = !bearsPattern(r.request.role) || r.arpeggiatedHold === true
+      expect(r.request.reArticulatesHook === undefined, r.id).toBe(held)
       expect(r.pattern !== undefined, r.id).toBe(r.request.reArticulatesHook === true)
     }
+    expect(RIFFS.filter((r) => r.arpeggiatedHold).map((r) => r.id)).toEqual(['harp-c-chord-arpeggiated-hold'])
   })
 
   /**
@@ -1784,7 +1793,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(44)
+      expect(RIFFS).toHaveLength(45)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
@@ -2037,12 +2046,17 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // in force. The two counts agree on every entry that strikes its chords together and
     // differ on one that does not — `swollen-pad-staggered-stack` (#618) enters its four notes
     // a beat apart and holds all four, which is four voices however it is counted at the onset.
+    //
+    // §12.4/#645. The one exception is the arpeggiated hold, and it is an exception the other
+    // way: the box sounds the held notes one at a time, so the part asks for one voice however
+    // wide the hold, and the schema refuses a `polyphony` above it (`test/arpeggiated-hold.test.ts`).
     for (const entry of RIFFS) {
       let widest = 0
       for (let step = 1; step <= entry.hook.bars * 16; step += 1) {
         widest = Math.max(widest, sounding(entry, step).length)
       }
-      expect(entry.request.polyphony ?? 1, entry.id).toBe(widest)
+      expect(widest, entry.id).toBe(widestHold(entry.hook))
+      expect(entry.request.polyphony ?? 1, entry.id).toBe(entry.arpeggiatedHold ? 1 : widest)
     }
   })
 
@@ -2052,10 +2066,13 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // hook has to be a whole number of passes for that reading to close.
     for (const entry of RIFFS) {
       // A held riff has no grid to check (§5A.2/#608), and neither has a through-composed one
-      // on a struck role (#623); the schema holds each to its shape.
+      // on a struck role (#623) or an arpeggiated hold on any role (#645); the schema holds
+      // each to its shape.
       if (entry.pattern === undefined) {
         expect(
-          !bearsPattern(entry.request.role) || entry.request.reArticulatesHook === false,
+          !bearsPattern(entry.request.role) ||
+            entry.request.reArticulatesHook === false ||
+            entry.arpeggiatedHold === true,
           entry.id,
         ).toBe(true)
         continue

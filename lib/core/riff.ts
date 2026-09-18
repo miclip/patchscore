@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import type { Assignable, Device, FactoryPatch, Recipe, TriggerNote } from './device'
-import { realisationOf } from './device'
+import { hasArpeggiator, realisationOf } from './device'
 import { comparePoolMembers, quantiseDistance } from './search'
 import {
   chordNotesText,
@@ -353,6 +353,34 @@ export type Riff = {
    * Absent on an entry with nothing mechanical to say, which is most of them.
    */
   constraints?: RiffConstraints
+  /**
+   * §5A.2/§12.4/#645. **The hook's chords are held for the box's arpeggiator, which sounds them
+   * one note at a time — so the part costs one voice, however wide the hold.**
+   *
+   * This is the difference between how many notes a box *plays* and how many it *sounds* at
+   * once, and an arpeggiator is exactly where the two come apart. Four notes held under one are
+   * four keys down and one voice sounding, so a two-note synth whose mono recipes declare
+   * `patchPolyphony: 1` plays a four-note hold on any of them. Without this field the hook's
+   * simultaneous notes mean simultaneous, `resolveRiff` asks for four voices, and the figure is
+   * refused on the one box it was written for.
+   *
+   * **It is a claim about the box, not about the figure, and it may only be made where the box
+   * agrees.** A riff names no device (invariant 3), so the join is made at resolution: a
+   * candidate has to declare `features.arpeggiator`, cited, or it is not a candidate, and the
+   * gap says so (`no-arpeggiator`). Otherwise any figure could exempt itself from polyphony by
+   * asserting an arpeggiator, and `patchPolyphony` would be advisory.
+   *
+   * **Three things follow, and the schema holds each.** The request asks for one voice, so
+   * `polyphony` is absent or 1 — the hold's width is the hook's and is stated nowhere twice.
+   * There is no grid and no `reArticulatesHook`, on any role: the arpeggiator is the rhythm, and
+   * a grid beside it would be the two authorities #100 forbids. And the hook holds more than one
+   * note at some step, since a hold of one note has nothing for an arpeggiator to run through.
+   *
+   * **It is not the `arp` role.** That role is a struck part a sequencer plays, and a riff on it
+   * carries a grid like any struck part. This is a hand holding a chord while the box strikes,
+   * which can be a `pad` or an `arp` or anything else the recipe answers to.
+   */
+  arpeggiatedHold?: true
   hook: Hook
   /**
    * Where the hook's notes are struck. See the header: `reArticulatesHook` is what joins them.
@@ -592,6 +620,25 @@ export function riffConstraintViolations(riff: Riff): string[] {
   return out
 }
 
+/**
+ * §12.4/#645. **The most notes a hook holds at any one step** — what *sounds* rather than what
+ * *starts*, since a voice is spent for as long as a note is in force. This is the count an
+ * ordinary riff's `polyphony` has to equal (`test/riff.test.ts`) and the count an arpeggiated
+ * hold's has to be free of, and it is exported so neither side re-derives it.
+ */
+export function widestHold(hook: Pick<Hook, 'bars' | 'notes'>): number {
+  let widest = 0
+  const last = hook.bars * STEPS_PER_BAR
+  for (let step = 1; step <= last; step += 1) {
+    let sounding = 0
+    for (const n of hook.notes) {
+      if (step >= n.step && step < n.step + n.len) sounding += 1
+    }
+    widest = Math.max(widest, sounding)
+  }
+  return widest
+}
+
 export const RiffSchema = z
   .strictObject({
     id: z.string().min(1),
@@ -605,6 +652,7 @@ export const RiffSchema = z
     harmony: HarmonySchema.optional(),
     figureStartsAtBar: z.int().min(1).optional(),
     constraints: RiffConstraintsSchema.optional(),
+    arpeggiatedHold: z.literal(true).optional(),
     hook: HookSchema,
     pattern: PatternSchema.optional(),
   })
@@ -758,6 +806,52 @@ export const RiffSchema = z
       })
     }
     /*
+     * §5A.2/§12.4/#645. **An arpeggiated hold is the fourth shape, and it is held on every
+     * role.** See `Riff.arpeggiatedHold`: the arpeggiator is the rhythm, so there is no grid and
+     * no flag in either spelling; the box sounds one note at a time, so the request asks for
+     * one voice and the hold's width lives in the hook alone; and the hook holds more than one
+     * note somewhere, or there is nothing to arpeggiate.
+     */
+    const arpeggiated = riff.arpeggiatedHold === true
+    if (arpeggiated) {
+      if (pattern !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'an arpeggiated hold has no grid: the arpeggiator is the rhythm, and a grid beside ' +
+            'it would be two authorities over one rhythm (#100, §5A.2)',
+          path: ['pattern'],
+        })
+      }
+      if (request.reArticulatesHook !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'an arpeggiated hold has no grid to re-articulate the hook: the arpeggiator strikes ' +
+            'the notes (§5A.2)',
+          path: ['request', 'reArticulatesHook'],
+        })
+      }
+      if ((request.polyphony ?? 1) !== 1) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            `an arpeggiated hold sounds one note at a time and asks for one voice, not ` +
+            `${String(request.polyphony)}: the width of the hold is the hook's (§12.4)`,
+          path: ['request', 'polyphony'],
+        })
+      }
+      if (widestHold(hook) < 2) {
+        ctx.addIssue({
+          code: 'custom',
+          message:
+            'an arpeggiated hold holds more than one note at some step; with one there is ' +
+            'nothing for the arpeggiator to run through (§5A.2)',
+          path: ['hook', 'notes'],
+        })
+      }
+    }
+    /*
      * §4.2/§5A.2/#608/#623. **The role and the flag decide whether there is a grid.** A held
      * role (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on
      * one is its hook and nothing else: no `pattern`, and no `reArticulatesHook` in either
@@ -768,7 +862,9 @@ export const RiffSchema = z
      * would be the two authorities #100 forbids. Each shape refuses the others', so an entry
      * cannot half-change role and cannot carry a grid it has disowned.
      */
-    if (!bearsPattern(request.role)) {
+    if (arpeggiated) {
+      // Held on every role, and checked above; the struck-role question is never asked.
+    } else if (!bearsPattern(request.role)) {
       if (pattern !== undefined) {
         ctx.addIssue({
           code: 'custom',
@@ -886,11 +982,18 @@ export const RiffSchema = z
 export type RiffGap =
   | {
       reason: 'no-capable-voice'
-      /** `no-such-role` — nothing plays it at all. `polyphony` — it plays, but not this wide. */
-      because: 'no-such-role' | 'polyphony'
+      /**
+       * `no-such-role` — nothing plays it at all. `polyphony` — it plays, but not this wide.
+       * `no-arpeggiator` — it plays, but the figure holds its chord under an arpeggiator
+       * (`Riff.arpeggiatedHold`) and no box here declares one (§12.4/#645).
+       */
+      because: 'no-such-role' | 'polyphony' | 'no-arpeggiator'
       /** Simultaneous notes the part asked for. 1 unless the request said otherwise. */
       notes: number
-      /** Voices that claim the role and could not carry the notes. Empty for `no-such-role`. */
+      /**
+       * Voices that claim the role and could not carry the part. Empty for `no-such-role`; for
+       * `no-arpeggiator`, the voices whose box has no arpeggiator to hold the chord under.
+       */
       roleVoices: readonly Assignable[]
     }
   | {
@@ -1024,9 +1127,21 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
    */
   const pools = new Map<string, { device: Device; members: Assignable[] }>()
 
+  /**
+   * §12.4/#645. **An arpeggiated hold is played only by a box that declares the arpeggiator.**
+   * The riff's claim is that the box sounds the held chord one note at a time, and that is a
+   * fact about the box (`features.arpeggiator`, cited) rather than about the figure; a box that
+   * has not said it is not a candidate, however many voices it has. Its voices are still
+   * counted as playing the role, so the gap can say the part is playable here and the
+   * arpeggiator is what is missing.
+   */
+  const arpeggiated = riff.arpeggiatedHold === true
+  let withoutArpeggiator = 0
+
   for (const device of devices) {
+    const eligible = !arpeggiated || hasArpeggiator(device)
     for (const assignable of expand(device)) {
-      if (assignable.poolId !== undefined) {
+      if (assignable.poolId !== undefined && eligible) {
         // NUL, so `a` + `b-c` and `a-b` + `c` cannot collide — `poolGroupKey`'s own reason.
         const key = `${assignable.deviceId}\u0000${assignable.poolId}`
         const group = pools.get(key)
@@ -1035,6 +1150,10 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
       }
       if (!assignable.roles.includes(role)) continue
       roleVoices.push(assignable)
+      if (!eligible) {
+        withoutArpeggiator += 1
+        continue
+      }
       // §12.4. The same two questions the search asks, in the same order: the voice sounds the
       // notes itself (or a recipe gets there another way), or a pool spreads them.
       const carries = canCarryNotes(device, assignable, role, wantedNotes)
@@ -1102,17 +1221,20 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
   }
 
   if (capable.length === 0) {
+    // Named in the order a reader acts on them: nothing plays the part; something does but
+    // nothing here has the arpeggiator the hold needs; something does but not this wide.
+    const because =
+      roleVoices.length === 0
+        ? 'no-such-role'
+        : withoutArpeggiator === roleVoices.length
+          ? 'no-arpeggiator'
+          : 'polyphony'
     return {
       riff,
       devices,
       notes,
       outcome: 'gap',
-      gap: {
-        reason: 'no-capable-voice',
-        because: roleVoices.length === 0 ? 'no-such-role' : 'polyphony',
-        notes: wantedNotes,
-        roleVoices,
-      },
+      gap: { reason: 'no-capable-voice', because, notes: wantedNotes, roleVoices },
     }
   }
 

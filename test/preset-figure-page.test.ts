@@ -141,8 +141,9 @@ describe('the figure page exists exactly where a figure does, and nowhere it use
     const museParams = params.filter((p) => p.id === 'moog-muse')
     expect(museParams).toEqual(FIGURED.map(({ entry }) => ({ id: 'moog-muse', patch: entry.slug })))
     expect(museParams).toHaveLength(12)
-    // Thirty-five since #643: the Subsequent 37's DRONE keeps a use and has no figure page.
-    expect(params).toHaveLength(35)
+    // Thirty-six since #645: the Subsequent 37's DRONE keeps a use and has no figure page
+    // (#643), and its Harp C Chord gained one.
+    expect(params).toHaveLength(36)
     // Every patch-named riff has a page here, under the box that ships its patch, and only those.
     const musePatches = new Set(byId('moog-muse').factoryPatches?.map((p) => p.name))
     const ids = new Set(FIGURED.map(({ figure }) => figure.riff.id))

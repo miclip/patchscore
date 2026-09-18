@@ -1,4 +1,5 @@
 import type { Device, PatchUse, Recipe, ShippedPatch, SustainClaim } from '../../core/device'
+import { ARPEGGIATOR_FACT } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { SUBSEQUENT_37_PANEL } from './panel'
 
@@ -105,8 +106,8 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  *    keep the unshifted tick marks, so nothing on the panel tells a reader which layer they are
  *    looking at. Every recipe states `KNOB SHIFT` off before it states a single envelope time.
  *  - **`ARPEGGIATOR RATE`** — `2 BPM` to `280 BPM`, replaced by clock divisions under the
- *    arpeggiator's own `SYNC` (p.15). No recipe touches it; the arpeggiator is not used at all
- *    (see below), so the trap is recorded rather than handled.
+ *    arpeggiator's own `SYNC` (p.15). No recipe touches it; no recipe states an arpeggiator
+ *    setting at all (see below), so the trap is recorded rather than handled.
  *
  * ## What is left out, and why
  *
@@ -130,9 +131,12 @@ import { SUBSEQUENT_37_PANEL } from './panel'
  * settings, so a recipe that needs one modulation route states one and leaves the other where
  * the preset had it — the same call the minilogue xd makes for the two effects it does not name.
  *
- * **The arpeggiator and the 64-step sequencer are absent.** Patterns are template-owned (§4.3),
+ * **No recipe states an arpeggiator or sequencer setting.** Patterns are template-owned (§4.3),
  * so no recipe carries step hits, and `features.perStep` is omitted: this box's per-step data is
- * note, velocity and ratchet recording rather than a vocabulary of per-step switches.
+ * note, velocity and ratchet recording rather than a vocabulary of per-step switches. The
+ * arpeggiator itself is declared as a capability fact (`features.arpeggiator`, below), because a
+ * riff holding a chord under it needs the box to say it has one; what the reader dials on it is
+ * the figure's to say.
  *
  * Also unmodelled: `FINE TUNE` (a tuning control, not a sound-design one), the master and
  * headphone `VOLUME` knobs (monitoring), the CONTROLLERS menu's per-controller modulation
@@ -266,9 +270,10 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
 ).map(([name, slot]) => ({ name, slot }))
 
 /**
- * §2.6/#593, #617, #624, #643. **What twelve of the twenty are for**, and the figure written
- * for eleven of them is under `lib/riffs/` with a `patch` reference naming it. `SHIPPED_PATCHES`
- * is the fact and this is the judgement beside it, keyed by name so the two cannot drift.
+ * §2.6/#593, #617, #624, #643, #645. **What thirteen of the twenty are for**, and the figure
+ * written for twelve of them is under `lib/riffs/` with a `patch` reference naming it.
+ * `SHIPPED_PATCHES` is the fact and this is the judgement beside it, keyed by name so the two
+ * cannot drift.
  *
  * **Uncited, as every `use` in the library is**, and with less to lean on than either list
  * before it: the minilogue xd's page printed a Category, a Voice Mode and an author, the Muse's
@@ -279,13 +284,13 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
  * down with, and the use lines followed them. A use now describes the figure and nothing about
  * the name.
  *
- * **Twelve of twenty, and eleven figures** (#617, #643): the judgement covers a subset of the
- * fact so the fact can stay as wide as the reading, and `DRONE` carries a use and no figure,
- * because one note held under four chords is a use line and was never a figure. `Harp C
- * Chord` and `DUO WAVE MOD` are the alternates if any of the two-note entries disappoints; the
- * other six carry a name and nothing else here.
+ * **Thirteen of twenty, and twelve figures** (#617, #643, #645): the judgement covers a subset
+ * of the fact so the fact can stay as wide as the reading, and `DRONE` carries a use and no
+ * figure, because one note held under four chords is a use line and was never a figure. `DUO
+ * WAVE MOD` is the alternate if any of the two-note entries disappoints; the other six carry a
+ * name and nothing else here.
  *
- * **Every figure is one or two notes, because this box plays two** (p.9, `polyphony: 2`
+ * **Every figure sounds one or two notes, because this box plays two** (p.9, `polyphony: 2`
  * above). The harmony on each is context the line sits over, and five entries spend the second
  * note. Three are the three species of two-voice motion, and a reader with all three has three
  * different lessons: parallel (`DUO ORG`, the pair moves together), contrary (`SAWTEETH DUO
@@ -295,24 +300,32 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
  * the two roles every recipe of which spends the second note. The six single lines are on the
  * mono recipes (#632), and `Triangle Lead` is on the one duo lead, with a note to spare.
  *
+ * **One figure holds four, and sounds one** (#645). `Harp C Chord` is an arpeggiated hold
+ * (§5A.2, §12.4): four keys down, and the arpeggiator declared at `features.arpeggiator`
+ * sounds them one at a time, so the figure lands on the one-note bright arp recipe. It is the
+ * only way this box holds four notes at all, which is what the figure teaches, and the width
+ * is in the hand and never in the voice count. `test/moog-subsequent-37.test.ts` counts the
+ * two separately.
+ *
  * **The order is editorial, and it is the reading order.** The box was seen browsing
  * alphabetically during the reading that produced `SHIPPED_PATCHES` — no page states a browse
  * order, and this is the only claim here that rests on watching the screen rather than on a
  * name read off it. Alphabetical puts `DRONE` beside `DUO ORG` and `CELESTIAL` beside
  * `BRASH B@SS`, pairs nobody compares. This walks from the single low line up: the three
- * low-register parts, the arp, the two leads, the three struck sounds, then the three held
- * sounds, ending on the one with a use and no figure. The three two-voice stabs are adjacent so
- * a reader choosing between them finds them on neighbouring rows, and the two organs are
- * adjacent for the same reason. Change the order here and the page follows; nothing downstream
- * sorts it.
+ * low-register parts, the two arp figures (the struck ladder, then the held chord), the two
+ * leads, the three struck sounds, then the three held sounds, ending on the one with a use and
+ * no figure. The three two-voice stabs are adjacent so a reader choosing between them finds
+ * them on neighbouring rows, and the two organs are adjacent for the same reason. Change the
+ * order here and the page follows; nothing downstream sorts it.
  */
 const PATCH_USES: PatchUse[] = [
   // The low end: a sub, a bass, an acid line
   { name: 'LOW BASS', use: 'Four strikes a bar, and the last one is the next chord’s root, an eighth early' },
   { name: 'Terror Bass', use: 'Three bars of bass line and a fourth on the flat two, falling back onto the beat' },
   { name: 'Acid Wiggler', use: 'One bar of sixteenths on the root, four of them slid into' },
-  // The other sixteenth line
+  // The other sixteenth line, and the held chord the arpeggiator plays
   { name: 'TRIPLET 5THS', use: 'Fifths stacked three at a time, accented in threes across the beat' },
+  { name: 'Harp C Chord', use: 'Four notes held for the arpeggiator, and the order you press them is the tune' },
   // Leads
   { name: 'SAW LEAD', use: 'A bar climbing to a held note, then the same rhythm falling' },
   { name: 'Triangle Lead', use: 'Chord tones, and every bar head reached by a semitone from below' },
@@ -1546,8 +1559,23 @@ export const device: Device = {
    */
   noteDuration: { kind: 'tied-steps', control: 'TIE' },
 
+  /**
+   * §2.6/§12.4/#645. **The box has an arpeggiator, and it is part of the preset.** p.40 files it
+   * under `ARPEGGIATOR (PRESET EDIT 1.1)`, one sub menu above `SEQUENCER (PRESET EDIT 1.2)`:
+   * GATE LENGTH, CLOCK DIV, SWING, STEP 1 RESET and END NOTES are preset-edit parameters, so a
+   * preset can *be* an arp patch rather than the arp being a global switched on over anything.
+   * The same page has it sounding held notes one at a time — *"if you're arpeggiating C-E-G
+   * using the UP Pattern with the BACK/FORTH button illuminated, you get C-E-G-E-C"* — which is
+   * the fact a held chord costs one voice on, and the reason this box, `polyphony: 2` with its
+   * mono recipes at `patchPolyphony: 1`, can hold four notes at all. p.15 is the panel section
+   * and p.16 the PATTERN knob (`UP`, `DWN`, `ORDR`, `RND`); p.40 is cited because the preset is
+   * where the claim has to hold.
+   */
+  features: { arpeggiator: true },
+
   capabilityEvidence: {
     noteDuration: cite(17),
+    [ARPEGGIATOR_FACT]: cite(40),
     /**
      * §2.6/#592, #617, #624. `observed`, and the schema accepts nothing else here: the manual
      * counts 256 locations (p.12) and names none, so the names in `factoryPatches` come off the

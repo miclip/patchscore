@@ -584,6 +584,15 @@ export function riffGap(riff: Riff, gap: RiffGap, devices: readonly Device[]): s
   if (gap.because === 'no-such-role') {
     return `Add a box that plays ${riff.request.role}.`
   }
+  // §12.4/#645. The part is playable here; what the figure needs is the arpeggiator its chord
+  // is held under, and that is a box rather than a setting.
+  if (gap.because === 'no-arpeggiator') {
+    return (
+      `This figure holds its chord for an arpeggiator to play one note at a time. ` +
+      `${voiceNames(gap.roleVoices, devices)} could play ${riff.request.role}, but nothing here ` +
+      'has an arpeggiator. Add a box with one.'
+    )
+  }
   const ceiling = gap.roleVoices.reduce((most, a) => Math.max(most, a.polyphony), 0)
   const sounds =
     ceiling <= 1
