@@ -55,12 +55,15 @@ export const terrorBassFlatTwoCadenceLine: Riff = {
     'Three bars of E minor, one bar of F major, and the F is a semitone above the E. The ' +
       'figure is the fall from the F back to the E, and everything before it is there so the ' +
       'fall has something to fall from.',
-    'Bar one: E, B, the E above, D. Bar two: E, G, B, A. Bar three: E, the E above, D, B. Each ' +
-      'bar strikes the one, the "and" of two, beat three and the "and" of four, and every ' +
-      'note is a tone of the E minor or the step next to one.',
+    'Bar one: E, B, G, A. Bar two: E, G, B, C. Bar three: E, A, G, B. Each bar strikes the ' +
+      'one, the "and" of two, beat three and the "and" of four, and nothing climbs above the ' +
+      'C. Staying down there for three bars is what makes the fourth bar sound like it lifts.',
     'Bar four is the F: F, the C above it, the F above that, and then E on beat four. The E ' +
       'is on the beat, not the "and", and it is the only note in the figure that lands on ' +
       'beat four. Hold it to the bar line and let the next pass restrike the low E under it.',
+    'The octave is spent once, here and nowhere else. Bars one to three never rise past the ' +
+      'C, so the F above and the E after it are the only notes in the figure that leave the ' +
+      'low register. That is what makes them read as the ending rather than as more line.',
     'The bar head is the loudest note in bars one to three. In bar four the loudest is the E ' +
       'on beat four. Play the F above it as the note that gives way, and the E as the note ' +
       'that takes over.',
@@ -115,20 +118,20 @@ export const terrorBassFlatTwoCadenceLine: Riff = {
     bars: 4,
     baseOctave: 2,
     notes: [
-      // Bar 1, `i`: E2, B2, E3, D3.
+      // Bar 1, `i`: E2, B2, G2, A2.
       { step: 1, degree: 1, octave: 0, len: 6 },
       { step: 7, degree: 5, octave: 0, len: 2 },
-      { step: 9, degree: 1, octave: 1, len: 6 },
-      { step: 15, degree: 7, octave: 0, len: 2 },
-      // Bar 2, `i`: E2, G2, B2, A2.
+      { step: 9, degree: 3, octave: 0, len: 6 },
+      { step: 15, degree: 4, octave: 0, len: 2 },
+      // Bar 2, `i`: E2, G2, B2, C3 — the flat sixth, leaning without leaving the register.
       { step: 17, degree: 1, octave: 0, len: 6 },
       { step: 23, degree: 3, octave: 0, len: 2 },
       { step: 25, degree: 5, octave: 0, len: 6 },
-      { step: 31, degree: 4, octave: 0, len: 2 },
-      // Bar 3, `i`: E2, E3, D3, B2.
+      { step: 31, degree: 6, octave: 0, len: 2 },
+      // Bar 3, `i`: E2, A2, G2, B2.
       { step: 33, degree: 1, octave: 0, len: 6 },
-      { step: 39, degree: 1, octave: 1, len: 2 },
-      { step: 41, degree: 7, octave: 0, len: 6 },
+      { step: 39, degree: 4, octave: 0, len: 2 },
+      { step: 41, degree: 3, octave: 0, len: 6 },
       { step: 47, degree: 5, octave: 0, len: 2 },
       // Bar 4, `bII`: F2, C3, F3, and E3 on beat four.
       { step: 49, degree: 2, octave: 0, len: 6 },
