@@ -43,8 +43,8 @@ import type { Riff } from '../core/riff'
  * The opposite of the floating figures. `blade-runner-blues-lead` and
  * `muse-runner-floating-arrival-lead` enter late and carry an `onsetOffset` saying so; here every
  * note enters on its chord's first step and holds all thirty-two. There is no `onsetOffset`,
- * because an offset of zero is not a rule the schema can state (`minSteps` is at least 1), which
- * is what `vox-humana-rigid-cold-pop-line` records, and the technique says it in words.
+ * because an offset of zero is not a rule the schema can state (`minSteps` is at least 1), and
+ * the technique says it in words.
  *
  * ## A `pad`, so a hook and nothing else
  *
@@ -69,12 +69,12 @@ import type { Riff } from '../core/riff'
  * ## Not the Vox Humana Explore figure either
  *
  * `presetSession` links a factory patch to exactly one figure and throws on a second. *Vox
- * Humana* already has `vox-humana-rigid-cold-pop-line`, and all twelve Muse patches have figures,
- * so there is no free slot. That entry must not be displaced: it is the only figure in the
- * library that lands everything dead on the grid, authored as the deliberate opposite of the
- * floating-arrival figures, and this pad is not a replacement for that lesson. So this entry is
- * `reference: { kind: 'record' }`, found by the record and nowhere under the box, and the next
- * person should not try to make it the Explore entry.
+ * Humana* has `vox-humana-four-part-voice-leading`, and all twelve Muse patches have figures, so
+ * there is no free slot. That entry must not be displaced: it is the library's one four-part
+ * voice-leading figure, a lesson about four voices this one-note line cannot carry, and this pad
+ * is not a replacement for it. So this entry is `reference: { kind: 'record' }`, found by the
+ * record and nowhere under the box, and the next person should not try to make it the Explore
+ * entry.
  */
 export const anEndingAscentPad: Riff = {
   id: 'an-ending-ascent-pad',

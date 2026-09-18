@@ -17,7 +17,7 @@ import { polyphonicPowerBrassStabCycle } from './polyphonic-power-brass-stab-cyc
 import { showMeLoveOrganStab } from './show-me-love-organ-stab'
 import { softOrchestraSlowChanges } from './soft-orchestra-slow-changes'
 import { thrillerSynthRiff } from './thriller-synth-riff'
-import { voxHumanaRigidColdPopLine } from './vox-humana-rigid-cold-pop-line'
+import { voxHumanaFourPartVoiceLeading } from './vox-humana-four-part-voice-leading'
 import { brewTimeMajorSeventhHold } from './brew-time-major-seventh-hold'
 import { brokenToyMusicBoxStumble } from './broken-toy-music-box-stumble'
 import { cloudLevelSharedTopDrift } from './cloud-level-shared-top-drift'
@@ -206,7 +206,7 @@ export const RIFFS: readonly Riff[] = [
   thrillerSynthRiff,
   triangleLeadRiseAndFallLine,
   triplet5thsStackedFifthsLadder,
-  voxHumanaRigidColdPopLine,
+  voxHumanaFourPartVoiceLeading,
 ]
 
 export {
@@ -254,7 +254,7 @@ export {
   thrillerSynthRiff,
   triangleLeadRiseAndFallLine,
   triplet5thsStackedFifthsLadder,
-  voxHumanaRigidColdPopLine,
+  voxHumanaFourPartVoiceLeading,
 }
 
 /**

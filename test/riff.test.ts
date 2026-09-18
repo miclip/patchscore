@@ -49,7 +49,7 @@ import {
   stringsOfLifeWalkingEntryStab,
   threeOscBassLoveRootOctaveFigure,
   thrillerSynthRiff,
-  voxHumanaRigidColdPopLine,
+  voxHumanaFourPartVoiceLeading,
 } from '@/lib/riffs'
 
 /**
@@ -623,7 +623,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is eight roles over forty-five entries, nine of them pads', () => {
+  it('is eight roles over forty-five entries, ten of them pads', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -633,21 +633,23 @@ describe('the riff library (§5A)', () => {
     // the Subsequent 37's eight roles, one line each because that box plays two notes: the
     // first `sub` and the first `texture`, a second acid line and a second arp, one bass, two
     // leads, three stabs and two pads. #638 added three record-named entries on the roles
-    // `/riffs` was thinnest on: a stab in a major key, a sub at 170 and an arp.
+    // `/riffs` was thinnest on: a stab in a major key, a sub at 170 and an arp. #641 retired
+    // the Vox Humana lead for a four-part pad on the same patch: one fewer lead, one more pad,
+    // and the count unchanged.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
       acid: 2,
       arp: 3,
       'bass-mid': 5,
-      lead: 11,
-      pad: 9,
+      lead: 10,
+      pad: 10,
       stab: 12,
       sub: 2,
       texture: 1,
     })
     expect(RIFFS).toHaveLength(45)
-    // And the nine pads are the nine held riffs: no grid, no flag, on all of them.
+    // And the ten pads are the ten held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
       'an-ending-ascent-pad',
@@ -659,6 +661,7 @@ describe('the riff library (§5A)', () => {
       'replicant-xd-inner-voice-pad',
       'soft-orchestra-slow-changes',
       'swollen-pad-staggered-stack',
+      'vox-humana-four-part-voice-leading',
     ])
     // The flag is a struck role's question (#623): every held riff leaves it unanswered, every
     // struck riff answers it, and the grid is there exactly where the answer is `true`.
@@ -1857,9 +1860,9 @@ type ConstraintCase = {
 
 const MUSE_ELEVEN: readonly ConstraintCase[] = [
   {
-    riff: voxHumanaRigidColdPopLine,
+    riff: voxHumanaFourPartVoiceLeading,
     rules: [['V', 7, undefined]],
-    breaks: [{ note: { step: 49, degree: 7, octave: -1, len: 8 }, says: 'G4 sounds over V' }],
+    breaks: [{ note: { step: 97, degree: 7, octave: 0, len: 32 }, says: 'G4 sounds over V' }],
   },
   {
     riff: hamamatsuTinesBalladFigure,
@@ -2067,7 +2070,6 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
 
   it('the held lines strike each note once, at its onset, and nothing else', () => {
     for (const entry of [
-      voxHumanaRigidColdPopLine,
       hamamatsuTinesBalladFigure,
       seventiesElectroPnoRhodesTurnaround,
       moogProSoloGlideLead,
@@ -2076,18 +2078,9 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       expect(gridOf(entry).hits.map((h) => h.step), entry.id).toEqual(onsets)
     }
     // The Phrygian figure is not in that list: its grid repeats under an eight-bar hook and
-    // strikes what recurs on both passes, with the other moves slurred (§5A.2). The two pads
+    // strikes what recurs on both passes, with the other moves slurred (§5A.2). The three pads
     // are not either: a held riff has no grid at all (#608), and their own tests below hold
     // the onsets and the lengths instead.
-  })
-
-  it('the cold-pop line lands every note on a beat and none across a bar line', () => {
-    for (const n of voxHumanaRigidColdPopLine.hook.notes) {
-      expect((n.step - 1) % 4, `step ${String(n.step)}`).toBe(0)
-      const startsIn = Math.floor((n.step - 1) / STEPS_PER_BAR)
-      const endsIn = Math.floor((n.step + n.len - 2) / STEPS_PER_BAR)
-      expect(endsIn, `step ${String(n.step)} crosses a bar line`).toBe(startsIn)
-    }
   })
 
   it('the ballad figure ends on a suspension held across the bar line', () => {
@@ -2578,11 +2571,13 @@ type FidelityRow = {
 
 const FIDELITY: readonly FidelityRow[] = [
   {
-    riff: voxHumanaRigidColdPopLine,
+    riff: voxHumanaFourPartVoiceLeading,
     key: 'A minor',
-    bpm: 116,
-    progression: [['i', 1], ['VI', 1], ['iv', 1], ['V', 1]],
-    pitches: ['E5', 'E5', 'D5', 'D5', 'G#4', 'A4', 'G#4'],
+    bpm: 84,
+    progression: [['i', 2], ['VI', 2], ['III', 2], ['V', 2]],
+    // Four voicings, bass to soprano, off the table this figure was authored from. The property
+    // they exist for, that no voice leaps, has its own suite below.
+    pitches: ['A3+C4+E4+A4', 'A3+C4+F4+A4', 'G3+C4+E4+G4', 'G#3+B3+E4+G#4'],
   },
   {
     riff: hamamatsuTinesBalladFigure,
@@ -2843,20 +2838,171 @@ describe('the An Ending (Ascent) pad (§5A/#627)', () => {
       expect(d.recipes.some((r) => r.factoryPatch?.name === 'Vox Humana'), d.id).toBe(false)
     }
     // `presetSession` links a patch to one figure and throws on a second, so the Vox Humana
-    // page still carries the rigid line and not this one — and would throw, not silently swap,
+    // page carries the four-part figure and not this one — and would throw, not silently swap,
     // if this entry were ever refiled as a patch reference.
     const muse = DEVICES.find((d) => d.id === 'moog-muse')
     if (muse === undefined) throw new Error('no moog-muse')
     const session = presetSession(muse)
     const vox = session?.entries.find((e) => e.patch.name === 'Vox Humana')
-    expect(vox?.figure?.riff.id).toBe('vox-humana-rigid-cold-pop-line')
+    expect(vox?.figure?.riff.id).toBe('vox-humana-four-part-voice-leading')
     expect(session?.entries.some((e) => e.figure?.riff.id === riff.id)).toBe(false)
     // The docstring is where the next person reads why, so it has to say it (§5A.5).
     const source = readFileSync(new URL('../lib/riffs/an-ending-ascent-pad.ts', import.meta.url), 'utf8')
     expect(source).toContain('not transcribed from one')
     expect(source).toContain('has no recipe that builds that sound')
-    expect(source).toContain('vox-humana-rigid-cold-pop-line')
+    expect(source).toContain('vox-humana-four-part-voice-leading')
     expect(source).toContain('must not be displaced')
+  })
+})
+
+/**
+ * §5A/#641. **The Vox Humana four-part voice leading**: the Muse's third `pad`, and the one
+ * figure in the library whose lesson is four voices at once. What is pinned first is the property
+ * the figure exists to teach and that no schema can see: between consecutive voicings no voice
+ * moves more than two semitones, and that includes the wrap from the last chord back to the
+ * first, where both `G#`s resolve up to `A`. A test that checked the notes were the right notes
+ * would pass a revoicing that leapt; this one would not. The pitches are checked too, since the
+ * degrees were derived from them, and the distribution of the moves is counted off the resolved
+ * MIDI rather than taken from the table it was authored from.
+ */
+describe('the Vox Humana four-part voice leading (§5A/#641)', () => {
+  const riff = voxHumanaFourPartVoiceLeading
+  const resolved = resolveHook(riff.hook, riff.key)
+  if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+  const CHORD = 2 * STEPS_PER_BAR
+
+  /** The four voicings in step order, each in authored order, which is bass to soprano. */
+  const voicings = (() => {
+    const byStep = new Map<number, { note: string; midi: number }[]>()
+    for (const n of resolved.hook.notes) {
+      const at = byStep.get(n.step)
+      if (at === undefined) byStep.set(n.step, [{ note: n.note, midi: n.midi }])
+      else at.push({ note: n.note, midi: n.midi })
+    }
+    return [...byStep.entries()].sort((a, b) => a[0] - b[0]).map(([step, notes]) => ({ step, notes }))
+  })()
+
+  /**
+   * Every per-voice interval between consecutive voicings, in semitones, the wrap included:
+   * voicing *k* to voicing *k+1* for each of the four voices, and the last voicing back to the
+   * first. Sixteen numbers for four voicings of four.
+   */
+  const moves = voicings.flatMap((from, i) => {
+    const to = voicings[(i + 1) % voicings.length]
+    if (to === undefined) throw new Error('no next voicing')
+    return from.notes.map((n, voice) => {
+      const next = to.notes[voice]
+      if (next === undefined) throw new Error(`voicing at ${String(to.step)} has no voice ${String(voice)}`)
+      return Math.abs(next.midi - n.midi)
+    })
+  })
+
+  it('is four voicings of four, bass to soprano, on the four chord heads', () => {
+    expect(voicings.map((v) => v.step)).toEqual([1, 33, 65, 97])
+    for (const v of voicings) {
+      expect(v.notes, `step ${String(v.step)}`).toHaveLength(4)
+      // Bottom to top is a claim about pitch, so it is checked as one.
+      const midi = v.notes.map((n) => n.midi)
+      expect([...midi].sort((a, b) => a - b)).toEqual(midi)
+    }
+    expect(voicings.map((v) => v.notes.map((n) => n.note).join(' '))).toEqual([
+      'A3 C4 E4 A4',
+      'A3 C4 F4 A4',
+      'G3 C4 E4 G4',
+      'G#3 B3 E4 G#4',
+    ])
+    expect(voicings.map((v) => chordAtStep(riff, v.step))).toEqual(['i', 'VI', 'III', 'V'])
+  })
+
+  it('no voice moves more than two semitones between consecutive voicings, the wrap included', () => {
+    expect(moves).toHaveLength(16)
+    for (const [i, m] of moves.entries()) {
+      const voice = ['bass', 'tenor', 'alto', 'soprano'][i % 4] ?? ''
+      const from = voicings[Math.floor(i / 4)]?.step ?? 0
+      expect(m, `${voice} leaps ${String(m)} semitones leaving step ${String(from)}`).toBeLessThanOrEqual(2)
+    }
+    // The wrap on its own, since it is the transition a loop-blind check would skip: both G#s
+    // up to A, B up to C, and the E holding.
+    const wrap = moves.slice(12)
+    expect(wrap).toEqual([1, 1, 0, 1])
+  })
+
+  it('ten moves: eight semitones and two whole steps, and six voices hold', () => {
+    // Counted off the resolved MIDI. The two whole steps are the bass and the soprano falling
+    // from the F to the C; every other move is a semitone.
+    const count = (n: number) => moves.filter((m) => m === n).length
+    expect(count(0)).toBe(6)
+    expect(count(1)).toBe(8)
+    expect(count(2)).toBe(2)
+    expect(count(0) + count(1) + count(2)).toBe(moves.length)
+    const fToC = moves.slice(4, 8)
+    expect(fToC).toEqual([2, 0, 1, 2])
+  })
+
+  it('asks for four notes, and the box that ships the patch plays all four on one timbre', () => {
+    expect(riff.request.polyphony).toBe(4)
+    expect(riff.request.role).toBe('pad')
+    const muse = DEVICES.find((d) => d.id === 'moog-muse')
+    if (muse === undefined) throw new Error('no moog-muse')
+    const resolution = resolveRiff(riff, [muse])
+    if (resolution.outcome !== 'played') throw new Error(resolution.gap.reason)
+    expect(resolution.voice.device.id).toBe('moog-muse')
+    expect(resolution.voice.assignables).toHaveLength(1)
+    expect(resolution.voice.assignables[0]?.polyphony).toBe(4)
+    // And it is the Vox Humana Explore entry, the one figure that patch links to.
+    const session = presetSession(muse)
+    const vox = session?.entries.find((e) => e.patch.name === 'Vox Humana')
+    expect(vox?.figure?.riff.id).toBe(riff.id)
+  })
+
+  it('is held: eight bars, two a chord, every note on its chord head and running the chord', () => {
+    expect(riff.figureStartsAtBar).toBe(1)
+    expect(riff.bpm.default).toBe(84)
+    expect(riff.harmony?.cycleBars).toBe(8)
+    expect(riff.harmony?.progression.map((s) => [s.degree, s.bars])).toEqual([
+      ['i', 2],
+      ['VI', 2],
+      ['III', 2],
+      ['V', 2],
+    ])
+    expect(riff.hook.bars).toBe(8)
+    expect(riff.hook.notes).toHaveLength(16)
+    for (const n of riff.hook.notes) {
+      expect(chordOccurrenceAt(riff, n.step)?.startStep, `step ${String(n.step)}`).toBe(n.step)
+      expect(n.len, `step ${String(n.step)}`).toBe(CHORD)
+    }
+  })
+
+  it('carries no grid and no re-articulation in either spelling (§5A.2, #608)', () => {
+    expect(riff.pattern).toBeUndefined()
+    expect('reArticulatesHook' in riff.request).toBe(false)
+    expect(bearsPattern(riff.request.role)).toBe(false)
+    expect(RiffSchema.safeParse(riff).success).toBe(true)
+  })
+
+  it('forbids the natural seventh over the V and plays the raised one there in two voices', () => {
+    expect(riff.constraints?.forbiddenDegrees).toEqual([
+      { chord: 'V', degree: 7, reason: expect.any(String) as string },
+    ])
+    const overV = riff.hook.notes.filter((n) => n.step === 97)
+    expect(overV.filter((n) => n.degree === 7 && n.alter === 1)).toHaveLength(2)
+    expect(riffConstraintViolations(riff)).toEqual([])
+  })
+
+  it('its docstring claims the voice leading and its own provenance, and nothing about play', () => {
+    const source = readFileSync(new URL(`../lib/riffs/${riff.id}.ts`, import.meta.url), 'utf8')
+    expect(source).toContain('with a figure authored here')
+    expect(source).toContain('no voice ever leaps')
+    const claims = source.toLowerCase()
+    for (const word of ['played', 'vetted', 'tested', 'operator', 'at the instrument', 'at the machine']) {
+      expect(claims.includes(word), `${riff.id} claims "${word}"`).toBe(false)
+    }
+    for (const paragraph of riff.technique) {
+      expect(paragraph.includes('—'), `${riff.id}: an em dash in technique`).toBe(false)
+    }
+    // Set against the other two pads on the box by name, so the three lessons stay three.
+    expect(source).toContain('moog-55-strings-suspension-writing')
+    expect(source).toContain('soft-orchestra-slow-changes')
   })
 })
 
