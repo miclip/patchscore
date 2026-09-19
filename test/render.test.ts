@@ -979,7 +979,7 @@ describe('song (§8 phase 1)', () => {
   it('renders the harmonic cycle and a bar-count energy map', () => {
     const body = phaseBody(renderGuide(golden()), 1).join('\n')
     // The row carries its notes since #570, spelt in the song's key (F minor for the golden).
-    expect(body).toContain('| VII | Eb · G · Bb | 2 |')
+    expect(body).toContain('| VII | Eb | Eb · G · Bb | 2 |')
     expect(body).toContain('64 bars total')
     // #297. The bars-and-energy table became a grid, because the fact worth reading is which
     // parts play where and a three-column table could not hold it. Sections and bars are still

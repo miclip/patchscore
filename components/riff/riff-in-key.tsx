@@ -3,7 +3,8 @@
 import type { ReactNode } from 'react'
 import { useId, useState } from 'react'
 import type { HookResolution, Riff, RiffResolution } from '@/lib/core'
-import { chordNotesText, num, resolveHook, transposableKeys } from '@/lib/core'
+import { chordNameText,
+  chordNotesText, num, resolveHook, transposableKeys } from '@/lib/core'
 import { KeySelect } from '@/components/harmony/key-select'
 import {
   chordLabel,
@@ -195,21 +196,25 @@ function Chords({ riff, shownKey }: { riff: Riff; shownKey: string }) {
       </header>
       <p className="riff-grid-lead">{summary}</p>
       <div className="table-scroll">
-        <table>
+        <table className="chord-table">
           <thead>
             <tr>
               <th scope="col">Degree</th>
+              <th scope="col">Chord</th>
               <th scope="col">Notes</th>
               <th scope="col" className="numeric">
                 Bars
               </th>
-              <th scope="col">Under the figure</th>
+              <th scope="col" className="stacked-head">
+                <span>Under the</span> <span>figure</span>
+              </th>
             </tr>
           </thead>
           <tbody>
             {chordRows(riff, shownKey).map((row) => (
               <tr key={`${row.degree}-${String(row.from)}`}>
                 <td className="mono">{row.degree}</td>
+                <td className="mono">{chordNameText(row.name)}</td>
                 <td className="mono">{chordNotesText(row.notes)}</td>
                 <td className="mono numeric">
                   {num(row.from)}–{num(row.from + row.bars - 1)}

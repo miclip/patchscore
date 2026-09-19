@@ -24,12 +24,12 @@ Since nothing swells, practise releasing. A move inside a chord is played off th
 
 4 chords over 8 bars, in D phrygian.
 
-| Degree | Notes | Bars | Under the figure |
-| --- | --- | ---: | :---: |
-| i | D · F · A | 1–2 | ● |
-| II | Eb · G · Bb | 3–4 | ● |
-| i | D · F · A | 5–6 | ● |
-| vii | C · Eb · G | 7–8 | ● |
+| Degree | Chord | Notes | Bars | Under the figure |
+| --- | --- | --- | ---: | :---: |
+| i | Dm | D · F · A | 1–2 | ● |
+| II | Eb | Eb · G · Bb | 3–4 | ● |
+| i | Dm | D · F · A | 5–6 | ● |
+| vii | Cm | C · Eb · G | 7–8 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 

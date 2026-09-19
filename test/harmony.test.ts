@@ -649,10 +649,36 @@ describe('progressionRows and chordNotesText (#570)', () => {
     const harmony = { cycleBars: 8, progression: [{ degree: 'i', bars: 4 }, { degree: 'VI', bars: 4 }] }
     const rows = progressionRows(harmony, 'D minor')
     expect(rows).toEqual([
-      { degree: 'i', bars: 4, notes: ['D', 'F', 'A'] },
-      { degree: 'VI', bars: 4, notes: ['Bb', 'D', 'F'] },
+      { degree: 'i', bars: 4, notes: ['D', 'F', 'A'], name: 'Dm' },
+      { degree: 'VI', bars: 4, notes: ['Bb', 'D', 'F'], name: 'Bb' },
     ])
     expect(rows.map((r) => chordNotesText(r.notes))).toEqual(['D · F · A', 'Bb · D · F'])
+  })
+
+  /**
+   * #661. **The name is the root the speller produced plus the quality the numeral carried.**
+   *
+   * Read off the numeral rather than the intervals, and that is not a shortcut: `chordTones`
+   * builds every triad with a perfect fifth, so `vii` in C major is `B · D · F#` and there is no
+   * diminished chord in this model for an interval reading to catch. A surface that measured
+   * them would be answering a question this codebase does not ask.
+   */
+  it('names a chord from its own root and quality, including the modes', () => {
+    const name = (degree: string, key: string) => {
+      const rows = progressionRows({ cycleBars: 4, progression: [{ degree, bars: 4 }] }, key)
+      return rows[0]?.name
+    }
+    expect(name('i', 'C minor')).toBe('Cm')
+    expect(name('VI', 'C minor')).toBe('Ab')
+    expect(name('V', 'C minor')).toBe('G')
+    // Lowercase is minor here even at the seventh degree, because the fifth is always perfect.
+    expect(name('vii', 'C major')).toBe('Bm')
+    // The modal cases: a flat prefix moves the root and the quality is still the numeral's.
+    expect(name('bII', 'E phrygian')).toBe('F')
+    expect(name('v7', 'D dorian')).toBe('Am7')
+    expect(name('i7', 'A minor')).toBe('Am7')
+    // No spelling, no name: a name is a root plus a suffix and there is no root without one.
+    expect(name('i', 'H minor')).toBeUndefined()
   })
 
   it('says a chord is not spellable rather than leaving nothing (invariant 5)', () => {

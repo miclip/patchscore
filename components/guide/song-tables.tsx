@@ -1,5 +1,6 @@
 import type { Arrangement, Harmony, Section } from '@/lib/core'
-import { chordNotesText, progressionRows } from '@/lib/core'
+import { chordNameText,
+  chordNotesText, progressionRows } from '@/lib/core'
 import { num } from './format'
 import { VocabularyTerm } from '../vocabulary-term'
 
@@ -48,6 +49,7 @@ export function ProgressionTable({
         <thead>
           <tr>
             <th scope="col">Degree</th>
+            <th scope="col">Chord</th>
             <th scope="col">Notes</th>
             <th scope="col" className="numeric">
               Bars
@@ -58,6 +60,7 @@ export function ProgressionTable({
           {progressionRows(harmony, songKey).map((row, i) => (
             <tr key={`${row.degree}-${i}`}>
               <td className="mono">{row.degree}</td>
+              <td className="mono">{chordNameText(row.name)}</td>
               <td className="mono">{chordNotesText(row.notes)}</td>
               <td className="mono numeric">{num(row.bars)}</td>
             </tr>

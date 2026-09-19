@@ -103,8 +103,19 @@ export function riffLength(riff: Riff): string {
  *
  * The rows are the degrees exactly as authored, which is the same thing a direction's harmony
  * table prints. Roman numerals resolve against `key` in the reader's head and name no device
- * (invariant 3); spelling them out as chord names would be a second harmony implementation living
- * on the riff surface, and #33's rule is that a surface renders, it does not decide.
+ * (invariant 3).
+ *
+ * **This used to refuse chord names**, on the grounds that spelling them out would be a second
+ * harmony implementation living on the riff surface, against #33's rule that a surface renders
+ * and does not decide. That refusal was right about the version it was imagining and is worth
+ * keeping as a boundary: a surface that worked out `Cm` from a numeral and a key would be
+ * deciding harmony in the wrong place.
+ *
+ * `name` (#661) is not that. The root is `notes[0]`, which `spellChord` already spelt, and the
+ * suffix is the `quality` and `seventh` that `parseChordDegree` already read. Both facts exist
+ * before the surface is reached and neither is re-derived; the name is a rendering of them. It
+ * is beside the degree rather than instead of it, because the degree is how a progression is
+ * reasoned about and the name is how it is played.
  */
 /**
  * A row of the chord table: the degree, the notes it spells in the key shown, how long it

@@ -16,7 +16,7 @@ import {
   noteInstruction,
   renderGuide,
   resolve,
-  spellChord,
+  chordName, spellChord,
 } from '../lib/core/index'
 import type { ResolveResult } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
@@ -379,12 +379,17 @@ describe('the two renderers agree about the facts', () => {
         expect(spelt.outcome, `${result.template.id}: ${step.degree} in ${key}`).toBe('resolved')
         if (spelt.outcome !== 'resolved') continue
         const notes = spelt.chord.notes.join(' · ')
+        // #661. The name is checked from the same `spellChord` result the notes come from, so a
+        // row whose name and notes disagreed would fail here rather than read plausibly.
+        const name = chordName(step.degree, spelt.chord.notes)
+        expect(name, `${result.template.id}: ${step.degree} in ${key}`).toBeDefined()
         // A degree may be authored twice in one cycle, so the count is of equal authored rows.
         const authored = rows.filter((r) => r.degree === step.degree && r.bars === step.bars).length
-        const mdRow = `| ${step.degree} | ${notes} | ${step.bars} |`
+        const mdRow = `| ${step.degree} | ${String(name)} | ${notes} | ${step.bars} |`
         expect(markdown.split(mdRow).length - 1, `${result.template.id}: ${mdRow}`).toBe(authored)
         const pageRow =
-          `<td class="mono">${step.degree}</td><td class="mono">${notes}</td>` +
+          `<td class="mono">${step.degree}</td><td class="mono">${String(name)}</td>` +
+          `<td class="mono">${notes}</td>` +
           `<td class="mono numeric">${step.bars}</td>`
         expect(page.split(pageRow).length - 1, `${result.template.id}: ${pageRow}`).toBe(authored)
       }
@@ -397,7 +402,9 @@ describe('the two renderers agree about the facts', () => {
     expect(forms.has('bII')).toBe(true)
     // And a seventh is four notes and a suspension has no third, on the rendered page.
     const lydian = results[1] as ResolveResult
-    expect(renderGuide(lydian)).toMatch(/\| II7 \| [A-G][#b]? · [A-G][#b]? · [A-G][#b]? · [A-G][#b]? \| 2 \|/)
+    expect(renderGuide(lydian)).toMatch(
+      /\| II7 \| [A-G][#b]?7 \| [A-G][#b]? · [A-G][#b]? · [A-G][#b]? · [A-G][#b]? \| 2 \|/,
+    )
     const drift = results[2] as ResolveResult
     const sus = spellChord('Vsus2', drift.song.key as string)
     expect(sus.outcome === 'resolved' && sus.chord.notes.length).toBe(3)
