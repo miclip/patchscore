@@ -1597,7 +1597,7 @@ describe('the factory presets, off the unit at firmware 1.2.0 (§2.6/#617, #624)
  * sounds them one at a time (#645), so its hold is four wide and its voice cost is one. The
  * two counts are kept apart below, since the whole of #645 is that they are different claims.
  */
-describe('sixteen presets carry a use, fifteen carry a figure, each sounding within two notes (#624, #643, #645, #664)', () => {
+describe('seventeen presets carry a use, sixteen carry a figure, each sounding within two notes (#624, #643, #645, #664)', () => {
   const uses = device.patchUses ?? []
   const session = presetSession(device)
   const entries = session?.entries ?? []
@@ -1643,7 +1643,7 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
       .map((step) => `${String(Math.floor((step - 1) / 16) + 1)}.${String(((step - 1) % 16) + 1)}`)
   }
 
-  it('describes exactly sixteen, in the editorial order, keyed to the shipped name', () => {
+  it('describes exactly seventeen, in the editorial order, keyed to the shipped name', () => {
     expect(uses.map((u) => u.name)).toEqual([
       'LOW BASS',
       'UBER_SUB',
@@ -1661,6 +1661,7 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
       'Duotronic Moogtrons',
       'CELESTIAL',
       'DRONE',
+      'SYNTH GONG',
     ])
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
     for (const use of uses) {
@@ -1669,20 +1670,20 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
     }
   })
 
-  it('describes a subset of the fact, and the one alternate is among the four without a line (#617, #645, #664)', () => {
+  it('describes a subset of the fact, and the one alternate is among the three without a line (#617, #645, #664)', () => {
     const described = new Set(uses.map((u) => u.name))
-    expect(described.size).toBe(16)
+    expect(described.size).toBe(17)
     const silent = (device.factoryPatches ?? []).filter((p) => !described.has(p.name)).map((p) => p.name)
     // #664 gave three of the seven a figure and a use, and deliberately left four alone: a use
     // written from a name and nothing else is a claim about a patch nobody has heard.
-    expect(silent).toHaveLength(4)
+    expect(silent).toHaveLength(3)
     // #645 took `Harp C Chord` off this list; `DUO WAVE MOD` is the alternate left.
     expect(silent).not.toContain('Harp C Chord')
     expect(silent).toContain('DUO WAVE MOD')
     // The session carries an entry per use and none for the rest; the fact stays at twenty.
     expect(session?.named).toBe(20)
     expect(session?.reading).toBe('observed')
-    expect(entries).toHaveLength(16)
+    expect(entries).toHaveLength(17)
   })
 
   it('writes every use unhedged, as what to play, and names no box, bank or slot', () => {
@@ -1694,7 +1695,7 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
     }
   })
 
-  it('joins fifteen uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643, #645, #664)', () => {
+  it('joins sixteen uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643, #645, #664)', () => {
     // #643. `DRONE` keeps a use and loses its figure: one note held under four chords is a use
     // line, and the second use of #617's subset rule. The entry is still in the session, with
     // no `figure`, so the panel and the presets page list it without a link.
@@ -1711,8 +1712,8 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
     }
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
     const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
-    expect(naming).toHaveLength(15)
-    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(15)
+    expect(naming).toHaveLength(16)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(16)
     expect(naming.some((r) => r.reference.name === 'DRONE')).toBe(false)
   })
 
@@ -1809,6 +1810,7 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
       'arp',
       'lead',
       'lead',
+      'texture',
     ])
   })
 
@@ -1857,7 +1859,12 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
     expect(line.map((n) => n.step)).toEqual([1, 17, 33, 49, 65, 81, 97, 113])
   })
 
-  it('puts every struck figure on a grid, and the arpeggiated hold on none (#643, #645)', () => {
+  it('puts every struck figure on a grid, the arpeggiated hold on none, and the gong on the third shape (#643, #645, #664)', () => {
+    // #623's three shapes, all three now on this box. A pad and an arpeggiated hold carry no
+    // grid and no flag, because there is no grid question to answer. A struck figure answers it
+    // `true` and carries the grid. The gong answers it `false`: it is struck, and no step of a
+    // repeating pass recurs, so the hook is the whole rhythm.
+    const throughComposed: string[] = []
     for (const entry of figured) {
       const riff = figureOf(entry.patch.name)
       if (riff.request.role === 'pad' || riff.arpeggiatedHold) {
@@ -1865,9 +1872,15 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
         expect(riff.pattern, riff.id).toBeUndefined()
         continue
       }
+      if (riff.request.reArticulatesHook === false) {
+        expect(riff.pattern, riff.id).toBeUndefined()
+        throughComposed.push(riff.id)
+        continue
+      }
       expect(riff.request.reArticulatesHook, riff.id).toBe(true)
       expect(riff.pattern, riff.id).toBeDefined()
     }
+    expect(throughComposed).toEqual(['synth-gong-decay-spaced-strikes'])
     // Two figures on `arp`, and they must not converge: the ladder is struck, one note a step
     // on a grid; the hold is four keys down with no grid, and the two are on different
     // characters so they land on different recipes.
