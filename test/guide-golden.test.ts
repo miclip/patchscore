@@ -330,7 +330,7 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     expect(doc).toContain('**BPM** 150 (template range 145…160)')
     expect(doc).toContain('**Harmonic cycle** 4 bars')
     // One row in the harmony table: the tonic for the whole track, spelt in D minor (#570).
-    expect(doc).toContain('| i | D · F · A | 4 |')
+    expect(doc).toContain('| i | Dm | D · F · A | 4 |')
     expect(doc).not.toMatch(/\| (VI|VII|iv|v) \|/)
 
     // The register, on the page. Seed 18 resolves D minor and picks the hammer hook, so the hook

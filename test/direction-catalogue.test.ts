@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { NEUTRAL_MOOD, resolve, sectionsFor, spellChord } from '../lib/core/index'
+import { NEUTRAL_MOOD, chordName, resolve, sectionsFor, spellChord } from '../lib/core/index'
 import type { Template } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { TEMPLATES } from '../lib/templates/index'
@@ -176,7 +176,9 @@ describe('the direction routes', () => {
       expect(spelt.outcome).toBe('resolved')
       if (spelt.outcome !== 'resolved') continue
       expect(markup).toContain(
-        `<td class="mono">${step.degree}</td><td class="mono">${spelt.chord.notes.join(' · ')}</td>`,
+        `<td class="mono">${step.degree}</td>` +
+          `<td class="mono">${String(chordName(step.degree, spelt.chord.notes))}</td>` +
+          `<td class="mono">${spelt.chord.notes.join(' · ')}</td>`,
       )
     }
     for (const key of TECHNO.keys) expect(markup).toContain(key)

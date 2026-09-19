@@ -10,11 +10,11 @@ whether the screen in front of you is the one the line is about.
 - **Key** E aeolian (a reroll may pick G aeolian, B aeolian)
 - **Harmonic cycle** 8 bars
 
-| Degree | Notes | Bars |
-| --- | --- | ---: |
-| i | E · G · B | 5 |
-| VI | C · E · G | 2 |
-| v | B · D · F# | 1 |
+| Degree | Chord | Notes | Bars |
+| --- | --- | --- | ---: |
+| i | Em | E · G · B | 5 |
+| VI | C | C · E · G | 2 |
+| v | Bm | B · D · F# | 1 |
 
 **Arrangement** — 120 bars total
 

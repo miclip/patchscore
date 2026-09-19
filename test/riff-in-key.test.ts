@@ -67,16 +67,22 @@ function viewAt(riff: Riff, shownKey: string, onChange: (key: string) => void = 
 function facts(markup: string) {
   const cell = (cls: string) =>
     [...markup.matchAll(new RegExp(`<span class="${cls}">([^<]*)</span>`, 'g'))].map((m) => m[1] as string)
-  const rows = [...markup.matchAll(/<tr><td class="mono">([^<]*)<\/td><td class="mono">([^<]*)<\/td><td class="mono numeric">([^<]*)<\/td><td class="mono">([^<]*)<\/td><\/tr>/g)]
+  const rows = [
+    ...markup.matchAll(
+      /<tr><td class="mono">([^<]*)<\/td><td class="mono">([^<]*)<\/td><td class="mono">([^<]*)<\/td><td class="mono numeric">([^<]*)<\/td><td class="mono">([^<]*)<\/td><\/tr>/g,
+    ),
+  ]
   return {
     spellings: cell('mono riff-spelling'),
     degreesAndMidi: cell('riff-note-fact mono'),
     held: cell('riff-note-fact'),
     steps: cell('riff-step mono'),
     chordDegrees: rows.map((r) => r[1] as string),
-    chordNotes: rows.map((r) => r[2] as string),
-    chordBars: rows.map((r) => r[3] as string),
-    chordMarks: rows.map((r) => r[4] as string),
+    // #661. The name sits between the degree and the notes, so every later cell moved one right.
+    chordNames: rows.map((r) => r[2] as string),
+    chordNotes: rows.map((r) => r[3] as string),
+    chordBars: rows.map((r) => r[4] as string),
+    chordMarks: rows.map((r) => r[5] as string),
     grid: markup.slice(markup.indexOf('<section class="grid-stub">')),
     rules: markup.includes('<section class="rules-stub">'),
   }

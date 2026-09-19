@@ -36,14 +36,14 @@ Wide vibrato, arriving after the note has settled. The note should be still for 
 
 6 chords over 12 bars, in F# minor. The 12-bar cycle repeats 4 times under this 48-bar figure.
 
-| Degree | Notes | Bars | Under the figure |
-| --- | --- | ---: | :---: |
-| i | F# · A · C# | 1–2 | ● |
-| VI | D · F# · A | 3–4 | ● |
-| iv | B · D · F# | 5–6 | ● |
-| I | F# · A# · C# | 7–8 | ● |
-| IV | B · D# · F# | 9–10 | ● |
-| v | C# · E · G# | 11–12 | ● |
+| Degree | Chord | Notes | Bars | Under the figure |
+| --- | --- | --- | ---: | :---: |
+| i | F#m | F# · A · C# | 1–2 | ● |
+| VI | D | D · F# · A | 3–4 | ● |
+| iv | Bm | B · D · F# | 5–6 | ● |
+| I | F# | F# · A# · C# | 7–8 | ● |
+| IV | B | B · D# · F# | 9–10 | ● |
+| v | C#m | C# · E · G# | 11–12 | ● |
 
 The figure is played over these chords; supply them separately if your rig allows.
 

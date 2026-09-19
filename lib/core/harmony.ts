@@ -491,6 +491,11 @@ export type ProgressionRow = {
   bars: number
   /** Pitch classes, root first: `['Bb', 'D', 'F']`. */
   notes: readonly string[] | undefined
+  /**
+   * #661. The chord as a player names it — `Cm`, `Ab`, `Am7`. Absent wherever `notes` is,
+   * because a name is the root plus a suffix and there is no root without a spelling.
+   */
+  name: string | undefined
 }
 
 /**
@@ -503,13 +508,43 @@ export type ProgressionRow = {
  * `key` may be `undefined` for a song that has none; every row then has no notes and the table
  * says what it can, which is the degrees.
  */
+/**
+ * #661. **A chord's name, from the two facts that already exist.**
+ *
+ * The root is `notes[0]`, which `spellChord` spelt; the suffix is `quality` and `seventh`,
+ * which `parseChordDegree` read off the numeral. Nothing here decides any harmony — it renders
+ * what was decided, which is the whole of why it is allowed to exist (#33).
+ *
+ * **The quality is read off the numeral and not off the intervals, because in this model it
+ * cannot disagree.** `chordTones` builds every triad with a perfect fifth, so there is no
+ * diminished or augmented chord to catch: `vii` in C major is `B · D · F#`, a minor triad, and
+ * the numeral said minor. An implementation that measured the intervals instead would be
+ * slower, longer, and answering a question this codebase does not ask.
+ *
+ * The seventh is always a minor seventh above the root (`chordTones` again), so a major triad
+ * with one is a dominant and takes a bare `7`, and a minor triad with one takes `m7`.
+ */
+export function chordNameText(name: string | undefined): string {
+  return name ?? UNSPELLABLE_CHORD
+}
+
+export function chordName(degree: string, notes: readonly string[] | undefined): string | undefined {
+  const root = notes?.[0]
+  const parsed = parseChordDegree(degree)
+  if (root === undefined || parsed === undefined) return undefined
+  const base = parsed.quality === 'minor' ? 'm' : parsed.quality === 'sus2' ? 'sus2' : ''
+  return `${root}${base}${parsed.seventh ? '7' : ''}`
+}
+
 export function progressionRows(harmony: Harmony, key: string | undefined): ProgressionRow[] {
   return harmony.progression.map((step) => {
     const spelt = key === undefined ? undefined : spellChord(step.degree, key)
+    const notes = spelt?.outcome === 'resolved' ? spelt.chord.notes : undefined
     return {
       degree: step.degree,
       bars: step.bars,
-      notes: spelt?.outcome === 'resolved' ? spelt.chord.notes : undefined,
+      notes,
+      name: chordName(step.degree, notes),
     }
   })
 }

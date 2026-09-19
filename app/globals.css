@@ -4553,6 +4553,37 @@ button:active {
   color: var(--ink-dim);
 }
 
+/*
+ * #661. The chord's name is a fifth column, and the four it joined already filled a 390px row.
+ * The header that pays for it is the only one that is a phrase rather than a word, and it sets its
+ * column: a guide table is `min-width: max-content`, so allowing the phrase to *wrap* changes
+ * nothing — max-content is the unwrapped line. The break has to be in the markup, so each word
+ * group is its own block and the column measures the longer of the two. That keeps the marker on
+ * the screen at 390px instead of behind a sideways swipe (#21).
+ */
+.guide th.stacked-head > span,
+.catalogue-page th.stacked-head > span {
+  display: block;
+}
+
+/*
+ * The five columns are four short ones and a marker, so the 16px gutter every other guide table
+ * takes is most of the row: at 390px it is 46px more than the panel has. Eight buys the whole
+ * table back, and the columns stay separable because every cell in four of the five is two or
+ * three monospace characters.
+ */
+.chord-table th,
+.chord-table td {
+  padding-right: 8px;
+}
+
+/* The last column's gutter is the panel's padding, and counting it twice is what put the marker
+   over the edge. */
+.chord-table th:last-child,
+.chord-table td:last-child {
+  padding-right: 0;
+}
+
 .guide td.numeric,
 .guide th.numeric,
 .catalogue-page td.numeric,

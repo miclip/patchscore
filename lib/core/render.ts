@@ -63,6 +63,7 @@ import {
   type Shortfall,
 } from './search'
 import {
+  chordNameText,
   chordNotesText,
   chordVoicings,
   enharmonicAlternative,
@@ -323,10 +324,12 @@ function phaseSong(result: ResolveResult): Line[] {
 
   // #570. The notes beside each degree, spelt in the song's key through the same rows the page
   // draws. A blank cell is a chord this build could not spell, never a guess.
-  out.push('| Degree | Notes | Bars |')
-  out.push('| --- | --- | ---: |')
+  out.push('| Degree | Chord | Notes | Bars |')
+  out.push('| --- | --- | --- | ---: |')
   for (const row of progressionRows(template.harmony, song.key)) {
-    out.push(`| ${row.degree} | ${chordNotesText(row.notes)} | ${num(row.bars)} |`)
+    out.push(
+      `| ${row.degree} | ${chordNameText(row.name)} | ${chordNotesText(row.notes)} | ${num(row.bars)} |`,
+    )
   }
   out.push('')
 

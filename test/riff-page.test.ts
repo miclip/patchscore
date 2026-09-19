@@ -13,7 +13,7 @@ import { RigPicker } from '../components/rig/rig-picker'
 import { NAV_LINKS } from '../components/site-nav'
 import { hintText } from '../components/guide/format'
 import type { DeviceId, RiffVoicing } from '../lib/core'
-import { MAX_RIG_DEVICES, resolveRiff, spellChord } from '../lib/core'
+import { MAX_RIG_DEVICES, chordName, resolveRiff, spellChord } from '../lib/core'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RECORD_RIFFS, RIFFS, blueMondayBass, museRunnerFloatingArrivalLead } from '../lib/riffs'
 import { riffHref } from '../lib/studio/catalogue'
@@ -292,10 +292,12 @@ describe('the chord table says the chords are supplied separately', () => {
         const notes = spelt.chord.notes.join(' · ')
         const span = `${from}\u2013${from + step.bars - 1}`
         // The bar span makes each row unique even where a degree is authored twice in a cycle.
-        const mdRow = `| ${step.degree} | ${notes} | ${span} |`
+        const name = String(chordName(step.degree, spelt.chord.notes))
+        const mdRow = `| ${step.degree} | ${name} | ${notes} | ${span} |`
         expect(md.split(mdRow).length - 1, `${riff.id}: ${mdRow}`).toBe(1)
         const pageRow =
-          `<td class="mono">${step.degree}</td><td class="mono">${notes}</td>` +
+          `<td class="mono">${step.degree}</td><td class="mono">${name}</td>` +
+          `<td class="mono">${notes}</td>` +
           `<td class="mono numeric">${span}</td>`
         expect(markup.split(pageRow).length - 1, `${riff.id}: ${pageRow}`).toBe(1)
         from += step.bars
@@ -310,8 +312,8 @@ describe('the chord table says the chords are supplied separately', () => {
     // Not vacuous about the borrowing that motivated case-decides-the-third: Blade Runner's `I`
     // in F# minor is on the page as a major chord, beside the key's own minor `i`.
     const blade = text(await markupFor('blade-runner-blues-lead'))
-    expect(blade).toContain('I F# · A# · C#')
-    expect(blade).toContain('i F# · A · C#')
+    expect(blade).toContain('I F# F# · A# · C#')
+    expect(blade).toContain('i F#m F# · A · C#')
   })
 
   it('says nothing on a riff with no harmony, which is most of them', () => {
@@ -346,7 +348,7 @@ describe('the chord summary says the cycle repeats under a longer figure (#623)'
     const md = renderRiff(resolveRiff(muse, []))
     expect(md.split(REPEATS).length - 1).toBe(1)
     const chords = md.slice(md.indexOf('## The chords'), md.indexOf('## The notes'))
-    expect(chords.indexOf(REPEATS)).toBeLessThan(chords.indexOf('| i | F# · A · C# | 1'))
+    expect(chords.indexOf(REPEATS)).toBeLessThan(chords.indexOf('| i | F#m | F# · A · C# | 1'))
   })
 
   it('drops the count where the figure is not a whole number of cycles', () => {
