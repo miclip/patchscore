@@ -828,13 +828,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * re-read the head note rather than a failure. What must not move is the relationship — no part
    * ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 294 grid parts blank, and pins how many there are', () => {
+  it('leaves 390 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
     // 228 until #345 borrowed the pool's last five unserved roles; 252 until Hard Techno, ten
-    // parts this box carries whole.
-    expect(grid.length).toBe(360)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(330)
+    // parts this box carries whole; 330 until Drum and Bass, whose kick, snare, closed hat, open
+    // hat and ghost perc this box takes on every seed, the dark open hat answering a `dirty`
+    // request at sqrt(2).
+    expect(grid.length).toBe(390)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(360)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -859,13 +861,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 54],
-      ['ghost-perc', 48],
-      ['kick', 48],
+      ['closed-hat', 60],
+      ['ghost-perc', 54],
+      ['kick', 54],
+      ['open-hat', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
       ['ride', 18],
       ['tom', 18],
       ['impact', 12],
@@ -880,7 +882,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(156)
+    // 156 until Drum and Bass, which hooks its sub and its pad.
+    expect(hooked.length).toBe(168)
     expect(sustained).toEqual([])
     expect(noPattern.length).toBe(42)
     expect([...new Set(noPattern)].sort()).toEqual([
@@ -894,7 +897,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 294 above an undercount rather than a measurement.
+    // classify — which is what would make the 390 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {

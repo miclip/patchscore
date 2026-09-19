@@ -403,7 +403,9 @@ describe('a Muse carrying two parts still splits four and four (#424)', () => {
         ).toBe('4')
       }
     }
-    expect(seen).toBe(80)
+    // 80 until Drum and Bass, which puts its sub and its pad on the box at every one of the
+    // eight seeds.
+    expect(seen).toBe(88)
   })
 
   /**

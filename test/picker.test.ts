@@ -288,11 +288,11 @@ describe('direction search matches name and authored keys only', () => {
   it('finds a direction by its authored key, and each key genuinely excludes', () => {
     // The test for whether a field belongs in a search is whether it excludes anything.
     expect(shown('dorian')).toEqual(['ambient-dub'])
-    // Five directions author minor keys and all five come back; the narrower query still
+    // Seven directions author minor keys and all seven come back; the narrower query still
     // separates them, which is the exclusion this test is about. `acid-lineage` offers A, C and D
-    // minor, `breakbeat` D, A and E, `hard-techno` F, G and D, `hip-hop` F, C and G,
-    // `industrial-techno` F, A and C — so 'f minor' drops the two that do not author it, and
-    // that is the search doing work rather than the list shortening on its own.
+    // minor, `breakbeat` D, A and E, `drum-and-bass` F, G and C, `hard-techno` F, G and D,
+    // `hip-hop` F, C and G, `industrial-techno` F, A and C — so 'f minor' drops the two that do
+    // not author it, and that is the search doing work rather than the list shortening on its own.
     //
     // Not narrowed further to a single row on a tonic no other direction offers. `matches` splits
     // the query into terms and substring-tests each against the folded fields joined together, and
@@ -303,6 +303,7 @@ describe('direction search matches name and authored keys only', () => {
     expect(shown('minor')).toEqual([
       'acid-lineage',
       'breakbeat',
+      'drum-and-bass',
       'hard-techno',
       'hip-hop',
       'industrial-techno',
@@ -312,6 +313,7 @@ describe('direction search matches name and authored keys only', () => {
     // keys, so a direction that offers no F minor comes back for 'f minor'. Substring-of-term is
     // what this search is; a tonic-aware one would be a different feature with a different test.
     expect(shown('f minor')).toEqual([
+      'drum-and-bass',
       'hard-techno',
       'hip-hop',
       'industrial-techno',
@@ -350,7 +352,10 @@ describe('direction search matches name and authored keys only', () => {
       expect(shown(role), role).toEqual(byAuthoredField)
     }
     expect(shown('kick')).toEqual([])
-    expect(shown('bass')).toEqual([])
+    // `bass` is the Acid Lineage case again: it reaches the search through a direction's *name*,
+    // Drum and Bass, and through nothing else. The twelve directions requesting a `sub` or a
+    // `bass-mid` under some other name do not come back.
+    expect(shown('bass')).toEqual(['drum-and-bass'])
   })
 
   it('does not match section names, which are even less discriminating', () => {

@@ -2073,8 +2073,10 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // Beat Slice `vox-chop`. They used to leave by the `hookAuthority` door below; now the hook
     // does not take a part whose notes select slices, so they draw a grid like any other part and
     // are counted here. `hooked` drops by the same six. Hard Techno is the second, 282 -> 330: ten
-    // parts this box carries whole, eight of them on the grid.
-    expect(grid.length).toBe(360)
+    // parts this box carries whole, eight of them on the grid. Drum and Bass, 360 -> 390: its
+    // kick, snare, closed hat, open hat and ghost perc on the sample pool on every seed, the dark
+    // open hat answering a `dirty` request at sqrt(2).
+    expect(grid.length).toBe(390)
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
 
     // The pitch arm is `sub` alone, in the octave the directions ask a sub for — unchanged
@@ -2086,8 +2088,10 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     expect(Math.max(...pitched.map((g) => g.midi as number))).toBeLessThan(36)
 
     // The device's arm, back on the parts p.90's sentence is true of and on no others.
+    // 186 until Drum and Bass: its closed hat, open hat and ghost perc, untransposed like every
+    // other.
     const triggered = grid.filter((g) => g.kind === 'trigger')
-    expect(triggered).toHaveLength(186)
+    expect(triggered).toHaveLength(204)
     expect([...new Set(triggered.map((g) => `${String(g.note)}/${String(g.midi)}`))]).toEqual([
       'C5/60',
     ])
@@ -2095,7 +2099,8 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // The blank arm, counted rather than glossed. Every one of these is a transposed recipe or,
     // since §4.1/#369, the Beat Slice chop — where the silence is `noteAddressing`'s rather than
     // a missing citation's, and means *no note here is a pitch* rather than *we did not read it*.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(144)
+    // 144 until Drum and Bass, whose kick and snare land on the transposed recipes.
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(156)
   })
 
   it('splits the percussion by whether its own recipe transposes the sample', () => {
@@ -2111,10 +2116,10 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
 
     // Untransposed one-shots and loops: the note is what plays them as recorded.
     expect(counts('trigger')).toEqual([
-      ['closed-hat', 48],
-      ['ghost-perc', 42],
+      ['closed-hat', 54],
+      ['ghost-perc', 48],
+      ['open-hat', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['ride', 18],
       ['impact', 12],
       ['noise', 12],
@@ -2124,9 +2129,9 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     // And the parts whose recipe sets `TUNE` off zero, which still say nothing: `tm-kick-hard` at
     // -3 and `tm-kick-dark` at -7 are the whole of the kick column.
     expect(counts('none')).toEqual([
-      ['kick', 54],
+      ['kick', 60],
+      ['snare', 30],
       ['rim', 24],
-      ['snare', 24],
       ['metallic', 18],
       ['tom', 18],
       ['vox-chop', 6],
@@ -2141,8 +2146,12 @@ describe('every sample-track grid part, and what note it now gets (§2.1)', () =
     const { hooked, sustained, noPattern } = sweep()
     // 80 until §4.1/#369 took the six Beat Slice `vox-chop` parts out: a hook is not this part's
     // rhythm when the reader cannot enter its notes, so they draw their own grid instead and are
-    // counted in `grid` above.
-    expect(hooked.length).toBe(86)
+    // counted in `grid` above. 92 since Drum and Bass: its sub is hooked on the sample pool on
+    // every seed, and its pad never is. Six of the eight sample tracks carry the sub and the five
+    // drums, two are left, and a three-note pad needs three, so the pad resolves to
+    // `tm-pad-soft-synth` on the synth pool, which this sweep does not count. The direction adds
+    // six rather than twelve.
+    expect(hooked.length).toBe(92)
     expect(hooked.some((h) => h.endsWith('/vox-chop'))).toBe(false)
     expect(sustained).toEqual([])
     // 12 until #345. The three new entries are `riser` and `sweep`, which no direction authors a

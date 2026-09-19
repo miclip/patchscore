@@ -376,4 +376,48 @@ describe('rendered guide fixtures (§8, invariant 6)', () => {
     expect((doc.match(/· exact `/g) ?? []).length).toBe(5)
     expect((doc.match(/· substituted — /g) ?? []).length).toBe(5)
   })
+
+  it('pins Drum and Bass whole on one box: a snare on 9, a hooked and patterned sub, no backbeat', () => {
+    // The only committed bytes that render the fourteenth direction. Each line is a fact the
+    // page states and no other fixture can: see `DELUGE_DRUM_AND_BASS` in `golden/guides.ts`.
+    const doc = guideText('deluge-drum-and-bass')
+    expect(doc).toContain('# Drum and Bass')
+    expect(doc).toContain('**BPM** 172 (template range 168…176)')
+    expect(doc).toContain('**Harmonic cycle** 8 bars')
+    // Two rows, four bars each: the chord moves once in the cycle.
+    expect(doc).toContain('| i | Gm | G · Bb · D | 4 |')
+    expect(doc).toContain('| VI | Eb | Eb · G · Bb | 4 |')
+
+    // The grid at the stated tempo. The kick's skeleton is step 1 and nothing else, in a 16-step
+    // bar; the snare states beat 3 as `downbeat` and the word `backbeat` appears nowhere on the
+    // page, because no role in the direction emits the slot. `breakbeat`'s snare states 5 and 13.
+    const steps = doc.slice(doc.indexOf('## 5. Step programming'), doc.indexOf('## 6. Sound design'))
+    const kick = steps.slice(steps.indexOf('### `kick`'), steps.indexOf('### `snare`'))
+    expect(kick).toContain('**Outro** — 16 steps, band 0\n\n```\n 1 x··· ···· ···· ····\n```')
+    const snare = steps.slice(steps.indexOf('### `snare`'), steps.indexOf('### `closed-hat`'))
+    expect(snare).toContain('- `downbeat` — 9')
+    expect(snare).not.toMatch(/`downbeat` — [^\n]*\b(5|13)\b/)
+    expect(doc).not.toContain('backbeat')
+    // The pulse is in the hat from the skeleton: four eighth-note offbeats at band 0.
+    expect(steps).toContain('**Intro, Outro** — 16 steps, band 0\n\n```\n 1 ··x· ··x· ··x· ··x·\n```')
+
+    // The sub is hooked and patterned. Its phase-5 block opens with the re-articulation sentence
+    // and then prints a grid, and the pad, hooked and unpatterned, prints the pointer instead.
+    const sub = steps.slice(steps.indexOf('### `sub`'), steps.indexOf('### `kick`'))
+    expect(sub).toContain('**The hook is the notes; the steps below are where they are struck again**')
+    expect(sub).toContain('This map is 1 bar long and repeats inside the hook')
+    expect(sub).toContain('**Intro, Breakdown, Outro** — 16 steps, band 0\n\n```\n 1 x··· ···· ···· ····\n```')
+    expect(doc.split('**The hook is the pattern**')).toHaveLength(2)
+
+    // The pad held: seed 18 picks the changing voicing, four bars a chord.
+    const hooks = doc.slice(doc.indexOf('## 4. Hook'), doc.indexOf('## 5. Step programming'))
+    expect(hooks).toContain('held for 64 steps (4 bars)')
+    // And the sub's own hook is a line, not a pedal: three pitches in the first three notes.
+    expect(hooks).toMatch(/`G1` · root · MIDI 31\n.*`D2` · 5th · MIDI 38\n.*`Eb2` \(`D#2`\) · 6th · MIDI 39/)
+
+    // Every request filled on the one box, and the one part the direction can do without is
+    // filled too, so the not-needed heading does not print.
+    expect(doc).toContain('### Gaps\n\nNone.')
+    expect(doc).not.toContain('### Not needed for this direction')
+  })
 })

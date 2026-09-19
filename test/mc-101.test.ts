@@ -540,17 +540,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 288 is the figure for this device and none of it is a gap to close. #334 measured 240; Hard
-   * Techno took it to 288, ten parts this four-track box carries whole. The number moves when a
-   * direction gains or loses a part, and a diff is a prompt to re-read the head note rather than
-   * a failure. What must not move is the relationship
+   * 354 is the figure for this device and none of it is a gap to close. #334 measured 240; Hard
+   * Techno took it to 288, ten parts this four-track box carries whole; Drum and Bass took it to
+   * 354 from the 324 pinned before it, five drum parts on the kit: the kick, the snare, the
+   * closed hat, the open hat and the ghost perc. The number moves when a direction gains or loses a part, and
+   * a diff is a prompt to re-read the head note rather than a failure. What must not move is the
+   * relationship
    * — no part ever gets a `trigger`, because neither pool has a note to give one.
    */
-  it('leaves 288 grid parts blank, and pins how many there are', () => {
+  it('leaves 354 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(354)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(324)
+    expect(grid.length).toBe(384)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(354)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -572,7 +574,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 318, blank: 318 }],
+      ['drum-pad', { grid: 348, blank: 348 }],
       ['tone-track', { grid: 36, blank: 6 }],
     ])
   })
@@ -598,13 +600,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 54],
-      ['closed-hat', 48],
-      ['ghost-perc', 48],
+      ['kick', 60],
+      ['closed-hat', 54],
+      ['ghost-perc', 54],
+      ['open-hat', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
       ['metallic', 18],
       ['ride', 18],
       ['tom', 18],
@@ -619,14 +621,15 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    *
    * Four tracks against eight means the MC-101 simply cannot take some parts. Those are §7.3
    * shortfalls — reported honestly as gaps (invariant 5) — and they never reach phase 5, so they
-   * are not among the 288. The sibling, with seven tone tracks, takes 48 more parts across the
+   * are not among the 354. The sibling, with seven tone tracks, takes 48 more parts across the
    * same sweep and leaves six of them with no variant to program.
    *
    * Asserted because it is the thing a reader would most easily mistake for a blank grid.
    */
   it('accounts for every part that draws no grid, by which reason', () => {
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(144)
+    // Drum and Bass hooks its sub and its pad, twelve more parts across the six seeds.
+    expect(hooked.length).toBe(156)
     expect(sustained).toEqual([])
     expect(noPattern).toEqual([
       ...Array(6).fill('hard-techno/riser'),
@@ -643,19 +646,21 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       }
     }
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 288 above an undercount rather than a measurement.
+    // classify — which is what would make the 354 above an undercount rather than a measurement.
     expect(grid.length + hooked.length + sustained.length + noPattern.length).toBe(assignments)
-    expect(assignments).toBe(510)
+    // 510 until Drum and Bass, all seven parts of which this box takes on every seed.
+    expect(assignments).toBe(552)
 
     // The parts this four-track box cannot take are §7.3 gaps, not blank grids: they never reach
-    // phase 5, so none of them is among the 288. The MC-707 takes 48 more parts over this sweep.
+    // phase 5, so none of them is among the 354. The MC-707 takes 48 more parts over this sweep.
     // 96 until #345 closed both pools' four unserved roles, which turned 18 shortfalls into parts;
     // Hard Techno added none, because this box carries all ten of its parts. 90 since #57 gave
     // Ambient Dub a `soft` impact: this box's one impact is `hard`, the opposite pole, so the
     // request is a `no-recipe` gap on all six seeds. The gap is in the library's coverage of
     // this box. 96 since #57 gave Industrial Techno a `sweep` on the Intro and Outro: four
     // tracks are spoken for by the time a priority-5 request is reached, so it is
-    // `no-room/contended` on every seed.
+    // `no-room/contended` on every seed. Drum and Bass adds none: its `dirty` open hat is
+    // answered by this box's dark one at sqrt(2).
     expect(shortfalls).toBe(96)
   })
 

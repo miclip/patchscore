@@ -66,6 +66,7 @@ describe('the registry carries twelve directions (§4)', () => {
       'ambient-dub',
       'breakbeat',
       'drone-study',
+      'drum-and-bass',
       'generative-drift',
       'hard-techno',
       'hip-hop',

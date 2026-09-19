@@ -422,7 +422,6 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
       'noise / dark',
       'noise / hard',
       'pad / bright',
-      'pad / dark',
       'pad / dirty',
       'pad / hard',
       'stab / bright',
@@ -454,7 +453,12 @@ describe('#538 Acid Lineage asks for a clean sub, and a resolve can now select o
     // Circuit Tracks). `authored.size` is unchanged at 86, because `tom / hard` was authored on
     // eight boxes already and a ninth adds no pair — which is why recipes-behind is the number
     // worth pinning beside it. A pair can go dark with the pair count saying nothing at all.
-    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(54)
+    //
+    // **22 and 44 since Drum and Bass asked for a dark pad.** `pad / dark` carried ten recipes,
+    // more than any other pair on this list, and it left by the shape the list rewards: a second
+    // direction asking, at p5, and two boxes with a voice to spare after the sub landing it at
+    // neutral. `authored.size` is unchanged at 87.
+    expect(never.reduce((n, pair) => n + (authored.get(pair) ?? 0), 0)).toBe(44)
   })
 
   it('selects the soft impact on a solo Digitakt II, on every measured seed (#57)', () => {
@@ -1145,6 +1149,7 @@ describe('#538 the eight pairs no decision had been written for, declined with t
     expect(pads.sort()).toEqual([
       'ambient-dub:soft:p1',
       'breakbeat:soft:p5',
+      'drum-and-bass:dark:p5',
       'generative-drift:soft:p1',
       'industrial-techno:dark:p4',
       'lydian-house:soft:p1',
@@ -1316,6 +1321,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
         'no-room/contended held:r-sub',
         'no-room/contended held:r-sub',
       ],
+      'drum-and-bass': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
       'generative-drift': [
         'landed:mf-pad-soft',
         'landed:mf-pad-bright',
@@ -1346,6 +1356,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
       'breakbeat': [
         'no-capable-voice held:r-kick',
         'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
+      'drum-and-bass': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
         'no-capable-voice held:r-sub',
       ],
       'generative-drift': [
@@ -1380,6 +1395,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
         'no-capable-voice held:r-kick',
         'no-capable-voice held:r-sub',
       ],
+      'drum-and-bass': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
       'generative-drift': [
         'no-capable-voice held:r-sub',
         'no-capable-voice held:r-sub',
@@ -1408,6 +1428,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
         'landed:mxd-pad-dark',
       ],
       'breakbeat': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'drum-and-bass': [
         'no-room/contended held:r-sub',
         'no-room/contended held:r-sub',
         'no-room/contended held:r-sub',
@@ -1444,6 +1469,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
         'no-capable-voice held:r-snare',
         'no-capable-voice held:r-snare',
       ],
+      'drum-and-bass': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-kick',
+        'no-capable-voice held:r-sub',
+      ],
       'generative-drift': [
         'no-capable-voice held:r-sub',
         'no-capable-voice held:r-arp',
@@ -1476,6 +1506,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
         'no-room/contended held:r-snare',
         'no-room/contended held:r-snare',
       ],
+      'drum-and-bass': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-sub',
+      ],
       'generative-drift': [
         'no-room/contended held:r-sub',
         'landed:mat-pad-soft',
@@ -1505,6 +1540,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
       ],
       'breakbeat': [
         'landed:muse-pad-soft',
+        'landed:muse-pad-bright',
+        'landed:muse-pad-dark',
+      ],
+      'drum-and-bass': [
+        'landed:muse-pad-dark',
         'landed:muse-pad-bright',
         'landed:muse-pad-dark',
       ],
@@ -1540,6 +1580,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
         'no-room/contended held:r-kick',
         'no-room/contended held:r-sub',
       ],
+      'drum-and-bass': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-kick',
+        'no-room/contended held:r-sub',
+      ],
       'generative-drift': [
         'no-room/contended held:r-sub',
         'landed:subh-pad-bright',
@@ -1568,6 +1613,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
         'no-capable-voice held:r-sub',
       ],
       'breakbeat': [
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+        'no-capable-voice held:r-sub',
+      ],
+      'drum-and-bass': [
         'no-capable-voice held:r-sub',
         'no-capable-voice held:r-sub',
         'no-capable-voice held:r-sub',
@@ -1601,6 +1651,11 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
       ],
       'breakbeat': [
         'landed:opxy-pad-soft',
+        'landed:opxy-pad-soft',
+        'landed:opxy-pad-dark',
+      ],
+      'drum-and-bass': [
+        'landed:opxy-pad-dark',
         'landed:opxy-pad-soft',
         'landed:opxy-pad-dark',
       ],
@@ -1699,7 +1754,8 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
   }
 
   it('pins every box × direction × detent for the five roles, exactly, and the quarter detents move none of them', () => {
-    expect(checkMatrix(SEVEN, MATRIX, 'darkness')).toBe(81)
+    // 81 until Drum and Bass asked for a dark pad: ten more `pad` rows, one per authoring box.
+    expect(checkMatrix(SEVEN, MATRIX, 'darkness')).toBe(91)
   })
 
   it('pins the seven pairs, the twenty-two recipes behind them, and the ten boxes with their voice counts', () => {
@@ -1736,9 +1792,14 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
     })
   })
 
-  it('leaves all seven on the never-selected ledger; two are asked for by a direction and five by none', () => {
+  it('leaves six of the seven on the never-selected ledger; `pad / dark` left it when a second direction asked', () => {
+    // All seven sat on the ledger when #538 measured them. Drum and Bass then asked for a dark
+    // pad at p5 behind six other parts, and on the two boxes with a voice to spare after the sub
+    // — the Muse and the OP-XY — the request lands the dark recipe at neutral. That is the shape
+    // the ledger exists to reward: a pair leaving because a direction wants it. The other six
+    // stay, and `stab / dark` stays while being asked for, which is the finding that stands.
     const { selected } = selectedPairs()
-    for (const pair of Object.keys(SEVEN)) expect(selected.has(pair), pair).toBe(false)
+    for (const pair of Object.keys(SEVEN)) expect(selected.has(pair), pair).toBe(pair === 'pad / dark')
     const asked = new Set(TEMPLATES.flatMap((t) => t.roles.map((r) => `${r.role} / ${r.character}`)))
     expect(Object.keys(SEVEN).filter((pair) => asked.has(pair))).toEqual(['pad / dark', 'stab / dark'])
   })
@@ -1867,7 +1928,8 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
   })
 
   it('`pad / dark`: retained — darkness at 100 reaches it on six boxes, and on the OP-XY the direction that asks for it gets it', () => {
-    // Industrial Techno asks `dark` at p4, the one direction that does. Six of the ten boxes
+    // Industrial Techno asks `dark` at p4, and did so alone until Drum and Bass asked at p5;
+    // that direction's cells are at the end of this block. Six of the ten boxes
     // reach the pair by the knob. On the MicroFreak, the minilogue xd and the Muse the p1 soft
     // pads re-pin to `dark` at 100 and land the dark recipe; the Matriarch does the same under
     // the two directions whose p1 pad wins its voice at neutral, and the Subharmonicon under
@@ -1921,6 +1983,22 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
     for (const id of [...p1, 'breakbeat']) {
       expect(outcome('teenage-engineering-op-xy', id, 'r-pad', darkest), id).toBe('landed:opxy-pad-dark')
     }
+    // Drum and Bass asks `dark` at p5 behind a continuous sub at p1, so on every one-voice box
+    // the pad loses the voice to the sub at neutral — the one-voice rows are `held:r-sub`. At
+    // darkness 0 the sub re-pins to `bright`, which the Grandmother, the Matriarch and the
+    // Subharmonicon author no sub for, so the voice passes to the kick and the pad is still out.
+    // The Muse's second voice and the OP-XY's eight tracks land it exactly at neutral and at 100,
+    // and land the box's bright and soft pads at 0: the dark pad is selected in the solo sweep,
+    // which is what moved the pair off the ledger above.
+    for (const box of ['moog-muse', 'teenage-engineering-op-xy']) {
+      expect(outcome(box, 'drum-and-bass', 'r-pad'), box).toMatch(/^landed:.*-pad-dark$/)
+      expect(outcome(box, 'drum-and-bass', 'r-pad', darkest), box).toMatch(/^landed:.*-pad-dark$/)
+    }
+    expect(outcome('moog-muse', 'drum-and-bass', 'r-pad', brightest)).toBe('landed:muse-pad-bright')
+    expect(outcome('teenage-engineering-op-xy', 'drum-and-bass', 'r-pad', brightest)).toBe('landed:opxy-pad-soft')
+    for (const box of ['moog-grandmother', 'moog-matriarch', 'moog-subharmonicon']) {
+      expect(outcome(box, 'drum-and-bass', 'r-pad', brightest), box).toMatch(/held:r-kick$/)
+    }
     // The other four boxes never reach it, and not for the reason the ledger implies. Every pad
     // request in the library asks for three or four notes, and the Cascadia and the
     // Grandmother sound one, the Neutron and the Subsequent 37 two: `no-capable-voice` on
@@ -1928,7 +2006,7 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
     // drone and a two-note pad are honest recipes on those boxes, and no pad request the
     // library carries can be answered by them.
     const asked = TEMPLATES.flatMap((t) => t.roles.filter((r) => r.role === 'pad').map((r) => r.polyphony))
-    expect(asked.sort()).toEqual([3, 3, 3, 3, 4, 4])
+    expect(asked.sort()).toEqual([3, 3, 3, 3, 3, 4, 4])
     for (const [box, polyphony] of [
       ['behringer-neutron', 2],
       ['intellijel-cascadia', 1],
@@ -1941,7 +2019,7 @@ describe('#538 the seven tone-axis pairs, decided with the evidence: four retain
       for (const [id, cells] of Object.entries(MATRIX['pad']?.[box] ?? {})) {
         for (const cell of cells) expect(cell.split(' ')[0], `${box} ${id}`).toBe('no-capable-voice')
       }
-      expect(Object.keys(MATRIX['pad']?.[box] ?? {})).toHaveLength(6)
+      expect(Object.keys(MATRIX['pad']?.[box] ?? {})).toHaveLength(7)
     }
     // Verdict: asked for by one direction, reached exactly on that direction by one knob on the
     // one box with tracks to spare, and reached on five more under the soft-pad directions.
@@ -2053,6 +2131,11 @@ describe('#538 the five grit-axis pairs, decided with the evidence: two retained
         'landed:mxd-pad-dirty',
       ],
       'breakbeat': [
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+        'no-room/contended held:r-sub',
+      ],
+      'drum-and-bass': [
         'no-room/contended held:r-sub',
         'no-room/contended held:r-sub',
         'no-room/contended held:r-sub',
@@ -2217,6 +2300,11 @@ describe('#538 the five grit-axis pairs, decided with the evidence: two retained
         'landed:sub37-sub-dark',
         'landed:sub37-sub-dark',
       ],
+      'drum-and-bass': [
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+        'landed:sub37-sub-dark',
+      ],
       'generative-drift': [
         'landed:sub37-sub-dark',
         'landed:sub37-sub-dark',
@@ -2342,7 +2430,8 @@ describe('#538 the five grit-axis pairs, decided with the evidence: two retained
   })
 
   it('pins every box × direction × detent for the four roles, exactly, and the quarter detents move none of them', () => {
-    expect(checkMatrix(FIVE, MATRIX, 'grit')).toBe(46)
+    // 46 until Drum and Bass, which asks for a `pad` and a `sub`: one row each.
+    expect(checkMatrix(FIVE, MATRIX, 'grit')).toBe(48)
   })
 
   it('the grit knob re-pins `hard` and `soft` to `dirty` at 100 and to `clean` at 0, and never moves `dark` onto `dirty`', () => {

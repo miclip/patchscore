@@ -917,14 +917,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * authored the clap, and on a four-track box that did not simply add eighteen parts — see
    * `prints a note only where the direction asked for a pitch of its own` below, where six went
    * the other way. 132 until Hard Techno, which this box carries four parts of: the kick, the sub,
-   * the hat and the lead, by the direction's own priorities. What must not move is the
-   * relationship: no part ever gets a `trigger`, because the pool has no note to give one.
+   * the hat and the lead, by the direction's own priorities. 144 until Drum and Bass, which this
+   * box also carries four parts of: the sub, the kick, the snare and the hat, with the sub hooked
+   * and the other three on the grid. What must not move is the relationship: no part ever gets a
+   * `trigger`, because the pool has no note to give one.
    */
-  it('leaves 144 grid parts blank, and pins how many there are', () => {
+  it('leaves 162 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(168)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(144)
+    expect(grid.length).toBe(186)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(162)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -962,10 +964,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 48],
-      ['closed-hat', 30],
+      ['kick', 54],
+      ['closed-hat', 36],
+      ['snare', 24],
       ['clap', 18],
-      ['snare', 18],
       ['rim', 12],
       ['ghost-perc', 6],
       ['ride', 6],
@@ -978,12 +980,14 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // two arms are empty here, which is itself the successor's shape and not this box's — four
     // tracks take fewer parts, and every one they take resolves a variant somewhere.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(90)
+    // 90 until Drum and Bass, whose hooked sub this box takes on every seed; its hooked pad is
+    // the part four tracks leave out.
+    expect(hooked.length).toBe(96)
     expect(sustained).toEqual([])
     expect(noPattern).toEqual([])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 144 above an undercount rather than a measurement.
+    // classify — which is what would make the 162 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {

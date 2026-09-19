@@ -856,15 +856,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * re-read the head note rather than a failure. What must not move is the relationship — no part
    * ever gets a `trigger`, because neither pool has a note to give one.
    */
-  it('leaves 228 grid parts blank, and pins how many there are', () => {
+  it('leaves 300 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
     // 180 until #345 authored the six roles the drum pool declared and no recipe served, which
     // placed 24 parts that were being dropped; 204 until Hard Techno, of which this box carries
     // six parts — its only tom is `soft`, the opposite of the `hard` one asked for, and that part
-    // is an honest gap rather than a grid.
-    expect(grid.length).toBe(276)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(246)
+    // is an honest gap rather than a grid; 276 until Drum and Bass, whose kick, snare, closed hat
+    // and ghost perc fill the four drum tracks while the sub and the pad go to their hooks.
+    expect(grid.length).toBe(300)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(270)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -889,10 +890,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 54],
-      ['closed-hat', 48],
-      ['ghost-perc', 24],
-      ['snare', 24],
+      ['kick', 60],
+      ['closed-hat', 54],
+      ['ghost-perc', 30],
+      ['snare', 30],
       ['clap', 18],
       ['rim', 18],
       ['tom', 18],
@@ -908,12 +909,12 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook. Six assignables is a
     // tight rig, and every part it takes resolves a variant somewhere — so two arms are empty.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(114)
+    expect(hooked.length).toBe(126)
     expect(sustained).toEqual([])
     expect(noPattern).toEqual([])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 228 above an undercount rather than a measurement.
+    // classify — which is what would make the 300 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {
