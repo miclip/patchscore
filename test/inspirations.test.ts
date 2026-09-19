@@ -128,11 +128,12 @@ function claimedSlots(inspiration: Inspiration): Set<string> {
 // ---------------------------------------------------------------------------
 
 describe('the inspiration registry (§5)', () => {
-  it('holds six, in id order, each parsing and reachable by id', () => {
+  it('holds seven, in id order, each parsing and reachable by id', () => {
     expect(INSPIRATIONS.map((i) => i.id)).toEqual([
       'brushes',
       'dancehall',
       'echo',
+      'half-time',
       'ladder',
       'reggae',
       'shuffle',
@@ -146,10 +147,12 @@ describe('the inspiration registry (§5)', () => {
   })
 
   it('knows exactly which pairs compose and which refuse, and it is not all of one', () => {
-    // The derivation `LEGAL_SELECTIONS` rests on, pinned so that adding a sixth influence has
-    // to be looked at rather than merely absorbed. Three of the five claim `bass-mid` — it is
-    // where an influence makes its strongest melodic claim — so those three refuse each other,
-    // and Dancehall and Reggae still refuse over the kick. Everything else composes.
+    // The derivation `LEGAL_SELECTIONS` rests on, pinned so that adding an influence has to be
+    // looked at rather than merely absorbed. Three claim `bass-mid` — it is where an influence
+    // makes its strongest melodic claim — so those three refuse each other. The kick is the
+    // other contested slot, and `half-time` made it a set of three: a one-drop and a half-time
+    // backbeat are two claims about where the bar's weight falls, and two of those at once is an
+    // argument rather than a combination.
     const name = (pair: Inspiration[]) => pair.map((i) => i.id).join(' + ')
     expect(LEGAL_PAIRS.map(name)).toEqual([
       // `brushes` claims `ride`, which nothing else claims, so it composes with every one of the
@@ -157,13 +160,19 @@ describe('the inspiration registry (§5)', () => {
       // that costs the composition table nothing.
       'brushes + dancehall',
       'brushes + echo',
+      'brushes + half-time',
       'brushes + ladder',
       'brushes + reggae',
       'brushes + shuffle',
       'dancehall + echo',
       'dancehall + ladder',
       'dancehall + shuffle',
+      'echo + half-time',
       'echo + shuffle',
+      // `half-time` claims `snare`, which nothing else claims, and `kick`, which two do. So it
+      // composes with everything melodic and with the hat, and refuses exactly the two kicks.
+      'half-time + ladder',
+      'half-time + shuffle',
       'ladder + shuffle',
       'reggae + shuffle',
     ])
@@ -176,9 +185,11 @@ describe('the inspiration registry (§5)', () => {
       }
     }
     expect(refusing).toEqual([
+      'dancehall + half-time',
       'dancehall + reggae',
       'echo + ladder',
       'echo + reggae',
+      'half-time + reggae',
       'ladder + reggae',
     ])
   })
@@ -445,11 +456,24 @@ describe('an inspiration names neither a template nor a device (§5, invariant 3
      * that parameter existed or after it. Invariant 3 is about layering: what it forbids is an
      * inspiration reaching for something only one box has.
      *
+     * `time` arrived with `half-time` and is the same case one step further out: it reaches this
+     * set from `DELAY TIME`, `DECAY TIME` and a dozen other knobs, and it is one of the most
+     * generic words in music. Half time is a feel, named the way drummers name it, and the
+     * influence reaches for nothing only one box has. Note the asymmetry that makes this safe:
+     * the substring check below still forbids every device *name*, so an inspiration cannot
+     * borrow a box's identity by spelling it in an id.
+     *
      * `swing` needs no entry: it is a `MoodAxis`, so the shared vocabulary already exempts it.
      * Keep this list to words that are genuinely generic; a device-specific one belongs on the
      * device, and an inspiration reaching for it is the bug this test exists to catch.
+     *
+     * **The template-word check above got the opposite answer on purpose.** `half-time`'s notes
+     * first said "the second or the fourth" and "puts the bar back", and `second` and `back` are
+     * template words because Breakbeat has a `Second Drop` and Hip Hop a `Pulled Back`. Those
+     * were reworded rather than exempted: an exemption is permanent and the sentence was not,
+     * and the list stays worth reading only while everything on it was unavoidable.
      */
-    const MUSICAL_TERMS = new Set(['shuffle'])
+    const MUSICAL_TERMS = new Set(['shuffle', 'time'])
     for (const device of DEVICES) {
       deviceNames.push(device.id, device.name, device.maker)
       const words = [
