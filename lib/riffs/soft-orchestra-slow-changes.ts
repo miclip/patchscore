@@ -42,9 +42,11 @@ export const softOrchestraSlowChanges: Riff = {
   bpm: { min: 56, max: 74, default: 64 },
   key: 'G minor',
   technique: [
-    'The top note stays on D through the first two chords while the harmony moves underneath ' +
-      'it. That common tone is the whole device: the pad does the work and the right hand ' +
-      'barely moves.',
+    'The top note stays on D while the harmony moves underneath it. That common tone is the ' +
+      'whole device: the pad does the work and the right hand barely moves. What changes is ' +
+      'what the D is. Over the G minor it is the fifth, plain. Over the E flat it is the major ' +
+      'seventh, and the same note has gone soft. Over the C minor it is the ninth, and it is ' +
+      'floating. One note, three colours, and you moved nothing.',
     'The D is one note, not three. It enters with the first chord and is tied through the ' +
       'second and into the third: no new attack anywhere, however much the chords move under it.',
     'Over the C minor chord, hold the D and step down to C late, on beat three of the second ' +

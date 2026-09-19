@@ -90,6 +90,8 @@ export const hypnoAcidSixteenthLoop: Riff = {
       { step: 14, degree: 1, octave: 1, len: 2 },
       { step: 16, degree: 5, octave: 0, len: 1 },
       // Bar 2: the same shape, with the fourth for the third and the seventh below for the fifth.
+      // Exactly two notes differ, and `test/korg-minilogue-xd.test.ts` counts them: the first published
+      // version also swapped the root after the fourth for a third, and said two.
       { step: 17, degree: 1, octave: 0, len: 1 },
       { step: 19, degree: 1, octave: 0, len: 1 },
       { step: 20, degree: 1, octave: 1, len: 1 },
@@ -97,7 +99,7 @@ export const hypnoAcidSixteenthLoop: Riff = {
       { step: 23, degree: 7, octave: -1, len: 1 },
       { step: 25, degree: 1, octave: 0, len: 1 },
       { step: 27, degree: 4, octave: 0, len: 1 },
-      { step: 28, degree: 3, octave: 0, len: 1 },
+      { step: 28, degree: 1, octave: 0, len: 1 },
       { step: 30, degree: 1, octave: 1, len: 2 },
       { step: 32, degree: 7, octave: -1, len: 1 },
     ],
