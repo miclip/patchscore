@@ -370,7 +370,13 @@ describe('an inspiration names neither a template nor a device (§5, invariant 3
    * are dropped: the `it-` prefix on Industrial Techno's pattern ids tokenises to `it`, and
    * forbidding the English word "it" in prose would be a rule about grammar rather than about
    * layering. The substring check below covers the ids those fragments came from, whole.
+   *
+   * `and` is dropped for the same reason and by name, since it is three characters long. It
+   * arrived with the Drum and Bass direction, whose id and name both carry it, and a conjunction
+   * identifies no direction: six inspirations' notes use it as English. `drum-and-bass` and
+   * `Drum and Bass` stay forbidden whole through the substring check.
    */
+  const NON_IDENTIFYING_ENGLISH = new Set(['and'])
   const templateWords = new Set<string>()
   const templateIds: string[] = []
   for (const template of TEMPLATES) {
@@ -393,6 +399,7 @@ describe('an inspiration names neither a template nor a device (§5, invariant 3
     for (const text of strings) {
       for (const token of tokens(text)) {
         if (token.length < 3 || /^[0-9]+$/.test(token)) continue
+        if (NON_IDENTIFYING_ENGLISH.has(token)) continue
         if (!SHARED_VOCABULARY.has(token)) templateWords.add(token)
       }
     }

@@ -825,6 +825,23 @@ describe('the bound, direction by direction (§7.1/#159)', () => {
     'drone-study': [
       37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37, 37
     ],
+    // The fourteenth direction, added rather than moved: the other thirteen rows reproduce to
+    // the node. Seven requests, and twenty of the twenty-four seeds run 212-346, the cheapest
+    // rows here after `drone-study`'s one request: six of the seven are answered exactly on the
+    // catalogue — `sub` at `dark` on thirty-nine boxes, `kick` and `snare` at `hard`, the closed
+    // hat at `bright`, `ghost-perc` at `soft`, `pad` at `dark` — so `liveFloor` is tight from the
+    // first branch. The four seeds near 31,000 are the seventh: `open-hat` at `dirty` is authored
+    // exactly on two boxes and at sqrt(2) on twenty-six, so on the full catalogue those seeds
+    // permute among equal substitutions before the two exact answers are reached. That is the
+    // mechanism `CLAUDE.md` names for a request added to reach a pair few boxes author, and it
+    // is the catalogue saying something a rig does not: `measure:search` did not move on either
+    // line, 68,253 on `hard-techno` seed 15 for the legal rig and 586,606 on `industrial-techno`
+    // for the catalogue. The pad's `polyphony: 3` is what keeps the one-note pads out of the
+    // tree before they are priced.
+    'drum-and-bass': [
+      346, 214, 213, 31716, 213, 30716, 213, 30715, 214, 213, 30715, 212, 214, 214, 213, 213,
+      214, 213, 212, 214, 213, 213, 212, 214
+    ],
     'generative-drift': [
       612, 245, 942, 247, 905, 245, 942, 245, 675, 377, 866, 245, 668, 381, 313, 411, 245, 313,
       411, 668, 247, 668, 411, 675

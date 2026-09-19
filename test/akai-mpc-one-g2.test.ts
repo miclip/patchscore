@@ -248,19 +248,20 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 300 is the figure for this device and none of it is a gap to close: a pad part is addressed
+   * 366 is the figure for this device and none of it is a gap to close: a pad part is addressed
    * by pad, and a plugin part has no note this document states. The number moves when a direction
-   * gains or loses a part or the shared recipes gain one — #334 measured 246, #345 made it 258
-   * and Hard Techno 300, the same steps the sibling took because the recipes are the sibling's. A
-   * diff is a prompt to re-read the head note rather than a failure. What must not move is the
+   * gains or loses a part or the shared recipes gain one — #334 measured 246, #345 made it 258,
+   * Hard Techno 300, Slow Noir and #538 336 between them, and Drum and Bass 366 with five drum
+   * parts, the same steps the sibling took because the recipes are the sibling's. A diff is a
+   * prompt to re-read the head note rather than a failure. What must not move is the
    * relationship — no part ever gets a `trigger`, because no pool has a note to give one.
    */
-  it('leaves 300 grid parts blank, and pins where they are', () => {
+  it('leaves 366 grid parts blank, and pins where they are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(366)
+    expect(grid.length).toBe(396)
     const blank = grid.filter((g) => g.kind === 'none')
-    expect(blank.length).toBe(336)
+    expect(blank.length).toBe(366)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -271,8 +272,8 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
     const byPool = new Map<string, number>()
     for (const g of blank) byPool.set(g.pool, (byPool.get(g.pool) ?? 0) + 1)
     expect([...byPool].sort()).toEqual([
-      ['mono-track', 210],
-      ['pad', 120],
+      ['mono-track', 234],
+      ['pad', 126],
       ['poly-track', 6],
     ])
   })
@@ -297,13 +298,13 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 48],
-      ['ghost-perc', 48],
-      ['kick', 48],
+      ['closed-hat', 54],
+      ['ghost-perc', 54],
+      ['kick', 54],
+      ['open-hat', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
       ['tom', 24],
       ['metallic', 18],
       ['ride', 18],
@@ -319,7 +320,7 @@ describe('trigger notes: read on v3.9, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(162)
+    expect(hooked.length).toBe(174)
     expect(sustained).toEqual([])
     // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
     expect(noPattern.length).toBe(48)

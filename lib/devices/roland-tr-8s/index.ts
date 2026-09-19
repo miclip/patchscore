@@ -1243,10 +1243,14 @@ const recipes: Recipe[] = [
       /*
        * §3/#518. **The second prose defect this issue was filed about.** It read *"about one bar
        * long"*, which is not a length until somebody supplies a tempo, and the sentence beside it
-       * says the sample's own length is the pad's length. `pad` is held for 64 steps under
+       * says the sample's own length is the pad's length. `pad` was held for 64 steps under
        * `ambient-dub` at 108 bpm — four bars, 8.89 s — so a one-bar recording is a quarter of
-       * what this recipe asks a reader to build. Nine seconds is that figure rounded up, and it
-       * is a number rather than a bar count for the reason #518 gives: a bar is not a duration.
+       * what this recipe asks a reader to build, and nine seconds was that figure rounded up.
+       * `drum-and-bass` then held a pad voicing for 128 steps at a floor of 168 bpm, eight bars
+       * and 11.43 s, and `test/source-length.test.ts` derives the worst case from the shipped
+       * directions so that the number here moved with it: twelve seconds is the new figure
+       * rounded up. A number rather than a bar count for the reason #518 gives: a bar is not a
+       * duration.
        *
        * p.31's `Hold Mode`, under *Sample tone only*: *"Whole: The sound is heard to the end
        * without decaying."* So the file is the hold, on a Sample tone, which is what `TONE` says
@@ -1254,7 +1258,7 @@ const recipes: Recipe[] = [
        * `Whole` on a Loop tone would not stop at the end, and a Sample tone under `Time` or
        * `Step` would decay before it.
        */
-      minimumSeconds: 9,
+      minimumSeconds: 12,
       playback: {
         boundary: {
           kind: 'stops-at-end',

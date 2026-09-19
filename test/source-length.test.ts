@@ -112,10 +112,14 @@ describe('a source fed to a held note is long enough for it (#506/#518)', () => 
    * The four requirements, computed rather than listed, and pinned so that a hook or a tempo floor
    * moving shows up here as a diff instead of silently relaxing every recipe below.
    *
-   *     texture  128 steps  drone-study   60 bpm   32.00 s
-   *     sub       80 steps  weave        126 bpm    9.52 s
-   *     pad       64 steps  ambient-dub  108 bpm    8.89 s
-   *     acid      22 steps  acid-lineage 122 bpm    2.70 s
+   *     texture  128 steps  drone-study    60 bpm   32.00 s
+   *     pad      128 steps  drum-and-bass 168 bpm   11.43 s
+   *     sub       80 steps  weave         126 bpm    9.52 s
+   *     acid      22 steps  acid-lineage  122 bpm    2.70 s
+   *
+   * `pad` was 64 steps under `ambient-dub` at 108 bpm, 8.89 s, until Drum and Bass held one
+   * voicing for its whole eight-bar cycle. The TR-8S's `tr8s-pad-soft` is the one file-fed pad
+   * with nothing to rescue it, and its stated length moved from 9 s to 12 s with this row.
    */
   it('derives the held roles and their worst case from the shipped directions', () => {
     const required = requiredSeconds()
@@ -123,7 +127,7 @@ describe('a source fed to a held note is long enough for it (#506/#518)', () => 
     expect(roles).toEqual(['acid', 'pad', 'sub', 'texture'])
     expect(required.get('texture')).toBeCloseTo(32.0, 2)
     expect(required.get('sub')).toBeCloseTo(9.52, 2)
-    expect(required.get('pad')).toBeCloseTo(8.89, 2)
+    expect(required.get('pad')).toBeCloseTo(11.43, 2)
     expect(required.get('acid')).toBeCloseTo(2.7, 2)
   })
 
@@ -219,7 +223,7 @@ describe('a source fed to a held note is long enough for it (#506/#518)', () => 
       'polyend-tracker tr-acid-hard 3',
       'roland-sp-404mk2 sp-acid-hard 3',
       'roland-sp-404mk2 sp-sub-dark 10',
-      'roland-tr-8s tr8s-pad-soft 9',
+      'roland-tr-8s tr8s-pad-soft 12',
       'te-ep-133 ep133-acid-dirty 3',
       'te-ep-133 ep133-sub-dark 10',
       'te-ep-40 ep40-sub-dark 10',
@@ -272,7 +276,7 @@ describe('a source fed to a held note is long enough for it (#506/#518)', () => 
       'roland-sp-404mk2 sp-sub-dark 10s',
       'roland-sp-404mk2 sp-texture-soft loops',
       'roland-tr-6s tr6s-texture-soft loops',
-      'roland-tr-8s tr8s-pad-soft 9s',
+      'roland-tr-8s tr8s-pad-soft 12s',
       'roland-tr-8s tr8s-texture-soft loops',
       'te-ep-133 ep133-acid-dirty 3s',
       'te-ep-133 ep133-pad-soft stretches',

@@ -753,14 +753,15 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
    * the model is right to say nothing. The total moves when a direction gains or loses a part or
    * this box gains a recipe; what must not move is that the blanks and the sliced recipe are the
    * same set. 384 since #57: Ambient Dub asks for a soft impact and this box authors the one in
-   * the library, six more trigger grids on `impact`.
+   * the library, six more trigger grids on `impact`. 414 since Drum and Bass, whose five drum
+   * parts this box carries on every seed, thirty more trigger grids, and the blanks still at 6.
    */
   it('leaves only the sliced parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(384)
+    expect(grid.length).toBe(414)
     expect(grid.filter((g) => g.kind === 'none').length).toBe(6)
-    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(348)
+    expect(grid.filter((g) => g.kind === 'trigger').length).toBe(378)
 
     // Named rather than left to the count: all three arms are now in play on this box.
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch', 'trigger'])
@@ -794,13 +795,13 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 54],
-      ['kick', 54],
-      ['ghost-perc', 48],
+      ['closed-hat', 60],
+      ['kick', 60],
+      ['ghost-perc', 54],
+      ['open-hat', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
       ['tom', 24],
       ['impact', 18],
       ['metallic', 18],
@@ -814,7 +815,7 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(162)
+    expect(hooked.length).toBe(174)
     expect(sustained).toEqual([])
     // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
     expect(noPattern.length).toBe(48)
@@ -876,9 +877,11 @@ describe('trigger notes: authored per track mode (§2.1/§2.2/#86)', () => {
       }
     }
     // 588 and 576 until #57 gave Industrial Techno a `sweep`, which this box carries on all six
-    // seeds from a whole-sample recipe, so it carries the note like the rest.
-    expect(seen).toBe(594)
-    expect(carrying).toBe(582)
+    // seeds from a whole-sample recipe, so it carries the note like the rest. 594 and 582 until
+    // Drum and Bass, whose seven parts this box carries whole on every seed, so both move by the
+    // same forty-two and the sliced set stays at twelve.
+    expect(seen).toBe(636)
+    expect(carrying).toBe(624)
   })
 
   /**

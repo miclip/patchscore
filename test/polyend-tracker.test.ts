@@ -1006,15 +1006,16 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     // The population, as measured on this library. 258 until #345 authored the five roles the
     // pool declared and no recipe served — the count *fell*, because four of the five are pitched
     // and a pitched part is hooked (#100) rather than drawn as a grid — and 246 until Hard Techno,
-    // of which this box carries eight parts. The decline does not move it: what changes is which
-    // arm a part lands in, not whether it is counted.
-    expect(grid.length).toBe(318)
+    // of which this box carries eight parts; 318 until Drum and Bass, whose seven parts this box
+    // carries whole, five of them on the grid and the sub and the pad on their hooks. The decline
+    // does not move it: what changes is which arm a part lands in, not whether it is counted.
+    expect(grid.length).toBe(348)
 
     // **Two arms, and `trigger` is not one of them.**
     expect([...new Set(grid.map((g) => g.kind))].sort()).toEqual(['none', 'pitch'])
 
     // The blank arm, counted rather than glossed: every one of these printed `C5` before.
-    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(288)
+    expect(grid.filter((g) => g.kind === 'none')).toHaveLength(318)
   })
 
   it('leaves the direction’s own pitch untouched where there is one', () => {
@@ -1072,13 +1073,13 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 48],
-      ['kick', 48],
-      ['ghost-perc', 36],
+      ['closed-hat', 54],
+      ['kick', 54],
+      ['ghost-perc', 42],
+      ['snare', 30],
       ['clap', 24],
+      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
-      ['open-hat', 18],
       ['ride', 18],
       ['metallic', 12],
       ['tom', 12],
@@ -1095,7 +1096,8 @@ describe('every track grid part, and what note it now gets (§2.1)', () => {
     // program. Asserted rather than assumed — this box produces no sustained part at all here.
     const { hooked, sustained, noPattern } = sweep()
     // 78 until #345: four of its five roles are pitched, so they hook rather than draw a grid.
-    expect(hooked.length).toBe(156)
+    // 156 until Drum and Bass, whose sub and pad both carry a hook.
+    expect(hooked.length).toBe(168)
     expect(sustained).toEqual([])
     // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other,
     // and this box carries it on the voice its riser and impact already take turns on.

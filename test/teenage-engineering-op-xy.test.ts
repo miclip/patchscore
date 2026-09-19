@@ -156,18 +156,21 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 282 is the figure for this device and none of it is a gap to close. #334 measured 240; #345
-   * made it 246; Hard Techno took it to 282, eight parts this box carries. The number moves when
-   * a direction gains or loses a part, and a diff is a prompt to re-read the head note rather
-   * than a failure. What must not move is the relationship
-   * — no part ever gets a `trigger`, because the pool has no note to give one.
+   * 342 is the figure for this device and none of it is a gap to close. #334 measured 240; #345
+   * made it 246; Hard Techno took it to 282, eight parts this box carries; Drum and Bass took it
+   * to 342, five grid parts on every seed. The number moves when a direction gains or loses a
+   * part, and a diff is a prompt to re-read the head note rather than a failure. What must not
+   * move is the relationship — no part ever gets a `trigger`, because the pool has no note to
+   * give one.
    */
-  it('leaves 282 grid parts blank, and pins how many there are', () => {
+  it('leaves 342 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    // 264 until #345 authored the pool's last five unserved roles; 270 until Hard Techno.
-    expect(grid.length).toBe(342)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(312)
+    // 264 until #345 authored the pool's last five unserved roles; 270 until Hard Techno; 342
+    // until Drum and Bass, whose kick, snare, closed hat, open hat and ghost perc this box takes
+    // on every seed, the dark open hat answering a `dirty` request at sqrt(2).
+    expect(grid.length).toBe(372)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(342)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -193,13 +196,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 54],
-      ['kick', 54],
-      ['ghost-perc', 36],
+      ['closed-hat', 60],
+      ['kick', 60],
+      ['ghost-perc', 42],
+      ['open-hat', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
       ['ride', 18],
       ['tom', 18],
       ['metallic', 12],
@@ -215,7 +218,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(150)
+    // 150 until Drum and Bass, which hooks its sub and its pad.
+    expect(hooked.length).toBe(162)
     expect(sustained).toEqual([])
     // 12 until #345: `sweep` and `riser` gain entries, and no direction authors a step variant
     // for either of them.

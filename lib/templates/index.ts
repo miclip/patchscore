@@ -4,6 +4,7 @@ import { acidLineage } from './acid-lineage'
 import { ambientDub } from './ambient-dub'
 import { breakbeat } from './breakbeat'
 import { droneStudy } from './drone-study'
+import { drumAndBass } from './drum-and-bass'
 import { generativeDrift } from './generative-drift'
 import { hardTechno } from './hard-techno'
 import { hipHop } from './hip-hop'
@@ -33,6 +34,7 @@ export const TEMPLATES: readonly Template[] = [
   ambientDub,
   breakbeat,
   droneStudy,
+  drumAndBass,
   generativeDrift,
   hardTechno,
   hipHop,
@@ -49,6 +51,7 @@ export {
   ambientDub,
   breakbeat,
   droneStudy,
+  drumAndBass,
   generativeDrift,
   hardTechno,
   hipHop,

@@ -141,17 +141,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 294 is the figure for this device and none of it is a gap to close. #334 measured 240; #345
-   * made it 252; Hard Techno took it to 294, ten parts this box carries whole. The number moves
-   * when a direction gains or loses a part, and a diff is a prompt to re-read the head note
-   * rather than a failure. What must not move is the relationship
+   * 360 is the figure for this device and none of it is a gap to close. #334 measured 240; #345
+   * made it 252; Hard Techno took it to 294, ten parts this box carries whole; Drum and Bass took
+   * it to 360, five drum parts on the kit and the sub and the pad on their hooks. The number moves when a direction gains or loses a part, and a diff is a prompt to re-read
+   * the head note rather than a failure. What must not move is the relationship
    * — no part ever gets a `trigger`, because neither pool has a note to give one.
    */
-  it('leaves 294 grid parts blank, and pins how many there are', () => {
+  it('leaves 360 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(360)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(330)
+    expect(grid.length).toBe(390)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(360)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -161,7 +161,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
   /**
    * **The split, which is this box's own contribution to #334 and which a total would hide.**
    *
-   * The kit is blank end to end — 288 grid parts, 288 without a note — because p.30 writes a step
+   * The kit is blank end to end — 354 grid parts, 354 without a note — because p.30 writes a step
    * by selecting a pad, not by naming a pitch. The tone tracks are where every note on this box's
    * pages comes from and they are *mostly* filled, by the direction rather than by the device: 30
    * of their 36 carry a pitch and the six that do not are `arp` parts the direction left open.
@@ -178,7 +178,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.pool, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['drum-pad', { grid: 324, blank: 324 }],
+      ['drum-pad', { grid: 354, blank: 354 }],
       ['tone-track', { grid: 36, blank: 6 }],
     ])
   })
@@ -204,13 +204,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 54],
-      ['closed-hat', 48],
-      ['ghost-perc', 48],
+      ['kick', 60],
+      ['closed-hat', 54],
+      ['ghost-perc', 54],
+      ['open-hat', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
       ['metallic', 18],
       ['ride', 18],
       ['tom', 18],
@@ -225,7 +225,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // part with no variant anywhere nothing to program. Asserted rather than assumed — this box
     // produces no sustained part at all across the sweep.
     const { hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(162)
+    // 162 until Drum and Bass, whose sub and pad both carry a hook.
+    expect(hooked.length).toBe(174)
     expect(sustained).toEqual([])
     // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
     expect(noPattern.length).toBe(48)

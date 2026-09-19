@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { PATTERN_SLOTS, type Role } from '../lib/core/index'
-import { TEMPLATES, breakbeat } from '../lib/templates/index'
+import { TEMPLATES, breakbeat, templateById } from '../lib/templates/index'
 
 /**
  * §4.3/#307. **The claims the direction's own header makes about its rhythm, pinned.**
@@ -73,9 +73,16 @@ describe('the snare carries the rhythm, not the kick (#307)', () => {
 
 describe('what the direction asks for (#307)', () => {
   it('sits above every other direction, in the band nothing reached', () => {
-    const others = TEMPLATES.filter((t) => t.id !== 'breakbeat')
+    // Drum and Bass is the exception and the reason is the point of that file: the two are one
+    // family at one tempo, told apart by where the snare falls and not by the bpm field, so it
+    // shares this band on purpose. Every other direction still sits below.
+    const others = TEMPLATES.filter((t) => t.id !== 'breakbeat' && t.id !== 'drum-and-bass')
     const ceiling = Math.max(...others.map((t) => t.bpm.max))
     expect(breakbeat.bpm.min).toBeGreaterThan(ceiling)
+    const dnb = templateById('drum-and-bass')
+    if (dnb === undefined) throw new Error('drum-and-bass missing from the templates')
+    expect(dnb.bpm.min).toBeLessThanOrEqual(breakbeat.bpm.max)
+    expect(dnb.bpm.max).toBeGreaterThanOrEqual(breakbeat.bpm.min)
   })
 
   /**

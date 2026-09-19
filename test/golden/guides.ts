@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join, resolve as resolvePath } from 'node:path'
 import { moodState, renderGuide, resolve, type Device, type Template } from '../../lib/core/index'
 import { DEVICES } from '../../lib/devices/registry.generated'
-import { droneStudy, hardTechno, industrialTechno, weave } from '../../lib/templates/index'
+import { droneStudy, drumAndBass, hardTechno, industrialTechno, weave } from '../../lib/templates/index'
 
 /**
  * §8's output, pinned as bytes against the **real** device library and the real template.
@@ -91,6 +91,12 @@ import { droneStudy, hardTechno, industrialTechno, weave } from '../../lib/templ
  *    seven-section arrangement with eight continuous parts and two scoped ones, a mono lead hook
  *    resolved above middle C, the rolling patterns, and the characters the library answers with.
  *    Its argument is beside `DELUGE_HARD_TECHNO` below.
+ *  - **deluge-drum-and-bass** — the Deluge alone on Drum and Bass, the fourteenth direction, and
+ *    the only committed bytes in which it is rendered. The Deluge fills all seven requests, so one
+ *    file pins the direction whole: an eight-bar cycle with one chord change, a kick on 1 and a
+ *    snare on 9 in a one-bar grid at every band, a sub that is hooked and patterned with the
+ *    re-articulation sentence above its grid, and a pad voicing held for four bars. Its argument
+ *    is beside `DELUGE_DRUM_AND_BASS` below.
  *
  * **`full-rig` used to be the third case and #80 changed that**, which is worth recording because
  * it looks like a fixture losing its purpose. It resolved onto `usb`, because the Metropolix was
@@ -299,6 +305,26 @@ const MOTHER_32 = DEVICES.filter((d) => d.id === 'moog-mother-32')
  */
 const DELUGE_HARD_TECHNO = DELUGE
 
+/**
+ * §4. **The one fixture that renders Drum and Bass**, on the Deluge for the reason Hard Techno is:
+ * it fills every request alone and the directory already renders it, so a diff here is a rendering
+ * diff. What the bytes pin, and nothing else pins:
+ *
+ *  1. **The grid at the stated tempo.** The kick's band-0 line is `x··· ···· ···· ····` and the
+ *     snare's is `···· ···· x··· ····`, in a 16-step pattern under `**BPM** 172`. A snare on step
+ *     9 is the direction's whole claim about the drums, and `breakbeat`'s snare states 5 and 13;
+ *     the two files are told apart on that line.
+ *  2. **A hooked and patterned sub.** The sub's phase-5 block opens with the re-articulation
+ *     sentence, *the hook is the notes; the steps below are where they are struck again*, and
+ *     then prints a grid. `weave-tracker-mini` pins the same sentence on the same role; this pins
+ *     it above a one-bar map under an eight-bar hook, which is the chaining unit #105 counts in.
+ *  3. **The pad held.** Seed 18 picks a pad hook and prints `held for` on a note of four or eight
+ *     bars, the longest hold on any pitched part outside `drone-study`.
+ *  4. **No `backbeat` on the page.** The slot is emitted nowhere in this direction, so no phase-5
+ *     line names it and the Deluge's articulation against it prints nothing.
+ */
+const DELUGE_DRUM_AND_BASS = DELUGE
+
 export const GUIDE_NAMES = [
   'full-rig',
   'tr-1000',
@@ -310,6 +336,7 @@ export const GUIDE_NAMES = [
   'tracker-mini-drone-study',
   'weave-tracker-mini',
   'deluge-hard-techno',
+  'deluge-drum-and-bass',
 ] as const
 export type GuideName = (typeof GUIDE_NAMES)[number]
 
@@ -343,6 +370,7 @@ const RIGS: Record<GuideName, Fixture> = {
   'tracker-mini-drone-study': { devices: TRACKER_MINI, template: droneStudy },
   'weave-tracker-mini': { devices: TRACKER_MINI, template: weave },
   'deluge-hard-techno': { devices: DELUGE_HARD_TECHNO, template: hardTechno },
+  'deluge-drum-and-bass': { devices: DELUGE_DRUM_AND_BASS, template: drumAndBass },
 }
 
 export function guideText(name: GuideName): string {

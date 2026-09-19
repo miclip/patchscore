@@ -866,17 +866,19 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * **The measurement, taken rather than remembered.** Every direction against this box alone,
    * seeds 1-6.
    *
-   * 282 is the figure for this device and none of it is a gap to close. #334 measured 240; Hard
-   * Techno took it to 282, ten parts this box carries whole. The number moves when a direction
+   * 378 is the figure for this device and none of it is a gap to close. #334 measured 240; Hard
+   * Techno took it to 282, ten parts this box carries whole; Drum and Bass took it to 378, five
+   * drum parts on the grid, the sub to its hook, and the pad the gap this box already argues for.
+   * The number moves when a direction
    * gains or loses a part, and a diff is a prompt to re-read the head note rather than a
    * failure. What must not move is the relationship
    * — no part ever gets a `trigger`, because neither pool has a note to give one.
    */
-  it('leaves 282 grid parts blank, and pins how many there are', () => {
+  it('leaves 378 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
-    expect(grid.length).toBe(348)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(318)
+    expect(grid.length).toBe(378)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(348)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -899,8 +901,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
       byPool.set(g.poolId, entry)
     }
     expect([...byPool].sort()).toEqual([
-      ['track-sample', { grid: 132, blank: 102 }],
-      ['track-synth', { grid: 216, blank: 216 }],
+      ['track-sample', { grid: 138, blank: 108 }],
+      ['track-synth', { grid: 240, blank: 240 }],
     ])
   })
 
@@ -925,13 +927,13 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['closed-hat', 48],
-      ['ghost-perc', 48],
-      ['kick', 48],
+      ['closed-hat', 54],
+      ['ghost-perc', 54],
+      ['kick', 54],
+      ['open-hat', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['open-hat', 24],
       ['rim', 24],
-      ['snare', 24],
       ['ride', 18],
       ['tom', 18],
       ['impact', 12],
@@ -950,9 +952,10 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // and both carry a hook for it, so the line is written in the hook and the part draws no steps
     // of its own. Nothing else in this sweep moved, which is the shape of a hooked role arriving.
     // 90 until Hard Techno, the third direction to ask for one, whose six lead parts land on the
-    // same recipe by substitution and hook the same way.
+    // same recipe by substitution and hook the same way. 108 until Drum and Bass, whose sub is
+    // hooked like every other sub this box takes.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(108)
+    expect(hooked.length).toBe(114)
     expect(sustained).toEqual([])
     // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other.
     expect(noPattern.length).toBe(48)
@@ -968,7 +971,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 282 above an undercount rather than a measurement.
+    // classify — which is what would make the 378 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {

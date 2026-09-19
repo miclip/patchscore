@@ -99,6 +99,7 @@ describe('both directions are registered and parse (§4)', () => {
       'ambient-dub',
       'breakbeat',
       'drone-study',
+      'drum-and-bass',
       'generative-drift',
       'hard-techno',
       'hip-hop',

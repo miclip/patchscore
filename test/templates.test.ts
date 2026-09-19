@@ -156,12 +156,20 @@ const SHARED_VOCABULARY = new Set(
  * section returning is what the word means in a set list; the button on the panel is named
  * after the same ordinary sense; and no box is called Back.
  *
+ * **`drum` is the eleventh**, and it is the first to arrive from the direction side: a genre is
+ * called Drum and Bass, and a direction may not be forbidden the name of the music it describes.
+ * The word reaches the forbidden set from twelve devices at once, through `device.kind` (a drum
+ * machine is what several of them are) and through parameter names and voice labels on the
+ * boxes whose sequencers have a drum mode. No box is called Drum, and a template that named a
+ * drum machine would have to write its id, which the substring test below still refuses.
+ *
  * The line this list draws is the same every time: a word that appears on a panel **and** names
  * nothing on its own is English, and the guard is for words that identify hardware.
  */
 const NON_IDENTIFYING_ENGLISH = new Set([
   'back',
   'bars',
+  'drum',
   'hand',
   'in',
   'key',
@@ -286,15 +294,17 @@ describe('invariant 3 — a template never names a device', () => {
    * substrings which no token exemption can reach. Every word here is one that identifies nothing
    * on its own, which is why exempting it opens no hole.
    */
-  it('exempts exactly ten English words, and adding an eleventh is a decision', () => {
+  it('exempts exactly eleven English words, and adding a twelfth is a decision', () => {
     // Three arrived together with Slow Noir, and the standard three paragraphs up is what they
     // were held to: `in`, `on` and `out` reach the forbidden set off parameter names, and none of
     // them can identify a box on its own. They are `up`'s argument applied to the rest of its
     // part of speech — see the note on the set itself. `back` arrived with the Subsequent 37's
-    // `BACK / FORTH` button (#647) and was held to the same standard.
+    // `BACK / FORTH` button (#647) and was held to the same standard. `drum` arrived with the
+    // Drum and Bass direction, the first collision to come from a genre's own name.
     expect([...NON_IDENTIFYING_ENGLISH].sort()).toEqual([
       'back',
       'bars',
+      'drum',
       'hand',
       'in',
       'key',
@@ -338,12 +348,12 @@ describe('invariant 3 — a template never names a device', () => {
 // ---------------------------------------------------------------------------
 
 /**
- * The review, recorded. Fourteen requests in the library have **both** a hook and variants, so
- * fourteen times over a direction has to answer what its variants are against its hook: the map
+ * The review, recorded. Fifteen requests in the library have **both** a hook and variants, so
+ * fifteen times over a direction has to answer what its variants are against its hook: the map
  * of where a held note is struck again, or a rhythm of their own. #100 answered "a rhythm" for the
  * thirteen that existed then and silenced the two that were maps.
  *
- * Every one of the fourteen was read, and the answer is the direction's own prose in each case:
+ * Every one of the fifteen was read, and the answer is the direction's own prose in each case:
  *
  *  - **`acid-lineage` `r-acid`** — flagged, and it is the clearest case in the library. Both hooks
  *    are held lines — notes of 22, 16 and 6 steps across two bars — and the variants strike
@@ -357,6 +367,11 @@ describe('invariant 3 — a template never names a device', () => {
  *    and eight bars each.
  *  - **`weave` `r-sub`** — flagged. "Where the low note is struck again rather than held", and its
  *    hooks say "the rhythm of the part is in the variants, and the pitch of it is here".
+ *  - **`drum-and-bass` `r-sub`** — flagged, on weave's reading and with the same two halves in the
+ *    file: hooks of five and six notes none shorter than half a bar and most a bar or two, each
+ *    sustained until the next begins, against one-bar variants that strike between one and five
+ *    times. The header calls the variants "the re-articulation map" and says the sub is the one
+ *    part whose stated rhythm the knob changes, since the two drum hits are fixed at every band.
  *  - **`major-key-electro` `r-lead`** — *not* flagged, and it is the closest call in the library:
  *    its variants are commented "the hook says which notes; this says how often the part speaks",
  *    which is nearly this flag's sentence. But `electro-hook-lead-1` places notes on steps 1, 11,
@@ -378,7 +393,12 @@ describe('invariant 3 — a template never names a device', () => {
  * fifteenth request is a musical claim nobody reviewed; a flag disappearing takes the density
  * knob off a part with it, silently, which is the failure this whole change exists to undo.
  */
-const RE_ARTICULATING = ['acid-lineage/r-acid', 'drone-study/r-texture', 'weave/r-sub'] as const
+const RE_ARTICULATING = [
+  'acid-lineage/r-acid',
+  'drone-study/r-texture',
+  'drum-and-bass/r-sub',
+  'weave/r-sub',
+] as const
 
 describe('re-articulated hooks (§4.3)', () => {
   it('carries the flag on exactly the reviewed requests, and on no others', () => {

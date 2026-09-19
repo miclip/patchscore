@@ -974,14 +974,16 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
    * re-read the head note rather than a failure. What must not move is the relationship — no part
    * ever gets a `trigger`, because the pool has no note to give one.
    */
-  it('leaves 264 grid parts blank, and pins how many there are', () => {
+  it('leaves 318 grid parts blank, and pins how many there are', () => {
     const { grid } = sweep()
 
     // 186 until #345 authored the six roles the pool declared and no recipe served; 222 until Hard
     // Techno, which this box carries nine parts of — its only lead is `clean`, the opposite of
-    // the `dirty` one asked for, so that part is an honest gap rather than a grid.
-    expect(grid.length).toBe(318)
-    expect(grid.filter((g) => g.kind === 'none').length).toBe(288)
+    // the `dirty` one asked for, so that part is an honest gap rather than a grid. 288 until Drum
+    // and Bass, whose seven parts this box carries whole: five of them on the grid, the kick, the
+    // snare, both hats and the ghost perc, and the sub and the pad hooked.
+    expect(grid.length).toBe(348)
+    expect(grid.filter((g) => g.kind === 'none').length).toBe(318)
 
     // Named rather than left to the count: the `trigger` arm is empty and the only notes this box
     // prints are the direction's own.
@@ -1007,17 +1009,17 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     expect(
       [...counts].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0)),
     ).toEqual([
-      ['kick', 54],
-      ['closed-hat', 48],
+      ['kick', 60],
+      ['closed-hat', 54],
+      ['ghost-perc', 30],
+      ['snare', 30],
       ['clap', 24],
-      ['ghost-perc', 24],
       ['rim', 24],
-      ['snare', 24],
+      ['open-hat', 18],
       ['ride', 18],
       ['tom', 18],
       ['impact', 12],
       ['metallic', 12],
-      ['open-hat', 12],
       ['arp', 6],
       ['noise', 6],
       ['vox-chop', 6],
@@ -1028,7 +1030,8 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // None of these is a hole: #100 gives a hooked part's notes to its hook, and §6.3 leaves a
     // part with no variant anywhere nothing to program.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(150)
+    // Drum and Bass hooks its sub and its pad, twelve more parts across the six seeds.
+    expect(hooked.length).toBe(162)
     expect(sustained).toEqual([])
     // #57 gave Industrial Techno a `sweep` on the Intro and Outro, unpatterned like every other,
     // and this box carries it on the voice its riser and impact already take turns on.
@@ -1045,7 +1048,7 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     ])
 
     // The four arms are exhaustive, so the sweep cannot silently drop a part it could not
-    // classify — which is what would make the 264 above an undercount rather than a measurement.
+    // classify — which is what would make the 318 above an undercount rather than a measurement.
     let assignments = 0
     for (const template of TEMPLATES) {
       for (const seed of SEEDS) {

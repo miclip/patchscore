@@ -1212,8 +1212,11 @@ describe('trigger notes: read for, and declined (§2.1/#334)', () => {
     // So the fourth arm is exercised for the first time on this device: a part that resolves, is
     // not hooked, is not sustained, and draws no grid because no section selected a variant. It
     // is named rather than counted, because *which* part it is is the whole information.
+    //
+    // 102 until Drum and Bass, whose sub and pad are both hooked and both land here at every
+    // seed: twelve more hook-owned parts and nothing else moved.
     const { grid, hooked, sustained, noPattern } = sweep()
-    expect(hooked.length).toBe(102)
+    expect(hooked.length).toBe(114)
     expect(sustained).toEqual([])
     expect([...new Set(noPattern)]).toEqual(['hip-hop/texture'])
     expect(noPattern.length).toBe(6)

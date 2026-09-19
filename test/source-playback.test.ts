@@ -1015,15 +1015,16 @@ describe('the Roland and MPC batch (#518)', () => {
 
   /**
    * #518's second prose defect. *"about one bar long"* is not a duration until somebody supplies
-   * a tempo, and the same sentence says the sample's own length is the pad's length. `pad` is
-   * held for 64 steps under `ambient-dub` at 108 bpm — 8.89 s — so a one-bar recording is a
-   * quarter of what the recipe asks for.
+   * a tempo, and the same sentence says the sample's own length is the pad's length. `pad` was
+   * held for 64 steps under `ambient-dub` at 108 bpm — 8.89 s — so a one-bar recording was a
+   * quarter of what the recipe asks for, and the figure was 9. Drum and Bass then held a pad for
+   * 128 steps at 168 bpm, 11.43 s, and `source-length.test.ts` moved it to 12.
    */
   it('replaces the TR-8S pad’s bar count with seconds', () => {
     const pad = audio('tr8s-pad-soft')
     expect(pad.need).not.toContain('about one bar')
     expect(pad.need).not.toMatch(/\bbar\b/)
-    expect(pad.minimumSeconds).toBe(9)
+    expect(pad.minimumSeconds).toBe(12)
     expect(sourceLengthLine(9)).toBe('At least 9 s long')
     expect(pad.playback?.boundary?.kind).toBe('stops-at-end')
     // Both parameters: `Whole` on a Loop tone would not stop at the end, and a Sample tone under

@@ -49,11 +49,15 @@ describe('hard-techno is registered and is its own direction (§4)', () => {
     expect(templateById('hard-techno')).toBe(hardTechno)
     expect(TemplateSchema.safeParse(hardTechno).error?.issues ?? []).toEqual([])
     expect(hardTechno.bpm).toEqual({ min: 145, max: 160, default: 150 })
-    // Faster than every other four-on-the-floor direction, and slower than the one direction
-    // that is not: Breakbeat sits at 165-175 and has no four-to-the-floor kick to be compared on.
+    // Faster than every other four-on-the-floor direction, and slower than the two directions
+    // that are not: Breakbeat sits at 165-175 and Drum and Bass at 168-176, and neither has a
+    // four-to-the-floor kick to be compared on.
     const fourOnTheFloor = TEMPLATES.filter(
       (t) =>
-        t.id !== 'hard-techno' && t.id !== 'breakbeat' && t.roles.some((r) => r.role === 'kick'),
+        t.id !== 'hard-techno' &&
+        t.id !== 'breakbeat' &&
+        t.id !== 'drum-and-bass' &&
+        t.roles.some((r) => r.role === 'kick'),
     )
     for (const t of fourOnTheFloor) expect(t.bpm.max, t.id).toBeLessThan(hardTechno.bpm.min)
   })
