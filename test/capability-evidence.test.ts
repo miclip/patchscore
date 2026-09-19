@@ -684,17 +684,29 @@ describe('the library after the migration', () => {
     expect(evidenceKind(evidence as CapabilityEvidence)).toBe('cited-against')
   })
 
-  it('records the Euroburo\u2019s module-index absences as unread, not as silence', () => {
+  it('closes the Euroburo\u2019s three unread facts against the document that answers them (#664)', () => {
+    // They were `unread` for the reason `unread` exists: the module index was not in `manuals/`,
+    // so the work was blocked on a file rather than on an afternoon. The file is there now, a
+    // CSV export of the live sheet the Euroburo manual names on pp.2, 20 and 43, so the state
+    // moves \u2014 two to a citation, and one to `partly`, because `LfoSpec` wants a count a
+    // patchable box does not have.
     const zoia = DEVICES.find((d) => d.id === 'empress-zoia-euroburo') as Device
-    for (const fact of [
-      'features.lfo',
-      'features.sidechain.internal',
-      'features.sidechain.fromExternalAudio',
-    ]) {
-      expect(evidenceFor(zoia, fact), fact).toMatchObject({ kind: 'unread' })
+    for (const fact of ['features.sidechain.internal', 'features.sidechain.fromExternalAudio']) {
+      const evidence = evidenceFor(zoia, fact) as CapabilityEvidence
+      expect(evidence, fact).toMatchObject({ kind: 'manual' })
+      expect((evidence as { source: string }).source, fact).toContain('ZOIA Module Index')
     }
+    const lfo = evidenceFor(zoia, 'features.lfo') as CapabilityEvidence
+    expect(lfo).toMatchObject({ kind: 'partly' })
+    expect((lfo as { open: string }).open).toContain('how many')
     // The one entry on this box that *is* a finished reading keeps its own state.
     expect(evidenceFor(zoia, 'clock.preferredSource')).toMatchObject({ kind: 'unknown' })
+    // And nothing anywhere is `unread` now, which was the library's last one.
+    for (const d of DEVICES) {
+      for (const [fact, evidence] of Object.entries(d.capabilityEvidence ?? {})) {
+        expect(evidence === false || evidence.kind !== 'unread', `${d.id} / ${fact}`).toBe(true)
+      }
+    }
   })
 
   it('never writes `unknown` about a document nobody could open (#118\u2019s incident)', () => {

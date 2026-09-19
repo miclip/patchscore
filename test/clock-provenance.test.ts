@@ -242,11 +242,15 @@ describe('§2.6/#121 the device page names the facts, not only the count', () =>
   })
 
   it('groups by state and orders the groups by the work behind them', () => {
-    // The ZOIA holds three of the four states at once, which is what makes it the fixture here.
+    // The ZOIA used to hold three states at once, `unread` among them, which is what made it the
+    // fixture here. #664 found the document and closed that one, so the pair left is
+    // `undocumented` and `partly` — still two states, still ordered by the work behind them, and
+    // the ordering is the claim this test makes rather than which states happen to be present.
     const kinds = devicePage(ZOIA).capabilityGaps.map((g) => g.kind)
     expect(kinds).toEqual([...kinds].sort(orderIndex))
     expect(kinds).toContain('undocumented')
-    expect(kinds).toContain('unread')
+    expect(kinds).toContain('partly')
+    expect(kinds).not.toContain('unread')
   })
 
   /** §7.2. Paths in code unit order, never manifest key order — moving a line must move nothing. */
