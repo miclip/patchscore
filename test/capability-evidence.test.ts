@@ -3,6 +3,8 @@ import {
   ARPEGGIATOR_FACT,
   CAPABILITY_FACTS,
   FACTORY_PATCHES_FACT,
+  KEYBOARD_REACH_FACT,
+  KEYBOARD_SHIFT_FACT,
   CONTENT_FACT,
   DAW_TRANSPORT_FACT,
   PATTERN_ENTRY_FACT,
@@ -196,7 +198,19 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
                           // (`test/part-addressing.test.ts`). The fixture's two fixed voices are
                           // the two assignables the declaration needs.
                           { partAddressing: { sequenced: 'one part per MIDI channel' } }
-                        : {}
+                        : fact === KEYBOARD_REACH_FACT || fact === KEYBOARD_SHIFT_FACT
+                          ? // §2.6/§4.1/#659. The ninth, cited at two paths because the board
+                            // and what moves it are read off different things; each path needs
+                            // the declaration and the other path's citation beside it
+                            // (`test/keyboard-reach.test.ts`).
+                            {
+                              keyboardReach: {
+                                keys: 37,
+                                lowestMidi: 36,
+                                shift: { octaves: { down: 2, up: 2 }, semitones: { down: 12, up: 12 } },
+                              },
+                            }
+                          : {}
       /**
        * §3.1/#324 is the one path that refuses a citation rather than requiring one: what it
        * declares is that no page maps a panel mark to a value, and no page asserts an absence.
@@ -209,7 +223,12 @@ describe('the path vocabulary is closed and checked (§2.6)', () => {
       const parsed = DeviceSchema.safeParse(
         patchable({
           ...declaring,
-          capabilityEvidence: { [jackFact('VCF · IN')]: CITE, [fact]: found },
+          capabilityEvidence: {
+            [jackFact('VCF · IN')]: CITE,
+            ...(fact === KEYBOARD_REACH_FACT ? { [KEYBOARD_SHIFT_FACT]: CITE } : {}),
+            ...(fact === KEYBOARD_SHIFT_FACT ? { [KEYBOARD_REACH_FACT]: CITE } : {}),
+            [fact]: found,
+          },
         }),
       )
       expect(parsed.success, fact).toBe(true)

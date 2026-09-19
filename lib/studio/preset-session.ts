@@ -6,7 +6,16 @@ import type {
   RiffVoicing,
   ShippedPatch,
 } from '@/lib/core'
-import { FACTORY_PATCHES_FACT, isCite, patchUseIssues, resolveRiff, shippedPatchKey } from '@/lib/core'
+import {
+  FACTORY_PATCHES_FACT,
+  isCite,
+  keyboardPlacement,
+  keyboardReachRange,
+  keyboardWindow,
+  patchUseIssues,
+  resolveRiff,
+  shippedPatchKey,
+} from '@/lib/core'
 import { RIFFS } from '@/lib/riffs'
 import { presetSlug } from './catalogue'
 
@@ -45,7 +54,8 @@ import { presetSlug } from './catalogue'
  * written for a patch, on the box that ships the patch, landing nowhere on it is a fact about
  * the library and not about the reader, and it is caught at the build rather than rendered as a
  * gap nobody standing at the box can act on. `PresetFigure.resolution` is therefore `played`
- * by construction, and the outcome never narrows again downstream.
+ * by construction, and the outcome never narrows again downstream. A figure the box's keyboard
+ * cannot reach is the same class and throws in the same place (§4.1/#659); see `figureFor`.
  *
  * **What it is not**, and each is a boundary rather than an omission:
  *
@@ -143,6 +153,18 @@ function riffFor(patch: ShippedPatch, riffs: readonly Riff[]): Riff | undefined 
  * nearest character it authors, and the resolver records which. The page prints no sentence
  * about it — operator decision, #598 — so the settings are the box's nearest recipe for the
  * part, said as such and no more.
+ *
+ * **A figure the keyboard cannot reach throws here too, and only here** (§4.1/#659). A preset
+ * figure is played at the instrument it is named for, by hand, and a keyboard binds hands: a
+ * box that declares `keyboardReach` has said how many keys it has and how far its octave and
+ * transpose controls move them, and a figure whose span is wider than the board, or whose notes
+ * sit where no setting of those controls reaches, is one nobody standing at the box can play.
+ * That is the same class as a figure with no voice for it, the library's error and not the
+ * reader's, and it fails the build for the same reason. `resolveRiff` against a rig the reader
+ * ticked is left alone on purpose, and so is a guide: the same keyboard's oscillators track
+ * notes 18 to 116 over MIDI (the Subsequent 37's p.61), a riff page cannot know whether the
+ * part will be fingered or sequenced, and a recipe states values rather than pitches. A box
+ * that declares no reach is checked against nothing, as with `middleC`.
  */
 function figureFor(device: Device, patch: ShippedPatch, riff: Riff): PresetFigure {
   const resolution = resolveRiff(riff, [device])
@@ -150,6 +172,25 @@ function figureFor(device: Device, patch: ShippedPatch, riff: Riff): PresetFigur
     throw new Error(
       `${device.id}: '${riff.id}' is written for factory patch '${patch.name}' and the box cannot play it (${resolution.gap.reason}); a preset figure has to land on the box that ships the patch`,
     )
+  }
+  const reach = device.keyboardReach
+  if (reach !== undefined && resolution.notes.outcome === 'resolved') {
+    const midi = resolution.notes.hook.notes.map((n) => n.midi)
+    if (midi.length > 0) {
+      const lo = Math.min(...midi)
+      const hi = Math.max(...midi)
+      if (keyboardPlacement(reach, lo, hi) === undefined) {
+        const window = keyboardWindow(reach)
+        const range = keyboardReachRange(reach)
+        const why =
+          hi - lo > window.hi - window.lo
+            ? `spans ${String(hi - lo)} semitones on a board of ${String(reach.keys)} keys, which moves but does not widen`
+            : `sits at MIDI ${String(lo)}-${String(hi)}, and no octave or transpose setting puts both ends on the keys (the board reaches ${String(range.lo)}-${String(range.hi)})`
+        throw new Error(
+          `${device.id}: '${riff.id}' is written for factory patch '${patch.name}' and the keyboard cannot reach it: it ${why}; a preset figure is played by hand at the box that ships the patch (§4.1/#659)`,
+        )
+      }
+    }
   }
   return { riff, resolution, voice: resolution.voice }
 }

@@ -1,4 +1,5 @@
 import type { Device, PatchUse, Recipe, ShippedPatch, SustainClaim } from '../../core/device'
+import { KEYBOARD_REACH_FACT } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange, ParamScope } from '../../core/params'
 import { MUSE_PANEL } from './panel'
 
@@ -2888,6 +2889,20 @@ export const device: Device = {
         'p.118 gives both ports as MIDI and only MIDI — `USB B: USB-B connector for interfacing with a computer or other host MIDI device` and `USB A (HOST): USB-A connector for connecting to other instruments with Muse as the MIDI host` — and the MIDI line beside them reads `5 Pin DIN MIDI IN, OUT, THRU; MIDI over USB`, with no audio class mentioned anywhere',
     },
     voices: { kind: 'manual', source: `${MANUAL}, pp.8, 106, 116` },
+    /**
+     * §2.6/§4.1/#659. **Read and silent on the one number a reach needs.** p.8 and p.116 give the
+     * keybed as 61 keys, p.13 says the KB OCTAVE buttons shift the keyboard down or up and not by
+     * how many octaves, and p.88 bounds a sequencer range by *"the total range of Muse's
+     * keyboard"* without stating it. Nothing anywhere says which note the lowest key plays, and
+     * a count is not a reach: 61 keys is a span, and where the span sits is the claim a figure
+     * would be checked against. Not inferred from the count, and `unknown` rather than
+     * `cited-against`, because the pages do not answer no. They do not answer.
+     */
+    [KEYBOARD_REACH_FACT]: {
+      kind: 'unknown',
+      reason:
+        'p.8 and p.116 give a 61 full-size semi-weighted Fatar keybed and p.13 says KB OCTAVE shifts the keyboard down or up; no page states which note the lowest key plays or how many octaves the buttons move it, and p.88 bounds NOTE PROB RNGE by "the total range of Muse’s keyboard" without printing that range. A reach cannot be inferred from a key count, so it waits on a reading at the unit',
+    },
     'features.lfo': { kind: 'manual', source: `${MANUAL}, pp.52, 57-58, 63` },
     /**
      * §2.6/#592. `observed`, and the schema accepts nothing else here: p.12 counts 224 patches

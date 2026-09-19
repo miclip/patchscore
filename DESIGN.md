@@ -4199,6 +4199,56 @@ pair stands on its own citation, which is what the citation rule below has alway
 `midi` written beside a note name read off a manual page cites the box's own mapping, not
 scientific pitch notation.
 
+#### A box says what its keyboard reaches, and reach is not keys (#659)
+
+No device said how many keys it had, so a figure was authored spanning thirty-five semitones on a
+thirty-seven-key box and nothing in the model noticed. A figure states pitches; a device states
+voices, roles and polyphony; every check between them was about how many notes at once and none
+about which notes. `Device.keyboardReach` is the fact that was missing, and it is two claims:
+
+```ts
+keyboardReach?: {
+  keys: number          // on the board
+  lowestMidi: number    // what the lowest key sends with nothing lit and no transpose in force
+  shift: {
+    octaves:   { down: number; up: number }   // the octave buttons
+    semitones: { down: number; up: number }   // a transpose, 0 where the box has none
+  }
+}
+```
+
+- **The board is a window and the controls move it without widening it.** The Subsequent 37's
+  p.14 says the KB OCTAVE buttons *"extend the keyboard from its normal three-octave range to a
+  full seven octaves"*, two presses each way, and that holding both and playing a key sets
+  KB TRNSPOSE *"from -12 half-steps to +12 half-steps"*, stored with the preset. So a figure fits
+  by **span first and placement second**: a span wider than the board fits nowhere, and a span
+  inside it fits wherever some placement holds both ends. #659 was filed on the first control
+  alone, a window that always opens on a C, and concluded MIDI 41 to 76 could not fit; with the
+  transpose it does, at 40-76 or 41-77. `keyboardPlacement` answers that question in code, and
+  prefers the octave buttons to a transpose wherever the buttons alone will do.
+- **Cited at two paths, because the halves come off different things.** The board is at
+  `keyboardReach` and the shift at `keyboardReach.shift`, each required when the field is declared
+  and refused when it is not, and `false` refused at both as at `middleC`. One entry could not
+  carry both: `kind` is one discriminator, and an `observed` beside a p.14 quotation is
+  the mixed citation that reads like diligence and proves neither.
+- **Absence is the third state**, as at `middleC`, and a key count is not a reach. The Muse's
+  pp.8 and 116 give a 61-key keybed and no page says which note its lowest key plays, so it is
+  `unknown` with the pages read and nothing is inferred from 61.
+- **Not the oscillator's range.** The Subsequent 37's p.61 guarantees tracking from note 18 to 116;
+  that is what the voice does when a note arrives over MIDI or CV, and the keyboard is what a
+  player reaches by hand. Reading the one as the other is a cited range off the wrong scale.
+
+**Where it is checked: a preset figure, and nowhere else.** A keyboard binds hands and not MIDI.
+A preset figure is played by hand at the box that ships the patch, so `presetSession` throws for
+one whose span is wider than the board or whose notes sit where no setting of the two controls
+reaches, exactly as it throws for a figure with no voice (§3.7/#598): the library wrote it for
+that box, so it is the library's error and fails the build, and a `RiffGap` on the page would be
+a sentence at somebody who cannot act on it. A riff page resolves onto whatever rig the reader
+ticked and is not checked, because the page cannot know whether the part will be fingered or
+sequenced and the same box's oscillators take notes 18 to 116 over MIDI; a guide's recipes state
+values rather than pitches and are not checked either. A box that declares no reach is checked
+against nothing.
+
 #### A note is not always a pitch, and the third kind is not this guide's to say (#369)
 
 `RoleRequest.pitch` and `VoiceSpec.triggerNote` between them cover a part that wants a musical note
