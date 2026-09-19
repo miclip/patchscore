@@ -276,6 +276,12 @@ export type NoteRow = {
    * carries none, which is most of them.
    */
   chord?: string
+  /**
+   * #661. What that chord is called in the key the notes are spelt in. Absent where the degree
+   * is, and absent where the key cannot spell it — the table on the same page says why, and a
+   * note row is not the place to repeat a sentence.
+   */
+  chordName?: string
 }
 
 /**
@@ -291,20 +297,39 @@ export type NoteRow = {
  * computed once here rather than twice in ink (#33).
  */
 export function noteRows(hook: ResolvedHook, riff?: Riff): readonly NoteRow[] {
-  const rows: { step: number; notes: ResolvedNote[]; chord?: string }[] = []
+  const rows: { step: number; notes: ResolvedNote[]; chord?: string; chordName?: string }[] = []
   for (const note of hook.notes) {
     const last = rows[rows.length - 1]
     if (last !== undefined && last.step === note.step) last.notes.push(note)
     else rows.push({ step: note.step, notes: [note] })
   }
   rows.sort((a, b) => a.step - b.step)
-  if (riff !== undefined) for (const row of rows) row.chord = chordAtStep(riff, row.step)
+  if (riff === undefined) return rows
+  // #661. The names come off the chord table's own rows at the key the notes are spelt in, so the
+  // two blocks cannot call one chord two things. Keyed by degree, which is what `chordAtStep`
+  // answers with; a degree that appears twice in a cycle is the same chord both times.
+  const named = new Map(
+    (riff.harmony === undefined ? [] : progressionRows(riff.harmony, hook.key)).map((row) => [
+      row.degree,
+      row.name,
+    ]),
+  )
+  for (const row of rows) {
+    row.chord = chordAtStep(riff, row.step)
+    row.chordName = row.chord === undefined ? undefined : named.get(row.chord)
+  }
   return rows
 }
 
-/** #611. `over VI` — the chord a note row lands in, or nothing where the riff carries no harmony. */
+/**
+ * #611/#661. `over VI D` — the chord a note row lands in, by degree and by name, or nothing where
+ * the riff carries no harmony. The degree first, because the rows above and below it are in
+ * degrees and a reader scanning the column is scanning for those; the name after it, because that
+ * is the chord they will reach for.
+ */
 export function chordLabel(row: NoteRow): string | undefined {
-  return row.chord === undefined ? undefined : `over ${row.chord}`
+  if (row.chord === undefined) return undefined
+  return row.chordName === undefined ? `over ${row.chord}` : `over ${row.chord} ${row.chordName}`
 }
 
 /** `2 bars in F minor.` — what the figure is, before the rows under it. */

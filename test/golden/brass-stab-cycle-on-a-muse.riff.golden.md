@@ -37,10 +37,10 @@ The figure is played over these chords; supply them separately if your rig allow
 
 4 bars in F minor. Each note is in force across the steps shown.
 
-- steps 3–16 · over i · `Ab4 C5` · degrees 3 5 · MIDI 68 72
-- steps 19–32 · over IV · `D5 Ab5` · degrees #6 3 · MIDI 74 80
-- steps 35–48 · over VII · `D5 G5` · degrees #6 2 · MIDI 74 79
-- steps 49–64 · over v · `Eb5` · degree 7 · MIDI 75
+- steps 3–16 · over i Fm · `Ab4 C5` · degrees 3 5 · MIDI 68 72
+- steps 19–32 · over IV Bb · `D5 Ab5` · degrees #6 3 · MIDI 74 80
+- steps 35–48 · over VII Eb · `D5 G5` · degrees #6 2 · MIDI 74 79
+- steps 49–64 · over v Cm · `Eb5` · degree 7 · MIDI 75
 
 ## The grid
 
