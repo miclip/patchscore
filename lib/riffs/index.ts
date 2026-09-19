@@ -48,6 +48,7 @@ import { innerCityLifeHeldSub } from './inner-city-life-held-sub'
 import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-stab'
 import { brashBassGhostNoteGroove } from './brash-b-ss-ghost-note-groove'
 import { fifthInLineFifthsBeforeTheRoot } from './5th-in-line-fifths-before-the-root'
+import { synthGongDecaySpacedStrikes } from './synth-gong-decay-spaced-strikes'
 import { uberSubOctavePumpLine } from './uber-sub-octave-pump-line'
 
 /**
@@ -229,6 +230,7 @@ export const RIFFS: readonly Riff[] = [
   softOrchestraSlowChanges,
   stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
+  synthGongDecaySpacedStrikes,
   terrorBassFlatTwoCadenceLine,
   thrillerSynthRiff,
   triangleLeadChromaticApproachLine,

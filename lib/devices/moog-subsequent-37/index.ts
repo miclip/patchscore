@@ -342,6 +342,8 @@ const PATCH_USES: PatchUse[] = [
   { name: 'Duotronic Moogtrons', use: 'One note held while the other walks against it' },
   { name: 'CELESTIAL', use: 'Two notes an octave apart, closing to a third over four chords' },
   { name: 'DRONE', use: 'The root held under the changes' },
+  // The one struck sound with a tail, and the library's only figure counted in decays
+  { name: 'SYNTH GONG', use: 'Seven strikes in eight bars, each placed where the last has gone' },
 ]
 
 /**
