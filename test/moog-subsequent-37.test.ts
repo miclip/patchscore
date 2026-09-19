@@ -7,6 +7,11 @@ import {
   CHARACTERS,
   DeviceSchema,
   FACTORY_PATCHES_FACT,
+  KEYBOARD_REACH_FACT,
+  KEYBOARD_SHIFT_FACT,
+  keyboardPlacement,
+  keyboardReachRange,
+  keyboardWindow,
   NEUTRAL_MOOD,
   assignableKey,
   expand,
@@ -2183,69 +2188,76 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
   })
 
   /**
-   * #659. **Every figure has to fit the keyboard, and one did not.**
+   * §4.1/#659. **Every figure fits the keyboard, and the device says what the keyboard is.**
    *
-   * `TRIPLET 5THS` was written in C and spanned `F2` to `E5` — MIDI 41 to 76. This board is
-   * thirty-seven keys, a window of thirty-six that always opens on a C, so holding both ends
-   * needed a window starting at 40 or 41 and neither is a multiple of twelve. No octave setting
-   * could have held it, and the KB OCTAVE buttons move the window rather than widening it.
-   *
-   * The bounds below are a reading of the instrument, not a page: the manual gives the key count
-   * and the oscillator's guaranteed note range at 8' (`Note 18 to 116`, p.61) and never says
-   * which C the board starts on. The operator found it with the KB TRANSPOSE readout at
-   * `PRESET EDIT 1.5`, where the C that leaves it `OFF` is middle C: it is the second of the
-   * four, so the keys run MIDI 48 to 84.
-   *
-   * **The device does not declare this yet** — nothing in the library does, which is why nothing
-   * caught it. Until it can, the claim lives here rather than nowhere.
+   * `TRIPLET 5THS` was written in C and spanned MIDI 41 to 76, and the first reading said no
+   * octave setting could hold it because every octave setting opens on a C. That reading missed
+   * KB TRNSPOSE (p.14), which places the window a semitone at a time, so the figure fit at 40-76
+   * or 41-77 all along. It is in G major now and stays there. What was true in that reading is
+   * that nothing in the model could have said either way, and this block used to carry its own
+   * window and its own list of Cs to say it. The device carries the fact now, `keyboardReach`,
+   * and `presetSession` throws for a figure the keyboard cannot reach, so this asserts the
+   * mechanism and holds no copy of it.
    */
   describe('every figure fits the keyboard (#659)', () => {
-    /**
-     * The standard window opens on the second of the board's four Cs, MIDI 48, and runs
-     * thirty-six semitones to 84. `KB OCTAVE` moves that window two octaves either way and
-     * **does not widen it** (p.14), so the reachable windows all open on a C: 24, 36, 48, 60, 72.
-     */
-    const WINDOW = 36
-    const OPENS_ON = [24, 36, 48, 60, 72]
-    const fitsOneWindow = (lo: number, hi: number): boolean =>
-      OPENS_ON.some((c) => lo >= c && hi <= c + WINDOW)
+    it('the board is 36 to 72, from p.14, p.50 and p.61, and the two controls move it', () => {
+      const reach = device.keyboardReach
+      if (reach === undefined) throw new Error('no keyboardReach')
+      expect(reach.keys).toBe(37)
+      expect(keyboardWindow(reach)).toEqual({ lo: 36, hi: 72 })
+      expect(reach.shift).toEqual({ octaves: { down: 2, up: 2 }, semitones: { down: 12, up: 12 } })
+      expect(keyboardReachRange(reach)).toEqual({ lo: 0, hi: 108 })
+      const board = device.capabilityEvidence?.[KEYBOARD_REACH_FACT]
+      expect(board).toMatchObject({ kind: 'manual' })
+      if (board === undefined || board === false || board.kind !== 'manual') throw new Error('unreachable')
+      expect(board.source).toContain('pp.14, 50, 61')
+      expect(board.source).toContain('MIDI Note 48')
+      expect(device.capabilityEvidence?.[KEYBOARD_SHIFT_FACT]).toEqual({
+        kind: 'manual',
+        source: "Subsequent 37 User's Manual, pp.14, 61",
+      })
+    })
 
     /**
-     * **The question is not whether a figure sits in the standard octave.** `LOW BASS` runs
-     * MIDI 36 to 56, entirely below it, and is played perfectly well with the octave down one.
-     * What cannot be played is a figure that fits *no* window, and that is an alignment failure
-     * rather than a range one: a span of thirty-five is inside thirty-six, but `TRIPLET 5THS`
-     * in C needed a window opening at 40 or 41 and every window opens on a multiple of twelve.
+     * The session is what throws for a figure the keyboard cannot reach, so its being defined
+     * is the sweep. The placement is asserted beside it so the sweep says where each figure
+     * sits: every one is on the octave buttons alone, with no transpose.
      */
-    it('every figure fits some reachable window, and one did not', () => {
+    it('every figure has a placement on the buttons alone, and the session builds', () => {
       if (session === undefined) throw new Error('no session')
+      const reach = device.keyboardReach
+      if (reach === undefined) throw new Error('no keyboardReach')
+      let checked = 0
       for (const entry of session.entries) {
         const riff = entry.figure?.riff
         if (riff === undefined) continue
         const notes = resolveRiff(riff, [device]).notes
         if (notes.outcome !== 'resolved') continue
         const midi = notes.hook.notes.map((n) => n.midi)
-        const lo = Math.min(...midi)
-        const hi = Math.max(...midi)
-        expect(
-          fitsOneWindow(lo, hi),
-          `${riff.id}: ${String(lo)}-${String(hi)} fits no octave setting of a 37-key board`,
-        ).toBe(true)
+        const placed = keyboardPlacement(reach, Math.min(...midi), Math.max(...midi))
+        expect(placed, riff.id).toBeDefined()
+        expect(placed?.semitones, riff.id).toBe(0)
+        checked++
       }
+      expect(checked).toBeGreaterThan(10)
     })
 
-    /** The alignment rule itself, so the sweep above cannot pass by accident. */
-    it('refuses the span that shipped, and accepts the one that replaced it', () => {
-      expect(fitsOneWindow(41, 76)).toBe(false)
-      expect(fitsOneWindow(48, 83)).toBe(true)
-      expect(fitsOneWindow(36, 56)).toBe(true)
+    /** The span that shipped fits with the transpose and not without, which is the whole correction. */
+    it('41-76 fits this board with KB TRNSPOSE and fits no octave setting alone', () => {
+      const reach = device.keyboardReach
+      if (reach === undefined) throw new Error('no keyboardReach')
+      const placed = keyboardPlacement(reach, 41, 76)
+      expect(placed).toBeDefined()
+      expect(placed?.semitones).not.toBe(0)
+      const buttonsOnly = { ...reach, shift: { ...reach.shift, semitones: { down: 0, up: 0 } } }
+      expect(keyboardPlacement(buttonsOnly, 41, 76)).toBeUndefined()
     })
 
     /**
-     * The one that was broken, pinned by name, so a future edit that walks it back reports the
-     * reason rather than an anonymous bound.
+     * The one that was moved, pinned by name, so a future edit that walks it back reports the
+     * reason rather than an anonymous bound. It lands one octave up on the buttons.
      */
-    it('TRIPLET 5THS opens on a C and stops a semitone short of the window', () => {
+    it('TRIPLET 5THS sits at 48-83 in G major and lands one octave up', () => {
       const riff = figureOf('TRIPLET 5THS')
       expect(riff.key).toBe('G major')
       const notes = resolveRiff(riff, [device]).notes
@@ -2253,6 +2265,9 @@ describe('sixteen presets carry a use, fifteen carry a figure, each sounding wit
       const midi = notes.hook.notes.map((n) => n.midi)
       expect(Math.min(...midi)).toBe(48)
       expect(Math.max(...midi)).toBe(83)
+      const reach = device.keyboardReach
+      if (reach === undefined) throw new Error('no keyboardReach')
+      expect(keyboardPlacement(reach, 48, 83)).toEqual({ octaves: 1, semitones: 0 })
     })
   })
 

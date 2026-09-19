@@ -1,10 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { DeviceSchema, FACTORY_PATCHES_FACT, resolveRiff } from '@/lib/core'
-import type { Device, PatchUse, Riff, ShippedPatch } from '@/lib/core'
+import {
+  DeviceSchema,
+  FACTORY_PATCHES_FACT,
+  KEYBOARD_REACH_FACT,
+  KEYBOARD_SHIFT_FACT,
+  resolveRiff,
+} from '@/lib/core'
+import type { Device, KeyboardReach, PatchUse, Riff, ShippedPatch } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS } from '@/lib/riffs'
 import { presetSession } from '@/lib/studio/preset-session'
-import { device as fixtureDevice, recipe } from './fixtures'
+import { device as fixtureDevice, heldRiff, recipe } from './fixtures'
 
 /**
  * §2.6/#593, §3.7/#598. **The preset session: a box's shipped patches, what each is for, where
@@ -23,7 +29,10 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    carries **nothing about a recipe** (#598), and no box beyond the three that declare
  *    both halves — the Muse, the minilogue xd (#618) and the Subsequent 37 (#624) — has one;
  *  - a figure the box **cannot play throws** rather than becoming a gap on a page (#598), and
- *    two patches slugging to one address throw too.
+ *    two patches slugging to one address throw too;
+ *  - a figure the box's **keyboard cannot reach throws** where the box declares its reach
+ *    (§4.1/#659), by span and by placement, and a box that declares none is checked against
+ *    nothing.
  */
 
 const OBSERVED = { kind: 'observed', source: 'A unit, firmware 1.0' } as const
@@ -223,6 +232,132 @@ describe('the session answers undefined without both declarations (§2.6/#593)',
 })
 
 const muse = DEVICES.find((d) => d.id === 'moog-muse') as Device
+
+/**
+ * §4.1/#659. **A preset figure is played by hand at the box that ships the patch, so the box's
+ * keyboard is the limit, and a figure it cannot reach is the library's error.**
+ *
+ * The fixture is a 37-key board from MIDI 36 with two octaves each way on the buttons and
+ * twelve semitones on a transpose, the Subsequent 37's shape, carrying one `sub` recipe and one
+ * patch with a figure named for it. The riff's notes are the only thing that varies. The
+ * resolved MIDI is asserted beside each case so the test pins the span it means and not the
+ * one the hook arithmetic happened to give.
+ */
+describe('a figure the keyboard cannot reach throws (§4.1/#659)', () => {
+  const REACH: KeyboardReach = {
+    keys: 37,
+    lowestMidi: 36,
+    shift: { octaves: { down: 2, up: 2 }, semitones: { down: 12, up: 12 } },
+  }
+  const WIDE: ShippedPatch = { name: 'Wide' }
+  const WIDE_USE: PatchUse = { name: 'Wide', use: 'A figure with a reach to check' }
+  const CITE = { kind: 'manual', source: 'A Manual, p.14' } as const
+
+  function keyboard(reach: KeyboardReach | undefined): Device {
+    return fixtureDevice({
+      recipes: [recipe({ id: 'fx-sub-soft', role: 'sub', character: 'soft', voice: 'lt' })],
+      ...(reach === undefined ? {} : { keyboardReach: reach }),
+      factoryPatches: [WIDE],
+      patchUses: [WIDE_USE],
+      capabilityEvidence: {
+        ...baseline,
+        [FACTORY_PATCHES_FACT]: OBSERVED,
+        ...(reach === undefined
+          ? {}
+          : { [KEYBOARD_REACH_FACT]: CITE, [KEYBOARD_SHIFT_FACT]: CITE }),
+      },
+    } as never)
+  }
+
+  /** Two notes at the given degree and octave offsets, in C major from octave 4. */
+  function figure(
+    low: { degree: number; octave: number },
+    high: { degree: number; octave: number },
+  ): Riff {
+    return heldRiff({
+      id: 'wide-figure',
+      name: 'The wide figure',
+      reference: { kind: 'patch', name: 'Wide' },
+      request: {
+        id: 'wide-figure',
+        role: 'sub',
+        priority: 1,
+        character: 'soft',
+        sustain: 'continuous',
+      },
+      hook: {
+        id: 'wide-figure-hook',
+        forRole: 'sub',
+        bars: 2,
+        baseOctave: 4,
+        notes: [
+          { step: 1, ...low, len: 16 },
+          { step: 17, ...high, len: 16 },
+        ],
+      },
+    })
+  }
+
+  function span(device: Device, riff: Riff): [number, number] {
+    const notes = resolveRiff(riff, [device]).notes
+    if (notes.outcome !== 'resolved') throw new Error('unresolved fixture hook')
+    const midi = notes.hook.notes.map((n) => n.midi)
+    return [Math.min(...midi), Math.max(...midi)]
+  }
+
+  it('the fixture board is accepted by the schema, so what follows is the session and not the schema', () => {
+    expect(issues(DeviceSchema.safeParse(keyboard(REACH)))).toBe('[]')
+  })
+
+  it('throws for a figure wider than the board, which no setting can hold', () => {
+    // C2 to C6: 48 semitones on a board of 36.
+    const riff = figure({ degree: 1, octave: -2 }, { degree: 1, octave: 2 })
+    expect(span(keyboard(REACH), riff)).toEqual([36, 84])
+    expect(() => presetSession(keyboard(REACH), [riff])).toThrow(
+      /fixture-drum: 'wide-figure' is written for factory patch 'Wide' and the keyboard cannot reach it: it spans 48 semitones on a board of 37 keys/,
+    )
+  })
+
+  it('throws for a figure inside the span that sits where no setting reaches', () => {
+    // C7 to C8: eleven keys, and the board's top is 72 + 24 + 12 = 108.
+    const riff = figure({ degree: 1, octave: 3 }, { degree: 1, octave: 4 })
+    expect(span(keyboard(REACH), riff)).toEqual([96, 108])
+    const high = figure({ degree: 5, octave: 3 }, { degree: 1, octave: 5 })
+    expect(span(keyboard(REACH), high)).toEqual([103, 120])
+    expect(() => presetSession(keyboard(REACH), [riff])).not.toThrow()
+    expect(() => presetSession(keyboard(REACH), [high])).toThrow(
+      /sits at MIDI 103-120, and no octave or transpose setting puts both ends on the keys \(the board reaches 0-108\)/,
+    )
+  })
+
+  /**
+   * The span #659 was filed on. F2 to E5 is 35 semitones and fits no octave setting alone,
+   * since every one of those opens on a C; the transpose opens the window on any note, and at
+   * 40-76 or 41-77 both ends are on the keys.
+   */
+  it('accepts the 41-76 span once the transpose is in the reach, and refuses it without', () => {
+    const riff = figure({ degree: 4, octave: -2 }, { degree: 3, octave: 1 })
+    expect(span(keyboard(REACH), riff)).toEqual([41, 76])
+    const session = presetSession(keyboard(REACH), [riff])
+    expect(session?.entries[0]?.figure?.resolution.outcome).toBe('played')
+    const buttonsOnly: KeyboardReach = {
+      ...REACH,
+      shift: { ...REACH.shift, semitones: { down: 0, up: 0 } },
+    }
+    expect(() => presetSession(keyboard(buttonsOnly), [riff])).toThrow(
+      /sits at MIDI 41-76, and no octave or transpose setting puts both ends on the keys/,
+    )
+  })
+
+  it('checks nothing on a box that declares no reach, which is where the Muse stands', () => {
+    const riff = figure({ degree: 1, octave: -2 }, { degree: 1, octave: 2 })
+    expect(keyboard(undefined).keyboardReach).toBeUndefined()
+    expect(() => presetSession(keyboard(undefined), [riff])).not.toThrow()
+    expect(muse.keyboardReach).toBeUndefined()
+    expect(muse.capabilityEvidence?.[KEYBOARD_REACH_FACT]).toMatchObject({ kind: 'unknown' })
+  })
+})
+
 
 describe('the Muse session: thirteen entries, thirteen figures, no recipes (#593, #598, #654)', () => {
   const session = presetSession(muse)

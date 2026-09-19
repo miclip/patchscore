@@ -1332,6 +1332,169 @@ export function middleCNotice(device: Device | undefined): MiddleCNotice | undef
 }
 
 /**
+ * §2.6/§4.1/#659. **What a box's keyboard reaches**, as two claims that are read off two
+ * different things and are kept apart because of it.
+ *
+ * ## The defect this answers
+ *
+ * No device said how many keys it had, so `TRIPLET 5THS` was authored spanning MIDI 41 to 76 on
+ * a 37-key box and nothing in the model noticed; the operator did, by playing it. The question
+ * *can this box play that note* had nowhere to be asked, because a device declared voices, roles
+ * and polyphony, and every check was about how many notes at once. None was about which notes.
+ *
+ * ## Reach is not keys, and the manual proves it in two directions
+ *
+ * The Subsequent 37's p.14 says the KB OCTAVE buttons *"extend the Subsequent 37's keyboard from
+ * its normal three-octave range to a full seven octaves"*, one press an octave and two presses two,
+ * each way, and, under QUICK KEYBOARD TRANSPOSE on the same page, that holding both and playing
+ * a key sets KB TRNSPOSE anywhere from -12 to +12 half-steps, stored with the preset. So the
+ * board is a window of `keys` semitones wide and the two controls *move* it without widening it;
+ * what a player can reach by hand is the union of every placement, and a figure fits if its span
+ * is inside the window and some placement holds both ends. #659's first reading missed the
+ * second control and concluded a window had to open on a C; it does not, and the arithmetic in
+ * `keyboardPlacement` is what settles that rather than a comment.
+ *
+ * This says nothing about what arrives over MIDI: the same box's oscillators track notes 18 to
+ * 116 (p.61), which is a fact about the oscillator and not the keyboard, and reading it as the
+ * reach would be a cited range read off the wrong scale (`CLAUDE.md`).
+ *
+ * ## Two paths, because the two halves are read off different things
+ *
+ * `keys` and `lowestMidi` are the board: how many keys are cast into the chassis and which MIDI
+ * note the lowest one sends with nothing lit and KB TRNSPOSE at 0. `shift` is how far the two
+ * controls move the window. On the Subsequent 37 the shift is p.14 word for word and the board
+ * is a derivation across three pages (its manifest carries the steps); on another box the board
+ * may be a spec-sheet line and the shift a unit reading, and `kind` is one discriminator. So the
+ * board is cited at `keyboardReach` and the shift at `keyboardReach.shift`, both required when
+ * the field is declared and both refused when it is not, and each says what it rests on.
+ *
+ * ## The third state is the absence of the field
+ *
+ * As at `middleC` (#571): absent means nobody here has established it, and the reason lives in
+ * `capabilityEvidence` at `keyboardReach` as one of #120's reasoned non-claims. A key count is
+ * not a reach: the Muse's specifications give a 61-key Fatar keybed and no page says which note
+ * its lowest key plays, so it is `unknown` with the pages read, and nothing is inferred from 61.
+ *
+ * ## Where it is checked, and where it is not
+ *
+ * A keyboard binds hands and not MIDI. A preset figure is played at the instrument it is named
+ * for, by hand, so `presetSession` (`lib/studio/preset-session.ts`) throws for one the keyboard
+ * cannot reach, the way it already throws for one with no voice. A riff resolved onto whatever
+ * rig a reader ticked is not checked: the page cannot know whether the part will be fingered or
+ * sequenced, and the same box's oscillators track 18 to 116 over MIDI. A guide's recipes state
+ * values rather than pitches and are not checked either. `keyboardPlacement` is the one
+ * predicate, so a surface that later needs the question asks it rather than re-deriving it.
+ */
+export const KEYBOARD_REACH_FACT = 'keyboardReach'
+
+/** The path the shift half is cited at: what moves the window, off the page that says so. */
+export const KEYBOARD_SHIFT_FACT = 'keyboardReach.shift'
+
+/** How far a control moves the window each way, in its own unit. Zero where the box has no such control. */
+export type KeyboardShift = { down: number; up: number }
+
+export type KeyboardReach = {
+  /** Physical keys on the board. */
+  keys: number
+  /** The MIDI note the lowest key sends at the standard octave with no transpose in force. */
+  lowestMidi: number
+  /** What moves the window: whole octaves on the octave buttons, semitones on a transpose. */
+  shift: {
+    octaves: KeyboardShift
+    semitones: KeyboardShift
+  }
+}
+
+/**
+ * MIDI is 0 to 127, and a shift wide enough to leave it is a MIDI number written where a count
+ * was meant. Ten octaves each way is wider than any box and narrower than a note number.
+ */
+const KeyboardShiftSchema = z.strictObject({
+  down: z.int().min(0).max(120),
+  up: z.int().min(0).max(120),
+})
+
+export const KeyboardReachSchema = z
+  .strictObject({
+    keys: z.int().min(1, 'a keyboard has at least one key').max(128),
+    lowestMidi: z.int().min(0).max(127),
+    shift: z.strictObject({
+      octaves: z.strictObject({ down: z.int().min(0).max(10), up: z.int().min(0).max(10) }),
+      semitones: KeyboardShiftSchema,
+    }),
+  })
+  .superRefine((reach, ctx) => {
+    const top = reach.lowestMidi + reach.keys - 1
+    if (top > 127) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `${reach.keys} keys from MIDI ${reach.lowestMidi} reach ${top}, past the top of MIDI; one of the two is wrong`,
+        path: ['keys'],
+      })
+    }
+  })
+
+/** The notes the board sends with nothing lit and no transpose in force, both ends inclusive. */
+export function keyboardWindow(reach: KeyboardReach): { lo: number; hi: number } {
+  return { lo: reach.lowestMidi, hi: reach.lowestMidi + reach.keys - 1 }
+}
+
+/**
+ * Every note some key can send at some setting, clipped to MIDI. Wider than the window by the
+ * shift each way, and the reason a 37-key box reaches 109 notes.
+ */
+export function keyboardReachRange(reach: KeyboardReach): { lo: number; hi: number } {
+  const window = keyboardWindow(reach)
+  const down = 12 * reach.shift.octaves.down + reach.shift.semitones.down
+  const up = 12 * reach.shift.octaves.up + reach.shift.semitones.up
+  return { lo: Math.max(0, window.lo - down), hi: Math.min(127, window.hi + up) }
+}
+
+/**
+ * §4.1/#659. **One setting that puts both ends of a figure on the board**, or nothing if none
+ * does. `octaves` is what the octave buttons are set to and `semitones` what the transpose is.
+ *
+ * A figure fits when its span is inside the window *and* some placement holds both ends, and the
+ * two fail differently: a span wider than the board fits nowhere however it is moved, and a span
+ * inside it can still sit where no placement reaches. The second was #659's mistake in reverse:
+ * it read the window as opening only on a C, and MIDI 41 to 76 does fit, at 40-76 or 41-77.
+ *
+ * Deterministic and preferring the least moved: no transpose before any, then the fewest
+ * semitones, then the fewest octave presses. A transpose is stored with the preset and set by a
+ * two-handed gesture, where an octave is one button, so a figure that fits on the buttons alone
+ * is placed on them alone. Down is tried before up at each distance, and for a window that is
+ * one contiguous run that never decides anything, since if both neighbours hold a span so does
+ * the placement between them. It is an order, not a preference.
+ */
+export function keyboardPlacement(
+  reach: KeyboardReach,
+  lo: number,
+  hi: number,
+): { octaves: number; semitones: number } | undefined {
+  if (hi < lo || hi - lo > reach.keys - 1) return undefined
+  const { octaves, semitones } = reach.shift
+  const semitoneSteps = outward(semitones.down, semitones.up)
+  const octaveSteps = outward(octaves.down, octaves.up)
+  for (const t of semitoneSteps) {
+    for (const o of octaveSteps) {
+      const bottom = reach.lowestMidi + 12 * o + t
+      if (bottom <= lo && bottom + reach.keys - 1 >= hi) return { octaves: o, semitones: t }
+    }
+  }
+  return undefined
+}
+
+/** 0, -1, +1, -2, +2 … out to each bound: the settings in the order a player would try them. */
+function outward(down: number, up: number): number[] {
+  const steps = [0]
+  for (let n = 1; n <= Math.max(down, up); n++) {
+    if (n <= down) steps.push(-n)
+    if (n <= up) steps.push(n)
+  }
+  return steps
+}
+
+/**
  * §2.6/§8/#653. **How a box carrying more than one part is addressed**, and only then.
  *
  * The Muse expands to two assignables, and the resolver puts two parts on it in 76 of 104
@@ -1670,6 +1833,8 @@ export const CAPABILITY_FACTS = [
   DAW_TRANSPORT_FACT,
   CONTROL_POSITION_FACT,
   MIDDLE_C_FACT,
+  KEYBOARD_REACH_FACT,
+  KEYBOARD_SHIFT_FACT,
   PART_ADDRESSING_FACT,
   FACTORY_PATCHES_FACT,
 ] as const
@@ -4256,6 +4421,14 @@ export type Device = {
    */
   middleC?: MiddleC
   /**
+   * §2.6/§4.1/#659. What this box's keyboard reaches; see `KeyboardReach`. Optional, and the
+   * omission is the third state as at `middleC`: absent means nobody here has established it,
+   * and the reason lives at `keyboardReach` in the evidence map. Cited at two paths, the board
+   * at `keyboardReach` and what moves it at `keyboardReach.shift`, because the two come off
+   * different things.
+   */
+  keyboardReach?: KeyboardReach
+  /**
    * §2.6/§8/#653. How more than one part on this box is reached, in the box's own control names
    * and by route — see `PART_ADDRESSING_FACT`. Optional, and absent on every box whose parts are
    * addressed by the track the reader is standing on; cited at `partAddressing` in the map below.
@@ -4372,6 +4545,7 @@ export const DeviceSchema = z
     dawTransport: DawTransportSchema.optional(),
     controlPositions: ControlPositionsSchema.optional(),
     middleC: MiddleCSchema.optional(),
+    keyboardReach: KeyboardReachSchema.optional(),
     partAddressing: PartAddressingSchema.optional(),
     factoryPatches: ShippedPatchesSchema.optional(),
     patchUses: PatchUsesSchema.optional(),
@@ -4938,6 +5112,57 @@ export const DeviceSchema = z
         message: `'${MIDDLE_C_FACT}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§4.1/#571)`,
         path: ['capabilityEvidence', MIDDLE_C_FACT],
       })
+    }
+
+    /**
+     * §2.6/§4.1/#659. **A keyboard's reach is a positive claim and carries two citations**, one
+     * per half, in the same two directions as `middleC`: a declaration with no page or unit
+     * behind it fails, and a citation with no declaration behind it fails. Both paths are
+     * checked, because the board and what moves it are read off different things and a manifest
+     * that cites one and not the other has proved half of what it prints. `false` is refused at
+     * both for the reason it is at `middleC`.
+     */
+    const reachEvidence = evidence[KEYBOARD_REACH_FACT]
+    const shiftEvidence = evidence[KEYBOARD_SHIFT_FACT]
+    if (device.keyboardReach !== undefined) {
+      if (reachEvidence === undefined || !isCite(reachEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `keyboardReach is declared with no citation at '${KEYBOARD_REACH_FACT}'; how many keys a box has and what the lowest one sends is read off its manual or its unit (§4.1/#659)`,
+          path: ['capabilityEvidence', KEYBOARD_REACH_FACT],
+        })
+      }
+      if (shiftEvidence === undefined || !isCite(shiftEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `keyboardReach is declared with no citation at '${KEYBOARD_SHIFT_FACT}'; how far the octave and transpose controls move the window is read off the page that says so (§4.1/#659)`,
+          path: ['capabilityEvidence', KEYBOARD_SHIFT_FACT],
+        })
+      }
+    } else {
+      if (reachEvidence !== undefined && isCite(reachEvidence)) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `'${KEYBOARD_REACH_FACT}' carries a citation but no keyboardReach is declared; a reading that supports no claim is 'cited-against' (§4.1/#659)`,
+          path: ['capabilityEvidence', KEYBOARD_REACH_FACT],
+        })
+      }
+      if (shiftEvidence !== undefined) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `'${KEYBOARD_SHIFT_FACT}' carries a finding but no keyboardReach is declared; what is not established belongs at '${KEYBOARD_REACH_FACT}' (§4.1/#659)`,
+          path: ['capabilityEvidence', KEYBOARD_SHIFT_FACT],
+        })
+      }
+    }
+    for (const path of [KEYBOARD_REACH_FACT, KEYBOARD_SHIFT_FACT]) {
+      if (evidence[path] === false) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `'${path}' is 'false', which says nothing the omission does not; record why with 'unknown', 'unread' or 'cited-against' (§4.1/#659)`,
+          path: ['capabilityEvidence', path],
+        })
+      }
     }
 
     /**

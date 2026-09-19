@@ -1,5 +1,5 @@
 import type { Device, PatchUse, Recipe, ShippedPatch, SustainClaim } from '../../core/device'
-import { ARPEGGIATOR_FACT } from '../../core/device'
+import { ARPEGGIATOR_FACT, KEYBOARD_REACH_FACT, KEYBOARD_SHIFT_FACT } from '../../core/device'
 import type { AuthoredParam, Cite, MoodOffset, NumericRange } from '../../core/params'
 import { SUBSEQUENT_37_PANEL } from './panel'
 
@@ -1670,7 +1670,58 @@ export const device: Device = {
    */
   features: { arpeggiator: true },
 
+  /**
+   * §2.6/§4.1/#659. **Thirty-seven keys from MIDI 36, and two controls that move the window
+   * without widening it.** The board's placement is derived from the manual in three steps, and
+   * the steps are here so the next reader can check them.
+   *
+   * 1. **The box's Middle C is the second physical C, and p.14 forces it.** QUICK KEYBOARD
+   *    TRANSPOSE: play a key *"in the lower two octaves of keys"* to transpose *"from -12
+   *    half-steps to +12 half-steps"*, and *"Pressing Middle C will set the transposition to
+   *    +0"*, keys to its left going down and keys to its right going up. The lower two octaves
+   *    of a board that starts on C are 25 keys, C to C. A range of exactly -12 to +12 puts the
+   *    +0 key at the centre of those 25, key 13, the second C. Were Middle C the bottom key there
+   *    would be no keys to its left and no -12.
+   * 2. **The box's Middle C is MIDI 48, stated twice.** p.50, KB TRACK: *"(bi-polar, centered on
+   *    MIDI Note 48, Middle C)"*, the key name and the number in one parenthesis. p.29: *"centered
+   *    around C3 (MIDI note 48)"*.
+   * 3. **So the bottom key is 48 - 12 = 36 and the board runs 36 to 72.** p.61 gives `NUMBER OF
+   *    KEYS: 37` and `TRANSPOSITION: +/- 2 Octaves`; p.14 gives the two controls, two octaves each
+   *    way on KB OCTAVE and twelve semitones each way on KB TRNSPOSE, stored with the preset at
+   *    `PRESET EDIT 1.5`.
+   *
+   * An earlier reading put the board at 48-84 by assuming the box's Middle C was MIDI 60. That
+   * number was nobody's observation; the unit reading was only which key leaves KB TRNSPOSE at
+   * +0, the second C, which agrees with step 1 and is not the source of anything here. The
+   * pages are. A MIDI monitor on the bottom key would confirm step 3 and has not been taken.
+   *
+   * **`Middle C` here is a keyboard-centre label, not a note-naming claim.** p.29 calls MIDI 48
+   * `C3`, which is scientific pitch and agrees with §4.1, so this box's naming puts MIDI 60 at
+   * C4 and this is not a `middleC` (#571) declaration.
+   *
+   * **Not the oscillator's range.** p.61's *"Guaranteed note range at 8' of Note 18 to 116"* and
+   * p.48's calibration span of MIDI 15 to 116 are what the voice tracks when a note arrives, over
+   * MIDI or CV; the keyboard is what a player reaches by hand, and the two are different numbers
+   * read off different pages.
+   */
+  keyboardReach: {
+    keys: 37,
+    lowestMidi: 36,
+    shift: { octaves: { down: 2, up: 2 }, semitones: { down: 12, up: 12 } },
+  },
+
   capabilityEvidence: {
+    /**
+     * §2.6/#659. The board, off three pages: p.61 counts the keys, p.14 puts the box's Middle C
+     * on the second C, and p.50 numbers that key MIDI 48, so the bottom key is 36. Derived, and
+     * the source says from what; not read off a unit.
+     */
+    [KEYBOARD_REACH_FACT]: {
+      kind: 'manual',
+      source: `${MANUAL}, pp.14, 50, 61: 37 keys (p.61), Middle C is the second C (p.14) and MIDI Note 48 (p.50), so the bottom key is 36`,
+    },
+    /** §2.6/#659. What moves the window: KB OCTAVE and QUICK KEYBOARD TRANSPOSE on p.14, `TRANSPOSITION: +/- 2 Octaves` on p.61. */
+    [KEYBOARD_SHIFT_FACT]: { kind: 'manual', source: `${MANUAL}, pp.14, 61` },
     noteDuration: cite(17),
     [ARPEGGIATOR_FACT]: cite(40),
     /**
