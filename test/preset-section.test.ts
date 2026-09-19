@@ -104,7 +104,7 @@ describe('each entry says what the model says', () => {
    */
   it('links every entry to its figure page under the device, and nowhere into /riffs', () => {
     const patchRiffs = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patchRiffs.length).toBe(41)
+    expect(patchRiffs.length).toBe(44)
     for (const entry of session.entries) {
       expect(entry.figure, entry.patch.name).toBeDefined()
       expect(MUSE, entry.patch.name).toContain(

@@ -1597,7 +1597,7 @@ describe('the factory presets, off the unit at firmware 1.2.0 (§2.6/#617, #624)
  * sounds them one at a time (#645), so its hold is four wide and its voice cost is one. The
  * two counts are kept apart below, since the whole of #645 is that they are different claims.
  */
-describe('seventeen presets carry a use, sixteen carry a figure, each sounding within two notes (#624, #643, #645, #664)', () => {
+describe('all twenty presets carry a use, nineteen carry a figure, each sounding within two notes (#624, #643, #645, #664)', () => {
   const uses = device.patchUses ?? []
   const session = presetSession(device)
   const entries = session?.entries ?? []
@@ -1643,7 +1643,7 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
       .map((step) => `${String(Math.floor((step - 1) / 16) + 1)}.${String(((step - 1) % 16) + 1)}`)
   }
 
-  it('describes exactly seventeen, in the editorial order, keyed to the shipped name', () => {
+  it('describes all twenty, in the editorial order, keyed to the shipped name', () => {
     expect(uses.map((u) => u.name)).toEqual([
       'LOW BASS',
       'UBER_SUB',
@@ -1655,12 +1655,15 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
       'Harp C Chord',
       'SAW LEAD',
       'Triangle Lead',
+      'Octavia',
+      '70s TV PI Theme',
       'FUNK ORGAN',
       'DUO ORG',
       'SAWTEETH DUO DANCER',
       'Duotronic Moogtrons',
       'CELESTIAL',
       'DRONE',
+      'DUO WAVE MOD',
       'SYNTH GONG',
     ])
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
@@ -1670,20 +1673,17 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
     }
   })
 
-  it('describes a subset of the fact, and the one alternate is among the three without a line (#617, #645, #664)', () => {
+  it('describes every patch it declares, which is what #617 permits rather than requires', () => {
     const described = new Set(uses.map((u) => u.name))
-    expect(described.size).toBe(17)
+    expect(described.size).toBe(20)
     const silent = (device.factoryPatches ?? []).filter((p) => !described.has(p.name)).map((p) => p.name)
-    // #664 gave three of the seven a figure and a use, and deliberately left four alone: a use
-    // written from a name and nothing else is a claim about a patch nobody has heard.
-    expect(silent).toHaveLength(3)
-    // #645 took `Harp C Chord` off this list; `DUO WAVE MOD` is the alternate left.
-    expect(silent).not.toContain('Harp C Chord')
-    expect(silent).toContain('DUO WAVE MOD')
+    // #664 closed the list. A subset is what #617 allows and this box no longer exercises it;
+    // the minilogue xd does, with twelve uses against two hundred names.
+    expect(silent).toHaveLength(0)
     // The session carries an entry per use and none for the rest; the fact stays at twenty.
     expect(session?.named).toBe(20)
     expect(session?.reading).toBe('observed')
-    expect(entries).toHaveLength(17)
+    expect(entries).toHaveLength(20)
   })
 
   it('writes every use unhedged, as what to play, and names no box, bank or slot', () => {
@@ -1695,7 +1695,7 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
     }
   })
 
-  it('joins sixteen uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643, #645, #664)', () => {
+  it('joins nineteen uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643, #645, #664)', () => {
     // #643. `DRONE` keeps a use and loses its figure: one note held under four chords is a use
     // line, and the second use of #617's subset rule. The entry is still in the session, with
     // no `figure`, so the panel and the presets page list it without a link.
@@ -1712,8 +1712,8 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
     }
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
     const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
-    expect(naming).toHaveLength(16)
-    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(16)
+    expect(naming).toHaveLength(19)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(19)
     expect(naming.some((r) => r.reference.name === 'DRONE')).toBe(false)
   })
 
@@ -1754,7 +1754,14 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
       expect(sounds, riff.id).toBe(peak)
       if (peak === 2) two.push(entry.patch.name)
     }
-    expect(two).toEqual(['FUNK ORGAN', 'DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons', 'CELESTIAL'])
+    expect(two).toEqual([
+      'FUNK ORGAN',
+      'DUO ORG',
+      'SAWTEETH DUO DANCER',
+      'Duotronic Moogtrons',
+      'CELESTIAL',
+      'DUO WAVE MOD',
+    ])
     expect(held).toEqual(['Harp C Chord'])
   })
 
@@ -1791,7 +1798,9 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
     expect(spare).toEqual(['Triangle Lead'])
     // The five two-note figures are on the two roles that spend the second note on every recipe.
     const roles = new Set(
-      ['FUNK ORGAN', 'DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons', 'CELESTIAL'].map((n) => figureOf(n).request.role),
+      ['FUNK ORGAN', 'DUO ORG', 'SAWTEETH DUO DANCER', 'Duotronic Moogtrons', 'CELESTIAL', 'DUO WAVE MOD'].map(
+        (n) => figureOf(n).request.role,
+      ),
     )
     expect([...roles].sort()).toEqual(['pad', 'stab'])
     // And the six single lines are on the roles #632 made mono, with the arpeggiated hold on
@@ -1808,6 +1817,8 @@ describe('seventeen presets carry a use, sixteen carry a figure, each sounding w
       'acid',
       'arp',
       'arp',
+      'lead',
+      'lead',
       'lead',
       'lead',
       'texture',
