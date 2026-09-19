@@ -14,10 +14,28 @@ import type { Riff } from '../core/riff'
  *
  * ## The inner voice
  *
- * `C#3` at the bottom and `E4` on top hold across the first three chords while the voice
- * between them walks: `G#3` over the `i`, `A3` over the `VI` and the `iv`. On the `V` the top
- * falls a semitone to `D#4` and the inner voice rises to `B#3`, the raised seventh the chord is
- * built on, and that is the one bar in eight where everything moves.
+ * Three notes for six bars. `C#3` at the bottom and `E4` on top hold across the first three
+ * chords, and the voice between them is the only thing that moves: `G#3` over the `i`, up a
+ * semitone to `A3` over the `VI`, down a minor third to `F#3` over the `iv`. The outer two
+ * change their names under it without changing pitch: the `C#3` is the root, then the third,
+ * then the fifth, and the `E4` is the third, the fifth, then the seventh. On the `V` everything
+ * moves at once and a fourth voice arrives: the bottom drops a fourth to `G#2`, the inner voice
+ * rises a tone to `G#3`, the top falls a semitone to `D#4`, and `B#3` enters between them as
+ * the third the chord is built on. That is the one bar in eight where more than one thing
+ * happens, and the six bars before it are what make it land. On the repeat the `G#3` is already
+ * in place as the inner voice and the top lifts back to `E4` by a semitone.
+ *
+ * The first published version moved the bass under the held `C#3` on the second and third
+ * chords, so the note the prose called the bottom stopped being the bottom at bar 3 and the
+ * inner voice moved once in six bars while the bass moved twice. The claim was right and the
+ * notes were not; the notes are what changed.
+ *
+ * ## What the `iv` gives up
+ *
+ * `C#3 F#3 E4` over the F# minor is the fifth, the root and the seventh, and no third. Keeping the third
+ * would mean holding the `A3` from the `VI`, and then nothing in the pad moves when the chord
+ * does: `C#3 A3 E4` is the A major and the F# minor alike. The moving voice is the lesson, so
+ * the third is what the pad leaves to the chord table.
  *
  * ## Why the natural seventh is forbidden over the V
  *
@@ -35,13 +53,17 @@ export const replicantXdInnerVoicePad: Riff = {
   technique: [
     'Eight bars, four chords, two bars each. C sharp minor, A major, F sharp minor, G sharp ' +
       'major. Slow enough that each chord is heard settling before it goes.',
-    'Hold the outside and move the inside. C sharp at the bottom and E on top stay put for ' +
-      'six bars; the note between them is the only thing that changes, and the ear follows it.',
-    'Three notes on the first chord and four on the rest. The fourth voice enters with the ' +
-      'second chord, and the pad thickens without anyone striking anything.',
-    'On the last chord everything moves at once: the top falls to D sharp, the inner voice ' +
-      'rises to B sharp, and the bass drops to G sharp. Six bars of nearly nothing is what ' +
-      'makes that bar land.',
+    'Three notes, and hold the outside. C sharp at the bottom and E on top stay exactly where ' +
+      'they are for six bars; the note between them is the only thing that moves, and the ear ' +
+      'follows the one line that is moving.',
+    'The inner voice goes G sharp, A, F sharp: up a semitone into the A major, then down a ' +
+      'minor third into the F sharp minor. Nothing else changes and the chord changes its ' +
+      'name each time, because the two held notes mean something different over each one: ' +
+      'the C sharp is the root, then the third, then the fifth.',
+    'On the last chord everything moves at once and a fourth voice arrives. The bottom drops ' +
+      'a fourth to G sharp, the inner voice rises a tone to G sharp above it, the top falls a ' +
+      'semitone to D sharp, and B sharp enters between them. Six bars of nearly nothing is ' +
+      'what makes that bar land.',
     'Never play B natural while the G sharp major is sounding. The chord has a B sharp in it, ' +
       'and the two a semitone apart is a clash a slow pad cannot hide.',
     'Keep the attack slow and change chords a fraction early. A slow pad reaches full ' +
@@ -53,7 +75,7 @@ export const replicantXdInnerVoicePad: Riff = {
     priority: 1,
     character: 'dark',
     sustain: 'continuous',
-    // §12.4. Four held notes on three of the four chords.
+    // §12.4. Three held notes for six bars, four on the last chord.
     polyphony: 4,
   },
   /**
@@ -79,7 +101,8 @@ export const replicantXdInnerVoicePad: Riff = {
   },
   /**
    * Eight bars. `baseOctave: 3` puts `C#3` at degree 1; the top voice is `E4`, degree 3 an
-   * octave up, and the `V` chord's `B#3` is degree 7 raised.
+   * octave up, and the `V` chord's `B#3` is degree 7 raised. Within a step the notes are
+   * authored bottom to top, and that order is the voicing (`resolveHook` keeps it).
    */
   hook: {
     id: 'replicant-xd-inner-voice-pad-hook',
@@ -87,23 +110,21 @@ export const replicantXdInnerVoicePad: Riff = {
     bars: 8,
     baseOctave: 3,
     notes: [
-      // `i`: C#3 G#3 E4 — three notes.
+      // `i`: C#3 G#3 E4.
       { step: 1, degree: 1, octave: 0, len: 32 },
       { step: 1, degree: 5, octave: 0, len: 32 },
       { step: 1, degree: 3, octave: 1, len: 32 },
-      // `VI`: A2 C#3 A3 E4 — the inner voice steps up to A.
-      { step: 33, degree: 6, octave: -1, len: 32 },
+      // `VI`: C#3 A3 E4. The inner voice up a semitone; the outer two hold.
       { step: 33, degree: 1, octave: 0, len: 32 },
       { step: 33, degree: 6, octave: 0, len: 32 },
       { step: 33, degree: 3, octave: 1, len: 32 },
-      // `iv`: F#2 C#3 A3 E4 — only the bass moves.
-      { step: 65, degree: 4, octave: -1, len: 32 },
+      // `iv`: C#3 F#3 E4. The inner voice down a minor third; the outer two hold.
       { step: 65, degree: 1, octave: 0, len: 32 },
-      { step: 65, degree: 6, octave: 0, len: 32 },
+      { step: 65, degree: 4, octave: 0, len: 32 },
       { step: 65, degree: 3, octave: 1, len: 32 },
-      // `V`: G#2 D#3 B#3 D#4 — everything moves.
+      // `V`: G#2 G#3 B#3 D#4. Everything moves, and the fourth voice enters as the third.
       { step: 97, degree: 5, octave: -1, len: 32 },
-      { step: 97, degree: 2, octave: 0, len: 32 },
+      { step: 97, degree: 5, octave: 0, len: 32 },
       { step: 97, degree: 7, octave: 0, len: 32, alter: 1 },
       { step: 97, degree: 2, octave: 1, len: 32 },
     ],

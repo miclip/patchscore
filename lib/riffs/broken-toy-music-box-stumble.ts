@@ -38,7 +38,10 @@ export const brokenToyMusicBoxStumble: Riff = {
     'A tune a child could sing, two octaves above middle C: up the triad, A, C sharp, E, and ' +
       'back down to A, then a low E to lead round again. Four bars, and it goes wrong twice.',
     'The first stumble is an extra note. In bar two the top E is struck twice as sixteenths ' +
-      'where bar one had one eighth, and the tune is a sixteenth late for the rest of the bar.',
+      'where bar one had one eighth, and the tune is a sixteenth late for the rest of the bar. ' +
+      'Late, it has no room for the rest and the low E that ended bar one, so it walks down ' +
+      'instead, B then G sharp, and steps onto the A at the head of bar three. That is how a ' +
+      'music box catches up: it fills the gap it fell into rather than skipping ahead.',
     'The second stumble is a missing one. In bar three the second half of beat four is silent, ' +
       'and the pickup arrives late, on the last sixteenth.',
     'Bar four is the ending: F sharp three times, D, B, G sharp, and A held. It is the only ' +

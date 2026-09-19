@@ -38,7 +38,9 @@ export const seventiesElectroPnoRhodesTurnaround: Riff = {
       'one note a beat. Over the third, hold the fifth.',
     'The Eb over the last chord is the flat ninth and the whole point of the turnaround. Land ' +
       'on it late, on beat three, and let it resolve down to D on beat four. Never approach it ' +
-      'from below.',
+      'from below: from D it is the root stepping up and back, an ornament, and the ear hears ' +
+      'D with a wobble. Come down onto it from the E over the chord before, E, Eb, D, and it ' +
+      'is a line falling through the dominant with the flat ninth as the arrival.',
     'Never play Bb while the first chord is sounding. It is the fourth against the major third, ' +
       'and a comping figure that touches it loses the chord it is voicing.',
     'Keep every entry a beat or more into its chord. The bass and the chord land on the bar ' +

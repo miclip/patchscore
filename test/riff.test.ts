@@ -1900,9 +1900,7 @@ const MUSE_ELEVEN: readonly ConstraintCase[] = [
   {
     riff: hamamatsuTinesBalladFigure,
     rules: [['I', 4, undefined]],
-    onset: 4,
     breaks: [{ note: { step: 5, degree: 4, octave: 1, len: 4 }, says: 'Ab5 sounds over I' }],
-    early: { step: 5, says: 'I is entered at step 1, 0 steps in' },
   },
   {
     riff: seventiesElectroPnoRhodesTurnaround,
@@ -2127,13 +2125,38 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // the onsets and the lengths instead.
   })
 
-  it('the ballad figure ends on a suspension held across the bar line', () => {
-    const last = hamamatsuTinesBalladFigure.hook.notes.at(-1)
-    if (last === undefined) throw new Error('no notes')
-    expect(chordAtStep(hamamatsuTinesBalladFigure, last.step)).toBe('V')
-    expect(last.step + last.len).toBeGreaterThan(64)
-    // And the resolution is prose, because it lands on the next pass's first step: see the entry.
-    expect(hamamatsuTinesBalladFigure.technique.some((p) => p.includes('after the bar line'))).toBe(true)
+  it('the tines play shells only, and the pair turns over at every chord', () => {
+    // The third and the seventh of each chord in Eb major, and nothing else: the root is the
+    // bass's and the fifth says nothing. Which of the two is on the bottom alternates, which is
+    // what keeps every move a step or a hold; the pitches themselves are in `FIDELITY` below.
+    const shells: Record<string, { third: string; seventh: string }> = {
+      I: { third: 'G', seventh: 'D' },
+      vi: { third: 'Eb', seventh: 'Bb' },
+      ii: { third: 'Ab', seventh: 'Eb' },
+      V: { third: 'D', seventh: 'Ab' },
+    }
+    const resolved = resolveHook(hamamatsuTinesBalladFigure.hook, 'Eb major')
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const byStep = new Map<number, { name: string; midi: number }[]>()
+    for (const n of resolved.hook.notes) {
+      const name = n.note.replace(/\d+$/, '')
+      byStep.set(n.step, [...(byStep.get(n.step) ?? []), { name, midi: n.midi }])
+    }
+    const lowerIs: string[] = []
+    for (const [step, notes] of [...byStep.entries()].sort((a, b) => a[0] - b[0])) {
+      const chord = chordAtStep(hamamatsuTinesBalladFigure, step)
+      const shell = shells[chord ?? '']
+      if (shell === undefined) throw new Error(`no shell for ${String(chord)}`)
+      expect(notes.map((n) => n.name).sort(), `step ${String(step)}`).toEqual(
+        [shell.third, shell.seventh].sort(),
+      )
+      const lower = notes.reduce((a, b) => (a.midi < b.midi ? a : b))
+      lowerIs.push(lower.name === shell.third ? 'third' : 'seventh')
+    }
+    // Two strikes a bar, so each chord's answer appears twice.
+    expect(lowerIs).toEqual([
+      'third', 'third', 'seventh', 'seventh', 'third', 'third', 'seventh', 'seventh',
+    ])
   })
 
   it('the turnaround lands the flat ninth late and resolves it down', () => {
@@ -2628,9 +2651,9 @@ const FIDELITY: readonly FidelityRow[] = [
     key: 'Eb major',
     bpm: 72,
     progression: [['I', 1], ['vi', 1], ['ii', 1], ['V', 1]],
-    // The definition's last gesture is Eb5 resolving to D5 after the bar line; the D lands on
-    // the next pass and is prose, so the hook ends on the Eb.
-    pitches: ['F5', 'Eb5', 'D5', 'C5', 'D5', 'Eb5'],
+    // Shells, third and seventh only, struck on one and three. The lower note alternates third,
+    // seventh, third, seventh, and the suite above holds that as a property.
+    pitches: ['G4+D5', 'G4+D5', 'Bb4+Eb5', 'Bb4+Eb5', 'Ab4+Eb5', 'Ab4+Eb5', 'Ab4+D5', 'Ab4+D5'],
   },
   {
     riff: seventiesElectroPnoRhodesTurnaround,

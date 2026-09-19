@@ -17,11 +17,16 @@ import type { Riff } from '../core/riff'
  * this entry. The definition stated no forbidden pitch and no offset, so `constraints` is
  * absent rather than present and empty, which `RiffConstraintsSchema` refuses anyway.
  *
- * ## The one lowered note
+ * ## The one lowered note, which is where the glide is heard
  *
  * E minor's fifth is `B`. Over the `VI` the line touches `Bb` on the way to it, `alter: -1` on
- * degree 5: a blues flat five passing through, not a chord tone, which is why it is two steps
- * long and the B after it is ten.
+ * degree 5, two steps long with the B after it ten. It is not a chord tone, and it is not there
+ * as a blues inflection either: it is the one transition in the figure written *for* the
+ * glide. A semitone struck an eighth before its resolution on a portamento patch is heard as a
+ * scoop into the B, and the technique says so, because the first published version explained
+ * the note as a passing tone and left the patch's subject unnamed on the one line where it is
+ * audible. The other place to hear the glide is the wrap: B4 down to E4 on the repeat is the
+ * widest interval in the loop, and with the glide set by rate it is the longest.
  */
 export const moogProSoloGlideLead: Riff = {
   id: 'moog-pro-solo-glide-lead',
@@ -33,14 +38,21 @@ export const moogProSoloGlideLead: Riff = {
     'A single line, and no two notes ever sound at once. The patch glides between anything ' +
       'held together, so every note is released before the next is struck. The glide happens ' +
       'between notes, never under them.',
-    'Over the first chord, climb: E, G, A, from the bar head. Over the second, slide into B ' +
-      'through the Bb below it.',
-    'The Bb over the C chord is a blues flat five passing through. It is not a chord tone, so ' +
-      'it has to be short: one eighth and gone, with the B taking the rest of the bar.',
-    'Over the third chord, hold D from beat two and fall to C on beat four. Over the last, ' +
-      'one B, entered late and held to the bar line.',
+    'Over the first chord, climb E, G, A from the bar head, each let go as the next is ' +
+      'struck. The glide carries the pitch up the minor third and then the tone, so the climb ' +
+      'is heard as one line bending upwards and not as three notes.',
+    'The B flat into B over the C chord is what the glide is for. Strike the B flat on beat ' +
+      'two and the B an eighth after it; the patch carries the semitone, and what you hear is ' +
+      'a scoop into the B, not two notes. Keep the B flat to one eighth. The scoop is the ' +
+      'sound, and a B flat that sits is a wrong note against the chord.',
+    'Over the third chord, hold D from beat two and let it fall to C on beat four: a tone ' +
+      'down, heard as a bend, and the empty beat before the D is where the ear resets. Over ' +
+      'the last chord, one B, entered late and held to the bar line, so that it has settled ' +
+      'before the widest glide on the page, the fifth back down to E on the repeat.',
     'Set the glide so a step of a tone takes about a sixteenth to arrive. Longer and the line ' +
-      'smears; shorter and the patch might as well not have it.',
+      'smears; shorter and the patch might as well not have it. The wider the interval, the ' +
+      'longer the glide, which is why the fall to E at the top of the loop is the one to ' +
+      'listen for.',
   ],
   request: {
     id: 'moog-pro-solo-glide-lead',

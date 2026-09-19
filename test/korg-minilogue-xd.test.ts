@@ -16,6 +16,7 @@ import {
   renderGuide,
   requiredVoicePolyphony,
   resolve,
+  resolveHook,
   type Assignable,
   type AuthoredParam,
   type Recipe,
@@ -1326,6 +1327,25 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
       expect(riff?.pattern, name).toBeUndefined()
       expect(peakOf(riff as Riff), name).toBe(4)
     }
+  })
+
+  it('the acid loop changes exactly two notes between its two bars', () => {
+    // The lesson is the minimal change: the same shape twice, with the fewest notes moved. The
+    // first published version moved three and said two; the count is held here so the prose
+    // and the notes cannot drift apart again.
+    const riff = session?.entries.find((e) => e.patch.name === 'Hypno Acid')?.figure?.riff
+    if (riff === undefined) throw new Error('no figure for Hypno Acid')
+    const resolved = resolveHook(riff.hook, riff.key)
+    if (resolved.outcome !== 'resolved') throw new Error(resolved.detail)
+    const bar = (n: number) => resolved.hook.notes.filter((x) => x.step > (n - 1) * 16 && x.step <= n * 16)
+    const [one, two] = [bar(1), bar(2)]
+    expect(one.map((n) => n.step)).toEqual(two.map((n) => n.step - 16))
+    const differ: string[] = []
+    for (const [i, n] of one.entries()) {
+      const other = two[i]
+      if (other !== undefined && other.midi !== n.midi) differ.push(`${n.note}->${other.note}`)
+    }
+    expect(differ).toEqual(['C2->D2', 'E2->G1'])
   })
 
   it('names no author in a use line beyond the credit p.65 prints, and no device anywhere', () => {
