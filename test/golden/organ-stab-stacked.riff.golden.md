@@ -27,7 +27,7 @@ Every step below strikes the note in force at that point. The grid is where the 
  1 ··x· ··x· ··x· ··x·
 17 ··x· ··x· ··x· ··x·
 ```
-- `accent` · 3
+- `accent` · 3 (all vel 108)
 - `offbeat` · 7, 11, 15, 19, 23, 27, 31
 
 ## Where it plays

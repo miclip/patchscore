@@ -205,9 +205,11 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
     }
   })
 
-  it('puts the velocity and #457’s definition trigger on every slot row (#528)', async () => {
-    // The export's row is a bare list of steps. The page's is the guide's: the slot word is a
-    // button that opens its definition, and a velocity the reader has to dial is on the line.
+  it('puts the velocity and #457’s definition trigger on every slot row (#528, #664)', async () => {
+    // The page's row is the guide's: the slot word is a button that opens its definition, and a
+    // velocity the reader has to dial is on the line. The export used to be a bare list of
+    // steps and now hoists a uniform velocity the way a guide does (#664), so the two carry the
+    // same facts and only the definition trigger is the page's alone.
     for (const riff of RECORD_RIFFS) {
       const md = renderRiff(resolveRiff(riff, []))
       const exported = [...md.matchAll(new RegExp(SLOT_ROW.source, 'gm'))]
@@ -228,12 +230,14 @@ describe('the riff page and the Markdown carry the same facts (#495)', () => {
         drawn.map((row) => row[1]),
         riff.id,
       ).toEqual(exported.map((row) => row[1]))
+      const bare = (text: string): string =>
+        text.replace(/ \(all vel \d+\)/, '').replace(/ \(vel \d+\)/g, '')
       for (const [i, row] of drawn.entries()) {
-        const steps = (row[2] ?? '').replace(/ \(all vel \d+\)/, '').replace(/ \(vel \d+\)/g, '')
-        expect(steps, `${riff.id}: ${row[1] ?? ''}`).toBe(exported[i]?.[2])
+        expect(bare(row[2] ?? ''), `${riff.id}: ${row[1] ?? ''}`).toBe(bare(exported[i]?.[2] ?? ''))
       }
-      // Not vacuous: this library authors velocities, and the page is where they are read.
+      // Not vacuous: this library authors velocities, and both surfaces are where they are read.
       expect(drawn.some((row) => /vel \d+/.test(row[2] ?? '')), riff.id).toBe(true)
+      expect(exported.some((row) => /vel \d+/.test(row[2] ?? '')), riff.id).toBe(true)
     }
   })
 
@@ -481,7 +485,7 @@ describe('the riff page exists exactly where a record-named entry does (#598)', 
    */
   it('404s on every patch-named id, which is a page under its box instead', async () => {
     const patches = RIFFS.filter((r) => r.reference.kind === 'patch')
-    expect(patches).toHaveLength(37)
+    expect(patches).toHaveLength(40)
     for (const riff of patches) {
       await expect(markupFor(riff.id), riff.id).rejects.toThrow(/404/)
       expect(await generateMetadata({ params: Promise.resolve({ id: riff.id }) }), riff.id).toEqual(

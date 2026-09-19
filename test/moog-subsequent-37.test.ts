@@ -1592,7 +1592,7 @@ describe('the factory presets, off the unit at firmware 1.2.0 (§2.6/#617, #624)
  * sounds them one at a time (#645), so its hold is four wide and its voice cost is one. The
  * two counts are kept apart below, since the whole of #645 is that they are different claims.
  */
-describe('thirteen presets carry a use, twelve carry a figure, each sounding within two notes (#624, #643, #645)', () => {
+describe('sixteen presets carry a use, fifteen carry a figure, each sounding within two notes (#624, #643, #645, #664)', () => {
   const uses = device.patchUses ?? []
   const session = presetSession(device)
   const entries = session?.entries ?? []
@@ -1638,10 +1638,13 @@ describe('thirteen presets carry a use, twelve carry a figure, each sounding wit
       .map((step) => `${String(Math.floor((step - 1) / 16) + 1)}.${String(((step - 1) % 16) + 1)}`)
   }
 
-  it('describes exactly thirteen, in the editorial order, keyed to the shipped name', () => {
+  it('describes exactly sixteen, in the editorial order, keyed to the shipped name', () => {
     expect(uses.map((u) => u.name)).toEqual([
       'LOW BASS',
+      'UBER_SUB',
       'Terror Bass',
+      'BRASH B@SS',
+      '5TH IN LINE',
       'Acid Wiggler',
       'TRIPLET 5THS',
       'Harp C Chord',
@@ -1661,18 +1664,20 @@ describe('thirteen presets carry a use, twelve carry a figure, each sounding wit
     }
   })
 
-  it('describes a subset of the fact, and the one alternate is among the seven without a line (#617, #645)', () => {
+  it('describes a subset of the fact, and the one alternate is among the four without a line (#617, #645, #664)', () => {
     const described = new Set(uses.map((u) => u.name))
-    expect(described.size).toBe(13)
+    expect(described.size).toBe(16)
     const silent = (device.factoryPatches ?? []).filter((p) => !described.has(p.name)).map((p) => p.name)
-    expect(silent).toHaveLength(7)
+    // #664 gave three of the seven a figure and a use, and deliberately left four alone: a use
+    // written from a name and nothing else is a claim about a patch nobody has heard.
+    expect(silent).toHaveLength(4)
     // #645 took `Harp C Chord` off this list; `DUO WAVE MOD` is the alternate left.
     expect(silent).not.toContain('Harp C Chord')
     expect(silent).toContain('DUO WAVE MOD')
     // The session carries an entry per use and none for the rest; the fact stays at twenty.
     expect(session?.named).toBe(20)
     expect(session?.reading).toBe('observed')
-    expect(entries).toHaveLength(13)
+    expect(entries).toHaveLength(16)
   })
 
   it('writes every use unhedged, as what to play, and names no box, bank or slot', () => {
@@ -1684,7 +1689,7 @@ describe('thirteen presets carry a use, twelve carry a figure, each sounding wit
     }
   })
 
-  it('joins twelve uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643, #645)', () => {
+  it('joins fifteen uses to exactly one figure each, resolved played on this box alone, and DRONE to none (#643, #645, #664)', () => {
     // #643. `DRONE` keeps a use and loses its figure: one note held under four chords is a use
     // line, and the second use of #617's subset rule. The entry is still in the session, with
     // no `figure`, so the panel and the presets page list it without a link.
@@ -1701,8 +1706,8 @@ describe('thirteen presets carry a use, twelve carry a figure, each sounding wit
     }
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
     const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
-    expect(naming).toHaveLength(12)
-    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(12)
+    expect(naming).toHaveLength(15)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(15)
     expect(naming.some((r) => r.reference.name === 'DRONE')).toBe(false)
   })
 
@@ -1788,7 +1793,18 @@ describe('thirteen presets carry a use, twelve carry a figure, each sounding wit
     const mono = figured
       .filter((e) => (figureOf(e.patch.name).request.polyphony ?? 1) === 1)
       .map((e) => figureOf(e.patch.name).request.role)
-    expect(mono).toEqual(['sub', 'bass-mid', 'acid', 'arp', 'arp', 'lead', 'lead'])
+    expect(mono).toEqual([
+      'sub',
+      'sub',
+      'bass-mid',
+      'bass-mid',
+      'bass-mid',
+      'acid',
+      'arp',
+      'arp',
+      'lead',
+      'lead',
+    ])
   })
 
   it('writes the three keepers as the three species of two-voice motion', () => {

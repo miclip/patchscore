@@ -42,7 +42,7 @@ import {
   ruleLines,
   slotRows,
   spellingLabel,
-  stepList,
+  slotLine,
   voiceHeading,
 } from './riff-text'
 
@@ -178,7 +178,7 @@ function gridLines(riff: Riff): string[] {
     '```',
     ...gridRows(riff),
     '```',
-    ...slotRows(riff).map((row) => `- \`${row.slot}\` · ${stepList(row.steps)}`),
+    ...slotRows(riff).map((row) => `- \`${row.slot}\` · ${slotLine(row)}`),
   ]
 }
 
