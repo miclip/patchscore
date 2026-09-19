@@ -37,13 +37,24 @@ import type { Riff } from '../core/riff'
  * group comes back down, `E A D`, and lands on the `D` where a bar of silence begins. Three
  * climbs and a fall. In C major the chain of fifths runs `C G D A E B` and the next rung is
  * `F#`, which the key does not have, so the ladder stops at `E` and turns. The turn repeats the
- * top note: the third group ends on `E5` and the fourth begins on it, which is what makes the
- * top audible as a top. The second bar is the same shape from the `F` below, over the `IV`:
- * `F C G / C G D / G D A / A D G`, landing on the `G`.
+ * top note: the third group ends on `B5` and the fourth begins on it, which is what makes the
+ * top audible as a top. The second bar is the same shape from the `C` below, over the `IV`:
+ * `C G D / G D A / D A E / E A D`, landing on the `D`.
+ *
+ * ## Why G and not C (#659)
+ *
+ * It was written in C and could not be played. The ladder spans thirty-five semitones, and a
+ * thirty-seven-key board is a window of thirty-six that always starts on a C — so the figure
+ * needed a window opening at MIDI 40 or 41, and neither is a multiple of twelve. No octave
+ * setting on any such box could hold both ends.
+ *
+ * A fifth up puts it at MIDI 48 to 83. The Subsequent 37's keyboard reaches 48 to 84, read off
+ * the unit: middle C is the second of its four Cs. So the figure now opens on the lowest key
+ * and stops a semitone short of the highest, and every interval in it is the one it had.
  *
  * ## The harmony is context, and the ladder starts on the root
  *
- * `I IV` in C major, a bar each. Each bar's ladder starts on the root of the chord in force and
+ * `I IV` in G major, a bar each. Each bar's ladder starts on the root of the chord in force and
  * climbs through the key; the notes past the chord's own fifth are passing, which is what a
  * ladder is. The `D` over the C major and the `D` over the F are ninths and sixths, sounding
  * for a sixteenth on the way somewhere.
@@ -59,25 +70,25 @@ export const triplet5thsStackedFifthsLadder: Riff = {
   name: 'The TRIPLET 5THS stacked-fifths ladder',
   reference: { kind: 'patch', name: 'TRIPLET 5THS' },
   bpm: { min: 100, max: 128, default: 116 },
-  key: 'C major',
+  key: 'G major',
   technique: [
     'The name says fifths, so every note in a group is a fifth from the one before it, three ' +
-      'at a time. Up from C: C, G, D. Then up from the G: G, D, A. Then up from the D: D, A, E. ' +
+      'at a time. Up from G: G, D, A. Then up from the D: D, A, E. Then up from the A: A, E, B. ' +
       'That is the ladder, and every rung is a fifth.',
     'The name says triplet, so the notes come in threes: three sixteenths, the first of each ' +
       'three the loud one. Four groups in a row is an accent every three sixteenths against a ' +
       'beat every four, and that cross-rhythm is the figure. Do not straighten it out.',
-    'The fourth group comes down the same rungs: E, A, D, a fifth below each time, landing on ' +
-      'the D. Then a beat of nothing. Twelve sixteenths climbing and turning, four of silence, ' +
+    'The fourth group comes down the same rungs: B, E, A, a fifth below each time, landing on ' +
+      'the A. Then a beat of nothing. Twelve sixteenths climbing and turning, four of silence, ' +
       'and the next bar starts the ladder again from its own root.',
-    'Bar two is the same ladder from the F below, over the F chord: F, C, G, then C, G, D, then ' +
-      'G, D, A, then A, D, G and the silence. Same shape, same accents, a fourth lower.',
+    'Bar two is the same ladder from the C below, over the C chord: C, G, D, then G, D, A, then ' +
+      'D, A, E, then E, A, D and the silence. Same shape, same accents, a fourth lower.',
     'One note at a time, every note the same length. Let each sixteenth go before the next is ' +
       'struck. Held, three fifths are a chord, and this is not a chord; it is a ladder.',
     'The bar head is the loudest note and the start of each group the next loudest. The third ' +
       'note of every group is the quiet one, so the ear counts in threes and not in fours.',
-    'Never play F sharp. It is the next fifth up from B, one rung past the key, and one F ' +
-      'sharp turns a ladder in C into a modulation. The ladder stops at E and turns.',
+    'Never play C sharp. It is the next fifth up from F sharp, one rung past the key, and one ' +
+      'C sharp turns a ladder in G into a modulation. The ladder stops at B and turns.',
   ],
   request: {
     id: 'triplet-5ths-stacked-fifths-ladder',
@@ -97,7 +108,7 @@ export const triplet5thsStackedFifthsLadder: Riff = {
         chord: 'I',
         degree: 4,
         alter: 1,
-        reason: 'the seventh fifth up from C is one rung past the key, and one of them is a modulation',
+        reason: 'the seventh fifth up from G is one rung past the key, and one of them is a modulation',
       },
     ],
   },
