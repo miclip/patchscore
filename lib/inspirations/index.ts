@@ -3,6 +3,7 @@ import type { Inspiration } from '../core/inspiration'
 import { brushes } from './brushes'
 import { dancehall } from './dancehall'
 import { echo } from './echo'
+import { halfTime } from './half-time'
 import { ladder } from './ladder'
 import { reggae } from './reggae'
 import { shuffle } from './shuffle'
@@ -39,6 +40,20 @@ import { shuffle } from './shuffle'
  * winner by id order is exactly the alphabetical musical decision the refusal exists to prevent.
  * Both new influences compose freely with `dancehall` and with `shuffle`.
  *
+ * **`half-time` is the seventh, and it is the first that changes how the bar is read.** The other
+ * six change what a part plays; this moves where the bar's weight falls, by taking the snare off
+ * the second and fourth beats and putting it on the third. It claims `snare`, which nothing else
+ * claims, and `kick`, which `reggae` and `dancehall` both claim — so the refusing pairs go from
+ * four to six and the mutually exclusive kick set becomes a set of three. That is the right
+ * outcome rather than a cost: a one-drop is itself a claim about where the weight falls, and two
+ * such claims at once are an argument rather than a combination.
+ *
+ * It is also the first influence that **declines a tempo change on purpose**. `reggae` and
+ * `dancehall` both shift, because a one-drop at 134 is not a one-drop. Half time at the original
+ * tempo *is* half time; shifted, it is a slower track and the influence has done nothing a tempo
+ * knob could not. And it leaves `closed-hat` alone, which is what keeps the effect audible and
+ * what lets it compose with `shuffle`.
+ *
  * **`brushes` is the sixth, and it costs the composition table nothing.** It claims `ride` alone,
  * which no other influence claims, so the four refusing pairs stay four. It exists for the shape
  * the five could not reach: a slow direction whose only percussion is a cymbal and a rim, where
@@ -48,12 +63,13 @@ export const INSPIRATIONS: readonly Inspiration[] = [
   brushes,
   dancehall,
   echo,
+  halfTime,
   ladder,
   reggae,
   shuffle,
 ]
 
-export { brushes, dancehall, echo, ladder, reggae, shuffle }
+export { brushes, dancehall, echo, halfTime, ladder, reggae, shuffle }
 
 const BY_ID: ReadonlyMap<InspirationId, Inspiration> = new Map(INSPIRATIONS.map((i) => [i.id, i]))
 
