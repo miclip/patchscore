@@ -51,46 +51,46 @@ The figure is played over these chords; supply them separately if your rig allow
 
 48 bars in F# minor. Each note is in force across the steps shown.
 
-- steps 9–24 · over i · `C#5` · degree 5 · MIDI 73
-- steps 25–34 · over i · `A4` · degree 3 · MIDI 69
-- steps 41–52 · over VI · `F#5` · degree 1 · MIDI 78
-- steps 53–56 · over VI · `E5` · degree 7 · MIDI 76
-- steps 57–66 · over VI · `D5` · degree 6 · MIDI 74
-- steps 73–84 · over iv · `D5` · degree 6 · MIDI 74
-- steps 85–88 · over iv · `C#5` · degree 5 · MIDI 73
-- steps 89–96 · over iv · `D5` · degree 6 · MIDI 74
-- steps 105–130 · over I · `A#4` · degree #3 · MIDI 70
-- steps 137–148 · over IV · `D#5` · degree #6 · MIDI 75
-- steps 149–162 · over IV · `F#5` · degree 1 · MIDI 78
-- steps 169–184 · over v · `G#4` · degree 2 · MIDI 68
-- steps 185–194 · over v · `E4` · degree 7 · MIDI 64
-- steps 201–212 · over i · `A5` · degree 3 · MIDI 81
-- steps 213–226 · over i · `F#5` · degree 1 · MIDI 78
-- steps 233–244 · over VI · `A5` · degree 3 · MIDI 81
-- steps 245–248 · over VI · `B5` · degree 4 · MIDI 83
-- steps 249–258 · over VI · `A5` · degree 3 · MIDI 81
-- steps 265–276 · over iv · `B5` · degree 4 · MIDI 83
-- steps 277–280 · over iv · `A5` · degree 3 · MIDI 81
-- steps 281–288 · over iv · `F#5` · degree 1 · MIDI 78
-- steps 297–308 · over I · `C#5` · degree 5 · MIDI 73
-- steps 309–322 · over I · `A#5` · degree #3 · MIDI 82
-- steps 329–340 · over IV · `F#5` · degree 1 · MIDI 78
-- steps 341–344 · over IV · `D#5` · degree #6 · MIDI 75
-- steps 345–354 · over IV · `F#5` · degree 1 · MIDI 78
-- steps 361–372 · over v · `E5` · degree 7 · MIDI 76
-- steps 373–376 · over v · `D#5` · degree #6 · MIDI 75
-- steps 377–386 · over v · `C#5` · degree 5 · MIDI 73
-- steps 393–418 · over i · `F#4` · degree 1 · MIDI 66
-- steps 425–450 · over VI · `A4` · degree 3 · MIDI 69
-- steps 457–480 · over iv · `F#4` · degree 1 · MIDI 66
-- steps 505–514 · over I · `A#4` · degree #3 · MIDI 70
-- steps 521–546 · over IV · `F#4` · degree 1 · MIDI 66
-- steps 553–578 · over v · `G#4` · degree 2 · MIDI 68
-- steps 633–642 · over VI · `A5` · degree 3 · MIDI 81
-- steps 649–672 · over iv · `F#5` · degree 1 · MIDI 78
-- steps 681–706 · over I · `A#5` · degree #3 · MIDI 82
-- steps 713–738 · over IV · `F#5` · degree 1 · MIDI 78
-- steps 745–776 · over v · `C#6` · degree 5 · MIDI 85
+- steps 9–24 · over i F#m · `C#5` · degree 5 · MIDI 73
+- steps 25–34 · over i F#m · `A4` · degree 3 · MIDI 69
+- steps 41–52 · over VI D · `F#5` · degree 1 · MIDI 78
+- steps 53–56 · over VI D · `E5` · degree 7 · MIDI 76
+- steps 57–66 · over VI D · `D5` · degree 6 · MIDI 74
+- steps 73–84 · over iv Bm · `D5` · degree 6 · MIDI 74
+- steps 85–88 · over iv Bm · `C#5` · degree 5 · MIDI 73
+- steps 89–96 · over iv Bm · `D5` · degree 6 · MIDI 74
+- steps 105–130 · over I F# · `A#4` · degree #3 · MIDI 70
+- steps 137–148 · over IV B · `D#5` · degree #6 · MIDI 75
+- steps 149–162 · over IV B · `F#5` · degree 1 · MIDI 78
+- steps 169–184 · over v C#m · `G#4` · degree 2 · MIDI 68
+- steps 185–194 · over v C#m · `E4` · degree 7 · MIDI 64
+- steps 201–212 · over i F#m · `A5` · degree 3 · MIDI 81
+- steps 213–226 · over i F#m · `F#5` · degree 1 · MIDI 78
+- steps 233–244 · over VI D · `A5` · degree 3 · MIDI 81
+- steps 245–248 · over VI D · `B5` · degree 4 · MIDI 83
+- steps 249–258 · over VI D · `A5` · degree 3 · MIDI 81
+- steps 265–276 · over iv Bm · `B5` · degree 4 · MIDI 83
+- steps 277–280 · over iv Bm · `A5` · degree 3 · MIDI 81
+- steps 281–288 · over iv Bm · `F#5` · degree 1 · MIDI 78
+- steps 297–308 · over I F# · `C#5` · degree 5 · MIDI 73
+- steps 309–322 · over I F# · `A#5` · degree #3 · MIDI 82
+- steps 329–340 · over IV B · `F#5` · degree 1 · MIDI 78
+- steps 341–344 · over IV B · `D#5` · degree #6 · MIDI 75
+- steps 345–354 · over IV B · `F#5` · degree 1 · MIDI 78
+- steps 361–372 · over v C#m · `E5` · degree 7 · MIDI 76
+- steps 373–376 · over v C#m · `D#5` · degree #6 · MIDI 75
+- steps 377–386 · over v C#m · `C#5` · degree 5 · MIDI 73
+- steps 393–418 · over i F#m · `F#4` · degree 1 · MIDI 66
+- steps 425–450 · over VI D · `A4` · degree 3 · MIDI 69
+- steps 457–480 · over iv Bm · `F#4` · degree 1 · MIDI 66
+- steps 505–514 · over I F# · `A#4` · degree #3 · MIDI 70
+- steps 521–546 · over IV B · `F#4` · degree 1 · MIDI 66
+- steps 553–578 · over v C#m · `G#4` · degree 2 · MIDI 68
+- steps 633–642 · over VI D · `A5` · degree 3 · MIDI 81
+- steps 649–672 · over iv Bm · `F#5` · degree 1 · MIDI 78
+- steps 681–706 · over I F# · `A#5` · degree #3 · MIDI 82
+- steps 713–738 · over IV B · `F#5` · degree 1 · MIDI 78
+- steps 745–776 · over v C#m · `C#6` · degree 5 · MIDI 85
 
 ## Where it plays
 

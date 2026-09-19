@@ -8,7 +8,7 @@ import { RIFFS } from '../lib/riffs'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RiffFigureView, RiffInKey } from '../components/riff/riff-in-key'
 import { RiffFigure } from '../components/riff/riff-figure'
-import { chordRows, noteRows } from '../lib/studio/riff-text'
+import { chordLabel, chordRows, noteRows } from '../lib/studio/riff-text'
 import RiffRoute from '../app/riffs/[id]/page'
 import PresetFigureRoute from '../app/devices/[id]/presets/[patch]/page'
 
@@ -212,6 +212,32 @@ describe('RiffFigureView moves the notes and the chords, and nothing else (#570)
     }
     // Riffs with no chords have the control too: it governs the notes alone there.
     expect(WITHOUT_HARMONY.length).toBeGreaterThan(0)
+  })
+
+  /**
+   * #661. The name is on the chord table and on every note row under it, and the two blocks are
+   * one page: a reader who reads `over I F#` and then finds `I` called something else in the
+   * table has been given two answers. `noteRows` takes its names from the table's own rows, and
+   * this is what says so in every key the control offers, not only the authored one.
+   */
+  it('calls a chord the same thing on a note row as in the table, in every key (#661)', () => {
+    let named = 0
+    for (const riff of RIFFS) {
+      if (riff.harmony === undefined) continue
+      for (const key of transposableKeys(riff.key)) {
+        const hook = resolveHook(riff.hook, key)
+        if (hook.outcome !== 'resolved') continue
+        const table = new Map(chordRows(riff, key).map((row) => [row.degree, row.name]))
+        for (const row of noteRows(hook.hook, riff)) {
+          if (row.chord === undefined) continue
+          expect(row.chordName, `${riff.id} ${key} ${row.chord}`).toBe(table.get(row.chord))
+          if (row.chordName === undefined) continue
+          expect(chordLabel(row), riff.id).toBe(`over ${row.chord} ${row.chordName}`)
+          named++
+        }
+      }
+    }
+    expect(named).toBeGreaterThan(0)
   })
 
   it('owns the key as state and passes it down, writing nowhere', () => {

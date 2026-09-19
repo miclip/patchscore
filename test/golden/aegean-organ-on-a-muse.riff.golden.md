@@ -37,14 +37,14 @@ The figure is played over these chords; supply them separately if your rig allow
 
 8 bars in D phrygian. Each note is in force across the steps shown.
 
-- steps 1–12 · over i · `F5` · degree 3 · MIDI 77
-- steps 17–32 · over i · `Eb5` · degree 2 · MIDI 75
-- steps 33–64 · over II · `G5` · degree 4 · MIDI 79
-- steps 65–72 · over i · `D5` · degree 1 · MIDI 74
-- steps 73–80 · over i · `Eb5` · degree 2 · MIDI 75
-- steps 81–96 · over i · `D5` · degree 1 · MIDI 74
-- steps 97–120 · over vii · `Eb5` · degree 2 · MIDI 75
-- steps 121–128 · over vii · `D5` · degree 1 · MIDI 74
+- steps 1–12 · over i Dm · `F5` · degree 3 · MIDI 77
+- steps 17–32 · over i Dm · `Eb5` · degree 2 · MIDI 75
+- steps 33–64 · over II Eb · `G5` · degree 4 · MIDI 79
+- steps 65–72 · over i Dm · `D5` · degree 1 · MIDI 74
+- steps 73–80 · over i Dm · `Eb5` · degree 2 · MIDI 75
+- steps 81–96 · over i Dm · `D5` · degree 1 · MIDI 74
+- steps 97–120 · over vii Cm · `Eb5` · degree 2 · MIDI 75
+- steps 121–128 · over vii Cm · `D5` · degree 1 · MIDI 74
 
 ## The grid
 
