@@ -46,6 +46,9 @@ import { triplet5thsStackedFifthsLadder } from './triplet-5ths-stacked-fifths-la
 import { iFeelLoveOneShapeArp } from './i-feel-love-one-shape-arp'
 import { innerCityLifeHeldSub } from './inner-city-life-held-sub'
 import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-stab'
+import { brashBassGhostNoteGroove } from './brash-b-ss-ghost-note-groove'
+import { fifthInLineFifthsBeforeTheRoot } from './5th-in-line-fifths-before-the-root'
+import { uberSubOctavePumpLine } from './uber-sub-octave-pump-line'
 
 /**
  * The riff registry (§5A). Hand-written and static, for the reason the template and inspiration
@@ -184,6 +187,7 @@ import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-s
  */
 export const RIFFS: readonly Riff[] = [
   threeOscBassLoveRootOctaveFigure,
+  fifthInLineFifthsBeforeTheRoot,
   seventiesElectroPnoRhodesTurnaround,
   acidTracksLine,
   acidWigglerSlideLine,
@@ -192,6 +196,7 @@ export const RIFFS: readonly Riff[] = [
   bellbounceSparseBellPattern,
   bladeRunnerBluesLead,
   blueMondayBass,
+  brashBassGhostNoteGroove,
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
   celestialConvergingVoicesPad,
@@ -228,6 +233,7 @@ export const RIFFS: readonly Riff[] = [
   thrillerSynthRiff,
   triangleLeadChromaticApproachLine,
   triplet5thsStackedFifthsLadder,
+  uberSubOctavePumpLine,
   voxHumanaFourPartVoiceLeading,
 ]
 

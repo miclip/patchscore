@@ -28,8 +28,8 @@ Every step below strikes the note in force at that point. The grid is where the 
  1 xxxx xxxx xxxx xxxx
 17 xxxx xxxx xxxx xxxx
 ```
-- `accent` · 1
-- `ghost` · 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32
+- `accent` · 1 (all vel 112)
+- `ghost` · 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32 (all vel 92)
 - `offbeat` · 3, 7, 11, 15, 19, 23, 27, 31
 - `downbeat` · 5, 9, 13, 17, 21, 25, 29
 

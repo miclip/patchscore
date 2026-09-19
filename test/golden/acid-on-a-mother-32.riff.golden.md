@@ -29,10 +29,10 @@ Every step below strikes the note in force at that point. The grid is where the 
  1 x·x· x··x x·x· x··x
 17 x·x· x··x x·x· x··x
 ```
-- `accent` · 1, 13
+- `accent` · 1, 13 (all vel 118)
 - `offbeat` · 3, 11, 19, 27
 - `downbeat` · 5, 9, 17, 21, 25, 29
-- `ghost` · 8, 16, 24, 32
+- `ghost` · 8, 16, 24, 32 (all vel 70)
 
 ## Where it plays
 

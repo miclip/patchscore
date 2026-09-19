@@ -58,7 +58,7 @@ The grid is 4 bars and the figure is 8: play it round 2 times.
 33 x··· ···· ···· ····
 49 ···· ···· ···· ····
 ```
-- `accent` · 1, 65
+- `accent` · 1, 65 (all vel 88)
 - `downbeat` · 33, 97
 
 ## Where it plays

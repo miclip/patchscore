@@ -321,9 +321,12 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
  * order here and the page follows; nothing downstream sorts it.
  */
 const PATCH_USES: PatchUse[] = [
-  // The low end: a sub, a bass, an acid line
+  // The low end: two subs, two basses, an acid line
   { name: 'LOW BASS', use: 'Four strikes a bar, and the last one is the next chord’s root, an eighth early' },
+  { name: 'UBER_SUB', use: 'One note a chord, pumped in eighths, and the octave is the only thing that moves' },
   { name: 'Terror Bass', use: 'Three bars of bass line and a fourth on the flat two, falling back onto the beat' },
+  { name: 'BRASH B@SS', use: 'Two hard strikes a bar and six ghosted, most of them the same note' },
+  { name: '5TH IN LINE', use: 'Three bars on the fifth of each chord, and a root only in the fourth' },
   { name: 'Acid Wiggler', use: 'One bar of sixteenths on the root, four of them slid into' },
   // The other sixteenth line, and the held chord the arpeggiator plays
   { name: 'TRIPLET 5THS', use: 'Fifths stacked three at a time, accented in threes across the beat' },

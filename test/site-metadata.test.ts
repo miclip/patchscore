@@ -59,7 +59,7 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
         e.figure === undefined ? [] : [`${SITE_ORIGIN}/devices/${d.id}/presets/${e.slug}`],
       )
     const figures = presets.flatMap(figuresOf)
-    expect(figures).toHaveLength(37)
+    expect(figures).toHaveLength(40)
     /*
      * §5A/#503 adds `/riffs` and one entry per authored figure, on the same test as everything
      * else here: there is a page at each whose canonical is itself. Derived from `lib/riffs`, so

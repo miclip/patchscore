@@ -424,7 +424,17 @@ export function gridRows(riff: Riff): readonly string[] {
 }
 
 /** One entry per `PatternSlot` present, in the order the variant first reaches each. */
-export type SlotRow = { slot: string; steps: readonly number[] }
+export type SlotRow = {
+  slot: string
+  steps: readonly number[]
+  /**
+   * #664. The velocity every hit of this slot carries, where they all carry the same one, and
+   * absent where they differ or where none is authored. The page has always printed this
+   * (`SlotList`); the export dropped it, and on a figure whose subject is the weight of a strike
+   * that is the export dropping the figure.
+   */
+  velocity?: number
+}
 
 /**
  * The grouping is `lib/core`'s (#528), for `gridRows`' reason: which hits belong to which slot is
@@ -448,18 +458,34 @@ export type SlotRow = { slot: string; steps: readonly number[] }
 export function slotRows(riff: Riff): readonly SlotRow[] {
   if (riff.pattern === undefined) return []
   const passes = (riff.hook.bars * STEPS_PER_BAR) / riff.pattern.length
-  return slotGroups(riff.pattern).map(({ slot, hits }) => ({
-    slot,
-    steps: hits
-      .flatMap((hit) =>
-        Array.from({ length: passes }, (_, pass) => hit.step + pass * riff.pattern!.length),
-      )
-      .sort((a, b) => a - b),
-  }))
+  return slotGroups(riff.pattern).map(({ slot, hits }) => {
+    const first = hits[0] as { velocity?: number }
+    const uniform = first.velocity !== undefined && hits.every((h) => h.velocity === first.velocity)
+    return {
+      slot,
+      steps: hits
+        .flatMap((hit) =>
+          Array.from({ length: passes }, (_, pass) => hit.step + pass * riff.pattern!.length),
+        )
+        .sort((a, b) => a - b),
+      ...(uniform ? { velocity: first.velocity } : {}),
+    }
+  })
 }
 
 export function stepList(steps: readonly number[]): string {
   return steps.map(num).join(', ')
+}
+
+/**
+ * #664. One slot's line for the export: the steps, and the velocity hoisted to the end where
+ * every hit carries the same one. `render.ts` has printed `(all vel 42)` in a guide since #100
+ * and the riff page prints it per hit; this is the third surface saying the same thing rather
+ * than a fourth reading of the data.
+ */
+export function slotLine(row: SlotRow): string {
+  const steps = stepList(row.steps)
+  return row.velocity === undefined ? steps : `${steps} (all vel ${num(row.velocity)})`
 }
 
 /**
