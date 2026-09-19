@@ -145,7 +145,7 @@ describe('the figure page exists exactly where a figure does, and nowhere it use
     // Forty since #664, which gave three more of the Subsequent 37's presets a figure. Its
     // DRONE keeps a use and has no figure page (#643), its Harp C Chord gained one (#645), and
     // the Muse's Mirror Interior gained one (#654).
-    expect(params).toHaveLength(41)
+    expect(params).toHaveLength(44)
     // Every patch-named riff has a page here, under the box that ships its patch, and only those.
     const musePatches = new Set(byId('moog-muse').factoryPatches?.map((p) => p.name))
     const ids = new Set(FIGURED.map(({ figure }) => figure.riff.id))

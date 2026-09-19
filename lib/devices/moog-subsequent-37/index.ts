@@ -334,6 +334,8 @@ const PATCH_USES: PatchUse[] = [
   // Leads
   { name: 'SAW LEAD', use: 'A bar climbing to a held note, then the same rhythm falling' },
   { name: 'Triangle Lead', use: 'Chord tones, and every bar head reached by a semitone from below' },
+  { name: 'Octavia', use: 'A phrase, then the same phrase an octave down with one note changed' },
+  { name: '70s TV PI Theme', use: 'One four-note shape, three times, a step lower each time' },
   // Struck sounds, all of them two notes
   { name: 'FUNK ORGAN', use: 'Two-note stabs on the sixteenth before every beat, never on one' },
   { name: 'DUO ORG', use: 'Two notes struck as one, moving in parallel thirds' },
@@ -342,6 +344,7 @@ const PATCH_USES: PatchUse[] = [
   { name: 'Duotronic Moogtrons', use: 'One note held while the other walks against it' },
   { name: 'CELESTIAL', use: 'Two notes an octave apart, closing to a third over four chords' },
   { name: 'DRONE', use: 'The root held under the changes' },
+  { name: 'DUO WAVE MOD', use: 'Two notes rising together, the gap opening from a third to an octave' },
   // The one struck sound with a tail, and the library's only figure counted in decays
   { name: 'SYNTH GONG', use: 'Seven strikes in eight bars, each placed where the last has gone' },
 ]

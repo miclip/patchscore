@@ -531,12 +531,13 @@ describe('the riff library (§5A)', () => {
    * that carried a name and a slot and nothing else: a second `sub`, and two on `bass-mid`. The
    * fiftieth is #664's second pass, the first `texture` anywhere in the library: a struck figure
    * with no grid, which is why #643 could reduce the last one to a use line and leave the role
-   * empty.
+   * empty. The last three of #664 empty the box's list: every one of its twenty declared patches
+   * now carries a use, and seventeen of them a figure.
    */
-  it('has exactly fifty entries: nine records and forty-one factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664)', () => {
-    expect(RIFFS.length).toBe(50)
+  it('has exactly fifty-three entries: nine records and forty-four factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664)', () => {
+    expect(RIFFS.length).toBe(53)
     expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(9)
-    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(41)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(44)
   })
 
   it('every entry parses', () => {
@@ -631,7 +632,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is eight roles over fifty entries, ten of them pads and one a texture', () => {
+  it('is eight roles over fifty-three entries, eleven of them pads and one a texture', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -653,27 +654,31 @@ describe('the riff library (§5A)', () => {
     // and no `arpeggiatedHold`, since only half of it is. #664 added three on the Subsequent
     // 37's low end: one `sub`, whose only movement is the octave, and two `bass-mid`, one a
     // ghost-note groove and one a line that withholds every root but the last. Then the first
-    // `texture`: seven strikes in eight bars, spaced by decay, through-composed so no grid.
+    // `texture`: seven strikes in eight bars, spaced by decay, through-composed so no grid. The
+    // last three are #664's second pass: an eleventh `pad` in similar motion, which is the fourth
+    // species of two-voice motion and the one this box had not taught, and two more `lead`, an
+    // octave answer and a sequenced motif.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
       acid: 2,
       arp: 5,
       'bass-mid': 7,
-      lead: 10,
-      pad: 10,
+      lead: 12,
+      pad: 11,
       stab: 12,
       sub: 3,
       texture: 1,
     })
-    expect(RIFFS).toHaveLength(50)
-    // And the ten pads are the ten held riffs: no grid, no flag, on all of them.
+    expect(RIFFS).toHaveLength(53)
+    // And the eleven pads are the eleven held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
       'an-ending-ascent-pad',
       'brew-time-major-seventh-hold',
       'celestial-converging-voices-pad',
       'cloud-level-shared-top-drift',
+      'duo-wave-mod-similar-motion-pad',
       'duotronic-moogtrons-pedal-and-line-pad',
       'moog-55-strings-suspension-writing',
       'replicant-xd-inner-voice-pad',
@@ -1810,7 +1815,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(50)
+      expect(RIFFS).toHaveLength(53)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }

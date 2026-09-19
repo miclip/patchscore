@@ -48,6 +48,9 @@ import { innerCityLifeHeldSub } from './inner-city-life-held-sub'
 import { stringsOfLifeWalkingEntryStab } from './strings-of-life-walking-entry-stab'
 import { brashBassGhostNoteGroove } from './brash-b-ss-ghost-note-groove'
 import { fifthInLineFifthsBeforeTheRoot } from './5th-in-line-fifths-before-the-root'
+import { duoWaveModSimilarMotionPad } from './duo-wave-mod-similar-motion-pad'
+import { octaviaOctaveAnswerLead } from './octavia-octave-answer-lead'
+import { seventiesTvPiThemeSequencedMotif } from './70s-tv-pi-theme-sequenced-motif'
 import { synthGongDecaySpacedStrikes } from './synth-gong-decay-spaced-strikes'
 import { uberSubOctavePumpLine } from './uber-sub-octave-pump-line'
 
@@ -190,6 +193,7 @@ export const RIFFS: readonly Riff[] = [
   threeOscBassLoveRootOctaveFigure,
   fifthInLineFifthsBeforeTheRoot,
   seventiesElectroPnoRhodesTurnaround,
+  seventiesTvPiThemeSequencedMotif,
   acidTracksLine,
   acidWigglerSlideLine,
   aegeanOrganPhrygianFigure,
@@ -204,6 +208,7 @@ export const RIFFS: readonly Riff[] = [
   cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
   duoOrgParallelThirdsComp,
+  duoWaveModSimilarMotionPad,
   duotronicMoogtronsPedalAndLinePad,
   funkOrganEarlySixteenthStabs,
   hamamatsuTinesBalladFigure,
@@ -219,6 +224,7 @@ export const RIFFS: readonly Riff[] = [
   moog55StringsSuspensionWriting,
   moogProSoloGlideLead,
   museRunnerFloatingArrivalLead,
+  octaviaOctaveAnswerLead,
   petrichorOffbeatCompingFigure,
   polyphonicPowerBrassStabCycle,
   pressureRepeatedNoteBuild,
