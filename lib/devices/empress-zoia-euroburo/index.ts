@@ -61,6 +61,14 @@ import { ZOIA_EUROBURO_PANEL } from './panel'
  * 0V to 5V or 0V to 10V (p.6), two 1/8" TRS MIDI ports of *"MIDI Type A spec"* with 5-pin dongles
  * included (p.26), and a microSD card for patches. No USB anywhere.
  */
+/**
+ * The module index, cited by name and date rather than by page. Empress publishes it as a living
+ * Google Sheet and not as a PDF (`manuals/README.md` carries the address and the snapshot), so a
+ * page number would be a fiction and a row number would move. The Euroburo manual names this
+ * document on pp.2, 20 and 43, which is what makes a ZOIA document the right one for this box.
+ */
+const MODULE_INDEX = 'ZOIA Module Index (Empress Effects), ZOIA/Euroburo firmware 5, exported 2026-09-19'
+
 export const device: Device = {
   id: 'empress-zoia-euroburo',
   name: 'ZOIA Euroburo',
@@ -124,24 +132,65 @@ export const device: Device = {
         'this manual documents no clock transmission at all, so it states nothing about leading a rig either — and with `canSendClock: false` the field is not claimable in any case',
     },
 
+    /**
+     * §2.6/#120. **`partly`, and the half left open is the model's rather than the document's.**
+     * The index carries a module called `LFO` under `CONTROL MODULES`, with its waveform option
+     * printing *"square, sine, triangle, sawtooth, ramp, or random"*, a frequency block in Hz, a
+     * trigger input that *"calculates rate of LFO via incoming CV input"*, and optional phase and
+     * phase-reset blocks. That is a topology, and it is cited.
+     *
+     * What `LfoSpec` also wants is `count`, and this box has no number to give. An LFO here is a
+     * module a player places on a page, so how many there are is bounded by blocks and DSP and by
+     * what else the patch is doing. Declaring `count: 1` would be false and `count: 0` worse, so
+     * the field stays undeclared and this entry says which half is proven. `partly` is #236's
+     * shape for exactly this, and the Circuit Tracks' `voices` is the other instance.
+     */
     'features.lfo': {
-      kind: 'unread',
-      reason:
-        'ZOIA’s LFOs live in the module library, and the document that enumerates it — the module index — is not in `manuals/`; this 44-page hardware manual is about the knob, the grid, the pages and the connections, and mentions no LFO anywhere',
+      kind: 'partly',
+      cite: { kind: 'manual', source: `${MODULE_INDEX}, the "LFO" row under CONTROL MODULES` },
+      proven:
+        'the box has an LFO module, with square, sine, triangle, sawtooth, ramp and random waveforms, a frequency set in Hz, a trigger input that derives the rate from incoming CV, and optional phase and phase-reset inputs',
+      open: 'how many, which a patchable box does not fix: an LFO is a module placed on a page, and the number of them is bounded by blocks and DSP rather than by the hardware',
     },
 
+    /**
+     * §2.6. Both halves are in the index and both are one sentence, printed twice because two
+     * modules carry it. The `Compressor`'s `sidechain` option reads *"select if you'd like the
+     * compressor to engage based on the signal dynamic at it's input or from another audio
+     * signal"*, and the `Gate`'s says the same of the gate opening. Each module then carries a
+     * `sidechain in` block of its own.
+     *
+     * `internal` is that block's connection list, which is *"inputs, audio effect outputs, VCAs,
+     * oscillators"* — every one of those is another module in the same patch.
+     */
     'features.sidechain.internal': {
-      kind: 'unread',
-      reason:
-        'same document, same absence: a ZOIA patch can plainly duck one signal from another, and the module index that would say how is not in `manuals/` — this manual never describes a ducking source',
+      kind: 'manual',
+      source: `${MODULE_INDEX}, the "Compressor" and "Gate" rows: the \`sidechain\` option and the \`sidechain in\` block`,
     },
 
+    /**
+     * §2.6. The same `sidechain in` block takes `inputs`, and the index's `Audio Input` module —
+     * *"connects audio from left pedal input jack"* — lists `sidechain inputs` among the things it
+     * typically connects to. So the key can come from outside the box, which is the claim this
+     * path makes and the one the hardware manual could only gesture at with p.5's jacks.
+     */
     'features.sidechain.fromExternalAudio': {
-      kind: 'unread',
-      reason:
-        'same document, same absence: the audio inputs are documented (p.5) and the modules that would read them for a ducking source are in the module index, which is not in `manuals/`',
+      kind: 'manual',
+      source: `${MODULE_INDEX}, the "Audio Input" row, which connects to "sidechain inputs"`,
     },
   },
+
+  /**
+   * §2.6/#664. **Declared from the module index, which is the document the Euroburo's own manual
+   * sends its reader to** (ZEBU pp.2, 20, 43: *"TO UNDERSTAND WHAT ALL THE VARIOUS MODULES DO,
+   * CHECK OUT THE MODULE INDEX"*, with the address). Both halves are true of the same two
+   * modules: a `Compressor` and a `Gate`, each with a `sidechain` option and a `sidechain in`
+   * block, keyed from another module in the patch or from the pedal inputs.
+   *
+   * `lfo` is deliberately not declared beside this; see the `partly` entry above for why the
+   * count is the part this box does not have.
+   */
+  features: { sidechain: { internal: true, fromExternalAudio: true } },
 
   /**
    * Stereo in, stereo out, and a headphone out that duplicates the main pair rather than being a

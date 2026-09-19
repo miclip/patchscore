@@ -49,12 +49,16 @@ describe('the manifest', () => {
     expect(device.comfortableVoices).toBeUndefined()
   })
 
-  it('leaves features, hints and jacks empty on purpose, not by omission', () => {
-    // The manual is a *platform* manual: it documents the hardware and the editing workflow and
-    // never enumerates the module library, so an LFO or a sidechain here would be authored from
-    // memory rather than from the page. `hints` and `jacks` exist to be referenced by recipes,
-    // and there are none. Asserted so that filling one in later is a deliberate act.
-    expect(device.features).toBeUndefined()
+  it('declares the sidechain the module index documents, and no LFO, and no hints or jacks', () => {
+    // #664. The hardware manual never enumerates the module library, so for a year an LFO or a
+    // sidechain here would have been authored from memory. The module index the Euroburo manual
+    // names on pp.2, 20 and 43 documents both, and the sidechain fits `SidechainSpec` exactly:
+    // two booleans, two modules carrying them. `lfo` does not fit, because `LfoSpec` wants a
+    // count and a patchable box has none — that half is `partly` in the evidence rather than a
+    // number invented here. `hints` and `jacks` exist to be referenced by recipes, and there
+    // are none.
+    expect(device.features).toEqual({ sidechain: { internal: true, fromExternalAudio: true } })
+    expect(device.features?.lfo).toBeUndefined()
     expect(device.hints).toBeUndefined()
     expect(device.jacks).toBeUndefined()
   })
@@ -69,25 +73,22 @@ describe('the manifest', () => {
     }
     const audit = auditDevice(device)
     expect(audit.counts.params).toBe(0)
-    // Four findings and not one of them a debt this manifest can pay by reading harder.
+    // One finding left, and #664 closed the other three by finding the document.
     //
-    // The first is #80's recorded non-claim: this manual documents no clock transmission at all,
-    // so it says nothing about leading a rig either — and `canSendClock: false` makes
-    // `preferredSource` unclaimable regardless (§7.4).
+    // What remains is #80's recorded non-claim: this manual documents no clock transmission at
+    // all, so it says nothing about leading a rig either \u2014 and `canSendClock: false` makes
+    // `preferredSource` unclaimable regardless (\u00a77.4).
     //
-    // The other three are #120's `unread`, and this box is why that state exists. ZOIA's LFOs and
-    // its ducking modules live in the module index, which is *not in `manuals/`* — so nobody read
-    // a document and came back empty, the document is out of reach. Asserted exactly and by kind:
-    // an `unchecked` finding here would be wrong (nobody is failing to open a book) and an
-    // `undocumented` one would report a missing manual as finished research, which is precisely
-    // the mistake #118 made and #120 fixed.
+    // The three that went were #120's `unread`, and this box is why that state exists: the
+    // module index was out of reach rather than silent. It is in `manuals/` now, as a CSV export
+    // of the live sheet the Euroburo manual names on pp.2, 20 and 43, and the findings moved
+    // with it. The `partly` on `features.lfo` is not a debt either: the index gives the topology
+    // and the box has no fixed count to give.
     expect(audit.findings.map((f) => ('fact' in f ? `${f.kind} ${f.fact}` : f.kind))).toEqual([
       'undocumented-capability clock.preferredSource',
-      'unread-capability features.lfo',
-      'unread-capability features.sidechain.fromExternalAudio',
-      'unread-capability features.sidechain.internal',
+      'partly-capability features.lfo',
     ])
-    expect(audit.counts.unreadCapabilities).toBe(3)
+    expect(audit.counts.unreadCapabilities).toBe(0)
     expect(audit.counts.uncheckedCapabilities).toBe(0)
   })
 })
@@ -126,10 +127,13 @@ describe('the guide still names it (§2.4, §8)', () => {
     expect(guide).toContain('ZOIA Euroburo — is an effects unit')
   })
 
-  it('is not listed as a ducker, because nothing documents a sidechain', () => {
+  it('is listed as a ducker now that the module index documents the sidechain (#664)', () => {
+    // It was absent from this block for as long as the sidechain was `unread`, which is the
+    // whole point of that state: the box could always do it and no document in `manuals/` said
+    // so. The index says so, so the guide says so.
     expect(guide).toContain('**Sidechain**')
     const block = guide.slice(guide.indexOf('**Sidechain**'), guide.indexOf('**Master FX**'))
-    expect(block).not.toContain('ZOIA Euroburo')
+    expect(block).toContain('ZOIA Euroburo')
   })
 })
 

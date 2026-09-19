@@ -1278,9 +1278,9 @@ Routing — **One trig, on the step 1.4 bars before the change** — there is no
 
 **Sidechain**
 
-The MPC Live III, MPC One G2, MPC XL, Digitone II, Cascadia and Tracker can duck to another box: patch the box you want each to follow into its audio in.
+The MPC Live III, MPC One G2, MPC XL, Digitone II, ZOIA Euroburo, Cascadia and Tracker can duck to another box: patch the box you want each to follow into its audio in.
 
-The MPC Live III, MPC One G2, MPC XL, Digitone II and Tracker can also duck from their own parts.
+The MPC Live III, MPC One G2, MPC XL, Digitone II, ZOIA Euroburo and Tracker can also duck from their own parts.
 
 The Circuit Tracks, Play+, TR-1000, TR-6S, TR-8S, Deluge, EP–133 K.O. II, EP–40 riddim and OP-XY duck from their own parts only.
 
