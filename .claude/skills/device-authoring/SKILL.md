@@ -182,6 +182,25 @@ answering no. *"Documented somewhere else"* names no document and is a reading t
 A bare state is an author giving up in a field that reads like diligence (#117, quoted in #120).
 The reason is what makes the difference visible.
 
+**`unread` currently has no live example in the library, and that is not a sign it is unused.**
+The Euroburo held the only three — `features.lfo` and both `features.sidechain` paths — for as
+long as ZOIA's module index was missing from `manuals/`. #664 closed them by finding it: Empress
+publishes it as a live Google Sheet rather than a PDF, and the Euroburo's own manual names it on
+pp.2, 20 and 43. So the state is empty because the work got done, not because nothing needs it.
+
+Two things to take from that history, since there is no file left to copy:
+
+- **`unread` is a lead, not a verdict.** Three facts sat in it for a year. What resolved them was
+  reading the manual's own pointers rather than searching harder for a PDF — the document a box's
+  manual *names* is the right document, even when it is not shaped like a manual.
+- **A maker's document need not be a PDF, and citing one that is not is legal.** `manuals/` holds
+  a CSV export of that sheet, snapshotted and dated, and the citation is by module name and
+  retrieval date because a page number would be a fiction and a row number would move. Record the
+  snapshot in `manuals/README.md` with what it is and when it was taken.
+
+When you do write an `unread`, name the document precisely enough that somebody can go and find
+it, because that is what somebody eventually does.
+
 `npm run audit` splits these into two lines by one question — is there a document behind this entry?
 
 ```
