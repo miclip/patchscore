@@ -1305,12 +1305,16 @@ const PATCH_USES: PatchUse[] = [
   // Arpeggiated programs: the hand holds a voicing and the box plays it
   { name: '#brew time', bank: 'Arp', use: 'Arpeggiator over held major-seventh voicings' },
   { name: 'Cloud Level', bank: 'Arp', use: 'Arpeggiator over four voicings that share one top note' },
+  { name: 'Cluster 5th', bank: 'Arp', use: 'Arpeggiator over stacked fifths, the same shape at four roots' },
   // Pads
   { name: 'Replicant xd', bank: 'Pad', use: 'Slow minor pad with a moving inner voice' },
   { name: 'Swollen Pad', bank: 'Pad', use: 'Chords stacked one voice at a time into a slow attack' },
+  { name: 'Square Drone', bank: 'Pad', use: 'One note held while four chords change what it is' },
   // Keys and struck sounds
   { name: 'Petrichor', bank: 'Poly Synth', use: 'Rootless keys comping, off the beat' },
   { name: 'Roadz Bell', bank: 'Poly Synth', use: 'Bell-toned dyads in sixths at ballad pace' },
+  { name: 'Harp xd', bank: 'Poly Synth', use: 'Chords rolled into the beat rather than struck on it' },
+  { name: 'Trill Synth', bank: 'Poly Synth', use: 'Held notes reached through a trill that ends on the bar line' },
   // The chord program and the effect
   { name: 'Lush m7', bank: 'Chord', use: 'Minor-seventh chords from single keys, parallel one-four-five' },
   { name: 'Broken Toy', bank: 'SFX', use: 'Music-box tune that stumbles and corrects itself' },
