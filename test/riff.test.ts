@@ -532,11 +532,13 @@ describe('the riff library (§5A)', () => {
    * fiftieth is #664's second pass, the first `texture` anywhere in the library: a struck figure
    * with no grid, which is why #643 could reduce the last one to a use line and leave the role
    * empty. The last three of #664 empty the box's list: every one of its twenty declared patches
-   * now carries a use, and seventeen of them a figure.
+   * now carries a use, and seventeen of them a figure. The tenth record is the first `texture` on
+   * that shelf: `/riffs` covered seven roles and the eight remaining riffable ones were all
+   * percussion, which cannot carry a figure at all.
    */
-  it('has exactly fifty-three entries: nine records and forty-four factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664)', () => {
-    expect(RIFFS.length).toBe(53)
-    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(9)
+  it('has exactly fifty-four entries: ten records and forty-four factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664)', () => {
+    expect(RIFFS.length).toBe(54)
+    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(10)
     expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(44)
   })
 
@@ -632,7 +634,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is eight roles over fifty-three entries, eleven of them pads and one a texture', () => {
+  it('is eight roles over fifty-four entries, eleven of them pads and two of them textures', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -668,9 +670,9 @@ describe('the riff library (§5A)', () => {
       pad: 11,
       stab: 12,
       sub: 3,
-      texture: 1,
+      texture: 2,
     })
-    expect(RIFFS).toHaveLength(53)
+    expect(RIFFS).toHaveLength(54)
     // And the eleven pads are the eleven held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
@@ -1815,7 +1817,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(53)
+      expect(RIFFS).toHaveLength(54)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
@@ -3251,7 +3253,9 @@ describe('the three record-named figures of #638', () => {
     expect(trio.map((r) => r.key)).toEqual(['F major', 'E minor', 'D minor'])
     expect(trio.map((r) => r.request.role)).toEqual(['stab', 'sub', 'arp'])
     const others = RIFFS.filter((r) => r.reference.kind === 'record' && !trio.includes(r))
-    expect(others).toHaveLength(6)
+    // Seven since the Tears in Rain texture, which is B minor at 64 and so keeps both claims
+    // below: a key the trio did not bring, and a tempo under 128.
+    expect(others).toHaveLength(7)
     for (const key of trio.map((r) => r.key)) {
       expect(others.map((r) => r.key), key).not.toContain(key)
     }

@@ -52,6 +52,7 @@ import { duoWaveModSimilarMotionPad } from './duo-wave-mod-similar-motion-pad'
 import { octaviaOctaveAnswerLead } from './octavia-octave-answer-lead'
 import { seventiesTvPiThemeSequencedMotif } from './70s-tv-pi-theme-sequenced-motif'
 import { synthGongDecaySpacedStrikes } from './synth-gong-decay-spaced-strikes'
+import { tearsInRainHeldSecond } from './tears-in-rain-held-second'
 import { uberSubOctavePumpLine } from './uber-sub-octave-pump-line'
 
 /**
@@ -237,6 +238,7 @@ export const RIFFS: readonly Riff[] = [
   stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
   synthGongDecaySpacedStrikes,
+  tearsInRainHeldSecond,
   terrorBassFlatTwoCadenceLine,
   thrillerSynthRiff,
   triangleLeadChromaticApproachLine,
