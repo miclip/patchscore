@@ -21,6 +21,10 @@ import { voxHumanaFourPartVoiceLeading } from './vox-humana-four-part-voice-lead
 import { brewTimeMajorSeventhHold } from './brew-time-major-seventh-hold'
 import { brokenToyMusicBoxStumble } from './broken-toy-music-box-stumble'
 import { cloudLevelSharedTopDrift } from './cloud-level-shared-top-drift'
+import { cluster5thParallelFifthsStack } from './cluster-5th-parallel-fifths-stack'
+import { harpXdRolledChord } from './harp-xd-rolled-chord'
+import { squareDroneOneNoteFourChords } from './square-drone-one-note-four-chords'
+import { trillSynthOrnamentBeforeTheBeat } from './trill-synth-ornament-before-the-beat'
 import { hypnoAcidSixteenthLoop } from './hypno-acid-sixteenth-loop'
 import { lushM7ParallelRootLine } from './lush-m7-parallel-root-line'
 import { metalfnkleadSyncopatedFunkLine } from './metalfnklead-syncopated-funk-line'
@@ -207,6 +211,7 @@ export const RIFFS: readonly Riff[] = [
   brokenToyMusicBoxStumble,
   celestialConvergingVoicesPad,
   cloudLevelSharedTopDrift,
+  cluster5thParallelFifthsStack,
   detroitFunkAeolianMachineLoop,
   duoOrgParallelThirdsComp,
   duoWaveModSimilarMotionPad,
@@ -214,6 +219,7 @@ export const RIFFS: readonly Riff[] = [
   funkOrganEarlySixteenthStabs,
   hamamatsuTinesBalladFigure,
   harpCChordArpeggiatedHold,
+  harpXdRolledChord,
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
@@ -235,6 +241,7 @@ export const RIFFS: readonly Riff[] = [
   sawteethDuoDancerCrossingStabs,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
+  squareDroneOneNoteFourChords,
   stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
   synthGongDecaySpacedStrikes,
@@ -242,6 +249,7 @@ export const RIFFS: readonly Riff[] = [
   terrorBassFlatTwoCadenceLine,
   thrillerSynthRiff,
   triangleLeadChromaticApproachLine,
+  trillSynthOrnamentBeforeTheBeat,
   triplet5thsStackedFifthsLadder,
   uberSubOctavePumpLine,
   voxHumanaFourPartVoiceLeading,

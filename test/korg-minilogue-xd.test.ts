@@ -1209,7 +1209,7 @@ describe('the factory programs, pp.61-64 (§2.6/#617, #618)', () => {
  * so a figure asking one of those for two notes at once is a value read off the wrong printed
  * scale. `FACTORY_PROGRAMS` carries the mode so this file can hold each figure to it.
  */
-describe('twelve programs carry a use and a figure, each under its printed mode (#618)', () => {
+describe('sixteen programs carry a use and a figure, each under its printed mode (#618)', () => {
   const uses = device.patchUses ?? []
   const modeOf = new Map(FACTORY_PROGRAMS.map(([name, , mode]) => [name, mode]))
   const authorOf = new Map(FACTORY_PROGRAMS.map(([name, , , author]) => [name, author]))
@@ -1225,7 +1225,7 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
     return peak
   }
 
-  it('describes exactly twelve, in the editorial order, each keyed to its printed Category', () => {
+  it('describes exactly sixteen, in the editorial order, each keyed to its printed Category', () => {
     expect(uses.map((u) => u.name)).toEqual([
       'MirroredBass',
       'Hypno Acid',
@@ -1233,10 +1233,14 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
       'Pressure',
       '#brew time',
       'Cloud Level',
+      'Cluster 5th',
       'Replicant xd',
       'Swollen Pad',
+      'Square Drone',
       'Petrichor',
       'Roadz Bell',
+      'Harp xd',
+      'Trill Synth',
       'Lush m7',
       'Broken Toy',
     ])
@@ -1246,7 +1250,7 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
 
   it('describes a subset of the fact, and no template (#617)', () => {
     const described = new Set(uses.map((u) => u.name))
-    expect(described.size).toBe(12)
+    expect(described.size).toBe(16)
     for (const p of device.factoryPatches ?? []) {
       if (p.bank === 'Template') expect(described.has(p.name), p.name).toBe(false)
     }
@@ -1278,7 +1282,7 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
     expect(session).toBeDefined()
     expect(session?.named).toBe(200)
     expect(session?.reading).toBe('manual')
-    expect(session?.entries).toHaveLength(12)
+    expect(session?.entries).toHaveLength(16)
     for (const entry of session?.entries ?? []) {
       expect(entry.figure, entry.patch.name).toBeDefined()
       expect(entry.figure?.riff.reference, entry.patch.name).toEqual({ kind: 'patch', name: entry.patch.name })
@@ -1287,11 +1291,11 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
       // An exact character on every one: no figure here asks for a sound the box substitutes.
       expect(entry.figure?.voice.substituted, entry.patch.name).toBe(false)
     }
-    // Twelve figures for twelve uses, and no thirteenth riff names one of this box's programs.
+    // Sixteen figures for sixteen uses, and no seventeenth riff names one of this box's programs.
     const shipped = new Set((device.factoryPatches ?? []).map((p) => p.name))
     const naming = RIFFS.filter((r) => r.reference.kind === 'patch' && shipped.has(r.reference.name))
-    expect(naming).toHaveLength(12)
-    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(12)
+    expect(naming).toHaveLength(16)
+    expect(new Set(naming.map((r) => r.reference.name)).size).toBe(16)
   })
 
   it('never overlaps a note on a CHORD or UNISON program, and holds at most four on the rest', () => {
@@ -1317,15 +1321,24 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
     const single = uses.filter((u) => ['CHORD', 'UNISON'].includes(modeOf.get(u.name) ?? ''))
     expect(single.map((u) => u.name)).toEqual(['MirroredBass', 'Hypno Acid', 'MetalFnkLead', 'Lush m7'])
     const arps = uses.filter((u) => modeOf.get(u.name) === 'ARP')
-    expect(arps.map((u) => u.name)).toEqual(['#brew time', 'Cloud Level'])
+    expect(arps.map((u) => u.name)).toEqual(['#brew time', 'Cloud Level', 'Cluster 5th'])
   })
 
-  it('writes the two arpeggiated programs as held voicings with no grid', () => {
-    for (const name of ['#brew time', 'Cloud Level']) {
+  it('writes the three arpeggiated programs as held voicings with no grid', () => {
+    // All three are ARP in `FACTORY_PROGRAMS`, and all three sit on `pad`, because this box
+    // authors no `arp` voice: an `arp` request would not resolve on the box that ships the patch.
+    // The widths differ and that is the figure's business, not the mode's — `Cluster 5th` holds
+    // three because a stack of two fifths is three notes.
+    for (const [name, width] of [
+      ['#brew time', 4],
+      ['Cloud Level', 4],
+      ['Cluster 5th', 3],
+    ] as const) {
       const riff = session?.entries.find((e) => e.patch.name === name)?.figure?.riff
       expect(riff?.request.role, name).toBe('pad')
       expect(riff?.pattern, name).toBeUndefined()
-      expect(peakOf(riff as Riff), name).toBe(4)
+      expect(riff?.arpeggiatedHold, name).toBe(true)
+      expect(peakOf(riff as Riff), name).toBe(width)
     }
   })
 
@@ -1359,10 +1372,10 @@ describe('twelve programs carry a use and a figure, each under its printed mode 
     }
   })
 
-  it('reads on the device page as twelve closed entries under the #617 lead', () => {
+  it('reads on the device page as sixteen closed entries under the #617 lead', () => {
     if (session === undefined) throw new Error('no session')
     expect(presetLead(session)).toBe(
-      'The manual names 200 factory patches, and 12 of them are here: what each is for, and the figure written for it where one exists.',
+      'The manual names 200 factory patches, and 16 of them are here: what each is for, and the figure written for it where one exists.',
     )
   })
 })

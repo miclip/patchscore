@@ -534,12 +534,14 @@ describe('the riff library (§5A)', () => {
    * empty. The last three of #664 empty the box's list: every one of its twenty declared patches
    * now carries a use, and seventeen of them a figure. The tenth record is the first `texture` on
    * that shelf: `/riffs` covered seven roles and the eight remaining riffable ones were all
-   * percussion, which cannot carry a figure at all.
+   * percussion, which cannot carry a figure at all. Four more went to the minilogue xd, which
+   * declares two hundred programs and described twelve: a drone, a stacked-fifths hold, a rolled
+   * chord and an ornament.
    */
-  it('has exactly fifty-four entries: ten records and forty-four factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664)', () => {
-    expect(RIFFS.length).toBe(54)
+  it('has exactly fifty-eight entries: ten records and forty-eight factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664)', () => {
+    expect(RIFFS.length).toBe(58)
     expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(10)
-    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(44)
+    expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(48)
   })
 
   it('every entry parses', () => {
@@ -634,7 +636,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is eight roles over fifty-four entries, eleven of them pads and two of them textures', () => {
+  it('is eight roles over fifty-eight entries, thirteen of them pads and three of them textures', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -666,13 +668,13 @@ describe('the riff library (§5A)', () => {
       acid: 2,
       arp: 5,
       'bass-mid': 7,
-      lead: 12,
-      pad: 11,
+      lead: 13,
+      pad: 13,
       stab: 12,
       sub: 3,
-      texture: 2,
+      texture: 3,
     })
-    expect(RIFFS).toHaveLength(54)
+    expect(RIFFS).toHaveLength(58)
     // And the eleven pads are the eleven held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
@@ -680,8 +682,10 @@ describe('the riff library (§5A)', () => {
       'brew-time-major-seventh-hold',
       'celestial-converging-voices-pad',
       'cloud-level-shared-top-drift',
+      'cluster-5th-parallel-fifths-stack',
       'duo-wave-mod-similar-motion-pad',
       'duotronic-moogtrons-pedal-and-line-pad',
+      'harp-xd-rolled-chord',
       'moog-55-strings-suspension-writing',
       'replicant-xd-inner-voice-pad',
       'soft-orchestra-slow-changes',
@@ -697,11 +701,14 @@ describe('the riff library (§5A)', () => {
       expect(r.request.reArticulatesHook === undefined, r.id).toBe(held)
       expect(r.pattern !== undefined, r.id).toBe(r.request.reArticulatesHook === true)
     }
-    // #645. Three, on the two boxes that declare an arpeggiator. The minilogue xd's pair were
-    // true before the field existed and went unsaid, because four voices never refused them.
+    // #645. Four, on the two boxes that declare an arpeggiator. The minilogue xd's first pair
+    // were true before the field existed and went unsaid, because four voices never refused
+    // them; the third is on the one program whose printed mode is ARP and whose figure holds
+    // three rather than four, which is the stack's width and not the mode's.
     expect(RIFFS.filter((r) => r.arpeggiatedHold).map((r) => r.id).sort()).toEqual([
       'brew-time-major-seventh-hold',
       'cloud-level-shared-top-drift',
+      'cluster-5th-parallel-fifths-stack',
       'harp-c-chord-arpeggiated-hold',
     ])
   })
@@ -1817,7 +1824,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(54)
+      expect(RIFFS).toHaveLength(58)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
