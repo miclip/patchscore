@@ -132,6 +132,44 @@ numbers are different questions and the tests count them separately.
   where some octave or transpose setting reaches. Riffs resolved onto a reader's rig and guide
   recipes are **not** checked, because a keyboard binds hands and not MIDI.
 
+**Count who authors the `(role, character)` pair before you choose it.** `pad / hard` and
+`pad / dirty` are each authored by exactly one device in the library, so a figure asking for
+either resolves on that box and nowhere else. A preset figure has somewhere to land by
+definition, which is what makes this easy to miss; `test/riff-session.test.ts` catches it, by
+resolving every entry against a four-box rig and comparing with `assign`.
+
+```bash
+./node_modules/.bin/tsx -e "
+import { DEVICES } from './lib/devices/registry.generated'
+const who = (role, ch) => DEVICES.filter((d) => (d.recipes ?? []).some((r) => r.role === role && r.character === ch))
+console.log(who('pad', 'hard').length, who('pad', 'soft').length)"
+```
+
+One is a warning, not a refusal: the pair may be exactly right and the figure may be worth it.
+But pick it deliberately, because the alternative is a reader whose rig can never play the page.
+
+---
+
+## 5a. The device manifest can decide the figure's shape
+
+A folder under `lib/devices/` holds facts that settle questions the author would otherwise answer
+by taste, and two of them changed a figure the day this section was written.
+
+- **A printed mode.** `korg-minilogue-xd`'s `FACTORY_PROGRAMS` carries each program's mode off
+  the manual: `CHORD`, `UNISON`, `POLY`, `ARP`. `Cluster 5th` is `ARP`, so a figure for it is an
+  **arpeggiated hold** and not a struck chord — the hand holds, the box sounds one note at a time,
+  and `request.polyphony` is 1 while the hook's peak is the width of the voicing. Writing it as a
+  stab would have been writing against the only documented fact anybody here has about the patch.
+  `test/korg-minilogue-xd.test.ts` holds every figure to its printed mode, including that a
+  `CHORD` or `UNISON` program never gets a figure with two notes at once.
+- **The roles a box's voice actually takes.** The same box authors no `arp` voice: its one voice
+  serves `pad`, `stab`, `lead`, `bass-mid`, `sub` and `texture`. An `arp` request therefore does
+  not resolve on the box that ships the patch, and `presetSession` throws. Both existing
+  arpeggiated holds there sit on `pad` for that reason.
+
+**Read the manifest before choosing the role, the character and the shape**, not after the schema
+refuses one. Neither of these is in `DESIGN.md`; both are in the folder.
+
 ---
 
 ## 6. Read the pitches, never work them out
@@ -157,6 +195,18 @@ put a different pitch under it from bar three, and called a rise a drop. `hypno-
 claimed two notes changed between its bars and three did. **No test catches either**: both files
 parsed, resolved and rendered. Prose and notes can disagree indefinitely, so the only defence is
 running the resolver and reading what comes back before writing the paragraph about it.
+
+**And print the interval, not only the note.** A figure whose subject is a *distance* — stacked
+fifths, a semitone cluster, parallel sixths, an octave — is not checked by reading note names,
+because the names look right while the arithmetic is wrong. `cluster-5th-parallel-fifths-stack`
+was authored as four stacks of two perfect fifths; two of the four came back `7,-5`, with the top
+note below the middle one, and the note names `F4 C5 G4` read perfectly well. Add the subtraction
+to the loop:
+
+```bash
+  const m = ns.map((x) => x.midi)
+  console.log(s, ns.map((x) => x.note).join(' '), 'intervals', m.slice(1).map((v, i) => v - m[i]).join(','))
+```
 
 ---
 
