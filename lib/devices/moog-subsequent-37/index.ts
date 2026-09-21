@@ -323,7 +323,7 @@ const SHIPPED_PATCHES: ShippedPatch[] = (
 const PATCH_USES: PatchUse[] = [
   // The low end: two subs, two basses, an acid line
   { name: 'LOW BASS', use: 'Four strikes a bar, and the last one is the next chord’s root, an eighth early' },
-  { name: 'UBER_SUB', use: 'Two pushed notes a bar and never the downbeat, which the kick keeps' },
+  { name: 'UBER_SUB', use: 'A climb to the chord’s fifth, and the fifth lands somewhere new each bar' },
   { name: 'Terror Bass', use: 'Three bars of bass line and a fourth on the flat two, falling back onto the beat' },
   { name: 'BRASH B@SS', use: 'Two hard strikes a bar and six ghosted, most of them the same note' },
   { name: '5TH IN LINE', use: 'Three bars on the fifth of each chord, and a root only in the fourth' },
