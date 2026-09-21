@@ -57,7 +57,7 @@ import { octaviaOctaveAnswerLead } from './octavia-octave-answer-lead'
 import { seventiesTvPiThemeSequencedMotif } from './70s-tv-pi-theme-sequenced-motif'
 import { synthGongDecaySpacedStrikes } from './synth-gong-decay-spaced-strikes'
 import { tearsInRainHeldSecond } from './tears-in-rain-held-second'
-import { uberSubOctavePumpLine } from './uber-sub-octave-pump-line'
+import { uberSubOffTheDownbeatLine } from './uber-sub-off-the-downbeat-line'
 
 /**
  * The riff registry (§5A). Hand-written and static, for the reason the template and inspiration
@@ -251,7 +251,7 @@ export const RIFFS: readonly Riff[] = [
   triangleLeadChromaticApproachLine,
   trillSynthOrnamentBeforeTheBeat,
   triplet5thsStackedFifthsLadder,
-  uberSubOctavePumpLine,
+  uberSubOffTheDownbeatLine,
   voxHumanaFourPartVoiceLeading,
 ]
 
