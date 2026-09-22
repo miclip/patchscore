@@ -141,6 +141,63 @@ describe('the glossary is a closed list of the words we chose', () => {
   })
 })
 
+describe('the way on to `/parts`, on a role and on nothing else', () => {
+  /**
+   * `/parts` left the nav because an explainer is wanted at the moment a reader meets the word,
+   * and this modal is that moment. The link is here rather than at the top of every page.
+   *
+   * **The restriction is the interesting half.** `/parts` is about the twenty-three parts a guide
+   * asks for by name; the other three vocabularies have no long-form page at all. Offering the
+   * same link on a `character` or a `mood axis` would cost a reader a tap to arrive at a page
+   * about something else, which is worse than offering nothing — so this asserts both directions
+   * rather than only that roles have it.
+   */
+  const html = (word: VocabularyWord): string =>
+    renderToStaticMarkup(
+      createElement(VocabularyModal, {
+        word,
+        definition: definitionOf(word),
+        kind: kindOf(word),
+        titleId: 'title-1',
+        dialogRef: NO_DIALOG,
+        closeRef: NO_BUTTON,
+        requestClose: () => {},
+      }),
+    )
+
+  it('links every role on to the page about parts', () => {
+    const roles = VOCABULARY_WORDS.filter((w) => kindOf(w) === 'role')
+    expect(roles).toHaveLength(ROLES.length)
+    for (const word of roles) {
+      expect(html(word), `${word} offers no way on to /parts`).toContain('href="/parts"')
+    }
+  })
+
+  it('offers it to no other kind, because there is no page for them to go to', () => {
+    const others = VOCABULARY_WORDS.filter((w) => kindOf(w) !== 'role')
+    // The three vocabularies with no long-form page: a character, a mood axis and a pattern slot
+    // are explained in this modal and nowhere longer.
+    expect(others).toHaveLength(CHARACTERS.length + MOOD_AXES.length + PATTERN_SLOTS.length)
+    for (const word of others) {
+      expect(html(word), `${word} is sent to a page about parts`).not.toContain('href="/parts"')
+      // And to nowhere else either: the card is a definition and a way out, not a link list.
+      expect(html(word)).not.toContain('<a ')
+    }
+  })
+
+  it('leaves the opening focus on Close rather than on the new link', () => {
+    // `showModal()` focuses the first focusable descendant, which for a role is now the link.
+    // `VocabularyTerm` sets focus by hand for exactly this reason, so the stop a keyboard reader
+    // lands on is a decision rather than an ordering accident — asserted here as the reason the
+    // hand-written focus call may not be deleted as redundant.
+    const source = readFileSync(
+      new URL('../components/vocabulary-term.tsx', import.meta.url),
+      'utf8',
+    )
+    expect(source).toContain('closeRef.current?.focus({ preventScroll: true })')
+  })
+})
+
 describe('the modal a term opens', () => {
   it('is a real dialog element, labelled by the word it defines', () => {
     const tree = modal() as ReactElement

@@ -19,6 +19,13 @@ import Link from 'next/link'
  * argument away from being one), and two unlabelled `<nav>`s are indistinguishable in a landmark
  * list. Named now, while there is one, rather than when it starts to matter.
  *
+ * **What it names is now one kind of thing.** It carried eight entries of three kinds as peers:
+ * catalogues of what the engine knows, libraries to play from, and explainers for somebody who
+ * does not have the vocabulary yet. The explainers went to the footer and to the word itself,
+ * where a reader meets them at the moment they need one rather than from a top-level link;
+ * Preferences went to the footer and to the studio's own masthead, which is the page it changes.
+ * What is left is six links to the places this site holds things, and the mark is the way home.
+ *
  * **Not marked "you are here".** `aria-current` needs the pathname, which needs `usePathname` and
  * therefore a client boundary in the layout — on every route, including the sixteen prerendered
  * catalogue pages that currently ship no client JavaScript at all. That is a real cost for a
@@ -34,7 +41,9 @@ import Link from 'next/link'
  * this component exists to stop.
  */
 export const NAV_LINKS: readonly { href: string; label: string }[] = [
-  { href: '/', label: 'Studio' },
+  // §8. The app, at its own address since `/` became the page that says what this is. First
+  // because it is the one entry here that makes something rather than listing something.
+  { href: '/studio', label: 'Studio' },
   { href: '/devices', label: 'Devices' },
   { href: '/directions', label: 'Directions' },
   // §5A/#503. A peer of the two catalogue halves rather than a page under either, because it is
@@ -45,38 +54,41 @@ export const NAV_LINKS: readonly { href: string; label: string }[] = [
   // is one figure, and a sample is one sound. Beside Riffs because it is the same shape of page —
   // one authored thing, resolved against the rig you own.
   { href: '/samples', label: 'Samples' },
-  // #174. Beside the two catalogue halves because it is the third thing to read rather than a
-  // setting: it explains the sounds a guide asks for by name, and a reader who needs it needs it
-  // before they start, not while they are standing at the machine (§8).
-  { href: '/drum-machines', label: 'Drum machines' },
-  // Beside the drum-machines page because it is the other half of the same gap: that one says what
-  // an 808 kick sounds like, this one says what a `riser` does. Both are read before you start
-  // rather than at the machine.
-  { href: '/parts', label: 'Parts' },
-  // #138. Linked here because the footer alone did not reach it: on the studio page the footer
-  // sits below the whole generated guide, some twenty-five screens down, so a preference that
-  // changes how the studio looks was unreachable from the studio.
-  { href: '/preferences', label: 'Preferences' },
+  // §2.6/§3.7. The fifth, and the largest: the factory patches a box ships, with a figure written
+  // for each. It had no entry at any level while it grew past `/riffs` and `/samples` combined,
+  // because it was addressed as a sub-page of a device. Last because it is the one a reader
+  // reaches for having decided which box they are sitting at.
+  { href: '/explore', label: 'Explore' },
 ]
 
 export function SiteNav() {
   return (
     <nav className="site-nav" aria-label="Site">
       {/*
-        The mark, and deliberately **not another link**. `NAV_LINKS` above is what the tests
-        assert against, so a hand-written anchor beside it is the drift this component exists to
-        prevent — and the list already carries Studio → `/`, so a linked logo would be a second
-        route to the same page for a reader tabbing through.
+        The mark, and **the way home**, which it could not be until `/` was a page.
 
-        `alt=""` for the same reason: every page states its own name in an `h1`, so announcing it
-        again here is noise to anyone who cannot see it. It is decoration, and says so.
+        This used to be decoration and argued for being decoration: `NAV_LINKS` carried
+        Studio → `/`, so a linked logo would have been a second route to the same page for a
+        reader tabbing through. The studio is at `/studio` now and `/` is the orientation page,
+        so the second route is gone and what is left is the convention every site has — the mark
+        goes home — with a destination that no entry in the list names.
+
+        It is a link and therefore a target: 44px both ways (#21), which is larger than the 28px
+        drawing inside it and deliberately so. Hit target and visual size are decoupled here for
+        the reason they are on a knob.
+
+        Labelled rather than `alt=""`, because it is no longer decoration. The image stays
+        `alt=""` and the label sits on the link, so a screen reader announces one thing — "Home,
+        link" — rather than an image name and a destination.
 
         `/icon.png` rather than a second copy of the artwork: Next serves `app/icon.png` at that
         route already, and the tiled drawing is the one built to survive being small — the full
         mark's stave dissolves below about 64px, which is most of the sizes a header uses.
       */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="site-nav-mark" src="/icon.png" width={28} height={28} alt="" />
+      <Link className="site-nav-home" href="/" aria-label="Home">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img className="site-nav-mark" src="/icon.png" width={28} height={28} alt="" />
+      </Link>
       {/*
         A list, so a screen reader is told how many ways out there are before reading the first
         one. The count is small enough that this reads as pedantry and large enough that having

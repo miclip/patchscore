@@ -21,7 +21,7 @@ import {
 
 /**
  * The root, both catalogue indexes, one entry per device, one per direction (#84), the Explore
- * index and everything under it, and #174's drum-machine reference. All of them
+ * index and everything under it, and both reference pages (#174). All of them
  * are derived, from the registry and from `lib/templates`, so authoring a manifest or a template
  * adds its page here without an edit (invariant 2).
  *
@@ -175,6 +175,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
      */
     {
       url: `${SITE_ORIGIN}/drum-machines`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+    /*
+     * Its companion, listed on the same terms and absent until now for no reason anyone recorded.
+     * It passed the test stated above from the day it was written — there is a page at it whose
+     * canonical is itself — and it was reachable from the nav, so nothing ever went looking for
+     * it here. It left the nav, which is what made the omission matter: a page reachable from a
+     * footer and a modal and named in no index is a page only a reader who already knows about it
+     * can find.
+     *
+     * `/preferences` stays out, and the distinction is the one this file states. It is a control
+     * panel for how the app draws itself, not authored content — there is nothing on it to read.
+     */
+    {
+      url: `${SITE_ORIGIN}/parts`,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     },

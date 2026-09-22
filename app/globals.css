@@ -145,8 +145,27 @@ body {
  * and a logo squeezed to 19px is worse than a link set on two lines. No 44px floor here — it is
  * not a target, which is the point of it not being a link.
  */
-.site-nav-mark {
+/*
+ * The mark is the way home now that `/` is a page, so it is a link and a link is a 44px target
+ * (#21) — larger than the 28px drawing inside it, the way a knob's target is larger than the
+ * knob. `flex-shrink: 0` is on the link, because the link is what the nav's flex row lays out.
+ */
+.site-nav-home {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 7px;
+}
+
+.site-nav-home:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.site-nav-mark {
   width: 28px;
   height: 28px;
   border-radius: 7px;
@@ -1333,7 +1352,7 @@ body {
 /*
  * §2.6/#593. **The factory patches a box ships: a name, a line, and where the library reaches
  * it.** Two surfaces, the kit's shape one section over: a folded panel on the device page and
- * the same list laid open at `/devices/<id>/presets`. Everything here obeys §21's rules for a
+ * the same list laid open at `/explore/<id>`. Everything here obeys §21's rules for a
  * phone, since a preset list is read standing at the box: one column, wrap rather than shrink,
  * nothing that pushes the body sideways.
  */
@@ -4876,6 +4895,13 @@ html {
   margin-top: 12px;
 }
 
+/*
+ * Two elements wear this: the Copy link button, and the Preferences anchor beside it (#138).
+ * Both are things you do to this page rather than places to go, so they are one control pair and
+ * look like one. What the anchor needs on top of the button's own box is the three defaults a
+ * `<button>` has and an `<a>` does not — no underline, centred content, and a 44px target, since
+ * unlike the button it is not already one.
+ */
 .link-button {
   font-family: var(--font-label);
   font-size: 0.8rem;
@@ -4887,6 +4913,25 @@ html {
   border-radius: var(--radius);
   padding: 6px 12px;
   cursor: pointer;
+}
+
+a.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+/*
+ * The studio's pair, matched. Copy link is a `<button>` and Preferences an `<a>`, and left to
+ * their own boxes the anchor stood 44px tall beside a 33px button — two controls that do the
+ * same kind of thing, drawn as if they did not. Both get the target here rather than on
+ * `.link-button`, which four Download and Print buttons elsewhere also wear: those are under 44px
+ * too and that is worth fixing, but it is a change to the guide and the kit page rather than to
+ * this pair.
+ */
+.masthead-actions .link-button {
+  min-height: 44px;
 }
 
 .link-button:hover {
@@ -6078,6 +6123,29 @@ html {
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink);
+}
+
+/*
+ * The way on to `/parts`, on a role's definition only. Quieter than the definition above it and
+ * louder than nothing: this is the second thing in the card to read, never the first. Its own
+ * 44px target, because it sits directly above one and two stacked taps a thumb cannot tell apart
+ * is the failure #21 is about.
+ */
+.vocab-more {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.vocab-more a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-dim);
+}
+
+.vocab-more a:hover {
+  color: var(--silkscreen);
 }
 
 .vocab-close {

@@ -533,7 +533,10 @@ describe('what a preset figure page does not have', () => {
  * above and in `test/riff-page.test.ts`, so this closes the loop from the page side.
  */
 describe('link integrity across the moved surfaces (#598)', () => {
-  const NOT_IN_SITEMAP = new Set(['/preferences', '/parts'])
+  // `/preferences` alone now: `/parts` joined the sitemap when it left the nav, which is where
+  // the omission started to matter. Keeping it listed here would let a future regression that
+  // drops it from the sitemap pass this test silently.
+  const NOT_IN_SITEMAP = new Set(['/preferences'])
 
   it('every internal link on every affected surface is a page that exists', async () => {
     const known = new Set(sitemap().map((e) => e.url.slice(SITE_ORIGIN.length) || '/'))

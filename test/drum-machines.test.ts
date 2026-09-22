@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 
 import Page, { metadata } from '../app/drum-machines/page'
+import { Footer } from '../components/footer'
 import { NAV_LINKS } from '../components/site-nav'
 import { DEVICES } from '../lib/devices/registry.generated'
 
@@ -76,21 +77,30 @@ describe('#174 the page a crawler and a reader both get', () => {
     expect(String(metadata.description)).toContain('808')
   })
 
-  it('is in the nav, below the catalogue and beside its companion', () => {
-    // `/parts` now sits between this page and preferences. The two are halves of one gap — this
-    // one says what an 808 kick sounds like, that one says what a `riser` does — so they sit
-    // together rather than either being pushed away from the catalogue.
-    //
-    // §5A/#503 put `/riffs` above them both, as the third *catalogue* half rather than a third
-    // reference: a riff is a thing this site holds, where these two explain the words it uses.
-    // What this test is about is unchanged — the two references stay adjacent, and stay below the
-    // catalogue — so the claim is written against whatever the catalogue ends with, which is
-    // `/samples` since §3.8/#520.
+  it('is in the footer beside its companion, and out of the nav', () => {
+    /*
+     * It was a top-level nav entry, and the two references sat together there for the reason they
+     * sit together here: this one says what an 808 kick sounds like, `/parts` says what a `riser`
+     * does, and a reader who needs one often needs the other.
+     *
+     * **What changed is where they are, not that they are adjacent.** The nav mixed three kinds
+     * of thing as peers — catalogues of what the engine knows, libraries to play from, and
+     * explainers for somebody who does not have the vocabulary yet. An explainer is needed at the
+     * moment a reader meets the word, which is a modal on the word itself (#457) rather than a
+     * link at the top of every page; the footer is the second way, for the reader who wants to
+     * sit and read one. So: adjacent in the footer, and named by no nav entry at all.
+     */
     const hrefs = NAV_LINKS.map((l) => l.href)
-    expect(hrefs).toContain('/drum-machines')
-    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/samples') + 1)
-    expect(hrefs.indexOf('/drum-machines')).toBe(hrefs.indexOf('/parts') - 1)
-    expect(hrefs.indexOf('/parts')).toBe(hrefs.indexOf('/preferences') - 1)
+    expect(hrefs).not.toContain('/drum-machines')
+    expect(hrefs).not.toContain('/parts')
+
+    const footer = renderToStaticMarkup(createElement(Footer, { permalink: undefined, devices: [] }))
+    const links = [...footer.matchAll(/href="([^"]+)"/g)].map((m) => m[1])
+    expect(links).toContain('/drum-machines')
+    expect(links.indexOf('/drum-machines')).toBe(links.indexOf('/parts') - 1)
+    // And on this page's own footer, which is the shared one: a reference page reaches its
+    // companion without the reader going back to the top.
+    expect(MARKUP).toContain('href="/parts"')
   })
 
   it('renders a masthead and the shared footer, like every other authored page', () => {

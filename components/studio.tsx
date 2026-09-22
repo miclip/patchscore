@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type {
   DeviceId,
@@ -406,6 +407,23 @@ export function Studio({ initialInputs }: StudioProps) {
           <button type="button" className="link-button" onClick={onCopy}>
             Copy link
           </button>
+          {/*
+            #138, answered where it was actually asked. Preferences was put in the site nav
+            because the footer could not reach it: on this page the footer sits below the whole
+            generated guide, some twenty-five screens down, so a setting that changes how the
+            studio draws itself was unreachable from the studio. That is a fact about this page,
+            not about every page, and the repair belongs here rather than in chrome every route
+            carries.
+
+            Styled as the Copy link control beside it and deliberately not as a nav link: both are
+            things you do to this page rather than places to go. It is the one anchor allowed
+            inside `.masthead-actions`, and `test/site-nav.test.ts` says so by name — what that
+            guard forbids is a page growing its own *link set*, which is the failure #112 exists
+            to stop, and one link to the page that restyles this one is not one.
+          */}
+          <Link className="link-button" href="/preferences">
+            Preferences
+          </Link>
           {copied === undefined ? null : (
             <span className={copied.ok ? 'copy-ok' : 'copy-failed'} role="status">
               {copied.message}

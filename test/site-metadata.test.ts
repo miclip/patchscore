@@ -82,12 +82,14 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
      * list in the repo to loop over for an index itself, only for its entries.
      *
      * §8 makes it eight: `/studio` is a page now rather than the root, listed by the same test.
+     * And nine: `/parts` passed the same test from the day it was written and was simply never
+     * added, which went unnoticed while the nav reached it. It left the nav, so it is here.
      * What is still absent is every permalinked *guide*, which is #44's rule and the thing this
      * count must never start growing with — if this number ever moves by more than one at a time,
      * that is what has happened.
      */
     expect(entries).toHaveLength(
-      8 +
+      9 +
         DEVICES.length +
         kits.length +
         presets.length +
@@ -124,6 +126,9 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
       `${SITE_ORIGIN}/samples`,
       ...SAMPLE_TARGETS.map((t) => `${SITE_ORIGIN}/samples/${t.id}`),
       `${SITE_ORIGIN}/drum-machines`,
+      // Its companion, on the same terms. `/preferences` is still absent and still should be:
+      // it is a control panel for how the app draws itself, with nothing on it to read.
+      `${SITE_ORIGIN}/parts`,
     ])
 
     for (const entry of entries) {
