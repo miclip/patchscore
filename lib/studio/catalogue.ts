@@ -153,13 +153,29 @@ export function kitHref(device: Device): string {
 }
 
 /**
- * §2.6/#593. `/devices/moog-muse/presets` — the factory patches a box ships, laid open, under
- * the device they belong to. One place, so the device page's link, the sitemap and the page's
- * own canonical cannot disagree, for `kitHref`'s reason: a presets page exists only where a
- * device page does.
+ * §2.6/#593. **The root of the Explore tree**, named once because three places spell it: the two
+ * helpers below, the index page at it, and the sitemap. A fourth spelling is how an index comes
+ * to list an address no page answers.
+ */
+export const EXPLORE_PATH = '/explore'
+
+/**
+ * §2.6/#593. `/explore/moog-muse` — the factory patches a box ships, laid open, at their own
+ * address. One place, so the device page's link, the sitemap and the page's own canonical cannot
+ * disagree, for `kitHref`'s reason.
+ *
+ * **Under `/explore` rather than under the box, since the move.** It sat at
+ * `/devices/<id>/presets` while it was a view of a device page, and what it had grown into was
+ * the largest authored surface on the site — 48 figures across three boxes, more than `/riffs`
+ * and `/samples` together, addressed as a sub-page of something else. The box is still named in
+ * the path, so nothing about what the page claims has moved with it: this is which tree owns the
+ * page, and the old addresses are two dynamic rules in `next.config.ts`.
+ *
+ * Not derived from `deviceHref` any more, and that is the change: a preset session no longer
+ * exists only where a device page does, it exists where a folder declares its patches.
  */
 export function presetsHref(device: Device): string {
-  return `${devicePagePath(device.id)}/presets`
+  return `${EXPLORE_PATH}/${device.id}`
 }
 
 /**
@@ -174,9 +190,13 @@ export function presetSlug(patch: ShippedPatch): string {
 }
 
 /**
- * §3.7/#598. `/devices/moog-muse/presets/muse-runner` — one preset figure, on the box that
- * ships the patch, under the index that lists it. One place, for `presetsHref`'s reason: the
- * index card, the sitemap and the page's own canonical cannot disagree.
+ * §3.7/#598. `/explore/moog-muse/muse-runner` — one preset figure, under the box's index that
+ * lists it. One place, for `presetsHref`'s reason: the index card, the sitemap and the page's
+ * own canonical cannot disagree.
+ *
+ * **Still addressed by its box**, which is what #598 asked for and what the move left alone. The
+ * figure carries one box's settings and has no rig picker because the box is known, and the box
+ * is a path segment here exactly as it was at the old address.
  */
 export function presetFigureHref(device: Device, patch: ShippedPatch): string {
   return `${presetsHref(device)}/${presetSlug(patch)}`

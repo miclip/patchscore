@@ -306,7 +306,7 @@ export {
 
 /**
  * §5A.7/#598. **The entries `/riffs` lists: the nine named for a record.** A figure named for a
- * factory patch surfaces on the box that ships the patch, at `/devices/<id>/presets/<patch>`,
+ * factory patch surfaces on the box that ships the patch, at `/explore/<id>/<patch>`,
  * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
  * catalogue, its static routes, the search and the sitemap cannot disagree about which
  * thirty-seven left. Not a second content type: the thirty-seven stay in this folder, under the

@@ -13,7 +13,7 @@ import DirectionPageRoute from '../app/directions/[id]/page'
 import DrumMachinesPage from '../app/drum-machines/page'
 import RiffIndexPage from '../app/riffs/page'
 import RiffRoute from '../app/riffs/[id]/page'
-import PresetFigureRoute from '../app/devices/[id]/presets/[patch]/page'
+import PresetFigureRoute from '../app/explore/[id]/[patch]/page'
 import Page from '../app/page'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RECORD_RIFFS } from '../lib/riffs'
@@ -76,7 +76,7 @@ async function routes(): Promise<{ name: string; markup: string }[]> {
     },
     // §3.7/#598. A preset figure page, in the route set for the reason the riff page is.
     {
-      name: '/devices/moog-muse/presets/muse-runner',
+      name: '/explore/moog-muse/muse-runner',
       markup: await shell(
         await PresetFigureRoute({
           params: Promise.resolve({ id: 'moog-muse', patch: 'muse-runner' }),

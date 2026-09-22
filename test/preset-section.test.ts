@@ -3,13 +3,13 @@ import { createElement } from 'react'
 import { describe, expect, it } from 'vitest'
 import { renderToStaticMarkup } from 'react-dom/server'
 import DevicePageRoute from '../app/devices/[id]/page'
-import PresetsPageRoute from '../app/devices/[id]/presets/page'
+import PresetsPageRoute from '../app/explore/[id]/page'
 import { PresetSection } from '../components/catalogue/preset-section'
 import { FACTORY_PATCHES_FACT } from '../lib/core/index'
 import type { Device } from '../lib/core/index'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RIFFS } from '../lib/riffs'
-import { presetFigureHref, riffHref } from '../lib/studio/catalogue'
+import { presetFigureHref, presetsHref, riffHref } from '../lib/studio/catalogue'
 import { presetSession } from '../lib/studio/preset-session'
 import { PRESET_HEADING, presetLead } from '../lib/studio/preset-text'
 import { device as fixtureDevice, recipe } from './fixtures'
@@ -74,7 +74,17 @@ describe('the Explore your device panel is on the three boxes with a session and
       const markup = await markupFor(device.id)
       expect(markup, device.id).not.toContain('preset-section')
       expect(markup, device.id).not.toContain(`>${PRESET_HEADING}<`)
-      expect(markup, device.id).not.toContain('/presets"')
+      // The address the panel's link would use, which moved to `/explore/<id>` (§2.6/§3.7).
+      // Asserted against the live helper rather than a literal, so this cannot go on passing by
+      // naming a shape nothing renders any more.
+      expect(markup, device.id).not.toContain(`href="${presetsHref(device)}"`)
+      /*
+       * And no link into the Explore tree at all, not merely this box's. Anchored on `href="/`
+       * rather than matched as a bare substring: a maker's own page is an external link and one
+       * of them is `elektron.se/explore/analog-rytm-mkii`, which a substring test reads as this
+       * site's section and fails on.
+       */
+      expect(markup, device.id).not.toContain('href="/explore/')
     }
   })
 

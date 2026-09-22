@@ -19,11 +19,17 @@ import { presetDescription, presetLead, presetTitle } from '@/lib/studio/preset-
  * through the patches: every entry open, in the folder's order, on one address they can send to
  * a phone.
  *
+ * **`/explore/<id>`, out of the devices tree.** It was `/devices/<id>/presets` while it was a
+ * view of a device page, and what it had grown into was the largest authored surface here,
+ * addressed as somebody else's sub-page and reachable only from a folded panel. The box is still
+ * the path segment, so every claim this page makes is the claim it made; what changed is which
+ * tree owns it, and the old address is one dynamic rule in `next.config.ts`.
+ *
  * **Prerendered only where there is a session**, on the kit page's pattern (§3.7/#478).
- * `generateStaticParams` enumerates the boxes `presetSession` answers for — one today — and
- * `dynamicParams` is off, so `/devices/elektron-digitakt/presets` is a 404 rather than a page
- * with a claim in its title and nothing under it, and a device folder that declares its patches
- * gets this page with no UI edit (invariant 2).
+ * `generateStaticParams` enumerates the boxes `presetSession` answers for and `dynamicParams`
+ * is off, so `/explore/elektron-digitakt` is a 404 rather than a page with a claim in its title
+ * and nothing under it, and a device folder that declares its patches gets this page with no UI
+ * edit (invariant 2).
  *
  * **A server component throughout, and no export.** The kit page carries two export buttons
  * behind one client boundary because a kit is a build document somebody takes to the machine:

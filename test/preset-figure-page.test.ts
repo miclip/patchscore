@@ -8,8 +8,8 @@ import PresetFigureRoute, {
   dynamicParams,
   generateMetadata,
   generateStaticParams,
-} from '../app/devices/[id]/presets/[patch]/page'
-import PresetsRoute from '../app/devices/[id]/presets/page'
+} from '../app/explore/[id]/[patch]/page'
+import PresetsRoute from '../app/explore/[id]/page'
 import RiffRoute from '../app/riffs/[id]/page'
 import RiffIndexPage from '../app/riffs/page'
 import sitemap from '../app/sitemap'
@@ -179,13 +179,19 @@ describe('the figure page exists exactly where a figure does, and nowhere it use
   })
 
   it('has one address, which the index, the canonical and the sitemap all use', async () => {
+    /*
+     * §2.6/§3.7. `/explore/<id>/<patch>` since the move out of the devices tree. The box is a
+     * path segment here exactly as it was at the old address, which is what #598 asked for and
+     * what the move left alone: this page knows which box it is, and that is why it needs no rig
+     * picker. What changed is which tree owns it.
+     */
     const urls = sitemap().map((entry) => entry.url)
     const params = new Set(
-      generateStaticParams().map((p) => `${SITE_ORIGIN}/devices/${p.id}/presets/${p.patch}`),
+      generateStaticParams().map((p) => `${SITE_ORIGIN}/explore/${p.id}/${p.patch}`),
     )
     for (const { entry, figure } of FIGURED) {
       const href = presetFigureHref(MUSE, entry.patch)
-      expect(href).toBe(`/devices/moog-muse/presets/${entry.slug}`)
+      expect(href).toBe(`/explore/moog-muse/${entry.slug}`)
       expect(urls, entry.patch.name).toContain(`${SITE_ORIGIN}${href}`)
       const meta = await generateMetadata({
         params: Promise.resolve({ id: 'moog-muse', patch: entry.slug }),
@@ -193,10 +199,13 @@ describe('the figure page exists exactly where a figure does, and nowhere it use
       expect(meta.alternates?.canonical, entry.patch.name).toBe(href)
       expect(meta.title, entry.patch.name).toBe(`${figure.riff.name} on the Moog Muse — Patchscore`)
     }
-    // And the sitemap names nothing under `/presets/` this route would 404 on.
-    for (const url of urls.filter((u) => /\/presets\/.+/.test(u))) {
+    // And the sitemap names no figure address this route would 404 on.
+    for (const url of urls.filter((u) => /\/explore\/[^/]+\/.+/.test(u))) {
       expect(params.has(url), url).toBe(true)
     }
+    // Nothing is left at the old shape either: the redirects in `next.config.ts` carry those
+    // addresses, and a sitemap that still named one would point a crawler at a 308.
+    expect(urls.filter((u) => u.includes('/presets'))).toEqual([])
     // Nor any `/riffs/` address for one of the twelve.
     for (const riff of RIFFS.filter((r) => r.reference.kind === 'patch')) {
       expect(urls, riff.id).not.toContain(`${SITE_ORIGIN}/riffs/${riff.id}`)
@@ -437,7 +446,7 @@ describe('what a preset figure page does not have', () => {
    */
   it('reaches neither the picker nor the studio from the route', () => {
     const server = [
-      new URL('../app/devices/[id]/presets/[patch]/page.tsx', import.meta.url),
+      new URL('../app/explore/[id]/[patch]/page.tsx', import.meta.url),
       new URL('../components/catalogue/preset-figure.tsx', import.meta.url),
     ]
     const island = new URL('../components/catalogue/preset-voice.tsx', import.meta.url)
@@ -529,9 +538,9 @@ describe('link integrity across the moved surfaces (#598)', () => {
   it('every internal link on every affected surface is a page that exists', async () => {
     const known = new Set(sitemap().map((e) => e.url.slice(SITE_ORIGIN.length) || '/'))
     const surfaces: [string, string][] = [
-      ...[...PAGES].map(([slug, markup]): [string, string] => [`/presets/${slug}`, markup]),
+      ...[...PAGES].map(([slug, markup]): [string, string] => [`/explore/moog-muse/${slug}`, markup]),
       [
-        '/devices/moog-muse/presets',
+        '/explore/moog-muse',
         renderToStaticMarkup(await PresetsRoute({ params: Promise.resolve({ id: 'moog-muse' }) })),
       ],
       [

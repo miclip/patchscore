@@ -18,8 +18,8 @@ import { riffLength, riffTempo } from '@/lib/studio/riff-text'
 /**
  * §3.7/#598. **One preset figure, at its own address under the box that ships the patch.**
  *
- * `/devices/moog-muse/presets/muse-runner`: the figure written for *Muse Runner*, with the
- * Muse's own settings for it, and no rig picker anywhere on it. A riff page asks what the reader
+ * `/explore/moog-muse/muse-runner`: the figure written for *Muse Runner*, with the Muse's own
+ * settings for it, and no rig picker anywhere on it. A riff page asks what the reader
  * owns because a riff does not know what box it will land on; a preset figure does, and the box
  * is the address. So the page is what a riff page would be with the one box ticked and the
  * picker gone, and every sentence the picker's absence makes redundant is gone with it (the
@@ -28,7 +28,9 @@ import { riffLength, riffTempo } from '@/lib/studio/riff-text'
  * **Prerendered only where a figure is**, on the presets index's pattern (§3.7/#478, #593).
  * `generateStaticParams` walks every session and every entry with a figure, and
  * `dynamicParams` is off, so a patch nobody wrote a figure for and a box that declares no
- * patches are both 404s rather than a page with a title and nothing under it. A device folder
+ * patches are both 404s rather than a page with a title and nothing under it. The box stays a
+ * path segment under `/explore`, exactly as it was under `/devices`: this page knows which box
+ * it is, which is the whole reason it needs no picker. A device folder
  * that declares its patches, and a riff whose `reference` names one, get this page with no UI
  * edit (invariant 2).
  *

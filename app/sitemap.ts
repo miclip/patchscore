@@ -8,6 +8,7 @@ import { TEMPLATES } from '@/lib/templates'
 import { kitSession } from '@/lib/studio/kit-session'
 import { presetSession } from '@/lib/studio/preset-session'
 import {
+  EXPLORE_PATH,
   deviceHref,
   kitHref,
   presetFigureHref,
@@ -18,8 +19,8 @@ import {
 } from '@/lib/studio/catalogue'
 
 /**
- * The root, both catalogue indexes, one entry per device, one per direction (#84), and #174's
- * drum-machine reference. All of them
+ * The root, both catalogue indexes, one entry per device, one per direction (#84), the Explore
+ * index and everything under it, and #174's drum-machine reference. All of them
  * are derived, from the registry and from `lib/templates`, so authoring a manifest or a template
  * adds its page here without an edit (invariant 2).
  *
@@ -68,11 +69,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
           ],
     ),
     /*
-     * §2.6/#593. One per box that declares its factory patches and what each is for, by the
-     * same test: there is a page at it whose canonical is itself. `presetSession` is what
-     * `generateStaticParams` enumerates too, so a folder that declares both appears in both
-     * without an edit, and one that does not is absent from both.
+     * §2.6/#593/§3.7. **Explore, as its own block rather than inside the devices one.** The
+     * entries below were nested under `/devices/<id>` until the move, which is where they sat in
+     * this file too; they are one section now, and this file says so in the order it lists them.
+     *
+     * The index first, then one per box that declares its factory patches and what each is for,
+     * by the same test everything here passes: there is a page at it whose canonical is itself.
+     * `presetSession` is what both routes' `generateStaticParams` enumerate, so a folder that
+     * declares its patches appears in all three without an edit, and one that does not is absent
+     * from all three.
      */
+    {
+      url: `${SITE_ORIGIN}${EXPLORE_PATH}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
     ...DEVICES.flatMap((device) => {
       const session = presetSession(device)
       if (session === undefined) return []
