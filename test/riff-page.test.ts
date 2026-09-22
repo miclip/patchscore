@@ -785,6 +785,75 @@ describe('the device picker on a riff page', () => {
   })
 })
 
+describe('the two-track body: prose beside the material above 1180px', () => {
+  /**
+   * The void this closes was measured, not argued. On a production build at a 2000px viewport the
+   * shell is 1180 and the technique is 582x1137 inside it, so 566x1137 of that panel's own row is
+   * empty — and *The notes*, 1,200px further down, is a second 566-wide panel alone on its row.
+   * The chords, the rules and the notes are what a reader cross-refers to while reading the
+   * technique, and they were two screens under it.
+   *
+   * **What CSS can carry is asserted here; the rendering is not.** The numbers in the stylesheet's
+   * own comment came from a browser, and so did the check that 390px is byte-identical before and
+   * after. This file holds the structure that makes those numbers reachable.
+   */
+  it('wraps the technique and the figure together, and nothing else', () => {
+    /*
+     * Asserted by position rather than by slicing the markup: the rig's wrapper is
+     * `class="columns riff-rig"`, so a slice that looked for `<div class="riff-rig"` found
+     * nothing and silently checked an empty string. Positions cannot do that — every one of
+     * these has to be found for the ordering to hold at all.
+     */
+    const at = (needle: string): number => {
+      const i = BLUE.indexOf(needle)
+      expect(i, `${needle} is not on the page`).toBeGreaterThan(-1)
+      return i
+    }
+    const bodyAt = at('<div class="riff-body">')
+    const techAt = at('riff-technique')
+    const figureAt = at('<div class="columns">')
+    const rigAt = at('riff-rig')
+
+    // Inside the wrapper, in source order: the prose, then the figure's material.
+    expect(bodyAt).toBeLessThan(techAt)
+    expect(techAt).toBeLessThan(figureAt)
+    // And the rig after both — outside the wrapper and full width, because a picker is what you
+    // use after reading the figure rather than material you read alongside it. The preset figure
+    // page keeps its voice block outside for the same reason.
+    expect(figureAt).toBeLessThan(rigAt)
+    expect(at('rig-picker')).toBeGreaterThan(rigAt)
+  })
+
+  it('pairs the two tracks only from 1180px, and only on screen', () => {
+    const at = CSS.indexOf('@media screen and (min-width: 1180px)')
+    expect(at, 'the two-track rule is missing').toBeGreaterThan(-1)
+    const block = CSS.slice(at, CSS.indexOf('\n}', CSS.indexOf('.riff-body > .columns', at)))
+    expect(block).toContain('.riff-body {')
+    expect(block).toContain('display: grid')
+    /*
+     * The prose track is the #611 measure and is written as that calculation rather than as the
+     * 582px it computes to, so the two cannot drift: if the measure moves, the track moves with
+     * it. The material track takes what is left.
+     */
+    expect(block).toContain('grid-template-columns: minmax(0, calc(66ch + 32px)) minmax(0, 1fr)')
+    expect(rule('.riff-technique')).toContain('max-width: calc(66ch + 32px)')
+    // `.columns` gives up its own pairing inside the material track: two tracks of 267px is not
+    // a chord table. Its panels stack at the width they were drawn for.
+    expect(block).toContain('.riff-body > .columns')
+    expect(block).toContain('grid-template-columns: minmax(0, 1fr)')
+    // `screen`, so a printed figure is the single column it has always been.
+    expect(at).toBe(CSS.indexOf('@media screen and (min-width: 1180px)'))
+    expect(CSS).not.toContain('@media (min-width: 1180px)')
+  })
+
+  it('is a plain block below the breakpoint, so the phone layout is the one it always was', () => {
+    // No unconditional `.riff-body` rule: below 1180 the wrapper contributes nothing, the
+    // children keep their own margins, and the page is byte-for-byte what it was at 390px.
+    const unconditional = CSS.indexOf('\n.riff-body {')
+    expect(unconditional, '`.riff-body` must only be styled inside the media query').toBe(-1)
+  })
+})
+
 describe('the riff page at 1280px and 390px', () => {
   /**
    * #21. These are the claims CSS can carry. **They are not a rendering**: nothing here proves

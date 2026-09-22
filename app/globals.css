@@ -1714,6 +1714,54 @@ body {
   max-width: calc(66ch + 32px);
 }
 
+/*
+ * **The two-track body: the prose holds its measure, the material sits beside it.**
+ *
+ * Above the cap sits a real void. Measured on a production build at 2000px: the shell is 1180
+ * with the technique 582x1137 inside it, so 566x1137 of the panel's own row is empty, and *The
+ * notes* 1,200px further down is a second 566-wide panel alone on its row. The chords, the rules
+ * and the notes are what a reader cross-refers to while reading the technique, and they were two
+ * screens under it on a page long enough to lose the paragraph you were checking against.
+ *
+ * **1180px is the breakpoint because that is where the material track becomes useful**, and
+ * because it is the width at which the shell reaches its cap — the same moment. Measured on
+ * `/explore/moog-muse/muse-runner`, the page that prompted this: at a 1024px viewport the
+ * material track is 394px and the page is 11% shorter; at 1100 it is 470px and the page is 4%
+ * *longer*; at 1180 it is 550px and the page is 27% shorter. Below 1180 this rule does not
+ * apply, `.riff-body` is a plain block, and the page is exactly what it was — including at 390px,
+ * where the body has never scrolled sideways and still does not.
+ *
+ * **Widening the shell was the obvious answer and the measurements killed it.** At shell 1300 and
+ * 1440 the same page gains a further 43px and 65px and nothing else on the site moves. The waste
+ * was never the 820px of margin; it was inside the shell. The cap stays at 1180.
+ *
+ * `.columns` gives up its own pairing inside the material track, because two tracks of 267px is
+ * not a chord table. Its panels stack at 550px, which is within a pixel or two of the 566px they
+ * had when they paired across the full shell — the width they were drawn for.
+ *
+ * The margins the children carry are for the stacked layout; inside the grid they would push the
+ * two tracks off each other's top edge, so the first child of each track starts flush.
+ *
+ * `screen`, so a printed figure is the single column it has always been (§8 prints the guide,
+ * and a paper sheet has no 1180px viewport to satisfy).
+ */
+@media screen and (min-width: 1180px) {
+  .riff-body {
+    display: grid;
+    grid-template-columns: minmax(0, calc(66ch + 32px)) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .riff-body > * {
+    margin-top: 0;
+  }
+
+  .riff-body > .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .riff-technique p,
 .sample-technique p {
   margin: 0 0 12px;

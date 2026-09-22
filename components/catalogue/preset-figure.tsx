@@ -33,16 +33,27 @@ export function PresetFigureBody({ entry, figure }: { entry: PresetEntry; figure
   const { riff } = figure
   return (
     <>
-      <section className="panel riff-panel riff-technique">
-        <header>
-          <h2>The technique</h2>
-        </header>
-        {riff.technique.map((paragraph) => (
-          <p key={paragraph.slice(0, 32)}>{paragraph}</p>
-        ))}
-      </section>
+      {/*
+        The same two-track body the riff page has, from the same stylesheet rule: the technique
+        holds the reading measure and the figure's material sits beside it. This page is the one
+        that made the case — its technique runs 1,137px on the Muse Runner, more than twice the
+        library's median, and the material used to start below all of it.
 
-      <RiffFigure riff={riff} resolution={resolveRiff(riff, [])} />
+        The voice block stays outside and full-width, for the reason the riff page's rig does:
+        it is what you do after reading the figure rather than something read alongside it.
+      */}
+      <div className="riff-body">
+        <section className="panel riff-panel riff-technique">
+          <header>
+            <h2>The technique</h2>
+          </header>
+          {riff.technique.map((paragraph) => (
+            <p key={paragraph.slice(0, 32)}>{paragraph}</p>
+          ))}
+        </section>
+
+        <RiffFigure riff={riff} resolution={resolveRiff(riff, [])} />
+      </div>
 
       <PresetVoice deviceId={figure.voice.device.id} patch={entry.slug} />
     </>

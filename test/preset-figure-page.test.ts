@@ -532,6 +532,38 @@ describe('what a preset figure page does not have', () => {
  * not in it. The sitemap's own entries are held against the routes' `generateStaticParams`
  * above and in `test/riff-page.test.ts`, so this closes the loop from the page side.
  */
+describe('the two-track body, on the page that made the case for it', () => {
+  /**
+   * This page is why the layout changed. Measured on a production build at 2000px, the Muse
+   * Runner's technique is 582x1137 — more than twice the library's median — with 566x1137 of its
+   * own row empty and the chords, the rules and the notes starting below all of it. The wrapper
+   * puts them beside it from 1180px up: the page goes 3314px to 2381px, a 28% reduction, and the
+   * first screen carries the prose and the chord table together.
+   *
+   * The rule itself lives in `test/riff-page.test.ts`, which owns the stylesheet claim. What is
+   * asserted here is that this page is inside it, because the two pages reach the same layout
+   * through different files — the riff route wraps its own body, and this one delegates to
+   * `components/catalogue/preset-figure.tsx`. Nothing but a test on both would notice one of them
+   * being left behind.
+   */
+  it('wraps the technique and the figure, and leaves the voice block outside', () => {
+    const at = (needle: string): number => {
+      const i = MUSE_RUNNER.indexOf(needle)
+      expect(i, `${needle} is not on the page`).toBeGreaterThan(-1)
+      return i
+    }
+    const bodyAt = at('<div class="riff-body">')
+    const techAt = at('riff-technique')
+    const figureAt = at('<div class="columns">')
+
+    expect(bodyAt).toBeLessThan(techAt)
+    expect(techAt).toBeLessThan(figureAt)
+    // The voice block — *On the Moog Muse* — sits after both and full width, where the riff
+    // page's rig sits. It is what you do once you have read the figure.
+    expect(at('riff-where-panel')).toBeGreaterThan(figureAt)
+  })
+})
+
 describe('link integrity across the moved surfaces (#598)', () => {
   // `/preferences` alone now: `/parts` joined the sitemap when it left the nav, which is where
   // the omission started to matter. Keeping it listed here would let a future regression that

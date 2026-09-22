@@ -95,16 +95,29 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         */}
       </header>
 
-      <section className="panel riff-panel riff-technique">
-        <header>
-          <h2>The technique</h2>
-        </header>
-        {riff.technique.map((paragraph) => (
-          <p key={paragraph.slice(0, 32)}>{paragraph}</p>
-        ))}
-      </section>
+      {/*
+        The two-track body. The technique holds the reading measure (#611) and the figure's
+        material — the chords, the rules, the notes, the grid — sits beside it rather than two
+        screens below, because the material is what a reader cross-refers to *while* reading the
+        technique and this page is long enough to lose the paragraph you were checking against.
+        One wrapper, no change to what is inside it, and below 1180px it is a plain div that
+        changes nothing.
 
-      <RiffFigure riff={riff} resolution={figure} />
+        The rig stays outside and full-width: it is a picker somebody uses after they have read
+        the figure, not material they read alongside it.
+      */}
+      <div className="riff-body">
+        <section className="panel riff-panel riff-technique">
+          <header>
+            <h2>The technique</h2>
+          </header>
+          {riff.technique.map((paragraph) => (
+            <p key={paragraph.slice(0, 32)}>{paragraph}</p>
+          ))}
+        </section>
+
+        <RiffFigure riff={riff} resolution={figure} />
+      </div>
 
       <RiffRig riffId={riff.id} />
 
