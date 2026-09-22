@@ -785,6 +785,138 @@ describe('the device picker on a riff page', () => {
   })
 })
 
+describe('the two-track body: prose beside the material above 1180px', () => {
+  /**
+   * The void this closes was measured, not argued. On a production build at a 2000px viewport the
+   * shell is 1180 and the technique is 582x1137 inside it, so 566x1137 of that panel's own row is
+   * empty — and *The notes*, 1,200px further down, is a second 566-wide panel alone on its row.
+   * The chords, the rules and the notes are what a reader cross-refers to while reading the
+   * technique, and they were two screens under it.
+   *
+   * **What CSS can carry is asserted here; the rendering is not.** The numbers in the stylesheet's
+   * own comment came from a browser, and so did the check that 390px is byte-identical before and
+   * after. This file holds the structure that makes those numbers reachable.
+   */
+  it('wraps the technique and the figure together, and nothing else', () => {
+    /*
+     * Asserted by position rather than by slicing the markup: the rig's wrapper is
+     * `class="columns riff-rig"`, so a slice that looked for `<div class="riff-rig"` found
+     * nothing and silently checked an empty string. Positions cannot do that — every one of
+     * these has to be found for the ordering to hold at all.
+     */
+    const at = (needle: string): number => {
+      const i = BLUE.indexOf(needle)
+      expect(i, `${needle} is not on the page`).toBeGreaterThan(-1)
+      return i
+    }
+    const bodyAt = at('<div class="riff-body">')
+    const techAt = at('riff-technique')
+    const figureAt = at('<div class="columns">')
+    const rigAt = at('riff-rig')
+
+    // Inside the wrapper, in source order: the prose, then the figure's material.
+    expect(bodyAt).toBeLessThan(techAt)
+    expect(techAt).toBeLessThan(figureAt)
+    // And the rig after both — outside the wrapper and full width, because a picker is what you
+    // use after reading the figure rather than material you read alongside it. The preset figure
+    // page keeps its voice block outside for the same reason.
+    expect(figureAt).toBeLessThan(rigAt)
+    expect(at('rig-picker')).toBeGreaterThan(rigAt)
+  })
+
+  it('pairs the two tracks only from 1180px, and only on screen', () => {
+    const at = CSS.indexOf('@media screen and (min-width: 1180px)')
+    expect(at, 'the two-track rule is missing').toBeGreaterThan(-1)
+    const block = CSS.slice(at, CSS.indexOf('\n}', CSS.indexOf('.riff-body > .columns', at)))
+    expect(block).toContain('.riff-body {')
+    expect(block).toContain('display: grid')
+    /*
+     * The prose track is the #611 measure and is written as that calculation rather than as the
+     * 582px it computes to, so the two cannot drift: if the measure moves, the track moves with
+     * it. The material track takes what is left.
+     */
+    expect(block).toContain('grid-template-columns: minmax(0, calc(66ch + 32px)) minmax(0, 1fr)')
+    expect(rule('.riff-technique')).toContain('max-width: calc(66ch + 32px)')
+    // `.columns` gives up its own pairing inside the material track: two tracks of 267px is not
+    // a chord table. Its panels stack at the width they were drawn for.
+    expect(block).toContain('.riff-body > .columns')
+    expect(block).toContain('grid-template-columns: minmax(0, 1fr)')
+    // `screen`, so a printed figure is the single column it has always been.
+    expect(at).toBe(CSS.indexOf('@media screen and (min-width: 1180px)'))
+    expect(CSS).not.toContain('@media (min-width: 1180px)')
+  })
+
+  it('is a plain block below the breakpoint, so the phone layout is the one it always was', () => {
+    // No unconditional `.riff-body` rule: below 1180 the wrapper contributes nothing, the
+    // children keep their own margins, and the page is byte-for-byte what it was at 390px.
+    const unconditional = CSS.indexOf('\n.riff-body {')
+    expect(unconditional, '`.riff-body` must only be styled inside the media query').toBe(-1)
+  })
+})
+
+describe('the wide band: the material pairs again from 1600px', () => {
+  /**
+   * §4 gave the material a 550px track, which is one column of chord table. 970px is two, and
+   * that is the whole of this block — plus the one rule that makes it an improvement rather than
+   * a regression.
+   *
+   * **1600 and not 1500, measured rather than rounded.** At shell 1400, 1450 and 1550 the
+   * material track is 770, 820 and 920, and `/explore/korg-minilogue-xd/pressure` measures +19%,
+   * +19% and +13%: the halves land at a width its content reflows badly at. At 1600 the track is
+   * 970, the halves are ~477, and the same page is 12% shorter than at 1599. A design that is
+   * excellent at 1600 and 19% worse at 1512 would punish the commonest laptop there is, so the
+   * cap lifts at 1600 or not at all.
+   */
+  const wide = (): string => {
+    const at = CSS.indexOf('@media screen and (min-width: 1600px)')
+    expect(at, 'the wide-band rule is missing').toBeGreaterThan(-1)
+    const end = CSS.indexOf('\n}\n', CSS.indexOf('.site-nav', at))
+    expect(end).toBeGreaterThan(at)
+    return CSS.slice(at, end)
+  }
+
+  it('lifts the cap on these two pages and on nothing else', () => {
+    const block = wide()
+    // `.shell.riff-page`, which is the record riff page and the preset figure page and no other
+    // main on the site. The guide, the device page and the sample page keep 1180 — a 5,900px
+    // parameter table is already full width and does not want more.
+    expect(block).toContain('.shell.riff-page')
+    expect(block).toContain('max-width: 1600px')
+    expect(block).not.toContain('.sample-page')
+    expect(block).not.toContain('.device-page')
+  })
+
+  it('restores the pairing and spans a trailing panel that would sit alone', () => {
+    const block = wide()
+    expect(block).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)')
+    /*
+     * The rule that turns this from a regression into an improvement on the page it was for.
+     * Without it the Muse Runner measured 2964px at 1601 against 2381px at 1599 — 24% worse —
+     * because its chords and rules pair and *The notes* is left alone in a 477px track, narrower
+     * than the 550px it had stacked and so taller. With it: 2114px, 11% better.
+     */
+    expect(block).toContain(':last-child:nth-child(even)')
+    expect(block).toContain('grid-column: 1 / -1')
+  })
+
+  it('takes the navigation with it, so the header is not indented from the page', () => {
+    // Measured at 1610px: leaving the nav at 1180 while the page is 1600 puts the mark 215px
+    // inside the masthead's own left edge. `:has()` because the nav is a sibling of the page in
+    // the layout, and it is scoped to this block and to a page carrying `riff-page`.
+    expect(wide()).toContain('body:has(main.riff-page) .site-nav')
+    // And nowhere else: the nav's own rule is still the shared 1180.
+    expect(rule('.site-nav')).toContain('max-width: 1180px')
+  })
+
+  it('is separable from the 1180px rule, so reverting it leaves a fixed page', () => {
+    // Two blocks, not one. The 1180 rule is the structural fix and stands alone; this is the
+    // width band on top of it, and `git revert` of one must leave the other working.
+    expect(CSS.indexOf('@media screen and (min-width: 1180px)')).toBeLessThan(
+      CSS.indexOf('@media screen and (min-width: 1600px)'),
+    )
+  })
+})
+
 describe('the riff page at 1280px and 390px', () => {
   /**
    * #21. These are the claims CSS can carry. **They are not a rendering**: nothing here proves

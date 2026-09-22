@@ -11,9 +11,10 @@ import { DEVICES } from '@/lib/devices/registry.generated'
  * that boundary. Nothing here is a function prop, because a function cannot be serialised across
  * it and Next would refuse the build if one were.
  *
- * `canonical` is per route. The root's `canonical: '/'` (#44) is about permalinked guides, which
- * are generated views of one app; a catalogue page is authored content at its own address, and
- * pointing it at the root would tell a crawler these seventeen pages are all the same page.
+ * `canonical` is per route. The studio's `canonical: '/studio'` (#44) is about permalinked
+ * guides, which are generated views of one app; a catalogue page is authored content at its own
+ * address, and pointing it at the studio would tell a crawler these seventeen pages are all the
+ * same page.
  */
 export const metadata: Metadata = {
   title: 'Devices — Patchscore',

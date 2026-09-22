@@ -7,7 +7,9 @@ import { SAMPLE_TARGETS } from '@/lib/samples'
 import { TEMPLATES } from '@/lib/templates'
 import { kitSession } from '@/lib/studio/kit-session'
 import { presetSession } from '@/lib/studio/preset-session'
+import { STUDIO_PATH } from '@/lib/studio/entry'
 import {
+  EXPLORE_PATH,
   deviceHref,
   kitHref,
   presetFigureHref,
@@ -18,15 +20,16 @@ import {
 } from '@/lib/studio/catalogue'
 
 /**
- * The root, both catalogue indexes, one entry per device, one per direction (#84), and #174's
- * drum-machine reference. All of them
+ * The root, both catalogue indexes, one entry per device, one per direction (#84), the Explore
+ * index and everything under it, and both reference pages (#174). All of them
  * are derived, from the registry and from `lib/templates`, so authoring a manifest or a template
  * adds its page here without an edit (invariant 2).
  *
  * What is still absent is every permalinked guide, and that is the rule this file was written to
- * state. #44 settled that a guide is `canonical: '/'`, because a guide is a generated view of the
- * app rather than an authored page, and there is no upper bound on how many variants exist.
- * Enumerating them would tell a crawler the opposite of what the canonical tag says.
+ * state. #44 settled that a guide is canonical to the studio's own address, because a guide is a
+ * generated view of the app rather than an authored page, and there is no upper bound on how many
+ * variants exist. Enumerating them would tell a crawler the opposite of what the canonical tag
+ * says.
  *
  * A catalogue page is the other thing: authored content at its own address, with its own
  * canonical pointing at itself. So the test to apply to a new entry here is not "is it a URL that
@@ -39,6 +42,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: SITE_ORIGIN,
       changeFrequency: 'weekly',
       priority: 1,
+    },
+    /*
+     * §8. The studio, at its own address since `/` became an orientation page. Listed by the same
+     * test everything here passes: there is a page at it whose canonical is itself. What is still
+     * absent is every permalinked *guide*, for the reason stated above — the bare studio is a
+     * page, and a guide is a view of it.
+     */
+    {
+      url: `${SITE_ORIGIN}${STUDIO_PATH}`,
+      changeFrequency: 'weekly',
+      priority: 0.9,
     },
     {
       url: `${SITE_ORIGIN}/devices`,
@@ -68,11 +82,21 @@ export default function sitemap(): MetadataRoute.Sitemap {
           ],
     ),
     /*
-     * §2.6/#593. One per box that declares its factory patches and what each is for, by the
-     * same test: there is a page at it whose canonical is itself. `presetSession` is what
-     * `generateStaticParams` enumerates too, so a folder that declares both appears in both
-     * without an edit, and one that does not is absent from both.
+     * §2.6/#593/§3.7. **Explore, as its own block rather than inside the devices one.** The
+     * entries below were nested under `/devices/<id>` until the move, which is where they sat in
+     * this file too; they are one section now, and this file says so in the order it lists them.
+     *
+     * The index first, then one per box that declares its factory patches and what each is for,
+     * by the same test everything here passes: there is a page at it whose canonical is itself.
+     * `presetSession` is what both routes' `generateStaticParams` enumerate, so a folder that
+     * declares its patches appears in all three without an edit, and one that does not is absent
+     * from all three.
      */
+    {
+      url: `${SITE_ORIGIN}${EXPLORE_PATH}`,
+      changeFrequency: 'weekly' as const,
+      priority: 0.8,
+    },
     ...DEVICES.flatMap((device) => {
       const session = presetSession(device)
       if (session === undefined) return []
@@ -151,6 +175,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
      */
     {
       url: `${SITE_ORIGIN}/drum-machines`,
+      changeFrequency: 'monthly' as const,
+      priority: 0.7,
+    },
+    /*
+     * Its companion, listed on the same terms and absent until now for no reason anyone recorded.
+     * It passed the test stated above from the day it was written — there is a page at it whose
+     * canonical is itself — and it was reachable from the nav, so nothing ever went looking for
+     * it here. It left the nav, which is what made the omission matter: a page reachable from a
+     * footer and a modal and named in no index is a page only a reader who already knows about it
+     * can find.
+     *
+     * `/preferences` stays out, and the distinction is the one this file states. It is a control
+     * panel for how the app draws itself, not authored content — there is nothing on it to read.
+     */
+    {
+      url: `${SITE_ORIGIN}/parts`,
       changeFrequency: 'monthly' as const,
       priority: 0.7,
     },

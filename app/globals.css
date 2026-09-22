@@ -145,8 +145,27 @@ body {
  * and a logo squeezed to 19px is worse than a link set on two lines. No 44px floor here — it is
  * not a target, which is the point of it not being a link.
  */
-.site-nav-mark {
+/*
+ * The mark is the way home now that `/` is a page, so it is a link and a link is a 44px target
+ * (#21) — larger than the 28px drawing inside it, the way a knob's target is larger than the
+ * knob. `flex-shrink: 0` is on the link, because the link is what the nav's flex row lays out.
+ */
+.site-nav-home {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 7px;
+}
+
+.site-nav-home:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.site-nav-mark {
   width: 28px;
   height: 28px;
   border-radius: 7px;
@@ -1333,7 +1352,7 @@ body {
 /*
  * §2.6/#593. **The factory patches a box ships: a name, a line, and where the library reaches
  * it.** Two surfaces, the kit's shape one section over: a folded panel on the device page and
- * the same list laid open at `/devices/<id>/presets`. Everything here obeys §21's rules for a
+ * the same list laid open at `/explore/<id>`. Everything here obeys §21's rules for a
  * phone, since a preset list is read standing at the box: one column, wrap rather than shrink,
  * nothing that pushes the body sideways.
  */
@@ -1693,6 +1712,122 @@ body {
 .riff-technique,
 .sample-technique {
   max-width: calc(66ch + 32px);
+}
+
+/*
+ * **The two-track body: the prose holds its measure, the material sits beside it.**
+ *
+ * Above the cap sits a real void. Measured on a production build at 2000px: the shell is 1180
+ * with the technique 582x1137 inside it, so 566x1137 of the panel's own row is empty, and *The
+ * notes* 1,200px further down is a second 566-wide panel alone on its row. The chords, the rules
+ * and the notes are what a reader cross-refers to while reading the technique, and they were two
+ * screens under it on a page long enough to lose the paragraph you were checking against.
+ *
+ * **1180px is the breakpoint because that is where the material track becomes useful**, and
+ * because it is the width at which the shell reaches its cap — the same moment. Measured on
+ * `/explore/moog-muse/muse-runner`, the page that prompted this: at a 1024px viewport the
+ * material track is 394px and the page is 11% shorter; at 1100 it is 470px and the page is 4%
+ * *longer*; at 1180 it is 550px and the page is 27% shorter. Below 1180 this rule does not
+ * apply, `.riff-body` is a plain block, and the page is exactly what it was — including at 390px,
+ * where the body has never scrolled sideways and still does not.
+ *
+ * **Widening the shell was the obvious answer and the measurements killed it.** At shell 1300 and
+ * 1440 the same page gains a further 43px and 65px and nothing else on the site moves. The waste
+ * was never the 820px of margin; it was inside the shell. The cap stays at 1180.
+ *
+ * `.columns` gives up its own pairing inside the material track, because two tracks of 267px is
+ * not a chord table. Its panels stack at 550px, which is within a pixel or two of the 566px they
+ * had when they paired across the full shell — the width they were drawn for.
+ *
+ * The margins the children carry are for the stacked layout; inside the grid they would push the
+ * two tracks off each other's top edge, so the first child of each track starts flush.
+ *
+ * `screen`, so a printed figure is the single column it has always been (§8 prints the guide,
+ * and a paper sheet has no 1180px viewport to satisfy).
+ */
+@media screen and (min-width: 1180px) {
+  .riff-body {
+    display: grid;
+    grid-template-columns: minmax(0, calc(66ch + 32px)) minmax(0, 1fr);
+    gap: 16px;
+    align-items: start;
+  }
+
+  .riff-body > * {
+    margin-top: 0;
+  }
+
+  .riff-body > .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/*
+ * **At 1600px the material track pairs again, and the two pages that have one get the width.**
+ *
+ * The 1180px block above stacks the material because a 550px track cannot hold two columns of
+ * chord table. Give it 970px and it can, and every page tested gets shorter rather than most:
+ * the Muse Runner 3314 -> 3000, and the short-technique figures that the 1180 rule makes *taller*
+ * come back under where they started.
+ *
+ * **1600 and not 1500, and that is a measured cliff rather than a round number.** At shell 1400,
+ * 1450 and 1550 the material track is 770, 820 and 920, and `/explore/korg-minilogue-xd/pressure`
+ * measures +19%, +19% and +13% — the panels halve into a width their content reflows badly at,
+ * and the page grows. At 1600 the track is 970, the halves are ~477, and the same page is -7%.
+ * So the cap lifts at 1600 or not at all: a design that is excellent at 1600 and 19% worse at
+ * 1512 would punish the commonest laptop on the market.
+ *
+ * **Only `.riff-page`, which is two pages.** The guide, the device page and the sample page keep
+ * 1180. A device page's `Parameter sources` is a 5,900px table that is already full width, and
+ * the guide is read at the machine — neither wants more width, and #611's reading measure is not
+ * involved here at all: the prose track stays `calc(66ch + 32px)` at every width, and what widens
+ * is the column holding tables and note rows.
+ *
+ * This block is deliberately separable from the one above. Reverting it leaves a fixed page with
+ * the old cap rather than an unfixed one.
+ */
+@media screen and (min-width: 1600px) {
+  .shell.riff-page {
+    max-width: 1600px;
+  }
+
+  .riff-body > .columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  /*
+   * A trailing panel with no partner spans both tracks instead of sitting alone in one.
+   *
+   * **This rule is why the pairing is an improvement rather than a regression.** Without it the
+   * Muse Runner — the page that prompted the whole change — got *worse* at 1600 than it was at
+   * 1180: its material is a key control, the chords, the rules and *The notes*, so the chords and
+   * the rules pair and the notes sit alone in a 477px track, narrower than the 550px they had
+   * stacked, and therefore taller. Measured: 2381px at 1599 against 2964px at 1601, a 24%
+   * regression on the one page this was for. With the span it is 2114px, an 11% improvement.
+   *
+   * `:last-child:nth-child(even)` identifies exactly that panel. The key control is always the
+   * first child and always spans both tracks, so an even-indexed last child is the one left over.
+   * A page whose material happens to pair evenly — `/riffs/blue-monday-bass`, `pressure` — matches
+   * nothing here and is unaffected.
+   */
+  .riff-body > .columns > :last-child:nth-child(even) {
+    grid-column: 1 / -1;
+  }
+
+  /*
+   * The navigation follows the page it sits above, on these two routes only.
+   *
+   * It is `max-width: 1180px` centred like every other shell, and leaving it there while the page
+   * under it is 1600 puts the mark 215px inside the masthead's own left edge — the header reads as
+   * indented from the document. Verified in a browser at 1610px before and after.
+   *
+   * `:has()` because the nav is a sibling of `{children}` in the layout and CSS has no way up or
+   * backwards otherwise. It is scoped to this media query and to a page carrying `riff-page`, so
+   * the nav is untouched on every other route and at every other width.
+   */
+  body:has(main.riff-page) .site-nav {
+    max-width: 1600px;
+  }
 }
 
 .riff-technique p,
@@ -4876,6 +5011,13 @@ html {
   margin-top: 12px;
 }
 
+/*
+ * Two elements wear this: the Copy link button, and the Preferences anchor beside it (#138).
+ * Both are things you do to this page rather than places to go, so they are one control pair and
+ * look like one. What the anchor needs on top of the button's own box is the three defaults a
+ * `<button>` has and an `<a>` does not — no underline, centred content, and a 44px target, since
+ * unlike the button it is not already one.
+ */
 .link-button {
   font-family: var(--font-label);
   font-size: 0.8rem;
@@ -4887,6 +5029,25 @@ html {
   border-radius: var(--radius);
   padding: 6px 12px;
   cursor: pointer;
+}
+
+a.link-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+/*
+ * The studio's pair, matched. Copy link is a `<button>` and Preferences an `<a>`, and left to
+ * their own boxes the anchor stood 44px tall beside a 33px button — two controls that do the
+ * same kind of thing, drawn as if they did not. Both get the target here rather than on
+ * `.link-button`, which four Download and Print buttons elsewhere also wear: those are under 44px
+ * too and that is worth fixing, but it is a change to the guide and the kit page rather than to
+ * this pair.
+ */
+.masthead-actions .link-button {
+  min-height: 44px;
 }
 
 .link-button:hover {
@@ -6078,6 +6239,29 @@ html {
   font-size: 14px;
   line-height: 1.5;
   color: var(--ink);
+}
+
+/*
+ * The way on to `/parts`, on a role's definition only. Quieter than the definition above it and
+ * louder than nothing: this is the second thing in the card to read, never the first. Its own
+ * 44px target, because it sits directly above one and two stacked taps a thumb cannot tell apart
+ * is the failure #21 is about.
+ */
+.vocab-more {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.vocab-more a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ink-dim);
+}
+
+.vocab-more a:hover {
+  color: var(--silkscreen);
 }
 
 .vocab-close {

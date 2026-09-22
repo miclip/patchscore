@@ -104,6 +104,13 @@ export function studioEntry(
 }
 
 /**
+ * §8. **Where the studio is**, named once because the route, its canonical, `og:url` and the
+ * sitemap all spell it. A second spelling is how a share card comes to name an address the
+ * canonical does not.
+ */
+export const STUDIO_PATH = '/studio'
+
+/**
  * The address of the document this request produced, for `og:url`.
  *
  * **Canonicalised, not echoed.** `encodeGuideInputs` writes devices and inspirations in registry
@@ -112,16 +119,22 @@ export function studioEntry(
  * single share object. Echoing the request's own query back would give one guide as many share
  * objects as there are ways to write it.
  *
- * `/` for a request with no readable link. The bare root really is at `/`, and a link that failed
- * to decode has no permalink to name — fabricating the default one there would tell a card
- * renderer that a broken URL is an address for the guide it happens to have fallen back to.
+ * `/studio` for a request with no readable link. The bare studio really is at `/studio`, and a
+ * link that failed to decode has no permalink to name — fabricating the default one there would
+ * tell a card renderer that a broken URL is an address for the guide it happens to have fallen
+ * back to.
+ *
+ * **`/studio`, not `/`, since the studio stopped being the front door.** `/` is an orientation
+ * page now and has a share card of its own; pointing a guide's `og:url` there would collapse
+ * every shared guide into that page's share object, which is the failure this function's
+ * canonicalisation exists to avoid, arrived at from the other direction.
  *
  * Relative, so `metadataBase` resolves it against the apex (`app/layout.tsx`). `fromLink` is only
  * true for inputs that came out of `decodeGuideInputs`, so the encode below cannot throw.
  */
 export function guideUrl(entry: StudioEntry, catalogue: Catalogue = CATALOGUE): string {
-  if (!entry.fromLink) return '/'
-  return `/?${encodeGuideInputs(entry.inputs, catalogue)}`
+  if (!entry.fromLink) return STUDIO_PATH
+  return `${STUDIO_PATH}?${encodeGuideInputs(entry.inputs, catalogue)}`
 }
 
 // ---------------------------------------------------------------------------

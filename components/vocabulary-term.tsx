@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { MouseEvent, RefObject } from 'react'
@@ -28,6 +29,11 @@ import type { VocabularyWord } from '@/lib/studio/glossary'
  *
  * **Nothing reflows.** The dialog is out of the page's flow entirely, and the scroll lock adds back
  * the width the scrollbar was taking, so the page underneath does not move by a pixel.
+ *
+ * **A role's definition links on to `/parts`, and no other kind does.** That page left the nav
+ * because a reader needs it at the moment they meet the word, which is exactly here; the other
+ * three vocabularies have no long-form page, so their modals offer none rather than pointing at
+ * one about something else.
  */
 
 export type VocabularyModalProps = {
@@ -88,6 +94,22 @@ export function VocabularyModal({
           <span className="vocab-kind">{kind}</span>
         </h2>
         <p className="vocab-def">{definition}</p>
+        {/*
+          **For a role and for nothing else.** `/parts` is the long-form page about the parts a
+          guide asks for by name, so it is the page a reader of this definition would want next —
+          but only for the twenty-three words that are parts. The other three vocabularies have no
+          such page: a character, a mood axis and a pattern slot are each explained here and
+          nowhere longer, and sending those readers to a page about parts would be a link that
+          costs a tap and answers a question they did not ask.
+
+          Below the definition rather than beside the word, so the jog (§8.1) is still the whole
+          of what a reader at the machine has to read, and the way out is after it.
+        */}
+        {kind === 'role' ? (
+          <p className="vocab-more">
+            <Link href="/parts">What every part is, and what each one does in a track</Link>
+          </p>
+        ) : null}
         <button ref={closeRef} type="button" className="vocab-close" onClick={requestClose}>
           Close
         </button>
@@ -135,8 +157,10 @@ export function VocabularyTerm({ word }: VocabularyTermProps) {
     const syncClosed = () => setOpen(false)
     dialog?.addEventListener('close', syncClosed)
     dialog?.addEventListener('cancel', syncClosed)
-    // `showModal` focuses the first focusable descendant, which is this button. Said out loud so
-    // the opening focus is a decision rather than an ordering accident.
+    // `showModal` focuses the first focusable descendant, which for a role's definition is now
+    // the `/parts` link rather than this button. Said out loud because that is exactly why the
+    // focus is set by hand here: the opening stop is a decision, not whichever element happens
+    // to come first in the card.
     closeRef.current?.focus({ preventScroll: true })
 
     /*

@@ -10,7 +10,7 @@ import { RiffFigureView, RiffInKey } from '../components/riff/riff-in-key'
 import { RiffFigure } from '../components/riff/riff-figure'
 import { chordLabel, chordRows, noteRows } from '../lib/studio/riff-text'
 import RiffRoute from '../app/riffs/[id]/page'
-import PresetFigureRoute from '../app/devices/[id]/presets/[patch]/page'
+import PresetFigureRoute from '../app/explore/[id]/[patch]/page'
 
 /**
  * §5A/#570. **A riff read in a key the reader chooses**, on the page and nowhere else.

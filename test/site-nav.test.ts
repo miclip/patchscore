@@ -13,8 +13,9 @@ import DirectionPageRoute from '../app/directions/[id]/page'
 import DrumMachinesPage from '../app/drum-machines/page'
 import RiffIndexPage from '../app/riffs/page'
 import RiffRoute from '../app/riffs/[id]/page'
-import PresetFigureRoute from '../app/devices/[id]/presets/[patch]/page'
-import Page from '../app/page'
+import PresetFigureRoute from '../app/explore/[id]/[patch]/page'
+import OrientationPage from '../app/page'
+import StudioPage from '../app/studio/page'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RECORD_RIFFS } from '../lib/riffs'
 import { TEMPLATES } from '../lib/templates/index'
@@ -56,7 +57,16 @@ async function routes(): Promise<{ name: string; markup: string }[]> {
   }
 
   return [
-    { name: '/', markup: await shell(await Page({ searchParams: Promise.resolve({}) })) },
+    /*
+     * Both halves of what used to be one route. `/` is the orientation page and `/studio` is the
+     * app, and every claim below is about *every* page — a route kept out of this list is a route
+     * none of them cover, which is the reason `/drum-machines` and `/riffs` are in it.
+     */
+    { name: '/', markup: await shell(createElement(OrientationPage)) },
+    {
+      name: '/studio',
+      markup: await shell(await StudioPage({ searchParams: Promise.resolve({}) })),
+    },
     { name: '/devices', markup: await shell(createElement(DeviceIndexPage)) },
     { name: '/directions', markup: await shell(createElement(DirectionIndexPage)) },
     // #174. In the route set rather than beside it: every claim below — one nav, the same links,
@@ -76,7 +86,7 @@ async function routes(): Promise<{ name: string; markup: string }[]> {
     },
     // §3.7/#598. A preset figure page, in the route set for the reason the riff page is.
     {
-      name: '/devices/moog-muse/presets/muse-runner',
+      name: '/explore/moog-muse/muse-runner',
       markup: await shell(
         await PresetFigureRoute({
           params: Promise.resolve({ id: 'moog-muse', patch: 'muse-runner' }),
@@ -102,36 +112,41 @@ describe('#112 the navigation landmark', () => {
     expect(markup).toMatch(/aria-label="[^"]+"/)
   })
 
-  it('names the studio, both catalogue halves, both references and preferences, in that order', () => {
+  it('names the studio and the five places this site holds things, in that order', () => {
     const markup = renderToStaticMarkup(createElement(SiteNav))
-    // Preferences is last on purpose: it is not a catalogue half, and it is the one entry a
-    // reader goes to rarely. It is *in* the nav at all because the footer could not reach it —
-    // on the studio page the footer sits below the whole generated guide (#138).
-    //
-    // **The reference is now two entries and they sit together**, above preferences and below the
-    // catalogue, which is where both are read from. `/drum-machines` says what an 808 kick sounds
-    // like; `/parts` says what a `riser` does. They are halves of one gap and a reader who needs
-    // one often needs the other, so splitting them across the nav would be worse than the extra
-    // entry costs.
-    //
-    // §5A/#503. `/riffs` is the third catalogue half rather than a third reference, so it sits
-    // with the other two and above both reference pages: a device is a box, a direction is a
-    // song, and a riff is one figure — three kinds of thing this site holds, where the two below
-    // them explain the words it uses.
-    //
-    // §3.8/#520. `/samples` is the fourth, beside `/riffs` for the same reason and in the same
-    // place: one authored thing resolved against the rig you own. The two reference pages stay
-    // adjacent and stay last but for preferences.
+    /*
+     * **One kind of thing, six entries.** It carried eight of three kinds as peers: catalogues of
+     * what the engine knows, libraries to play from, and explainers for a reader who does not
+     * have the vocabulary yet. Three left, and each left to somewhere that serves it better than
+     * a link at the top of every page:
+     *
+     *  - `/drum-machines` and `/parts` to the footer, and `/parts` to the word itself — an
+     *    explainer is wanted at the moment a reader meets the word (`vocabulary-term.tsx`).
+     *  - `/preferences` to the footer and to the studio's own masthead. #138 put it here because
+     *    the footer could not reach it *on the studio*, where it sits below the whole generated
+     *    guide; that is a fact about one page, and the repair belongs on that page.
+     *
+     * `Studio` is first and points at `/studio`: `/` is the orientation page now, and the mark
+     * beside this list is what goes there. `Explore` is last because it is the entry a reader
+     * reaches for having already decided which box they are sitting at.
+     */
     expect(NAV_LINKS.map((l) => l.href)).toEqual([
-      '/',
+      '/studio',
       '/devices',
       '/directions',
       '/riffs',
       '/samples',
-      '/drum-machines',
-      '/parts',
-      '/preferences',
+      '/explore',
     ])
+    // The three that left, named so this fails loudly if one is put back without the argument
+    // above being answered.
+    for (const gone of ['/drum-machines', '/parts', '/preferences']) {
+      expect(NAV_LINKS.map((l) => l.href), `${gone} is back in the nav`).not.toContain(gone)
+    }
+    // And `/` is reachable, from the mark rather than from the list — which is the whole reason
+    // the list no longer carries a second route to it.
+    expect(markup).toContain('<a class="site-nav-home" aria-label="Home" href="/">')
+    expect(NAV_LINKS.map((l) => l.href)).not.toContain('/')
     let at = -1
     for (const link of NAV_LINKS) {
       const found = markup.indexOf(`href="${link.href}"`)
@@ -145,6 +160,10 @@ describe('#112 the navigation landmark', () => {
     // The component maps this list rather than repeating it in JSX. Without that, every
     // assertion in this file could pass against a nav that shipped a fourth link nobody tested —
     // a smaller copy of the divergence #112 exists to stop.
+    //
+    // The bare-anchor pattern matches the list's links and not the mark, which carries a class
+    // and a label: the mark is chrome with one fixed destination, and the list is the set under
+    // test. Both are asserted, separately, in the test above.
     const markup = renderToStaticMarkup(createElement(SiteNav))
     const rendered = [...markup.matchAll(/<a href="([^"]*)">([^<]*)<\/a>/g)].map((m) => ({
       href: m[1] ?? '',
@@ -188,12 +207,26 @@ describe('#112 the navigation landmark', () => {
   })
 
   it('leaves no page with a hand-written link set of its own', async () => {
-    // `.masthead-actions` survives in the studio, holding Copy link — a button, not navigation.
-    // What must not come back is an anchor inside one, which is what the four copies were.
+    /*
+     * `.masthead-actions` survives in the studio, holding Copy link and — since #138 was answered
+     * where it was actually asked — a Preferences link beside it.
+     *
+     * **So this can no longer be "no anchors", and the replacement is not weaker.** What #112 is
+     * about is a page growing its own *link set*: four pages each wrote one, they drifted, and
+     * `/devices` could reach the studio and nothing else. One anchor to the page that restyles
+     * this one is not that, and the rule that tells them apart is a count and a destination. A
+     * second link here, or any link to somewhere a reader could otherwise navigate to, fails —
+     * which is the failure, rather than the element.
+     */
+    const ALLOWED = new Set(['/preferences'])
     for (const { name, markup } of await routes()) {
       const actions = [...markup.matchAll(/<(p|div) class="masthead-actions">(.*?)<\/\1>/g)]
       for (const [, , inner] of actions) {
-        expect(inner ?? '', `${name} has grown its own links again`).not.toContain('<a ')
+        const hrefs = [...(inner ?? '').matchAll(/<a[^>]*href="([^"]*)"/g)].map((m) => m[1] ?? '')
+        expect(hrefs.length, `${name} has grown its own links again`).toBeLessThanOrEqual(1)
+        for (const href of hrefs) {
+          expect(ALLOWED.has(href), `${name} links to ${href} from its masthead`).toBe(true)
+        }
       }
     }
     // And the dead stylesheet rule went with the markup. Matched as a rule, not as a substring:
@@ -214,15 +247,44 @@ describe('#112 the navigation landmark', () => {
 
 describe('#112 the nav at 390px', () => {
   it('wraps rather than taking the body sideways', () => {
-    // #21: measured in a browser at 390px, the row wraps to two lines now that #174 added a
-    // fifth and longest label, and the nav comes out 88px tall with the document and the body
-    // both at exactly 390px. That is the rule working rather than failing. It was always `wrap`
-    // and not a width nobody re-checks — another link, a longer label, or a reader at 200% text
-    // size costs a row, never a sideways page.
+    /*
+     * #21. **Measured, at a true 390px viewport, on a production build:** the nav is 390px wide
+     * and 88px tall, wrapping 6 links onto 2 rows, with `documentElement.scrollWidth` and
+     * `body.scrollWidth` both exactly 390 — no horizontal overflow. Checked on `/`, `/studio`,
+     * `/devices`, `/explore`, `/parts` and a figure page, and identical on all six.
+     *
+     * **Say the width, the count, the rows and the height, so the next reader can tell when this
+     * has gone stale.** The figure here said 88px for a long time while it described a five-link
+     * nav that had since grown to eight and measured 132px across 3 rows — a number nobody could
+     * check because it did not say what it was a number *of*. That it is 88px again is a
+     * coincidence of six links fitting two rows the way five did, not evidence the old comment
+     * was right.
+     *
+     * The rule is `wrap` and not a width nobody re-checks: another link, a longer label, or a
+     * reader at 200% text size costs a row, never a sideways page.
+     *
+     * A viewport is set with `Emulation.setDeviceMetricsOverride` when this is re-measured.
+     * Chrome's `--window-size` alone does not set the page viewport, and a screenshot taken that
+     * way shows content clipped at the frame edge on every page here, which reads as overflow and
+     * is not.
+     */
     expect(rule('.site-nav ul')).toContain('flex-wrap: wrap')
     expect(rule('.site-nav ul')).toContain('min-width: 0')
     expect(rule('.site-nav')).not.toContain('overflow-x')
     expect(rule('.site-nav ul')).not.toContain('nowrap')
+  })
+
+  it('gives the mark a 44px target of its own, now that it is a link', () => {
+    // Measured at 390px on a production build: 44x44, with the 28px drawing centred inside it.
+    // Hit target and visual size are decoupled here for the reason they are on a knob (#21) —
+    // the mark is drawn to sit in a header and a thumb needs more than that.
+    expect(rule('.site-nav-home')).toContain('min-width: 44px')
+    expect(rule('.site-nav-home')).toContain('min-height: 44px')
+    expect(rule('.site-nav-home')).toContain('flex-shrink: 0')
+    // The drawing keeps its own size and gives up the shrink guard to the link around it, which
+    // is what the flex row now lays out.
+    expect(rule('.site-nav-mark')).toContain('width: 28px')
+    expect(rule('.site-nav-mark')).not.toContain('flex-shrink')
   })
 
   it('gives every link a 44px target in both directions', () => {

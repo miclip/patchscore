@@ -4,19 +4,19 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import type { Metadata } from 'next'
 import { describe, expect, it } from 'vitest'
 
-import Page, { generateMetadata } from '../app/page'
+import Page, { generateMetadata } from '../app/studio/page'
 import { Studio } from '../components/studio'
 import { FORMAT_VERSION, RESOLVER_VERSION, decodeGuideInputs, encodeGuideInputs } from '../lib/core/index'
 import type { GuideInputsV1 } from '../lib/core/index'
 import { CATALOGUE, DEFAULT_INPUTS, composeTemplate } from '../lib/studio/session'
-import { guideMeta, queryFromSearchParams, studioEntry } from '../lib/studio/entry'
+import { STUDIO_PATH, guideMeta, queryFromSearchParams, studioEntry } from '../lib/studio/entry'
 import type { SearchParams } from '../lib/studio/entry'
 import { SITE_DESCRIPTION, SITE_NAME } from '../lib/studio/site'
 
 /**
  * #99. The server render is a function of the URL.
  *
- * It used to be a function of nothing: `app/page.tsx` took no `searchParams` and returned
+ * It used to be a function of nothing: the studio route took no `searchParams` and returned
  * `<Studio />`, so the first byte of every shared link was Industrial Techno at 134 BPM on the
  * default rig, whatever the link said. That cost a flash of the wrong guide on every share, one
  * identical preview card for every guide in the library, and the default served — silently — to
@@ -203,14 +203,22 @@ describe('#99 the preview card comes from the same decode', () => {
     expect(meta.twitter?.description).toBe(meta.description)
   })
 
-  it('stays canonical to the root, per #44, while `og:url` names the guide', async () => {
+  it('stays canonical to the studio, per #44, while `og:url` names the guide', async () => {
     // Not a contradiction: two readers, two units. `rel=canonical` is addressed to an index and
     // #44's argument holds there. `og:url` identifies the *share*, and one `og:url` for every
     // guide collapses them into a single share object — which throws away the per-guide card
     // above and makes the rest of this describe pointless.
+    //
+    // `/studio` rather than `/` since the studio stopped being the front door. The argument did
+    // not move, only the address: every generated view of this one app points at the one page
+    // that app lives on, and `/` is a different page with a card of its own.
     const meta = await metaOf(DRONE_QUERY)
-    expect(meta.alternates?.canonical).toBe('/')
-    expect(ogUrl(meta)).toBe(`/?${encodeGuideInputs(inputsOf(DRONE_QUERY), CATALOGUE)}`)
+    expect(meta.alternates?.canonical).toBe(STUDIO_PATH)
+    expect(ogUrl(meta)).toBe(`${STUDIO_PATH}?${encodeGuideInputs(inputsOf(DRONE_QUERY), CATALOGUE)}`)
+    // And never the orientation page, which is the way this goes wrong quietly: a guide that
+    // claims to be `/` is a guide telling an index it is the front door.
+    expect(meta.alternates?.canonical).not.toBe('/')
+    expect(ogUrl(meta)).not.toBe('/')
   })
 
   it('gives two valid guide links two different `og:url`s', async () => {
@@ -246,13 +254,15 @@ describe('#99 the preview card comes from the same decode', () => {
     expect(ogUrl(await metaOf(drifted))).toContain(`resolver=${RESOLVER_VERSION}`)
   })
 
-  it('names the root when there is no readable link, rather than inventing one', async () => {
-    // The bare root really is at `/`. A link that failed to decode has no permalink to name, and
-    // handing back the default one would tell a card renderer that a broken URL addresses the
-    // guide it happened to fall back to.
-    expect(ogUrl(await metaOf(''))).toBe('/')
-    expect(ogUrl(await metaOf('nonsense'))).toBe('/')
-    expect(ogUrl(await metaOf(DRONE_QUERY.replace('polyend-tracker-mini', 'no-such-box')))).toBe('/')
+  it('names the bare studio when there is no readable link, rather than inventing one', async () => {
+    // The bare studio really is at `/studio`. A link that failed to decode has no permalink to
+    // name, and handing back the default one would tell a card renderer that a broken URL
+    // addresses the guide it happened to fall back to.
+    expect(ogUrl(await metaOf(''))).toBe(STUDIO_PATH)
+    expect(ogUrl(await metaOf('nonsense'))).toBe(STUDIO_PATH)
+    expect(ogUrl(await metaOf(DRONE_QUERY.replace('polyend-tracker-mini', 'no-such-box')))).toBe(
+      STUDIO_PATH,
+    )
   })
 })
 

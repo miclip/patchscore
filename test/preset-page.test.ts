@@ -7,7 +7,7 @@ import PresetsRoute, {
   dynamicParams,
   generateMetadata,
   generateStaticParams,
-} from '../app/devices/[id]/presets/page'
+} from '../app/explore/[id]/page'
 import DevicePageRoute from '../app/devices/[id]/page'
 import sitemap from '../app/sitemap'
 import type { Device } from '../lib/core/index'
@@ -74,21 +74,30 @@ describe('the presets page exists exactly where a session does (#593)', () => {
   })
 
   it('has one address, which the link, the canonical and the sitemap all use', async () => {
+    /*
+     * §2.6/§3.7. The address is `/explore/<id>` since the move out of the devices tree. What is
+     * asserted is unchanged and is the point of asserting it here: the link, the canonical and
+     * the sitemap agree, whatever the address is. All three read `presetsHref`, so the way this
+     * test fails is a fourth place spelling it by hand.
+     */
     const urls = sitemap().map((entry) => entry.url)
-    const listed = urls.filter((url) => url.endsWith('/presets'))
+    const listed = urls.filter((url) => /\/explore\/[^/]+$/.test(url))
     expect(listed).toEqual([
-      'https://patchscore.app/devices/korg-minilogue-xd/presets',
-      'https://patchscore.app/devices/moog-muse/presets',
-      'https://patchscore.app/devices/moog-subsequent-37/presets',
+      'https://patchscore.app/explore/korg-minilogue-xd',
+      'https://patchscore.app/explore/moog-muse',
+      'https://patchscore.app/explore/moog-subsequent-37',
     ])
     for (const device of DEVICES) {
-      expect(presetsHref(device)).toBe(`/devices/${device.id}/presets`)
+      expect(presetsHref(device)).toBe(`/explore/${device.id}`)
       expect(urls.includes(`https://patchscore.app${presetsHref(device)}`), device.id).toBe(
         presetSession(device) !== undefined,
       )
     }
+    // And nothing is left at the old shape, which is what the redirects in `next.config.ts` are
+    // for: an address the sitemap still named would be a crawler told to go two places at once.
+    expect(urls.filter((url) => url.includes('/presets'))).toEqual([])
     const meta = await generateMetadata({ params: Promise.resolve({ id: 'moog-muse' }) })
-    expect(meta.alternates?.canonical).toBe('/devices/moog-muse/presets')
+    expect(meta.alternates?.canonical).toBe('/explore/moog-muse')
     expect(meta.title).toBe('Moog Muse: factory patches — Patchscore')
     expect(meta.description).toContain('Factory patches on the Moog Muse')
     expect(meta.description).not.toMatch(/\b224\b/)
@@ -98,7 +107,7 @@ describe('the presets page exists exactly where a session does (#593)', () => {
     const device = renderToStaticMarkup(
       await DevicePageRoute({ params: Promise.resolve({ id: 'moog-muse' }) }),
     )
-    expect(device).toContain('href="/devices/moog-muse/presets"')
+    expect(device).toContain('href="/explore/moog-muse"')
     expect(MUSE).toContain(`href="${deviceHref(byId('moog-muse'))}"`)
     expect(MUSE_TEXT).toContain('Everything else about the Moog Muse')
   })
@@ -176,11 +185,13 @@ describe('the page says what the model says, every entry open', () => {
     // catalogue and earns none, so the whole route is prerendered HTML.
     const here = dirname(fileURLToPath(import.meta.url))
     for (const file of [
-      join(here, '..', 'app', 'devices', '[id]', 'presets', 'page.tsx'),
+      join(here, '..', 'app', 'explore', '[id]', 'page.tsx'),
       join(here, '..', 'components', 'catalogue', 'preset-section.tsx'),
     ]) {
       expect(readFileSync(file, 'utf8'), file).not.toContain("'use client'")
     }
-    expect(readFileSync(join(here, '..', 'app', 'devices', '[id]', 'presets', 'page.tsx'), 'utf8')).not.toContain('ExportActions')
+    expect(
+      readFileSync(join(here, '..', 'app', 'explore', '[id]', 'page.tsx'), 'utf8'),
+    ).not.toContain('ExportActions')
   })
 })
