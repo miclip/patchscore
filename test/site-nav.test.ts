@@ -14,7 +14,8 @@ import DrumMachinesPage from '../app/drum-machines/page'
 import RiffIndexPage from '../app/riffs/page'
 import RiffRoute from '../app/riffs/[id]/page'
 import PresetFigureRoute from '../app/explore/[id]/[patch]/page'
-import Page from '../app/page'
+import OrientationPage from '../app/page'
+import StudioPage from '../app/studio/page'
 import { DEVICES } from '../lib/devices/registry.generated'
 import { RECORD_RIFFS } from '../lib/riffs'
 import { TEMPLATES } from '../lib/templates/index'
@@ -56,7 +57,16 @@ async function routes(): Promise<{ name: string; markup: string }[]> {
   }
 
   return [
-    { name: '/', markup: await shell(await Page({ searchParams: Promise.resolve({}) })) },
+    /*
+     * Both halves of what used to be one route. `/` is the orientation page and `/studio` is the
+     * app, and every claim below is about *every* page — a route kept out of this list is a route
+     * none of them cover, which is the reason `/drum-machines` and `/riffs` are in it.
+     */
+    { name: '/', markup: await shell(createElement(OrientationPage)) },
+    {
+      name: '/studio',
+      markup: await shell(await StudioPage({ searchParams: Promise.resolve({}) })),
+    },
     { name: '/devices', markup: await shell(createElement(DeviceIndexPage)) },
     { name: '/directions', markup: await shell(createElement(DirectionIndexPage)) },
     // #174. In the route set rather than beside it: every claim below — one nav, the same links,

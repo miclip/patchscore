@@ -7,6 +7,7 @@ import { SAMPLE_TARGETS } from '@/lib/samples'
 import { TEMPLATES } from '@/lib/templates'
 import { kitSession } from '@/lib/studio/kit-session'
 import { presetSession } from '@/lib/studio/preset-session'
+import { STUDIO_PATH } from '@/lib/studio/entry'
 import {
   EXPLORE_PATH,
   deviceHref,
@@ -25,9 +26,10 @@ import {
  * adds its page here without an edit (invariant 2).
  *
  * What is still absent is every permalinked guide, and that is the rule this file was written to
- * state. #44 settled that a guide is `canonical: '/'`, because a guide is a generated view of the
- * app rather than an authored page, and there is no upper bound on how many variants exist.
- * Enumerating them would tell a crawler the opposite of what the canonical tag says.
+ * state. #44 settled that a guide is canonical to the studio's own address, because a guide is a
+ * generated view of the app rather than an authored page, and there is no upper bound on how many
+ * variants exist. Enumerating them would tell a crawler the opposite of what the canonical tag
+ * says.
  *
  * A catalogue page is the other thing: authored content at its own address, with its own
  * canonical pointing at itself. So the test to apply to a new entry here is not "is it a URL that
@@ -40,6 +42,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
       url: SITE_ORIGIN,
       changeFrequency: 'weekly',
       priority: 1,
+    },
+    /*
+     * §8. The studio, at its own address since `/` became an orientation page. Listed by the same
+     * test everything here passes: there is a page at it whose canonical is itself. What is still
+     * absent is every permalinked *guide*, for the reason stated above — the bare studio is a
+     * page, and a guide is a view of it.
+     */
+    {
+      url: `${SITE_ORIGIN}${STUDIO_PATH}`,
+      changeFrequency: 'weekly',
+      priority: 0.9,
     },
     {
       url: `${SITE_ORIGIN}/devices`,

@@ -11,18 +11,21 @@ import './globals.css'
  * name the apex or the two signals contradict each other, which is worse than having neither.
  * If the redirect is ever flipped, this flips with it.
  *
- * `canonical: '/'` is deliberate and applies to permalinked guides too (#12): once state is
- * URL-encoded, `?rig=…&template=…&seed=…` produces unbounded distinct URLs serving near-identical
- * pages. A guide is a *view of one app*, not a page of its own — the guides are generated, not
- * authored, and there is no reason to want thousands of them in an index.
+ * `canonical: '/'` is the default a route states its own over, and `/` is a real page since the
+ * studio moved to `/studio`. The rule it was written for is unchanged and now lives on the route
+ * it is about (#12, #44): once state is URL-encoded, `?device=…&template=…&seed=…` produces
+ * unbounded distinct URLs serving near-identical pages, so every one of them is canonical to
+ * `/studio`. A guide is a *view of one app*, not a page of its own — the guides are generated,
+ * not authored, and there is no reason to want thousands of them in an index.
  *
  * `metadataBase` also gives relative Open Graph values an origin to resolve against, so a shared
  * link previews as itself rather than as nothing.
  *
  * The title and description here are **defaults every route overrides**, not the whole story.
- * `app/page.tsx` replaces them per guide (#99), and each catalogue page replaces them with its
- * own (#84); what is left for this to cover is a route that states neither. The canonical is the
- * one field the root deliberately inherits rather than varies.
+ * `app/studio/page.tsx` replaces them per guide (#99), and each catalogue page replaces them with
+ * its own (#84); what is left for this to cover is a route that states neither. The canonical is
+ * the one field `/` deliberately inherits rather than varies, because the default already names
+ * the page it is on.
  */
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_ORIGIN),

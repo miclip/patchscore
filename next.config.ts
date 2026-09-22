@@ -33,6 +33,52 @@ const nextConfig: NextConfig = {
    */
   async redirects() {
     return [
+      /**
+       * §8. **Legacy permalinks to the studio**, from when the studio was the front door.
+       *
+       * `/` is an orientation page now and must serve as one, so this cannot key on the path: it
+       * keys on the query, which is the thing that distinguishes a shared guide from somebody
+       * typing the domain. Next ANDs the entries inside one `has`, so three rules are three
+       * alternatives rather than a conjunction, and the query string is carried to the
+       * destination automatically.
+       *
+       * `format` is written first on every link `encodeGuideInputs` produces, so it alone covers
+       * every permalink this app has ever emitted. `device` and `template` are there for a
+       * hand-edited one that dropped it — `encodeGuideInputs` never omits `format`, but a reader
+       * trimming a URL in an address bar does not know that.
+       *
+       * A `/` carrying none of the three falls through to the orientation page, which is right:
+       * `studioEntry` would have served the defaults for such a query anyway, so there is no
+       * guide being lost, only a query nobody can read.
+       *
+       * Middleware would catch any non-empty query in one rule. It is not worth an edge runtime
+       * in front of an otherwise static site to cover the case these three do not.
+       *
+       * **The addresses below are literals and have to be**, which is the one place on this site
+       * where a path is spelt twice on purpose. Next transpiles this file on its own, outside the
+       * app's module graph and without the `@/` alias, so importing `STUDIO_PATH` from
+       * `lib/studio/entry` type-checks, passes every test and then fails the build with
+       * `Cannot find module './lib/core'`. `test/redirects.test.ts` holds these strings against
+       * the constants instead, which is the guard an import would have been.
+       */
+      {
+        source: '/',
+        has: [{ type: 'query' as const, key: 'format' }],
+        destination: '/studio',
+        permanent: true,
+      },
+      {
+        source: '/',
+        has: [{ type: 'query' as const, key: 'device' }],
+        destination: '/studio',
+        permanent: true,
+      },
+      {
+        source: '/',
+        has: [{ type: 'query' as const, key: 'template' }],
+        destination: '/studio',
+        permanent: true,
+      },
       {
         source: '/devices/:id/presets/:patch',
         destination: '/explore/:id/:patch',

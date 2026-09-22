@@ -23,7 +23,7 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
     expect(new URL(String(metadata.metadataBase)).origin).toBe(SITE_ORIGIN)
   })
 
-  it('lists the root, both catalogues, every page in them, the reference, and no generated view', () => {
+  it('lists the root, the studio, both catalogues, every page in them, the reference, and no generated view', () => {
     // #44: a permalinked guide is canonical to '/', so enumerating variants here would contradict
     // it. A catalogue page (#84) is the other thing — authored content whose canonical is itself —
     // so it belongs. The rule for a new entry is "is there a page at it whose canonical is itself",
@@ -80,9 +80,14 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
      * §2.6/§3.7 makes it seven: `/explore` is the index of a section that already had every page
      * under it, and it is hand-written here for `/riffs`' and `/samples`' reason — there is no
      * list in the repo to loop over for an index itself, only for its entries.
+     *
+     * §8 makes it eight: `/studio` is a page now rather than the root, listed by the same test.
+     * What is still absent is every permalinked *guide*, which is #44's rule and the thing this
+     * count must never start growing with — if this number ever moves by more than one at a time,
+     * that is what has happened.
      */
     expect(entries).toHaveLength(
-      7 +
+      8 +
         DEVICES.length +
         kits.length +
         presets.length +
@@ -98,6 +103,9 @@ describe('sitemap, robots and canonical agree (#74, #44)', () => {
     // one authored page, with no list in the repo to loop over.
     expect(urls).toEqual([
       SITE_ORIGIN,
+      // §8. The studio, second, where it sits in the file: the root is the orientation page and
+      // this is the app that used to be at it.
+      `${SITE_ORIGIN}/studio`,
       `${SITE_ORIGIN}/devices`,
       ...DEVICES.map((d) => `${SITE_ORIGIN}/devices/${d.id}`),
       ...kits.map((d) => `${SITE_ORIGIN}/devices/${d.id}/kit`),

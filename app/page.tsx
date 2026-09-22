@@ -1,66 +1,121 @@
 import type { Metadata } from 'next'
-import { Studio } from '@/components/studio'
-import { guideMeta, guideUrl, studioEntry } from '@/lib/studio/entry'
-import type { SearchParams } from '@/lib/studio/entry'
-import { SITE_NAME } from '@/lib/studio/site'
+import Link from 'next/link'
+import { Footer } from '@/components/footer'
+import { SITE_DESCRIPTION, SITE_NAME } from '@/lib/studio/site'
+import { STUDIO_PATH } from '@/lib/studio/entry'
+import { EXPLORE_PATH } from '@/lib/studio/catalogue'
 
 /**
- * Build step 8 (#10) — the input surface: device picker, genre picker, seed, mood.
+ * **The front door, which is no longer the studio.**
  *
- * A server component wrapping one client island. The inputs are client state from the second
- * frame on, and `resolve` is pure and fast enough to run on every change (single-digit ms for a
- * three-device rig), so there is nothing to fetch — but there **is** server work, and #99 is
- * what it costs to skip it.
+ * `/` was the studio from build step 8, when the studio was the whole product and the site was
+ * it plus two catalogues. It is now one of several things a reader might want and the only one
+ * that asks for a rig before it does anything, so somebody arriving from a search result — and
+ * almost everybody arrives from a search result, because all but one of the addresses here are
+ * a page rather than the app — met a forty-six box tick-list before anything had said what the
+ * tick-list was for. This page says it, and the studio is one of the ways out of it.
  *
- * This used to take no `searchParams` and render `<Studio />` bare, which meant the server
- * painted `DEFAULT_INPUTS` whatever the URL said and the link only got a say after hydration.
- * Every shared link flashed the wrong guide, every one of them previewed identically, and
- * anything without JavaScript — a crawler, an archive, `curl` — was handed the default with
- * nothing on the page to admit it. `studioEntry` decodes the query here instead, and the same
- * decoded inputs are handed to `<Studio>` as its first frame, so the server's markup and the
- * client's first pass are still the same bytes (`test/studio-render.test.ts`).
+ * **Prerendered, with no client boundary and nothing to decode.** It takes no `searchParams` and
+ * is a function of nothing, which is exactly what the studio route stopped being at #99 and the
+ * reason the two cannot share an address: one is a view of a request and one is a page.
  *
- * `searchParams` opts this route into dynamic rendering, which is correct: the page is a
- * function of the URL now, so a prerendered copy would be a cached answer to a question nobody
- * asked. The catalogue pages (#84) are the static half of the site and stay that way.
+ * `canonical: '/'` is the layout's default and this is the route it was always describing; the
+ * difference since the move is that there is now a page under it rather than a generated view
+ * (#44). A permalinked guide is canonical to `/studio`, which `app/studio/page.tsx` states.
+ *
+ * **Its own markup is six links and two sentences.** No new stylesheet rule: the destinations
+ * are the catalogue card every index on this site already uses, so this page cannot drift from
+ * them visually, and the masthead is the masthead. What this page must not become is a second
+ * navigation with its own ideas — the site nav is the one link set (#112), and this is a page
+ * about what is behind those links rather than a copy of them.
  */
 
-type PageProps = { searchParams: Promise<SearchParams> }
-
-/**
- * What a shared link previews as. Same decode as the page below, by construction — a second one
- * here is how a card comes to describe a guide the page does not render.
- *
- * `canonical: '/'` is restated rather than inherited (#44). It is inherited today, but this is
- * the one route where per-view metadata and one canonical URL sit side by side, and the pairing
- * is the decision worth being able to read in one place — and to test in one place.
- *
- * **`og:url` deliberately differs from the canonical**, which is not a contradiction: they are
- * addressed to different readers about different units. The canonical tells an index there is one
- * page here. `og:url` identifies the *share*, and one `og:url` for every guide would collapse
- * them into a single share object — throwing away the per-guide card this whole function exists
- * to produce. `lib/studio/entry.ts` carries the argument in full.
- */
-export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
-  const entry = studioEntry(await searchParams)
-  const { title, description } = guideMeta(entry.inputs)
-
-  return {
-    title,
-    description,
-    alternates: { canonical: '/' },
-    openGraph: {
-      type: 'website',
-      siteName: SITE_NAME,
-      url: guideUrl(entry),
-      title,
-      description,
-    },
-    twitter: { card: 'summary', title, description },
-  }
+export const metadata: Metadata = {
+  title: SITE_NAME,
+  description: SITE_DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    url: '/',
+    title: SITE_NAME,
+    description: SITE_DESCRIPTION,
+  },
+  twitter: { card: 'summary', title: SITE_NAME, description: SITE_DESCRIPTION },
 }
 
-export default async function Page({ searchParams }: PageProps) {
-  const entry = studioEntry(await searchParams)
-  return <Studio initialInputs={entry.inputs} />
+/**
+ * Where a reader can go, in the order the nav names them, so the two agree rather than each
+ * having a view. The sentence under each one says what the thing *is*, in the words somebody
+ * who has not used this would use: a device is a box, a direction is a song, a riff is one
+ * figure, a sample is one sound.
+ */
+const DESTINATIONS: readonly { href: string; name: string; sub: string }[] = [
+  {
+    href: STUDIO_PATH,
+    name: 'Studio',
+    sub: 'Tick the boxes you own, choose a direction, and read the guide it resolves to — every part placed on a real voice, with real parameter values.',
+  },
+  {
+    href: '/devices',
+    name: 'Devices',
+    sub: 'Every box in the library: what it can do, the settings this site knows for it, and the page in the manual each one came off.',
+  },
+  {
+    href: '/directions',
+    name: 'Directions',
+    sub: 'The musical directions a guide can be built in, with the structure, harmony and parts each one asks for.',
+  },
+  {
+    href: '/riffs',
+    name: 'Riffs',
+    sub: 'One figure at a time, named for the record it comes from: build the sound on the boxes you own and play it.',
+  },
+  {
+    href: '/samples',
+    name: 'Samples',
+    sub: 'One sound at a time, recorded on your own rig, with the technique for getting it written out.',
+  },
+  {
+    href: EXPLORE_PATH,
+    name: 'Explore',
+    sub: 'The factory patches a box ships, laid open: what each one is for, and a figure written for it where one exists.',
+  },
+]
+
+export default function Page() {
+  return (
+    <main className="shell catalogue-page">
+      <header className="masthead">
+        <h1>{SITE_NAME}</h1>
+        <p>{SITE_DESCRIPTION}</p>
+        {/*
+          Invariant 1, where a reader can see it, and in the masthead rather than under the list
+          because it is part of what this is rather than a footnote to it. `.masthead p` is the
+          register it wants — 13px, dim — and the same rule the line above it uses; a bare
+          paragraph in the body renders at 15px in full-strength ink, which made the quietest
+          claim on the page the loudest thing on it.
+        */}
+        <p>
+          Nothing here is generated by a language model. Every setting is read off the manual for
+          the box it is on, or marked as unverified until somebody reads it.
+        </p>
+      </header>
+
+      <div className="catalogue-body">
+        <ul className="catalogue-list">
+          {DESTINATIONS.map((d) => (
+            <li className="catalogue-item" key={d.href}>
+              <Link className="catalogue-link" href={d.href}>
+                <span className="catalogue-name">{d.name}</span>
+                <span className="catalogue-sub">{d.sub}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <Footer permalink={undefined} devices={[]} />
+    </main>
+  )
 }
