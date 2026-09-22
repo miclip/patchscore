@@ -29,14 +29,44 @@ minor key, entries that land late on every chord, one rule whose breach collapse
 the lesson is how little has to move for a chord to change its name. That entry is a **rewrite**
 of one the operator called boring, so it is the standard rather than the complaint.
 
-Four questions, and a figure has to pass all four:
+### Write the part first
+
+**Optimise for interest, then find what it teaches. Never the other way round.** A lesson is not a
+substitute for a part worth playing, and a figure derived from a lesson tends to contain the
+minimum that demonstrates it, which is the definition of a thin one.
+
+`UBER_SUB` is the worked example and it took two rejections. The first version alternated one
+pitch class between two octaves each bar, on the theory that *the octave is the only movement*
+was a lesson — reported from playing as *"seem to just bounce between octaves"*. The second
+removed the octaves by removing the movement: one pitch a bar struck twice, seven notes over four
+pitches. That version measured cleaner than the first and was a worse part — *"how is that more
+interesting of a bass line?"* The third is nineteen notes over eight pitches with a gesture that
+lands in a different place in every bar, and its lesson was named after it existed.
+
+Both bad versions had a defensible paragraph. That is what makes this failure hard to see from a
+desk: the prose reads like a lesson either way, and only the notes are thin.
+
+**Do not cite another figure in the library as permission.** Fifteen of them have never been
+played by anyone. Pointing at an existing repetitive figure to justify writing another one
+compounds an unverified decision rather than supporting it — the only figures that have been
+through a person's ears are the ones the operator has said something about.
+
+Repetition earns its place by being the subject of the part, and even then playing is what
+settles it. It is never the default because the schema tolerates it.
+
+### Then the four questions
+
+A figure has to pass all four:
 
 1. **Is there one thing a player could name after playing it once?** A move, not a description of
    a sound: the borrowed third, the common tone, the late entry, the withheld resolution.
 2. **Is that thing distinct from every other figure on the same box?**
-3. **Is there something to play?** A pad holding four notes for eight bars can pass this. A figure
-   where the reader holds one note while the preset works probably does not, and the test is
-   whether the *holding* is the lesson.
+3. **Is there something to play?** A pad holding four notes for eight bars can pass this, and
+   `an-ending-ascent-pad` and `vox-humana` do. A figure where the reader holds one note while the
+   preset works probably does not, and the test is whether the *holding* is the lesson. **This
+   question is weaker than it looks** — both rejected versions of `UBER_SUB` passed it on paper,
+   because "there is something to play" is nearly always answerable yes. Ask the harder form: is
+   there enough going on here that somebody would play it twice?
 4. **Does the technique say why, or only what?** *"Enter on beat two"* is an instruction. *"Enter
    on beat two, so the tine comes in behind the bass"* is a lesson.
 
@@ -49,6 +79,13 @@ and character, down to the same avoid-note rule, and `#brew time` was `Cloud Lev
 set.
 
 A review that fails twenty of twenty-five is describing a taste, not applying a bar.
+
+**No measurement substitutes for playing it.** Every numeric proxy tried here has a counterexample
+among figures the library keeps: sparseness ranks `blade-runner-blues-lead`, an exemplar, alongside
+the thinnest entries; distinct pitches per note ranks the rejected `UBER_SUB` above its own
+replacement; bar-to-bar rhythmic identity flags `hypno-acid-sixteenth-loop`, whose whole idea is
+repeating a bar. The same numbers describe a deliberate minimal figure and a dead one. Whether a
+part is worth playing is not in the note data, so do not go looking for it there.
 
 ---
 
