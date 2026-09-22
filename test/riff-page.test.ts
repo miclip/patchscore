@@ -854,6 +854,69 @@ describe('the two-track body: prose beside the material above 1180px', () => {
   })
 })
 
+describe('the wide band: the material pairs again from 1600px', () => {
+  /**
+   * §4 gave the material a 550px track, which is one column of chord table. 970px is two, and
+   * that is the whole of this block — plus the one rule that makes it an improvement rather than
+   * a regression.
+   *
+   * **1600 and not 1500, measured rather than rounded.** At shell 1400, 1450 and 1550 the
+   * material track is 770, 820 and 920, and `/explore/korg-minilogue-xd/pressure` measures +19%,
+   * +19% and +13%: the halves land at a width its content reflows badly at. At 1600 the track is
+   * 970, the halves are ~477, and the same page is 12% shorter than at 1599. A design that is
+   * excellent at 1600 and 19% worse at 1512 would punish the commonest laptop there is, so the
+   * cap lifts at 1600 or not at all.
+   */
+  const wide = (): string => {
+    const at = CSS.indexOf('@media screen and (min-width: 1600px)')
+    expect(at, 'the wide-band rule is missing').toBeGreaterThan(-1)
+    const end = CSS.indexOf('\n}\n', CSS.indexOf('.site-nav', at))
+    expect(end).toBeGreaterThan(at)
+    return CSS.slice(at, end)
+  }
+
+  it('lifts the cap on these two pages and on nothing else', () => {
+    const block = wide()
+    // `.shell.riff-page`, which is the record riff page and the preset figure page and no other
+    // main on the site. The guide, the device page and the sample page keep 1180 — a 5,900px
+    // parameter table is already full width and does not want more.
+    expect(block).toContain('.shell.riff-page')
+    expect(block).toContain('max-width: 1600px')
+    expect(block).not.toContain('.sample-page')
+    expect(block).not.toContain('.device-page')
+  })
+
+  it('restores the pairing and spans a trailing panel that would sit alone', () => {
+    const block = wide()
+    expect(block).toContain('grid-template-columns: minmax(0, 1fr) minmax(0, 1fr)')
+    /*
+     * The rule that turns this from a regression into an improvement on the page it was for.
+     * Without it the Muse Runner measured 2964px at 1601 against 2381px at 1599 — 24% worse —
+     * because its chords and rules pair and *The notes* is left alone in a 477px track, narrower
+     * than the 550px it had stacked and so taller. With it: 2114px, 11% better.
+     */
+    expect(block).toContain(':last-child:nth-child(even)')
+    expect(block).toContain('grid-column: 1 / -1')
+  })
+
+  it('takes the navigation with it, so the header is not indented from the page', () => {
+    // Measured at 1610px: leaving the nav at 1180 while the page is 1600 puts the mark 215px
+    // inside the masthead's own left edge. `:has()` because the nav is a sibling of the page in
+    // the layout, and it is scoped to this block and to a page carrying `riff-page`.
+    expect(wide()).toContain('body:has(main.riff-page) .site-nav')
+    // And nowhere else: the nav's own rule is still the shared 1180.
+    expect(rule('.site-nav')).toContain('max-width: 1180px')
+  })
+
+  it('is separable from the 1180px rule, so reverting it leaves a fixed page', () => {
+    // Two blocks, not one. The 1180 rule is the structural fix and stands alone; this is the
+    // width band on top of it, and `git revert` of one must leave the other working.
+    expect(CSS.indexOf('@media screen and (min-width: 1180px)')).toBeLessThan(
+      CSS.indexOf('@media screen and (min-width: 1600px)'),
+    )
+  })
+})
+
 describe('the riff page at 1280px and 390px', () => {
   /**
    * #21. These are the claims CSS can carry. **They are not a rendering**: nothing here proves

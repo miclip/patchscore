@@ -1762,6 +1762,74 @@ body {
   }
 }
 
+/*
+ * **At 1600px the material track pairs again, and the two pages that have one get the width.**
+ *
+ * The 1180px block above stacks the material because a 550px track cannot hold two columns of
+ * chord table. Give it 970px and it can, and every page tested gets shorter rather than most:
+ * the Muse Runner 3314 -> 3000, and the short-technique figures that the 1180 rule makes *taller*
+ * come back under where they started.
+ *
+ * **1600 and not 1500, and that is a measured cliff rather than a round number.** At shell 1400,
+ * 1450 and 1550 the material track is 770, 820 and 920, and `/explore/korg-minilogue-xd/pressure`
+ * measures +19%, +19% and +13% — the panels halve into a width their content reflows badly at,
+ * and the page grows. At 1600 the track is 970, the halves are ~477, and the same page is -7%.
+ * So the cap lifts at 1600 or not at all: a design that is excellent at 1600 and 19% worse at
+ * 1512 would punish the commonest laptop on the market.
+ *
+ * **Only `.riff-page`, which is two pages.** The guide, the device page and the sample page keep
+ * 1180. A device page's `Parameter sources` is a 5,900px table that is already full width, and
+ * the guide is read at the machine — neither wants more width, and #611's reading measure is not
+ * involved here at all: the prose track stays `calc(66ch + 32px)` at every width, and what widens
+ * is the column holding tables and note rows.
+ *
+ * This block is deliberately separable from the one above. Reverting it leaves a fixed page with
+ * the old cap rather than an unfixed one.
+ */
+@media screen and (min-width: 1600px) {
+  .shell.riff-page {
+    max-width: 1600px;
+  }
+
+  .riff-body > .columns {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  /*
+   * A trailing panel with no partner spans both tracks instead of sitting alone in one.
+   *
+   * **This rule is why the pairing is an improvement rather than a regression.** Without it the
+   * Muse Runner — the page that prompted the whole change — got *worse* at 1600 than it was at
+   * 1180: its material is a key control, the chords, the rules and *The notes*, so the chords and
+   * the rules pair and the notes sit alone in a 477px track, narrower than the 550px they had
+   * stacked, and therefore taller. Measured: 2381px at 1599 against 2964px at 1601, a 24%
+   * regression on the one page this was for. With the span it is 2114px, an 11% improvement.
+   *
+   * `:last-child:nth-child(even)` identifies exactly that panel. The key control is always the
+   * first child and always spans both tracks, so an even-indexed last child is the one left over.
+   * A page whose material happens to pair evenly — `/riffs/blue-monday-bass`, `pressure` — matches
+   * nothing here and is unaffected.
+   */
+  .riff-body > .columns > :last-child:nth-child(even) {
+    grid-column: 1 / -1;
+  }
+
+  /*
+   * The navigation follows the page it sits above, on these two routes only.
+   *
+   * It is `max-width: 1180px` centred like every other shell, and leaving it there while the page
+   * under it is 1600 puts the mark 215px inside the masthead's own left edge — the header reads as
+   * indented from the document. Verified in a browser at 1610px before and after.
+   *
+   * `:has()` because the nav is a sibling of `{children}` in the layout and CSS has no way up or
+   * backwards otherwise. It is scoped to this media query and to a page carrying `riff-page`, so
+   * the nav is untouched on every other route and at every other width.
+   */
+  body:has(main.riff-page) .site-nav {
+    max-width: 1600px;
+  }
+}
+
 .riff-technique p,
 .sample-technique p {
   margin: 0 0 12px;
