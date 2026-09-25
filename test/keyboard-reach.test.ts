@@ -26,8 +26,8 @@ import { device as fixtureDevice, recipe } from './fixtures'
  *    inside the window fits somewhere whenever some placement holds both ends, which is the fact
  *    #659's first reading missed by taking the octave buttons as the only control;
  *  - the two shipped readings are what the manifests say: the Subsequent 37 declares a board
- *    derived from three pages, and the Muse records the pages read and declares nothing,
- *    because a key count is not a reach.
+ *    derived from three pages, and the Muse records a unit reading that fixes the board by note
+ *    name and its octave buttons, and declares nothing, because no page fixes the MIDI number.
  */
 
 const CITE = { kind: 'manual', source: 'A Manual, p.1' } as const
@@ -242,14 +242,16 @@ describe('the two boxes #659 asked about', () => {
     })
   })
 
-  it('the Muse records the pages read and declares nothing, because a key count is not a reach', () => {
+  it('the Muse records the unit reading and declares nothing, because no page fixes the lowest MIDI note', () => {
     expect(muse.keyboardReach).toBeUndefined()
     const fact = muse.capabilityEvidence?.[KEYBOARD_REACH_FACT]
-    expect(fact).toMatchObject({ kind: 'unknown' })
-    if (fact === undefined || fact === false || fact.kind !== 'unknown') throw new Error('unreachable')
-    expect(fact.reason).toMatch(/p\.116/)
-    expect(fact.reason).toMatch(/61/)
-    expect(fact.reason).toMatch(/lowest key/)
+    expect(fact).toMatchObject({ kind: 'partly', cite: { kind: 'observed' } })
+    if (fact === undefined || fact === false || fact.kind !== 'partly') throw new Error('unreachable')
+    expect(fact.cite.source).toMatch(/firmware 1\.4\.0/)
+    expect(fact.proven).toMatch(/61 keys/)
+    expect(fact.proven).toMatch(/C1 to C6/)
+    expect(fact.proven).toMatch(/one octave each way/)
+    expect(fact.open).toMatch(/MIDI 24 or 36/)
     expect(muse.capabilityEvidence?.[KEYBOARD_SHIFT_FACT]).toBeUndefined()
   })
 })
