@@ -354,7 +354,7 @@ describe('a figure the keyboard cannot reach throws (§4.1/#659)', () => {
     expect(keyboard(undefined).keyboardReach).toBeUndefined()
     expect(() => presetSession(keyboard(undefined), [riff])).not.toThrow()
     expect(muse.keyboardReach).toBeUndefined()
-    expect(muse.capabilityEvidence?.[KEYBOARD_REACH_FACT]).toMatchObject({ kind: 'unknown' })
+    expect(muse.capabilityEvidence?.[KEYBOARD_REACH_FACT]).toMatchObject({ kind: 'partly' })
   })
 })
 

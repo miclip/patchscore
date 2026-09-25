@@ -2890,18 +2890,24 @@ export const device: Device = {
     },
     voices: { kind: 'manual', source: `${MANUAL}, pp.8, 106, 116` },
     /**
-     * §2.6/§4.1/#659. **Read and silent on the one number a reach needs.** p.8 and p.116 give the
-     * keybed as 61 keys, p.13 says the KB OCTAVE buttons shift the keyboard down or up and not by
-     * how many octaves, and p.88 bounds a sequencer range by *"the total range of Muse's
-     * keyboard"* without stating it. Nothing anywhere says which note the lowest key plays, and
-     * a count is not a reach: 61 keys is a span, and where the span sits is the claim a figure
-     * would be checked against. Not inferred from the count, and `unknown` rather than
-     * `cited-against`, because the pages do not answer no. They do not answer.
+     * §2.6/§4.1/#659. **Read at the unit, and one number short of a reach.** The manual gives the
+     * keybed as 61 keys (pp.8, 116) and says KB OCTAVE shifts it (p.13) without saying how far.
+     * The unit answers both, read off the sequencer's step NOTE page, which names each note with
+     * an octave number (p.83): the board runs C1 to C6 with nothing lit, C0 to C5 at KB OCTAVE
+     * all the way down and C2 to C7 all the way up, so the buttons move it one octave each way.
+     *
+     * What that does not give is `lowestMidi`. No page says which octave number the screen gives
+     * middle C (pp.22 and 89 name middle C and label it nowhere), and C1 is MIDI 24 under one
+     * convention and 36 under the other. A reach declared on a guess would place figures an
+     * octave wrong, so `keyboardReach` stays undeclared and this is `partly` rather than
+     * `unknown`: two thirds came back, and the audit should count them.
      */
     [KEYBOARD_REACH_FACT]: {
-      kind: 'unknown',
-      reason:
-        'p.8 and p.116 give a 61 full-size semi-weighted Fatar keybed and p.13 says KB OCTAVE shifts the keyboard down or up; no page states which note the lowest key plays or how many octaves the buttons move it, and p.88 bounds NOTE PROB RNGE by "the total range of Muse’s keyboard" without printing that range. A reach cannot be inferred from a key count, so it waits on a reading at the unit',
+      kind: 'partly',
+      cite: OBSERVED,
+      proven:
+        'The board is 61 keys, C1 to C6 on the step NOTE page with KB OCTAVE unlit (p.83 shows that page naming notes by octave), C0 to C5 at KB OCTAVE fully down and C2 to C7 fully up: one octave each way',
+      open: 'Which MIDI note the lowest key sends. No page says which octave number the screen gives middle C (pp.22 and 89 name it without a label), so C1 is MIDI 24 or 36',
     },
     'features.lfo': { kind: 'manual', source: `${MANUAL}, pp.52, 57-58, 63` },
     /**
