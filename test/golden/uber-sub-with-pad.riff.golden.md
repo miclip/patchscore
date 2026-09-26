@@ -76,13 +76,13 @@ Every step below strikes the note in force at that point. The grid is where the 
 
 `pad` · `soft`
 
-The pad never plays the chord’s fifth. The bass has that note, and it lands somewhere different in every bar: C over F minor, B flat over E flat, A flat over D flat, G over C minor. With the fifth left out of the pad, each of those landings belongs to the bass alone and the ear hears where it falls.
+The pad never plays the chord’s fifth. The bass has that note, and it lands somewhere different in every bar. With the fifth left out of the pad, each of those landings belongs to the bass alone and the ear hears where it falls.
 
 Strike each chord on the downbeat and hold it for the whole bar. The pad is the steady reference under the line: it changes on the one every time, so the displaced fifths are heard against a clock that does not move.
 
-E flat 4 sounds in all four bars. Over F minor it is the seventh, over E flat it is the root, over D flat the ninth and over C minor the third, so one key under one finger changes meaning four times while it stays where it is.
+The key’s seventh sounds in all four bars. Over i it is the chord’s seventh, over VII its root, over VI its ninth and over v its third, so one key under one finger changes meaning four times while it stays where it is.
 
-Bars three and four are the same three keys, C4, E flat 4 and F4. Only the bass under them changes: over its D flat they are the seventh, ninth and third of D flat major, and over its C they are the root, third and eleventh of C minor.
+Bars three and four are the same three keys. Only the bass under them changes: over VI they are the seventh, ninth and third of a major chord, and over v they are the root, third and eleventh of a minor one.
 
 ## The pad notes
 
