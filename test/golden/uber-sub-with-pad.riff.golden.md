@@ -8,15 +8,15 @@ The riff is four notes: the root twice, the third, and then a leap up to the fif
 
 Bar one puts the fifth on beat three. Bar two brings it half a beat early. Bar three holds it back until the second half of beat three, so the bar drags before it lands. Play the shape the same way every time and move only when the leap comes.
 
-After the fifth the line falls to the note one step above the next chord’s root and leaves it there, so each bar hands over from above rather than landing early: F into the E flat, E flat into the D flat, D flat into the C minor.
+After the fifth the line falls to the note one step above the next chord’s root and leaves it there, so each bar hands over from above rather than landing early. That note is the chord’s own root: i hands to VII, VII to VI, VI to v.
 
 Bar four breaks it. The fifth arrives on the "and" of two and the line walks back up through the third to the root instead of falling. That is the turn, and it is the only bar that goes up at the end.
 
 Keep every note short and let the gaps stay open. The leap reads as a leap because there is space in front of it; legato through the bar and it is a scale.
 
-Never play A natural. It is the major third of the key and this line lives too low for it to read as colour rather than as mud.
+Never play the raised third of the key. It is a major third over i and this line lives too low for it to read as colour rather than as mud.
 
-Everything sits between C2 and C3. One octave is enough room for a bass line that is about where the notes fall.
+Everything sits inside one octave, from the key’s fifth up to the next one. That is enough room for a bass line that is about where the notes fall.
 
 ## The rules
 
