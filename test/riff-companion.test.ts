@@ -23,6 +23,8 @@ import {
 import { RIFFS } from '@/lib/riffs'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { presetCompanion, type PresetFigure } from '@/lib/studio/preset-session'
+import { hostSubject } from '@/lib/studio/riff-text'
+import { renderRiff } from '@/lib/studio/riff-markdown'
 import { box, makeRecipe, request, withRoles } from './rigs'
 
 /**
@@ -360,5 +362,25 @@ describe('a preset figure’s companion (§5A.9/§3.7)', () => {
   it('is undefined for a figure with no companion', () => {
     expect(presetCompanion({ riff: withoutCompanion(pairRiff()) } as PresetFigure, [oneVoice()], oneVoice())).toBeUndefined()
     expect(resolveCompanionAlone(withoutCompanion(pairRiff()), DEVICES)).toBeUndefined()
+  })
+})
+
+describe('each part names itself in its own sentences (§5A.9)', () => {
+  const uberSub = RIFFS.find((r) => r.id === 'uber-sub-displaced-fifth-riff')
+  if (uberSub === undefined) throw new Error('UBER_SUB is missing')
+
+  it('calls the host "the sub part" beside a companion, and a one-part riff keeps "this riff"', () => {
+    expect(hostSubject(uberSub)).toBe('The sub part')
+    const solo = RIFFS.find((r) => r.companion === undefined)
+    if (solo === undefined) throw new Error('no one-part riff')
+    expect(hostSubject(solo)).toBeUndefined()
+  })
+
+  it('says "The sub part asks for" in the export when the box substitutes the host', () => {
+    const lines = DEVICES.flatMap((d) => renderRiff(resolveRiff(uberSub, [d])).split('\n'))
+    const asks = lines.filter((l) => l.includes(' asks for a '))
+    expect(asks.length).toBeGreaterThan(0)
+    for (const line of asks) expect(line).not.toMatch(/^This (riff|figure)/)
+    expect(asks.some((l) => l.startsWith('The sub part asks for a dirty sub'))).toBe(true)
   })
 })
