@@ -1,4 +1,5 @@
 import type { Device, DeviceId, StoredRigV1, StudioLoad } from '@/lib/core'
+import { MAX_RIG_DEVICES } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 
 /**
@@ -73,4 +74,32 @@ export function storedRigName(load: StudioLoad): string | undefined {
   if (load.status !== 'ok') return undefined
   const rig: StoredRigV1 = load.doc.rig
   return rig.devices.length === 0 ? undefined : rig.name
+}
+
+/**
+ * §5A/#301. **One tick or untick on a borrowed rig**, as the next list of ids. Pure, so both pages
+ * that borrow a rig share it and a test can walk it. An untick drops the id; a tick adds it at the
+ * end unless it is already there or the rig is at #301's ceiling. An `excluded` id is never added:
+ * on a preset page that is the box already playing the host (§5A.9), and a tick on it cannot mean
+ * anything.
+ */
+export function toggledRig(
+  current: readonly DeviceId[],
+  id: DeviceId,
+  on: boolean,
+  excluded?: DeviceId,
+): readonly DeviceId[] {
+  if (!on) return current.filter((held) => held !== id)
+  if (id === excluded || current.includes(id)) return current
+  if (current.length >= MAX_RIG_DEVICES) return current
+  return [...current, id]
+}
+
+/**
+ * §5A.9. **The reader's stored rig without the page's own box**, for a preset page's companion.
+ * The box the page is for is already playing the host, so it is dropped from the rig the page
+ * opens on, exactly as it is dropped from the picker's rows.
+ */
+export function rigIdsWithout(load: StudioLoad, excluded: DeviceId): DeviceId[] {
+  return rigIdsFromStudio(load).filter((id) => id !== excluded)
 }

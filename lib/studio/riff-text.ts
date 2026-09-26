@@ -4,8 +4,12 @@ import type {
   ProgressionRow,
   ResolvedHook,
   ResolvedNote,
+  HookResolution,
   Riff,
+  CompanionGap,
+  RiffCompanion,
   RiffGap,
+  RiffPart,
   RiffResolution,
   RiffVoicing,
 } from '@/lib/core'
@@ -16,6 +20,7 @@ import {
   count,
   num,
   progressionRows,
+  resolveHook,
   resolvedClaims,
   slotGroups,
   stepGridRows,
@@ -341,9 +346,43 @@ export function riffNoteSummary(hook: ResolvedHook): string {
  * §4.1/invariant 5. A hook that did not resolve is a **content** problem rather than a rig gap,
  * and it says which — a reader whose rig is fine should not go looking at their rig.
  */
-export function riffNotesUnresolved(resolution: RiffResolution): string | undefined {
+export function riffNotesUnresolved(resolution: Pick<RiffResolution, 'notes'>): string | undefined {
   const { notes } = resolution
   return notes.outcome === 'unresolved' ? `These notes do not resolve: ${notes.detail}` : undefined
+}
+
+/**
+ * §5A.9. **The companion's two headings and its lead**, named for its role so a reader who has
+ * just read *The technique* and *The notes* for the host sees at once that this is another part.
+ * Both surfaces print these words; each adds its own emphasis.
+ */
+export function companionHeading(companion: RiffCompanion): string {
+  return `The ${companion.request.role} part`
+}
+
+export function companionNotesHeading(companion: RiffCompanion): string {
+  return `The ${companion.request.role} notes`
+}
+
+/** `pad` and `soft`: the companion's own role and character, which the host's lead line is not. */
+export function companionLead(companion: RiffCompanion): readonly [string, string] {
+  return [companion.request.role, companion.request.character]
+}
+
+/**
+ * §5A.9/#570. **The companion's notes in a key**, the way the host's are. At the riff's own key
+ * they are the resolution's, untouched; in any other the companion's hook is resolved there, so
+ * the one key control moves both hooks and the chord table together.
+ */
+export function companionNotesIn(
+  riff: Riff,
+  resolution: Pick<RiffResolution, 'companion'>,
+  key: string = riff.key,
+): HookResolution | undefined {
+  const { companion } = riff
+  if (companion === undefined) return undefined
+  if (key === riff.key && resolution.companion !== undefined) return resolution.companion.notes
+  return resolveHook(companion.hook, key)
 }
 
 /** `degree 1` / `degrees 1 3 5`, and the MIDI numbers beside them (#32). */
@@ -548,12 +587,43 @@ export function voiceHeading(voice: RiffVoicing): string {
  * acid line, handed a bright patch and given no sentence about it would conclude the patch is
  * what dirty sounds like on their box.
  */
-export function riffSubstitution(riff: Riff, voice: RiffVoicing): string | undefined {
+export function riffSubstitution(
+  part: Pick<RiffPart, 'request'>,
+  voice: RiffVoicing,
+  subject = 'This riff',
+): string | undefined {
   if (!voice.substituted) return undefined
   return (
-    `This riff asks for a ${riff.request.character} ${riff.request.role} and the nearest this ` +
+    `${subject} asks for a ${part.request.character} ${part.request.role} and the nearest this ` +
     `box authors is ${voice.character}.`
   )
+}
+
+/**
+ * §5A.9. **What a companion is called in a sentence about it**, where the host's sentences say
+ * *this riff* or *this figure*: `The pad part`. Passed as the subject to the substitution and gap
+ * sentences, so a companion's copy names the companion's role and character and never the host's.
+ */
+export function companionSubject(companion: RiffCompanion): string {
+  return `The ${companion.request.role} part`
+}
+
+/**
+ * §5A.9. **What the host is called in its own substitution and gap sentences.** `undefined` on a
+ * riff with one part, so those sentences keep *this riff* / *this figure* and the bytes they had;
+ * `The sub part` on a riff with a companion, so the two blocks name their parts the same way.
+ */
+export function hostSubject(riff: Riff): string | undefined {
+  return riff.companion === undefined ? undefined : `The ${riff.request.role} part`
+}
+
+/**
+ * §5A.9. **The heading over where a part plays.** `Where it plays` on a riff with one part, which
+ * is every riff before §5A.9 and the bytes they keep. With a companion each part names its role,
+ * so two blocks on one page cannot be read as one: `Where the sub plays`, `Where the pad plays`.
+ */
+export function whereHeading(riff: Riff, part: Pick<RiffPart, 'request'> = riff): string {
+  return riff.companion === undefined ? 'Where it plays' : `Where the ${part.request.role} plays`
 }
 
 /**
@@ -626,7 +696,7 @@ function voiceNames(assignables: readonly Assignable[], devices: readonly Device
  *
  * As soon as one box is ticked the sentence becomes whichever of §7.3's answers is true.
  */
-export function riffNoRig(_riff: Riff): string {
+export function riffNoRig(): string {
   return 'Pick the boxes you own.'
 }
 
@@ -638,20 +708,25 @@ export function riffNoRig(_riff: Riff): string {
  * statement about what this library has or has not authored — that is our backlog, and a reader
  * standing at a rack has no use for it.
  */
-export function riffGap(riff: Riff, gap: RiffGap, devices: readonly Device[]): string {
-  if (devices.length === 0) return riffNoRig(riff)
+export function riffGap(
+  part: Pick<RiffPart, 'request'>,
+  gap: RiffGap,
+  devices: readonly Device[],
+  subject = 'This figure',
+): string {
+  if (devices.length === 0) return riffNoRig()
   if (gap.reason === 'no-recipe') {
     return `${voiceNames(gap.capable, devices)} could carry it. Set this one up by ear.`
   }
   if (gap.because === 'no-such-role') {
-    return `Add a box that plays ${riff.request.role}.`
+    return `Add a box that plays ${part.request.role}.`
   }
   // §12.4/#645. The part is playable here; what the figure needs is the arpeggiator its chord
   // is held under, and that is a box rather than a setting.
   if (gap.because === 'no-arpeggiator') {
     return (
-      `This figure holds its chord for an arpeggiator to play one note at a time. ` +
-      `${voiceNames(gap.roleVoices, devices)} could play ${riff.request.role}, but nothing here ` +
+      `${subject} holds its chord for an arpeggiator to play one note at a time. ` +
+      `${voiceNames(gap.roleVoices, devices)} could play ${part.request.role}, but nothing here ` +
       'has an arpeggiator. Add a box with one.'
     )
   }
@@ -661,7 +736,7 @@ export function riffGap(riff: Riff, gap: RiffGap, devices: readonly Device[]): s
       ? 'Every voice here that plays it sounds one note'
       : `The most any voice here sounds is ${count(ceiling, 'note')}`
   const voices = gap.roleVoices.length
-  const needs = `This figure needs ${count(gap.notes, 'note')} at once.`
+  const needs = `${subject} needs ${count(gap.notes, 'note')} at once.`
   if (voices < gap.notes) {
     return (
       `${needs} ${sounds}, and there ${voices === 1 ? 'is one of them' : `are ${num(voices)} of them`}. ` +
@@ -674,4 +749,25 @@ export function riffGap(riff: Riff, gap: RiffGap, devices: readonly Device[]): s
     `${needs} ${sounds}, so stack it by hand across ${across} voices here that play it, one ` +
     'note each, and set them alike so the chord blends.'
   )
+}
+
+/**
+ * §5A.9/§7.3. **Why this rig cannot play a riff's companion.** `riffGap`'s answers in the
+ * companion's own words, and one more that only a second part can have: `no-room`, where the rig
+ * would play the part on its own and cannot carry it beside the host. That one says so, names the
+ * voices that could, and asks for another box, since a setting cannot make room on a voice the
+ * host holds.
+ */
+export function companionGap(riff: Riff, gap: CompanionGap, devices: readonly Device[]): string {
+  const { companion } = riff
+  if (companion === undefined) return ''
+  if (devices.length === 0) return riffNoRig()
+  const role = companion.request.role
+  if (gap.reason === 'no-room') {
+    return (
+      `${voiceNames(gap.capable, devices)} could play the ${role} part, but not beside the ` +
+      `${riff.request.role} this rig is already playing. Add another box that plays ${role}.`
+    )
+  }
+  return riffGap(companion, gap, devices, companionSubject(companion))
 }

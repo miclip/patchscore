@@ -21,6 +21,8 @@ import {
   type FactoryPatch,
   type HookNote,
   type Riff,
+  type RiffCompanion,
+  type RiffPart,
 } from '@/lib/core'
 import { at, on, variant } from '@/lib/core'
 import { chordRows, ruleLines } from '@/lib/studio/riff-text'
@@ -112,6 +114,18 @@ function refusal(candidate: unknown): string {
   const parsed = RiffSchema.safeParse(candidate)
   expect(parsed.success, 'expected this riff to be refused').toBe(false)
   return parsed.success ? '' : (parsed.error.issues[0]?.message ?? '')
+}
+
+/**
+ * §5A.9. **Every part of an entry**: the host, and its companion where it has one, each with its
+ * own technique and a label for failure messages. A library sweep that iterates this rather than
+ * `RIFFS` holds a companion to the same rule as a host without a second loop to forget.
+ */
+function partsOf(entry: Riff): { label: string; part: RiffPart; technique: readonly string[] }[] {
+  const host = { label: entry.id, part: entry, technique: entry.technique }
+  const { companion } = entry
+  if (companion === undefined) return [host]
+  return [host, { label: `${entry.id} companion`, part: companion, technique: companion.technique }]
 }
 
 /** Every message on a failed parse, for a candidate that breaks more than one rule. */
@@ -209,7 +223,7 @@ describe('RiffSchema (§5A)', () => {
 
   it('refuses a priority above 1, which would imply a part it does not have', () => {
     const r = riff()
-    expect(refusal({ ...r, request: { ...r.request, priority: 2 } })).toContain('one part')
+    expect(refusal({ ...r, request: { ...r.request, priority: 2 } })).toContain('not ranked against another part')
   })
 
   it('refuses `optional`/`inessential`: a riff is the part', () => {
@@ -219,12 +233,12 @@ describe('RiffSchema (§5A)', () => {
         ...r,
         request: { ...r.request, optional: true, inessential: { reason: 'nice to have' } },
       }),
-    ).toContain('cannot also be one the piece does without')
+    ).toContain('cannot also be one the figure does without')
   })
 
   it('refuses `distinct`: there is no second request to differ from', () => {
     const r = riff()
-    expect(refusal({ ...r, request: { ...r.request, distinct: true } })).toContain('nothing for it')
+    expect(refusal({ ...r, request: { ...r.request, distinct: true } })).toContain('nothing for `distinct` to decide')
   })
 
   it('refuses a `pitch` beside the hook — two authorities over one note (§4.1/#100)', () => {
@@ -470,6 +484,159 @@ describe('RiffSchema (§5A)', () => {
 })
 
 /**
+ * §5A.9. **A companion is a second part that owns only what makes it a part.** Its request, its
+ * words, its hook and how the hook is struck; the key, the harmony, the tempo and the bar count
+ * are the host's. The last describe holds the two to one set of rules by breaking each the same
+ * way on both sides and comparing what comes back.
+ */
+describe('a riff’s companion (§5A.9)', () => {
+  /** A held companion under the struck fixture: a pad across the same bar as the bass. */
+  function companion(over: Partial<RiffCompanion> = {}): RiffCompanion {
+    return {
+      request: { id: 'fixture-riff-pad', role: 'pad', priority: 1, character: 'soft', sustain: 'continuous' },
+      technique: ['Hold it under the bass.'],
+      hook: {
+        id: 'fixture-riff-pad-hook',
+        forRole: 'pad',
+        bars: 1,
+        baseOctave: 3,
+        notes: [{ step: 1, degree: 1, octave: 0, len: 16 }],
+      },
+      ...over,
+    }
+  }
+  const withCompanion = (c: unknown): unknown => ({ ...riff(), companion: c })
+  const pathsOf = (candidate: unknown): string[] => {
+    const parsed = RiffSchema.safeParse(candidate)
+    return parsed.success ? [] : parsed.error.issues.map((i) => i.path.join('.'))
+  }
+
+  it('accepts a riff with no companion, which is every riff before it', () => {
+    expect(riff().companion).toBeUndefined()
+    expect(RiffSchema.safeParse(riff()).success).toBe(true)
+  })
+
+  it('accepts a held companion, a struck one with a grid, and a through-composed one', () => {
+    const struck = companion({
+      request: { id: 'fixture-riff-lead', role: 'lead', priority: 1, character: 'bright', sustain: 'continuous', reArticulatesHook: true },
+      hook: { ...companion().hook, id: 'fixture-riff-lead-hook', forRole: 'lead' },
+      pattern: variant('fixture-riff-lead-grid', 'lead', 0, 16, at('accent', 110, 1)),
+    })
+    const { pattern: _grid, ...ungridded } = struck
+    const through = { ...ungridded, request: { ...struck.request, reArticulatesHook: false } }
+    for (const c of [companion(), struck, through]) {
+      const parsed = RiffSchema.safeParse(withCompanion(c))
+      expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+    }
+  })
+
+  it('accepts an arpeggiated-hold companion', () => {
+    const hook = {
+      ...companion().hook,
+      notes: [
+        { step: 1, degree: 1, octave: 0, len: 16 },
+        { step: 1, degree: 3, octave: 0, len: 16 },
+      ],
+    }
+    const parsed = RiffSchema.safeParse(withCompanion(companion({ arpeggiatedHold: true, hook })))
+    expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+  })
+
+  it.each([
+    ['key', 'C major'],
+    ['harmony', { progression: [{ degree: 'i', bars: 1 }] }],
+    ['bpm', { min: 100, max: 140, default: 120 }],
+    ['figureStartsAtBar', 1],
+    ['constraints', { forbiddenDegrees: [{ degree: 3, chord: 'i', reason: 'no' }] }],
+    ['reference', { kind: 'record', name: 'fixture' }],
+    ['deviceId', 'moog-muse'],
+    ['device', 'moog-muse'],
+    ['id', 'fixture-riff-companion'],
+    ['name', 'The companion'],
+    ['companion', {}],
+  ])('refuses a companion that carries its own `%s`: it inherits or does without', (field, value) => {
+    const paths = pathsOf(withCompanion({ ...companion(), [field]: value }))
+    expect(paths.length).toBeGreaterThan(0)
+    expect(paths.every((p) => p === 'companion')).toBe(true)
+  })
+
+  it('refuses a companion with no technique: it says what it adds', () => {
+    expect(refusal(withCompanion(companion({ technique: [] })))).toContain('say what it adds')
+  })
+
+  it('refuses a companion whose hook is not as long as the host’s', () => {
+    const c = companion({ hook: { ...companion().hook, bars: 2 } })
+    expect(refusal(withCompanion(c))).toContain('bar for bar')
+    expect(pathsOf(withCompanion(c))).toEqual(['companion.hook.bars'])
+  })
+
+  it('refuses a companion sharing the host’s request id or hook id', () => {
+    const base = companion()
+    expect(pathsOf(withCompanion({ ...base, request: { ...base.request, id: 'fixture-riff' } }))).toEqual([
+      'companion.request.id',
+    ])
+    expect(pathsOf(withCompanion({ ...base, hook: { ...base.hook, id: 'fixture-riff-hook' } }))).toEqual([
+      'companion.hook.id',
+    ])
+  })
+
+  it('resolves its degrees against the host’s key: a companion is refused for no key of its own', () => {
+    // The host's key is the only key; breaking it is reported once, on the host.
+    expect(pathsOf({ ...riff({ key: 'H major' }), companion: companion() })).toEqual(['key'])
+  })
+
+  /**
+   * Every rule `refinePart` holds, broken once on the host and once on the companion, must be
+   * refused with the same messages at the same relative paths. A rule added to one side and not
+   * the other fails here.
+   */
+  describe('is held to exactly the host’s rules, by the same check', () => {
+    const held = heldRiff()
+    const part = {
+      request: held.request,
+      hook: held.hook,
+    } as const
+    const breakages: [string, (p: RiffCompanion) => RiffCompanion][] = [
+      ['a grid on a held role', (p) => ({ ...p, pattern: variant('g', 'pad', 0, 16, at('accent', 110, 1)) })],
+      ['the flag on a held role', (p) => ({ ...p, request: { ...p.request, reArticulatesHook: true } })],
+      ['priority 2', (p) => ({ ...p, request: { ...p.request, priority: 2 } })],
+      ['a transient request', (p) => ({ ...p, request: { ...p.request, sustain: 'transient', sections: ['Drop'] } })],
+      ['optional', (p) => ({ ...p, request: { ...p.request, optional: true } })],
+      ['a pitch', (p) => ({ ...p, request: { ...p.request, pitch: { degree: 1, baseOctave: 2 } } })],
+      ['a hook for another role', (p) => ({ ...p, hook: { ...p.hook, forRole: 'lead' } })],
+      ['no notes', (p) => ({ ...p, hook: { ...p.hook, notes: [] } })],
+      ['an arpeggiated hold of one note', (p) => ({ ...p, arpeggiatedHold: true })],
+      [
+        'an arpeggiated hold asking for two voices',
+        (p) => ({
+          ...p,
+          arpeggiatedHold: true,
+          request: { ...p.request, polyphony: 2 },
+          hook: { ...p.hook, notes: [...p.hook.notes, { step: 1, degree: 3, octave: 0, len: 16 }] },
+        }),
+      ],
+      ['a struck role with no flag', (p) => ({ ...p, request: { ...p.request, role: 'lead' }, hook: { ...p.hook, forRole: 'lead' } })],
+    ]
+    const issues = (candidate: unknown, prefix: string): string[] => {
+      const parsed = RiffSchema.safeParse(candidate)
+      if (parsed.success) return []
+      return parsed.error.issues
+        .filter((i) => i.path.join('.').startsWith(prefix))
+        .map((i) => `${i.path.slice(prefix === '' ? 0 : 1).join('.')}: ${i.message}`)
+        .sort()
+    }
+    it.each(breakages)('%s', (_label, breakIt) => {
+      const broken = breakIt({ ...part, technique: ['x'] })
+      const { technique: _t, ...brokenPart } = broken
+      const onHost = issues({ ...held, ...brokenPart }, '')
+      const onCompanion = issues(withCompanion({ ...broken, request: { ...broken.request, id: 'c' }, hook: { ...broken.hook, id: 'c-hook' } }), 'companion')
+      expect(onHost.length).toBeGreaterThan(0)
+      expect(onCompanion).toEqual(onHost.map((m) => m.replace(/'fixture-riff'/g, "'c'")))
+    })
+  })
+})
+
+/**
  * §5A.5/#585. **The match is exact on both halves of the key**, and an absent bank is a value
  * rather than a wildcard. The matcher is pure and takes the recipe's patch by hand, so every
  * shape is pinned without a rig.
@@ -696,10 +863,10 @@ describe('the riff library (§5A)', () => {
     // struck riff answers it, and the grid is there exactly where the answer is `true`. An
     // arpeggiated hold is held on any role (#645), so it is never asked either, and it is the
     // one entry on a struck role with neither flag nor grid.
-    for (const r of RIFFS) {
+    for (const { label, part: r } of RIFFS.flatMap(partsOf)) {
       const held = !bearsPattern(r.request.role) || r.arpeggiatedHold === true
-      expect(r.request.reArticulatesHook === undefined, r.id).toBe(held)
-      expect(r.pattern !== undefined, r.id).toBe(r.request.reArticulatesHook === true)
+      expect(r.request.reArticulatesHook === undefined, label).toBe(held)
+      expect(r.pattern !== undefined, label).toBe(r.request.reArticulatesHook === true)
     }
     // #645. Four, on the two boxes that declare an arpeggiator. The minilogue xd's first pair
     // were true before the field existed and went unsaid, because four voices never refused
@@ -735,7 +902,7 @@ describe('the riff library (§5A)', () => {
     for (const entry of RIFFS) {
       const title = entry.name.replace(entry.reference.name, '')
       const reasons = (entry.patchAffinities ?? []).map((a) => a.reason)
-      const ink = [title, ...entry.technique, ...reasons].join('\n')
+      const ink = [title, ...partsOf(entry).flatMap((p) => p.technique), ...reasons].join('\n')
       for (const name of names) {
         expect(ink.includes(name), `${entry.id} names ${name}`).toBe(false)
       }
@@ -856,7 +1023,7 @@ describe('the riff library (§5A)', () => {
     // (§5A.2). Length is not evidence of transcription either way, so what is pinned is the
     // prose: an entry that presents itself as a copy has to argue with this test.
     for (const entry of RIFFS) {
-      const ink = entry.technique.join('\n').toLowerCase()
+      const ink = partsOf(entry).flatMap((p) => p.technique).join('\n').toLowerCase()
       for (const word of ['transcri', 'note-for-note', 'exactly as played', 'as recorded']) {
         expect(ink.includes(word), `${entry.id} claims to reproduce a recording`).toBe(false)
       }
@@ -864,9 +1031,9 @@ describe('the riff library (§5A)', () => {
   })
 
   it('the technique is prose, not a jog: hints are under ~8 words, these are not', () => {
-    for (const entry of RIFFS) {
-      for (const paragraph of entry.technique) {
-        expect(paragraph.split(' ').length, `${entry.id}`).toBeGreaterThan(8)
+    for (const { label, technique } of RIFFS.flatMap(partsOf)) {
+      for (const paragraph of technique) {
+        expect(paragraph.split(' ').length, label).toBeGreaterThan(8)
       }
     }
   })
@@ -2068,7 +2235,7 @@ describe('the eleven factory-patch entries keep their rules as data (#569, #554)
  */
 describe('the eleven keep what the schema cannot state (#569)', () => {
   /** The note in force at each step of the hook, or nothing. */
-  function sounding(riff: Riff, step: number): HookNote[] {
+  function sounding(riff: Pick<Riff, 'hook'>, step: number): HookNote[] {
     return riff.hook.notes.filter((n) => step >= n.step && step < n.step + n.len)
   }
 
@@ -2082,13 +2249,14 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     // §12.4/#645. The one exception is the arpeggiated hold, and it is an exception the other
     // way: the box sounds the held notes one at a time, so the part asks for one voice however
     // wide the hold, and the schema refuses a `polyphony` above it (`test/arpeggiated-hold.test.ts`).
-    for (const entry of RIFFS) {
+    // §5A.9. Every part, so a companion's `polyphony` is held to its own hook the same way.
+    for (const { label, part } of RIFFS.flatMap(partsOf)) {
       let widest = 0
-      for (let step = 1; step <= entry.hook.bars * 16; step += 1) {
-        widest = Math.max(widest, sounding(entry, step).length)
+      for (let step = 1; step <= part.hook.bars * 16; step += 1) {
+        widest = Math.max(widest, sounding(part, step).length)
       }
-      expect(widest, entry.id).toBe(widestHold(entry.hook))
-      expect(entry.request.polyphony ?? 1, entry.id).toBe(entry.arpeggiatedHold ? 1 : widest)
+      expect(widest, label).toBe(widestHold(part.hook))
+      expect(part.request.polyphony ?? 1, label).toBe(part.arpeggiatedHold ? 1 : widest)
     }
   })
 

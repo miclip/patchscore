@@ -10,6 +10,8 @@ import {
   chordLabel,
   RIFF_CHORDS_SUPPLIED,
   chordRows,
+  companionNotesHeading,
+  companionNotesIn,
   degreeLabel,
   stepSpanLabel,
   midiLabel,
@@ -44,11 +46,13 @@ export function RiffInKey({
   resolution,
   rules,
   grid,
+  companionTechnique,
 }: {
   riff: Riff
   resolution: RiffResolution
   rules: ReactNode
   grid: ReactNode
+  companionTechnique?: ReactNode
 }) {
   const [key, setKey] = useState(riff.key)
   const id = useId()
@@ -61,6 +65,7 @@ export function RiffInKey({
       onChange={setKey}
       rules={rules}
       grid={grid}
+      companionTechnique={companionTechnique}
     />
   )
 }
@@ -81,6 +86,7 @@ export function RiffFigureView({
   onChange,
   rules,
   grid,
+  companionTechnique,
 }: {
   riff: Riff
   resolution: RiffResolution
@@ -89,10 +95,13 @@ export function RiffFigureView({
   onChange: (key: string) => void
   rules: ReactNode
   grid: ReactNode
+  companionTechnique?: ReactNode
 }) {
   const notes: HookResolution =
     shownKey === riff.key ? resolution.notes : resolveHook(riff.hook, shownKey)
-  return (
+  const { companion } = riff
+  const companionNotes = companionNotesIn(riff, resolution, shownKey)
+  const hostMaterial = (
     <div className="columns">
       <div className="span-2 riff-key">
         <KeySelect
@@ -111,11 +120,39 @@ export function RiffFigureView({
         <header>
           <h2>The notes</h2>
         </header>
-        <Notes riff={riff} resolution={{ ...resolution, notes }} />
+        <Notes riff={riff} notes={notes} />
       </section>
 
       {grid}
     </div>
+  )
+  /*
+   * §5A.9. **Three children where there is a companion, in reading order**: the host's material,
+   * the companion's technique, the companion's material. With the host's technique before them
+   * (`RiffBody`) that is four direct children of `.riff-body`, which the two-track grid from
+   * 1180px pairs technique-with-notes, while 390px reads straight down. A fragment, so nothing
+   * wraps them. The one key control stays in the host's material and moves both hooks, and the
+   * chord table is printed there once.
+   *
+   * With no companion this is the one `.columns` it always was.
+   */
+  return (
+    <>
+      {hostMaterial}
+      {companion === undefined || companionNotes === undefined ? null : (
+        <>
+          {companionTechnique}
+          <div className="columns">
+            <section className="panel riff-panel">
+              <header>
+                <h2>{companionNotesHeading(companion)}</h2>
+              </header>
+              <Notes riff={riff} notes={companionNotes} />
+            </section>
+          </div>
+        </>
+      )}
+    </>
   )
 }
 
@@ -140,11 +177,11 @@ function Sep() {
  * reason: a labelled line survives wrapping on a phone, where a table's header scrolls away from
  * its body (#21).
  */
-function Notes({ riff, resolution }: { riff: Riff; resolution: RiffResolution }) {
-  const unresolved = riffNotesUnresolved(resolution)
+function Notes({ riff, notes }: { riff: Riff; notes: HookResolution }) {
+  const unresolved = riffNotesUnresolved({ notes })
   if (unresolved !== undefined) return <p className="riff-unresolved">{unresolved}</p>
-  if (resolution.notes.outcome !== 'resolved') return null
-  const hook = resolution.notes.hook
+  if (notes.outcome !== 'resolved') return null
+  const hook = notes.hook
   return (
     <>
       <p className="riff-note-summary">{riffNoteSummary(hook)}</p>

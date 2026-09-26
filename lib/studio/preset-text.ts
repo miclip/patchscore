@@ -138,3 +138,12 @@ export function presetBoxHeading(device: Device): string {
 export function presetFigureBack(device: Device): string {
   return `Every patch on the ${deviceLabel(device)}`
 }
+
+/**
+ * §5A.9. **Why the page's own box is not in the companion's picker**, in one line under its
+ * heading. The box is playing the host, so a tick on it could only do nothing; it is left out and
+ * this says so, once.
+ */
+export function presetCompanionExcluded(device: Device, hostRole: string): string {
+  return `The ${deviceLabel(device)} is already playing the ${hostRole}, so it is not offered here.`
+}

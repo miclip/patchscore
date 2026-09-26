@@ -1697,6 +1697,12 @@ body {
   min-width: 0;
 }
 
+/* §5A.9. A companion's role and character, under its heading: the masthead's lead is the host's. */
+.riff-part-lead {
+  margin: 0 0 12px;
+  color: var(--ink-dim);
+}
+
 /*
  * The technique is prose and is the one block on the page that is *only* prose, so it takes the
  * reading measure rather than the panel's full width. Four paragraphs at 100 characters is a
@@ -1811,6 +1817,15 @@ body {
    * nothing here and is unaffected.
    */
   .riff-body > .columns > :last-child:nth-child(even) {
+    grid-column: 1 / -1;
+  }
+
+  /*
+   * §5A.9. A companion's material is one panel, its notes, and on its own it would sit in half the
+   * track with the other half empty. It spans instead. Only a companion's `.columns` has a single
+   * child: the host's always opens with the key control and has the notes after it.
+   */
+  .riff-body > .columns > :only-child {
     grid-column: 1 / -1;
   }
 

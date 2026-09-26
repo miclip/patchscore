@@ -430,7 +430,7 @@ describe('the riff page draws a routing on both of its surfaces (#511)', () => {
   }
   const markdown = renderRiff(resolved)
   const markup = renderToStaticMarkup(
-    createElement(RiffVoice, { riff: resolved.riff, voice: resolved.voice }),
+    createElement(RiffVoice, { part: resolved.riff, voice: resolved.voice }),
   )
   const pageText = markup
     .replace(/<[^>]+>/g, ' ')

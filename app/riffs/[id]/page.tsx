@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/footer'
-import { RiffFigure } from '@/components/riff/riff-figure'
+import { RiffBody } from '@/components/riff/riff-figure'
 import { RiffRig } from '@/components/riff/riff-rig'
 import type { Riff } from '@/lib/core'
 import { resolveRiff } from '@/lib/core'
@@ -106,18 +106,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         The rig stays outside and full-width: it is a picker somebody uses after they have read
         the figure, not material they read alongside it.
       */}
-      <div className="riff-body">
-        <section className="panel riff-panel riff-technique">
-          <header>
-            <h2>The technique</h2>
-          </header>
-          {riff.technique.map((paragraph) => (
-            <p key={paragraph.slice(0, 32)}>{paragraph}</p>
-          ))}
-        </section>
-
-        <RiffFigure riff={riff} resolution={figure} />
-      </div>
+      <RiffBody riff={riff} resolution={figure} />
 
       <RiffRig riffId={riff.id} />
 

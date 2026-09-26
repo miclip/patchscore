@@ -1012,7 +1012,7 @@ async function voiceFor(deviceId: DeviceId): Promise<{ markup: string; voice: Ri
   if (resolution.outcome !== 'played') throw new Error(`${deviceId} should play this`)
   return {
     markup: renderToStaticMarkup(
-      createElement(RiffVoice, { riff: blueMondayBass, voice: resolution.voice }),
+      createElement(RiffVoice, { part: blueMondayBass, voice: resolution.voice }),
     ),
     voice: resolution.voice,
   }
@@ -1147,7 +1147,7 @@ describe('a riff on a built-in sound says how to reach it (§3/#516)', () => {
     const { RiffVoice } = await import('../components/riff/riff-voice')
     const markup = renderToStaticMarkup(
       createElement(RiffVoice, {
-        riff: RIFFS.find((r) => r.id === 'acid-tracks-line') as (typeof RIFFS)[number],
+        part: RIFFS.find((r) => r.id === 'acid-tracks-line') as (typeof RIFFS)[number],
         voice: voice as RiffVoicing,
       }),
     )
