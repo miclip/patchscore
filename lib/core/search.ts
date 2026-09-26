@@ -1835,6 +1835,85 @@ function holderKey(deviceId: DeviceId, resourceId: string, key: string): string 
 }
 
 /**
+ * §2.3/#25. **What is loaded on the boxes of an assignment**: how many parts hold each loaded
+ * thing (`holderKey`), and how much of each budget those things spend (`resourceKey`). `State`
+ * carries one for the search; `recipesFitTogether` builds one for a riff's two parts. One shape,
+ * so the two functions below are the only place the accounting is written.
+ */
+export type LoadedResources = {
+  resourceHolders: Map<string, number>
+  resourceUsed: Map<string, number>
+}
+
+/**
+ * §2.3/#25. **Move what a recipe loads in or out of the loaded set, and the budget with it.**
+ * `delta` is +1 to load and -1 to release. The budget moves only on a holder's 0→1 and 1→0
+ * transitions — see `charge` for why.
+ */
+function chargeLoaded(
+  loaded: LoadedResources,
+  deviceId: DeviceId,
+  recipe: Recipe,
+  delta: 1 | -1,
+): void {
+  const consumes = recipe.consumes
+  if (consumes === undefined || consumes.length === 0) return
+  for (const use of consumes) {
+    const holder = holderKey(deviceId, use.resource, sharedAs(recipe, use))
+    const before = loaded.resourceHolders.get(holder) ?? 0
+    const after = before + delta
+    if (after <= 0) loaded.resourceHolders.delete(holder)
+    else loaded.resourceHolders.set(holder, after)
+    // Loaded before and still loaded after: this patch never left the box.
+    if (before > 0 && after > 0) continue
+    const held = resourceKey(deviceId, use.resource)
+    const next = (loaded.resourceUsed.get(held) ?? 0) + delta * (use.amount ?? 1)
+    if (next <= 0) loaded.resourceUsed.delete(held)
+    else loaded.resourceUsed.set(held, next)
+  }
+}
+
+/**
+ * §2.3/#25. **The first of a recipe's consumptions that cannot be loaded on top of `loaded`**, or
+ * `undefined` where every one can. The feasibility question and the gap sentence's question are
+ * this one function, asked two ways:
+ *
+ *  - `undeclaredRefuses: true` is `fitsResources`': a resource the device does not declare is a
+ *    shortfall (`spec` undefined), because the honest direction for an unvalidated device is the
+ *    gap (invariant 5).
+ *  - `false` is `exhaustedResource`': only a declared budget can be named in a sentence, so an
+ *    undeclared one is passed over and the first over-limit budget is returned.
+ *
+ * Each consumption is asked against `loaded` as it stands, before this recipe charges anything —
+ * the search has always asked it that way, and the answer is kept rather than improved here,
+ * because moving it would move search results. Allocation-free on the path that fits.
+ */
+function firstShortfall(
+  declared: ReadonlyMap<string, ResourceSpec> | undefined,
+  loaded: LoadedResources,
+  deviceId: DeviceId,
+  recipe: Recipe,
+  undeclaredRefuses: boolean,
+): { spec: ResourceSpec | undefined; used: number } | undefined {
+  const consumes = recipe.consumes
+  if (consumes === undefined || consumes.length === 0) return undefined
+  for (const use of consumes) {
+    // Already loaded costs nothing to use again, and it is asked per consumption because that is
+    // where identity lives: a cross-pool twin of a patch already in a slot loads nothing.
+    const holder = holderKey(deviceId, use.resource, sharedAs(recipe, use))
+    if ((loaded.resourceHolders.get(holder) ?? 0) > 0) continue
+    const spec = declared?.get(use.resource)
+    const used = loaded.resourceUsed.get(resourceKey(deviceId, use.resource)) ?? 0
+    if (spec === undefined) {
+      if (undeclaredRefuses) return { spec: undefined, used }
+      continue
+    }
+    if (used + (use.amount ?? 1) > spec.limit) return { spec, used }
+  }
+  return undefined
+}
+
+/**
  * §2.3/#25. Move what this candidate loads in or out of the loaded set, and the budget with it.
  *
  * `delta` is +1 from `apply` and -1 from `undo`. The count is of requests holding each loaded
@@ -1851,25 +1930,7 @@ function holderKey(deviceId: DeviceId, resourceId: string, key: string): string 
  * from several tracks, which is exactly the case this whole field exists to model.
  */
 function charge(state: State, candidate: Candidate, delta: 1 | -1): void {
-  const consumes = candidate.recipe.consumes
-  if (consumes === undefined || consumes.length === 0) return
-  for (const use of consumes) {
-    const holder = holderKey(
-      candidate.deviceId,
-      use.resource,
-      sharedAs(candidate.recipe, use),
-    )
-    const before = state.resourceHolders.get(holder) ?? 0
-    const after = before + delta
-    if (after <= 0) state.resourceHolders.delete(holder)
-    else state.resourceHolders.set(holder, after)
-    // Loaded before and still loaded after: this patch never left the box.
-    if (before > 0 && after > 0) continue
-    const held = resourceKey(candidate.deviceId, use.resource)
-    const next = (state.resourceUsed.get(held) ?? 0) + delta * (use.amount ?? 1)
-    if (next <= 0) state.resourceUsed.delete(held)
-    else state.resourceUsed.set(held, next)
-  }
+  chargeLoaded(state, candidate.deviceId, candidate.recipe, delta)
 }
 
 /**
@@ -1892,20 +1953,8 @@ function charge(state: State, candidate: Candidate, delta: 1 | -1): void {
  * and the honest direction is the gap, not a guide the box cannot hold (invariant 5).
  */
 function fitsResources(ctx: Ctx, state: State, candidate: Candidate): boolean {
-  const consumes = candidate.recipe.consumes
-  if (consumes === undefined || consumes.length === 0) return true
   const declared = ctx.resources.get(candidate.deviceId)
-  for (const use of consumes) {
-    // Already loaded costs nothing to use again, and it is asked per consumption because that is
-    // where identity lives: a cross-pool twin of a patch already in a slot loads nothing.
-    const holder = holderKey(candidate.deviceId, use.resource, sharedAs(candidate.recipe, use))
-    if ((state.resourceHolders.get(holder) ?? 0) > 0) continue
-    const limit = declared?.get(use.resource)?.limit
-    if (limit === undefined) return false
-    const used = state.resourceUsed.get(resourceKey(candidate.deviceId, use.resource)) ?? 0
-    if (used + (use.amount ?? 1) > limit) return false
-  }
-  return true
+  return firstShortfall(declared, state, candidate.deviceId, candidate.recipe, true) === undefined
 }
 
 /**
@@ -1918,15 +1967,32 @@ function exhaustedResource(
   candidate: Candidate,
 ): { spec: ResourceSpec; used: number } | undefined {
   const declared = ctx.resources.get(candidate.deviceId)
-  for (const use of candidate.recipe.consumes ?? []) {
-    const holder = holderKey(candidate.deviceId, use.resource, sharedAs(candidate.recipe, use))
-    if ((state.resourceHolders.get(holder) ?? 0) > 0) continue
-    const spec = declared?.get(use.resource)
-    if (spec === undefined) continue
-    const used = state.resourceUsed.get(resourceKey(candidate.deviceId, use.resource)) ?? 0
-    if (used + (use.amount ?? 1) > spec.limit) return { spec, used }
+  const short = firstShortfall(declared, state, candidate.deviceId, candidate.recipe, false)
+  return short?.spec === undefined ? undefined : { spec: short.spec, used: short.used }
+}
+
+/**
+ * §2.3/#25/§5A.3. **Whether these recipes can all be loaded on one box at once** — `fitsResources`'
+ * question asked of a set rather than of a search state in progress, for the one surface that
+ * places more than one part without the search: a riff's host and its companion (`resolveRiff`).
+ *
+ * Not a second implementation of the accounting: it loads each recipe in turn through the two
+ * functions the search itself runs, `firstShortfall` to ask and `chargeLoaded` to load, so a pair
+ * refused here is one `assign` would refuse on that box and the other way round
+ * (`test/riff-companion.test.ts` holds the two against each other).
+ */
+export function recipesFitTogether(device: Device, recipes: readonly Recipe[]): boolean {
+  // Absent rather than empty for a box with no budget, exactly as `buildCtx` declares it.
+  const declared =
+    device.resources !== undefined && device.resources.length > 0
+      ? new Map(device.resources.map((r) => [r.id, r]))
+      : undefined
+  const loaded: LoadedResources = { resourceHolders: new Map(), resourceUsed: new Map() }
+  for (const recipe of recipes) {
+    if (firstShortfall(declared, loaded, device.id, recipe, true) !== undefined) return false
+    chargeLoaded(loaded, device.id, recipe, 1)
   }
-  return undefined
+  return true
 }
 
 /**

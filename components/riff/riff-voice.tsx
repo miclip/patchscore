@@ -3,7 +3,7 @@ import { hintText } from '@/components/guide/format'
 import { Articulation } from '@/components/pattern/articulation'
 import { PatchList } from '@/components/recipe/patch-list'
 import { ResolvedSettings } from '@/components/recipe/resolved-body'
-import type { Riff, RiffVoicing } from '@/lib/core'
+import type { RiffPart, RiffVoicing } from '@/lib/core'
 import { num, recipeRouting, sourceLengthLine } from '@/lib/core'
 import { riffCitation, riffStack, riffSubstitution, voiceHeading } from '@/lib/studio/riff-text'
 
@@ -140,8 +140,17 @@ export function VoiceBuild({ voice, patchLine }: { voice: RiffVoicing; patchLine
   )
 }
 
-export function RiffVoice({ riff, voice }: { riff: Riff; voice: RiffVoicing }) {
-  const substituted = riffSubstitution(riff, voice)
+export function RiffVoice({
+  part,
+  voice,
+  subject,
+}: {
+  part: Pick<RiffPart, 'request'>
+  voice: RiffVoicing
+  /** §5A.9. What the substitution sentence calls the part: `The pad part` for a companion. */
+  subject?: string
+}) {
+  const substituted = riffSubstitution(part, voice, subject)
   return (
     <>
       <p className="riff-where">

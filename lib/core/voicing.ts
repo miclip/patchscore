@@ -78,25 +78,34 @@ export function crowdOf(device: Device, taken: number): number {
 export function bestVoiceCandidate<C extends VoiceCandidate>(
   candidates: readonly C[],
 ): C | undefined {
-  return [...candidates].sort(
-    (a, b) =>
-      /*
-       * §7.1's own key order, in full for a one-part assignment.
-       *
-       * `crowdOverflow` first, because `Score` puts it above both chord keys and `stackedChords`'
-       * own note says that is where a stack's real cost is charged. Then `compareCost`, which is
-       * `search.ts`' — sampled chord, then stacked, then character distance, then role fit.
-       *
-       * The keys of `Score` that are not here cannot separate two candidates for one request: the
-       * miss counts and `optionalMisses` are zero for anything that fills it, and `idleDevices` is
-       * the rig minus the one box the winner lands on, whichever candidate wins.
-       */
-      a.crowd - b.crowd ||
-      compareCost(a, b) ||
-      compareCodeUnits(
-        assignableKey(a.assignables[0] as Assignable),
-        assignableKey(b.assignables[0] as Assignable),
-      ) ||
-      compareCodeUnits(a.recipe.id, b.recipe.id),
-  )[0]
+  return [...candidates].sort(compareVoiceCandidates)[0]
+}
+
+/**
+ * §7.1/§7.2/§5A.3. **The order `bestVoiceCandidate` takes the first of**, exported because a
+ * riff with a companion walks the host's candidates in it (`resolveRiff`) and has to walk them in
+ * the order the one-part answer is chosen by, or the host would land somewhere different for no
+ * reason but that it has company.
+ */
+export function compareVoiceCandidates(a: VoiceCandidate, b: VoiceCandidate): number {
+  return (
+    /*
+     * §7.1's own key order, in full for a one-part assignment.
+     *
+     * `crowdOverflow` first, because `Score` puts it above both chord keys and `stackedChords`'
+     * own note says that is where a stack's real cost is charged. Then `compareCost`, which is
+     * `search.ts`' — sampled chord, then stacked, then character distance, then role fit.
+     *
+     * The keys of `Score` that are not here cannot separate two candidates for one request: the
+     * miss counts and `optionalMisses` are zero for anything that fills it, and `idleDevices` is
+     * the rig minus the one box the winner lands on, whichever candidate wins.
+     */
+    a.crowd - b.crowd ||
+    compareCost(a, b) ||
+    compareCodeUnits(
+      assignableKey(a.assignables[0] as Assignable),
+      assignableKey(b.assignables[0] as Assignable),
+    ) ||
+    compareCodeUnits(a.recipe.id, b.recipe.id)
+  )
 }

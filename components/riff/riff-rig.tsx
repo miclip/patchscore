@@ -1,12 +1,19 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import type { DeviceId } from '@/lib/core'
-import { MAX_RIG_DEVICES, loadStudio, resolveRiff } from '@/lib/core'
+import type { DeviceId, Riff, RiffResolution } from '@/lib/core'
+import { loadStudio, resolveRiff } from '@/lib/core'
 import { riffById } from '@/lib/riffs'
 import { browserEnv } from '@/lib/studio/browser-env'
+import { toggledRig } from '@/lib/studio/borrowed-rig'
 import { rigFromIds, rigIdsFromStudio } from '@/lib/studio/riff-page'
-import { riffGap } from '@/lib/studio/riff-text'
+import {
+  companionGap,
+  companionSubject,
+  hostSubject,
+  riffGap,
+  whereHeading,
+} from '@/lib/studio/riff-text'
 import { CATALOGUE } from '@/lib/studio/session'
 import { RigPicker } from '@/components/rig/rig-picker'
 import { RiffVoice } from './riff-voice'
@@ -79,17 +86,35 @@ export function RiffRig({ riffId }: { riffId: string }) {
   )
 
   function onToggle(id: DeviceId, on: boolean) {
-    setSelected((current) => {
-      if (!on) return current.filter((held) => held !== id)
-      if (current.includes(id)) return current
-      // #301's cap, honoured here as it is in the studio: a rig larger than ten cannot be reached
-      // through any picker, and this one is a picker.
-      if (current.length >= MAX_RIG_DEVICES) return current
-      return [...current, id]
-    })
+    // #301's cap is honoured inside, as it is in the studio: a rig larger than ten cannot be
+    // reached through any picker, and this one is a picker.
+    setSelected((current) => toggledRig(current, id, on))
   }
 
   if (riff === undefined || resolution === undefined) return null
+  return (
+    <RiffRigView riff={riff} resolution={resolution} selected={selected} onToggle={onToggle} />
+  )
+}
+
+/**
+ * The hook-free half, for one rig: the picker and each part's outcome. `RiffFigureView`'s seam,
+ * for the same reason — a test hands it any resolution and reads what a reader would see, where
+ * the island itself only ever renders the empty rig on the server.
+ */
+export function RiffRigView({
+  riff,
+  resolution,
+  selected,
+  onToggle,
+}: {
+  riff: Riff
+  resolution: RiffResolution
+  selected: readonly DeviceId[]
+  onToggle: (id: DeviceId, on: boolean) => void
+}) {
+  const { companion } = riff
+  const part = resolution.companion
 
   return (
     <div className="columns riff-rig">
@@ -97,14 +122,34 @@ export function RiffRig({ riffId }: { riffId: string }) {
 
       <section className="panel riff-panel riff-where-panel">
         <header>
-          <h2>Where it plays</h2>
+          <h2>{whereHeading(riff)}</h2>
         </header>
         {resolution.outcome === 'played' ? (
-          <RiffVoice riff={riff} voice={resolution.voice} />
+          <RiffVoice part={riff} voice={resolution.voice} subject={hostSubject(riff)} />
         ) : (
-          <p className="riff-gap">{riffGap(riff, resolution.gap, resolution.devices)}</p>
+          <p className="riff-gap">
+            {riffGap(riff, resolution.gap, resolution.devices, hostSubject(riff))}
+          </p>
         )}
       </section>
+
+      {/*
+        §5A.9. The companion's own block, from the same joint resolution: its voice and settings
+        where it plays, and a sentence to act on where it does not, including `no-room` when the
+        rig could play it alone and not beside the host.
+      */}
+      {companion === undefined || part === undefined ? null : (
+        <section className="panel riff-panel riff-where-panel">
+          <header>
+            <h2>{whereHeading(riff, companion)}</h2>
+          </header>
+          {part.outcome === 'played' ? (
+            <RiffVoice part={companion} voice={part.voice} subject={companionSubject(companion)} />
+          ) : (
+            <p className="riff-gap">{companionGap(riff, part.gap, resolution.devices)}</p>
+          )}
+        </section>
+      )}
     </div>
   )
 }

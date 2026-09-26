@@ -48,6 +48,16 @@ import type { Riff } from '../core/riff'
  *
  * Every note releases before the next is struck, so the peak is one and `test/riff.test.ts`
  * counts it. `sub / dirty` on the box that ships this patch is a mono recipe (#632).
+ *
+ * ## The pad above it (§5A.9)
+ *
+ * A held `pad / soft` companion, three notes a bar struck on each downbeat: `Eb4 F4 Ab4`,
+ * `C4 Eb4 G4`, then `C4 Eb4 F4` twice. Against the four chords those are `7 1 3`, `6 1 3`,
+ * `7 9 3` and `1 3 11`, and none of them is the chord's fifth, because the fifth is the bass's
+ * displaced landing. `Eb4` is in every bar. The last two voicings are the same keys, and the bass
+ * alone turns the second of them from D flat major into C minor. It states no forbidden degree:
+ * the omission is a property of these four voicings, and `test/uber-sub-companion.test.ts` checks
+ * it there.
  */
 export const uberSubDisplacedFifthRiff: Riff = {
   id: 'uber-sub-displaced-fifth-riff',
@@ -158,4 +168,57 @@ export const uberSubDisplacedFifthRiff: Riff = {
     at('accent', 110, 1, 17, 33, 49),
     on('offbeat', 4, 7, 14, 20, 28, 31, 36, 38, 48, 59, 62),
   ),
+  /**
+   * §5A.9. A held `pad / soft` above the bass, three notes a bar, one bar per chord.
+   * `baseOctave: 4` puts `F4` at degree 1, so `Eb4` and `C4` are degrees 7 and 5 an octave down.
+   */
+  companion: {
+    request: {
+      id: 'uber-sub-displaced-fifth-riff-pad',
+      role: 'pad',
+      priority: 1,
+      character: 'soft',
+      sustain: 'continuous',
+      polyphony: 3,
+    },
+    technique: [
+      'The pad never plays the chord’s fifth. The bass has that note, and it lands somewhere ' +
+        'different in every bar: C over F minor, B flat over E flat, A flat over D flat, G over ' +
+        'C minor. With the fifth left out of the pad, each of those landings belongs to the bass ' +
+        'alone and the ear hears where it falls.',
+      'Strike each chord on the downbeat and hold it for the whole bar. The pad is the steady ' +
+        'reference under the line: it changes on the one every time, so the displaced fifths are ' +
+        'heard against a clock that does not move.',
+      'E flat 4 sounds in all four bars. Over F minor it is the seventh, over E flat it is the ' +
+        'root, over D flat the ninth and over C minor the third, so one key under one finger ' +
+        'changes meaning four times while it stays where it is.',
+      'Bars three and four are the same three keys, C4, E flat 4 and F4. Only the bass under ' +
+        'them changes: over its D flat they are the seventh, ninth and third of D flat major, and ' +
+        'over its C they are the root, third and eleventh of C minor.',
+    ],
+    hook: {
+      id: 'uber-sub-displaced-fifth-riff-pad-hook',
+      forRole: 'pad',
+      bars: 4,
+      baseOctave: 4,
+      notes: [
+        // `i`: Eb4 F4 Ab4.
+        { step: 1, degree: 7, octave: -1, len: 16 },
+        { step: 1, degree: 1, octave: 0, len: 16 },
+        { step: 1, degree: 3, octave: 0, len: 16 },
+        // `VII`: C4 Eb4 G4.
+        { step: 17, degree: 5, octave: -1, len: 16 },
+        { step: 17, degree: 7, octave: -1, len: 16 },
+        { step: 17, degree: 2, octave: 0, len: 16 },
+        // `VI`: C4 Eb4 F4.
+        { step: 33, degree: 5, octave: -1, len: 16 },
+        { step: 33, degree: 7, octave: -1, len: 16 },
+        { step: 33, degree: 1, octave: 0, len: 16 },
+        // `v`: the same three keys.
+        { step: 49, degree: 5, octave: -1, len: 16 },
+        { step: 49, degree: 7, octave: -1, len: 16 },
+        { step: 49, degree: 1, octave: 0, len: 16 },
+      ],
+    },
+  },
 }

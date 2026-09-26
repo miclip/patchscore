@@ -1,6 +1,7 @@
-import { RiffFigure } from '@/components/riff/riff-figure'
+import { RiffBody } from '@/components/riff/riff-figure'
 import { resolveRiff } from '@/lib/core'
 import type { PresetEntry, PresetFigure } from '@/lib/studio/preset-session'
+import { PresetCompanion } from './preset-companion'
 import { PresetVoice } from './preset-voice'
 
 /**
@@ -42,20 +43,17 @@ export function PresetFigureBody({ entry, figure }: { entry: PresetEntry; figure
         The voice block stays outside and full-width, for the reason the riff page's rig does:
         it is what you do after reading the figure rather than something read alongside it.
       */}
-      <div className="riff-body">
-        <section className="panel riff-panel riff-technique">
-          <header>
-            <h2>The technique</h2>
-          </header>
-          {riff.technique.map((paragraph) => (
-            <p key={paragraph.slice(0, 32)}>{paragraph}</p>
-          ))}
-        </section>
-
-        <RiffFigure riff={riff} resolution={resolveRiff(riff, [])} />
-      </div>
+      <RiffBody riff={riff} resolution={resolveRiff(riff, [])} />
 
       <PresetVoice deviceId={figure.voice.device.id} patch={entry.slug} />
+
+      {/*
+        §5A.9. The companion, on the reader's other boxes: a borrowed picker without this box, and
+        where the second part plays. Nothing at all for a figure with no companion.
+      */}
+      {riff.companion === undefined ? null : (
+        <PresetCompanion deviceId={figure.voice.device.id} patch={entry.slug} />
+      )}
     </>
   )
 }

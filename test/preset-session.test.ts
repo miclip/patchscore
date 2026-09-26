@@ -4,12 +4,13 @@ import {
   FACTORY_PATCHES_FACT,
   KEYBOARD_REACH_FACT,
   KEYBOARD_SHIFT_FACT,
+  RiffSchema,
   resolveRiff,
 } from '@/lib/core'
 import type { Device, KeyboardReach, PatchUse, Riff, ShippedPatch } from '@/lib/core'
 import { DEVICES } from '@/lib/devices/registry.generated'
 import { RIFFS } from '@/lib/riffs'
-import { presetSession } from '@/lib/studio/preset-session'
+import { presetCompanion, presetSession } from '@/lib/studio/preset-session'
 import { device as fixtureDevice, heldRiff, recipe } from './fixtures'
 
 /**
@@ -347,6 +348,68 @@ describe('a figure the keyboard cannot reach throws (§4.1/#659)', () => {
     expect(() => presetSession(keyboard(buttonsOnly), [riff])).toThrow(
       /sits at MIDI 41-76, and no octave or transpose setting puts both ends on the keys/,
     )
+  })
+
+  /**
+   * §5A.9. **The box plays the host, and only the host is checked against its keys.** The
+   * companion is played on another box, so C2 to C6 — a span no setting of this board holds —
+   * is not refused as a companion, and is refused as soon as it is the host's hook.
+   */
+  describe('a companion is not held to the box’s keyboard (§5A.9)', () => {
+    // `figure`'s own shape made schema-legal: `sub` is struck, so each part answers the grid
+    // question (`false`, through-composed), and the title names the patch.
+    const legal = (r: Riff): Riff => ({
+      ...r,
+      name: 'The Wide figure',
+      request: { ...r.request, reArticulatesHook: false },
+    })
+    const reachable = legal(figure({ degree: 1, octave: 0 }, { degree: 5, octave: 0 }))
+    const unreachable = legal(figure({ degree: 1, octave: -2 }, { degree: 1, octave: 2 }))
+    const withCompanion: Riff = {
+      ...reachable,
+      companion: {
+        request: { ...unreachable.request, id: 'wide-figure-companion' },
+        technique: ['Under it, on another box.'],
+        hook: { ...unreachable.hook, id: 'wide-figure-companion-hook' },
+      },
+    }
+
+    /** The same two hooks, the other way round. */
+    const swapped: Riff = {
+      ...unreachable,
+      companion: {
+        request: { ...reachable.request, id: 'wide-figure-companion' },
+        technique: ['Under it, on another box.'],
+        hook: { ...reachable.hook, id: 'wide-figure-companion-hook' },
+      },
+    }
+
+    it('both pairs parse, so the session and not the schema is what is under test', () => {
+      for (const pair of [withCompanion, swapped]) {
+        const parsed = RiffSchema.safeParse(pair)
+        expect(parsed.success, JSON.stringify(parsed.success ? '' : parsed.error.issues)).toBe(true)
+      }
+    })
+
+    it('does not throw for an unreachable companion, and resolves the box for the host alone', () => {
+      const board = keyboard(REACH)
+      const session = presetSession(board, [withCompanion])
+      const figured = session?.entries[0]?.figure
+      expect(figured?.resolution.outcome).toBe('played')
+      expect(figured?.riff).toBe(withCompanion)
+      expect(figured === undefined ? 'no figure' : 'companion' in figured.resolution).toBe(false)
+      // The companion goes to the reader's other boxes, with the page's box taken out: here
+      // there are none, and that is a gap rather than a throw.
+      if (figured === undefined) return
+      expect(() => presetCompanion(figured, [board], board)).not.toThrow()
+      expect(presetCompanion(figured, [board], board)?.outcome).toBe('gap')
+    })
+
+    it('still throws when the same unreachable hook is the host’s', () => {
+      expect(() => presetSession(keyboard(REACH), [swapped])).toThrow(
+        /'wide-figure' is written for factory patch 'Wide' and the keyboard cannot reach it: it spans 48 semitones/,
+      )
+    })
   })
 
   it('checks nothing on a box that declares no reach, which is where the Muse stands', () => {

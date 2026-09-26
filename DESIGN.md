@@ -4741,7 +4741,9 @@ keep valid. Absolute is also the number the musician is thinking in.
 make?* A riff answers a question neither of them does: **how do I play this figure, on my rig?**
 
 A riff is one part — its notes, the rhythm they are struck on where the part is struck, and the
-words for what makes it that part — resolved against whatever boxes the reader has. Settled at
+words for what makes it that part — resolved against whatever boxes the reader has. Where the
+technique is two parts played together, the second is the riff's `companion` (§5A.9), and the riff
+is still one figure: one key, one harmony, one tempo, one length. Settled at
 [#503](https://github.com/miclip/patchscore/issues/503).
 
 ```ts
@@ -4755,6 +4757,7 @@ words for what makes it that part — resolved against whatever boxes the reader
   request: { /* one RiffRequest: continuous, priority 1, reArticulatesHook true with a grid, false without (§5A.2) */ },
   hook:    { /* Hook — the notes. Ours, always */ },
   pattern: { /* Pattern — where they are struck. Band 0, no sections. Absent on a held role and on a through-composed one (§5A.2) */ },
+  companion: { /* optional. A second part: its own request, technique, hook, pattern or arpeggiatedHold, and nothing else (§5A.9) */ },
 }
 ```
 
@@ -4945,10 +4948,11 @@ occurrence is its earliest onset, in step order rather than authored order. `tes
 plays the shipped Muse Runner line twice and plants each failure in the *second* pass, where the
 old arithmetic could not see it.
 
-### 5A.3 Resolution is one part, one rig, and no search
+### 5A.3 Resolution is one figure, one rig, and no search
 
-§7.1's search exists to allocate *several* parts without two of them taking the same voice. A riff
-has one part, so there is nothing to allocate and nothing to back-track over: `resolveRiff` walks
+§7.1's search exists to allocate *several* parts across a song without two of them taking the same
+voice. A riff without a companion has one part, so there is nothing to allocate and nothing to
+back-track over: `resolveRiff` walks
 the rig's assignables, keeps the ones that claim the role and can carry the notes, and takes the
 best recipe among them. It reuses §7's own machinery throughout — `expand`, `canCarryNotes`,
 `canStackNotes`, `stackRecipes`, `resolveRecipe`, `resolveParams`, `resolvePatch`,
@@ -4988,9 +4992,29 @@ cannot answer — so a rig that plays the figure was told `no-recipe`, *your box
 it up by ear*, about a recipe that already existed. `RiffVoicing.assignables` is therefore a list
 and `stackWidth` is what `resolveParams` is handed. Where the search picks members with
 `chooseStackMembers` against live occupancy, this takes the lowest `n` in `comparePoolMembers`
-order: with one part there is no occupancy, so "already-busy last, then lowest ordinal" collapses
-to the second half. That is the one place this does less than the search, and it does less because
+order with any voice the host holds removed. The only occupancy is a host's, and pool members are
+interchangeable, so "already-busy last, then lowest ordinal" collapses to the second half. That is the one place this does less than the search, and it does less because
 there is less to do.
+
+**A riff with a companion is a two-part allocation, and still not the search** (§5A.9). The
+objective is lexicographic with four keys: the host plays; then the companion plays; then the
+host's candidate in the order above; then the companion's in the same order, priced beside that
+host. `resolveRiff` walks the host's candidates in order and takes the first that leaves the
+companion a feasible candidate, which is that objective exactly. Placing the host first and the
+companion after it would be wrong on one shape. If the host's one-part answer is the only voice
+that can play the companion, greedy placement reports a companion gap on a rig that plays both.
+`test/riff-companion.test.ts` pins that case, and pins that the host keeps its one-part answer
+wherever the companion has room beside it.
+
+A pair is feasible on the search's own two rules for a part joining another on a box. The two parts
+never share a voice (§4.2), and on one box both recipes have to load together
+(`recipesFitTogether`, which is `fitsResources`' accounting asked of a set, §2.3). `distinct`
+(§12.6) is refused on a riff's parts, so it is not a third rule here. A companion's candidates
+exclude the host's voices, a stack takes the lowest free pool members, and its `crowd` is what it
+adds to a box the host is already on. Two parts on one box divide `device-part-share` the way the
+guide divides it (#424). Every consumer written before §5A.9 still reads the host at the top
+level of `RiffResolution`, and the companion's notes and outcome sit beside it in `companion`. That
+key is absent from a riff without one, so those riffs resolve to the bytes they always did.
 
 **It never enters the tree §7.1 bounds, so `measure:search` is untouched by it and must stay so.**
 A riff that reached for `assign` would put a synthetic one-request template into the search purely
@@ -4999,7 +5023,7 @@ allocates nothing.
 
 **No seed, and nothing for one to do** (§7.2). A seed permutes only among *exactly equal* costs,
 and the ordering here is total: character distance, then role fit, then the assignable's key, then
-the recipe's id, all by code unit. Same riff, same rig, same bytes, on any platform (invariant 6).
+the recipe's id, all by code unit, and a pair is ordered by its host and then its companion. Same riff, same rig, same bytes, on any platform (invariant 6).
 
 **No mood, so no character resolution and no offsets.** §6.2's character move and §6.1's arithmetic
 are both mood operations, and a riff page has no knobs; `NEUTRAL_MOOD` is the state where the
@@ -5013,10 +5037,10 @@ is fixed by buying a box, `no-recipe` by setting the patch up by ear.
 
 It is deliberately **not** `search.ts`' `Gap`. That type carries a `requestId`, a `priority`, an
 `optional` flag and a `no-room` arm, and every one of them is about a part competing with other
-parts for a rig — the thing a riff has none of. `no-room` in particular is unreachable here by
-construction: with one request and no occupancy, nothing can take the voice first. Borrowing the
-type would have meant filling four fields with values that mean nothing and keeping a third arm
-that can never be produced.
+parts across a song. The host never competes. It is placed first, so nothing can take its voice and
+`no-room` is unreachable for it by construction. A companion can be crowded out by its host, and
+that arm is `CompanionGap`'s (§5A.9), so every consumer of the host's `RiffGap` keeps the two arms
+it always had.
 
 The notes are printed on both outcomes. A rig that cannot play the figure has not stopped the
 figure from having notes, and a reader deciding what to buy is better served seeing them.
@@ -5295,6 +5319,62 @@ The correction the check forced on the Phrygian figure was the minimum that make
 consistent: the C major became C minor, `vii`, the E over it became the Eb the chord is built on,
 and the two technique paragraphs that named C major as the exception went with it. The rest of
 that figure is #604's.
+
+### 5A.9 A companion is a second part, and owns only what makes it a part
+
+Some techniques are two parts, and the point is how they sit together. `Riff.companion` holds the
+second one. It is optional and absent on every riff that is one part.
+
+**What it owns** is what makes it a part: a `request`, a `technique` saying what it adds, a `hook`,
+and how that hook is struck, which is an optional `pattern` or an optional `arpeggiatedHold`.
+**What it inherits** is what makes the pair one riff: the key its degrees resolve against, the
+`harmony` and `figureStartsAtBar`, the tempo, the reference and the bar count. The `constraints`
+stay the host's and are checked against the host's hook.
+
+**The field list is the contract.** `RiffCompanionSchema` is a strict object, so a companion that
+carries its own `key`, `harmony`, `bpm`, `reference`, `constraints`, a device, or any other field
+is refused as an unrecognised key. Allowing a companion to override the key or the tempo would make
+the pair two riffs in one file with nothing to say how they meet. A device field would break
+invariant 3 the same way it would on the host.
+
+**One set of rules, run on both parts.** Every rule a part is held to is in `refinePart`: the
+request's refinements (continuous, priority 1, never `optional`, `inessential`, `distinct`, `pitch`
+or `followsKey`), the hook's role matching the request's, a non-empty hook, and §5A.2's three shapes
+with the arpeggiated hold as the fourth. Each part's shape is decided by that part's own role and
+its own flag, so a held pad can sit under a struck bass. `RiffSchema` calls `refinePart` once for
+the host and once for the companion with `companion` prefixed to every issue path. A rule added to
+one part is added to both, and `test/riff.test.ts` breaks each rule the same way on each side and
+requires the same refusals back.
+
+**Three rules belong to the pair.** The companion's hook has the host's `bars`: the two are played
+bar for bar, and a part that stops early is not something a page can line up. Its request `id` and
+hook `id` differ from the host's, because a voicing, a gap or a stored value keyed by id must never
+be able to mistake one part for the other.
+
+**Resolution places the pair together** (§5A.3). The host plays if the rig can play it. The
+companion plays if any placement of the host leaves it a voice. Each then takes its best candidate,
+the host first. The companion's outcome is `RiffPartResolution`: its notes in the riff's key, and
+`played` or a `CompanionGap`. That is `RiffGap`'s two arms plus `no-room`, reported only when the
+rig alone would play the companion and no placement of the host leaves it room. The riff's
+`patchAffinities` speak for the host alone, so a companion's voicing never names a factory patch.
+
+**On a preset page the box plays the host, and only the host** (§3.7). `presetSession` resolves
+`withoutCompanion(riff)` on the page's box, so its voice check and its keyboard-reach check
+(§4.1/#659) are the host's. The companion is resolved by `presetCompanion` against the reader's
+rig with that box taken out: it is the physical box playing the host, so it is not a voice the
+companion could take. There is no keyboard check on the companion, for the reason a riff page has
+none. It plays on another box, fingered or sequenced, which the page cannot know. There is no throw
+either: that rig is the reader's, so a gap there is a fact about the rig and not about the library.
+
+**Both surfaces print each part as its own.** A riff with a companion renders four direct children
+of `.riff-body`: the host's technique and material, then the companion's technique and notes, so
+the 1180px grid pairs each technique with its notes. One key control respells both hooks, and the
+chord table is printed once. Where each part plays is its own block, headed by role (`Where the
+sub plays`, `Where the pad plays`), and a riff with one part keeps `Where it plays` and every byte
+it had. Substitution and gap sentences take the part, so a companion's copy names its own role and
+character. `no-room` says the rig could play the part and cannot carry it beside the host. On a
+preset page the pad's picker is borrowed and never written, like the riff page's, and leaves out
+the page's own box with one line saying it is already playing the host.
 
 ---
 

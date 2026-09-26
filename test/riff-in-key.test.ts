@@ -83,7 +83,11 @@ function facts(markup: string) {
     chordNotes: rows.map((r) => r[3] as string),
     chordBars: rows.map((r) => r[4] as string),
     chordMarks: rows.map((r) => r[5] as string),
-    grid: markup.slice(markup.indexOf('<section class="grid-stub">')),
+    // The stub alone: a riff with a companion (§5A.9) has the pad's notes after it, and those move.
+    grid: markup.slice(
+      markup.indexOf('<section class="grid-stub">'),
+      markup.indexOf('</section>', markup.indexOf('<section class="grid-stub">')),
+    ),
     rules: markup.includes('<section class="rules-stub">'),
   }
 }

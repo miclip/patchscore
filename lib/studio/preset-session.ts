@@ -2,6 +2,7 @@ import type {
   Device,
   PatchUse,
   Riff,
+  RiffPartResolution,
   RiffResolution,
   RiffVoicing,
   ShippedPatch,
@@ -13,8 +14,10 @@ import {
   keyboardReachRange,
   keyboardWindow,
   patchUseIssues,
+  resolveCompanionAlone,
   resolveRiff,
   shippedPatchKey,
+  withoutCompanion,
 } from '@/lib/core'
 import { RIFFS } from '@/lib/riffs'
 import { presetSlug } from './catalogue'
@@ -165,9 +168,14 @@ function riffFor(patch: ShippedPatch, riffs: readonly Riff[]): Riff | undefined 
  * notes 18 to 116 over MIDI (the Subsequent 37's p.61), a riff page cannot know whether the
  * part will be fingered or sequenced, and a recipe states values rather than pitches. A box
  * that declares no reach is checked against nothing, as with `middleC`.
+ *
+ * **The box plays the host, and only the host** (§5A.9). A companion is resolved without it, so
+ * `resolution` carries no `companion`, and its `riff` is the host alone (`withoutCompanion`) —
+ * `PresetFigure.riff` is the whole entry. Neither the voice check nor the reach check is asked of
+ * the companion: it is played on another box, which `presetCompanion` finds on the reader's rig.
  */
 function figureFor(device: Device, patch: ShippedPatch, riff: Riff): PresetFigure {
-  const resolution = resolveRiff(riff, [device])
+  const resolution = resolveRiff(withoutCompanion(riff), [device])
   if (resolution.outcome !== 'played') {
     throw new Error(
       `${device.id}: '${riff.id}' is written for factory patch '${patch.name}' and the box cannot play it (${resolution.gap.reason}); a preset figure has to land on the box that ships the patch`,
@@ -264,4 +272,27 @@ export function presetSession(
   }
 
   return { device, entries, named: shipped.length, reading }
+}
+
+/**
+ * §5A.9/§3.7. **Where a preset figure's companion plays, on the reader's rig.**
+ *
+ * The box the page is for is already playing the host, the physical box and not a voice of it in
+ * a model, so it is taken out of the rig before the companion is placed: the companion goes to
+ * another box the reader owns, or it is §7.3's gap. `undefined` for a figure with no companion.
+ *
+ * **No keyboard check** (§4.1/#659). `figureFor`'s reach check is about hands on the box that
+ * ships the patch; the companion is on some other box, fingered or sequenced, which the page
+ * cannot know — the reason a riff page does not check reach either. And no throw on a gap: the
+ * rig is the reader's, so the gap is a fact about it and not about the library.
+ */
+export function presetCompanion(
+  figure: PresetFigure,
+  rig: readonly Device[],
+  device: Device,
+): RiffPartResolution | undefined {
+  return resolveCompanionAlone(
+    figure.riff,
+    rig.filter((d) => d.id !== device.id),
+  )
 }

@@ -4,6 +4,7 @@ import type {
   ResolvedModulationEnd,
   ResolvedParam,
   Riff,
+  RiffPart,
   RiffResolution,
   RiffVoicing,
 } from '@/lib/core'
@@ -28,6 +29,13 @@ import {
   midiLabel,
   chordRows,
   chordLabel,
+  companionGap,
+  companionHeading,
+  companionLead,
+  companionNotesHeading,
+  companionNotesIn,
+  companionSubject,
+  hostSubject,
   noteRows,
   riffChordSummary,
   riffCitation,
@@ -44,6 +52,7 @@ import {
   spellingLabel,
   slotLine,
   voiceHeading,
+  whereHeading,
 } from './riff-text'
 
 /**
@@ -114,13 +123,17 @@ function leadLine(riff: Riff): string {
 // The notes
 // ---------------------------------------------------------------------------
 
-function noteLines(riff: Riff, resolution: RiffResolution): string[] {
+function noteLines(
+  riff: Riff,
+  resolution: Pick<RiffResolution, 'notes'>,
+  heading = 'The notes',
+): string[] {
   const unresolved = riffNotesUnresolved(resolution)
-  if (unresolved !== undefined) return ['## The notes', '', `*${unresolved}*`]
+  if (unresolved !== undefined) return [`## ${heading}`, '', `*${unresolved}*`]
   if (resolution.notes.outcome !== 'resolved') return []
   const hook = resolution.notes.hook
   return [
-    '## The notes',
+    `## ${heading}`,
     '',
     riffNoteSummary(hook),
     '',
@@ -297,9 +310,14 @@ function articulationLines(voice: RiffVoicing): string[] {
   return out
 }
 
-function voiceLines(riff: Riff, voice: RiffVoicing): string[] {
+function voiceLines(
+  part: Pick<RiffPart, 'request'>,
+  voice: RiffVoicing,
+  heading: string,
+  subject?: string,
+): string[] {
   const { device, recipe } = voice
-  const out = ['## Where it plays', '']
+  const out = [`## ${heading}`, '']
   /*
    * Two blocks rather than one line joined by a dash: the box and the voice are one fact and the
    * patch's name is another, and the page sets them as two spans for the same reason. The dash
@@ -309,7 +327,7 @@ function voiceLines(riff: Riff, voice: RiffVoicing): string[] {
   out.push(`**${voiceHeading(voice)}**`)
   out.push('')
   out.push(recipe.title)
-  const substituted = riffSubstitution(riff, voice)
+  const substituted = riffSubstitution(part, voice, subject)
   if (substituted !== undefined) {
     out.push('')
     out.push(substituted)
@@ -412,6 +430,50 @@ function voiceLines(riff: Riff, voice: RiffVoicing): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// The companion
+// ---------------------------------------------------------------------------
+
+/**
+ * §5A.9. **The second part**, after everything that is the host's and before where either plays:
+ * its heading, its role and character, its technique, and its notes against the host's chords.
+ * The chords are printed once, above, because they are the riff's and not either part's. Empty
+ * for a riff with no companion, so that export is the bytes it always was.
+ */
+function companionLines(resolution: RiffResolution): string[] {
+  const { riff } = resolution
+  const { companion } = riff
+  const notes = companionNotesIn(riff, resolution)
+  if (companion === undefined || notes === undefined) return []
+  const [role, character] = companionLead(companion)
+  const out = [`## ${companionHeading(companion)}`, '', `\`${role}\` · \`${character}\``, '']
+  companion.technique.forEach((paragraph, i) => {
+    if (i > 0) out.push('')
+    out.push(paragraph)
+  })
+  out.push('')
+  out.push(...noteLines(riff, { notes }, companionNotesHeading(companion)))
+  out.push('')
+  return out
+}
+
+/**
+ * §5A.9. **Where the companion plays**, after the host's block and in its shape: the voice and
+ * its settings where it plays, and `companionGap`'s sentence where it does not. Empty for a riff
+ * with no companion.
+ */
+function companionWhereLines(resolution: RiffResolution): string[] {
+  const { riff } = resolution
+  const { companion } = riff
+  const part = resolution.companion
+  if (companion === undefined || part === undefined) return []
+  const heading = whereHeading(riff, companion)
+  if (part.outcome === 'played') {
+    return ['', ...voiceLines(companion, part.voice, heading, companionSubject(companion))]
+  }
+  return ['', `## ${heading}`, '', companionGap(riff, part.gap, resolution.devices)]
+}
+
+// ---------------------------------------------------------------------------
 // The document
 // ---------------------------------------------------------------------------
 
@@ -453,12 +515,16 @@ export function renderRiff(resolution: RiffResolution): string {
     out.push(...grid)
     out.push('')
   }
+  out.push(...companionLines(resolution))
+  const hostHeading = whereHeading(riff)
+  const subject = hostSubject(riff)
   if (resolution.outcome === 'played') {
-    out.push(...voiceLines(riff, resolution.voice))
+    out.push(...voiceLines(riff, resolution.voice, hostHeading, subject))
   } else {
-    out.push('## Where it plays')
+    out.push(`## ${hostHeading}`)
     out.push('')
-    out.push(riffGap(riff, resolution.gap, resolution.devices))
+    out.push(riffGap(riff, resolution.gap, resolution.devices, subject))
   }
+  out.push(...companionWhereLines(resolution))
   return `${out.join('\n')}\n`
 }

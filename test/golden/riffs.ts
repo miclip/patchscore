@@ -13,6 +13,7 @@ import {
   polyphonicPowerBrassStabCycle,
   showMeLoveOrganStab,
 } from '@/lib/riffs'
+import { uberSubDisplacedFifthRiff } from '@/lib/riffs/uber-sub-displaced-fifth-riff'
 import { renderRiff } from '@/lib/studio/riff-markdown'
 import type { Riff } from '@/lib/core'
 
@@ -61,6 +62,7 @@ export const RIFF_NAMES = [
   'muse-runner-on-a-muse',
   'brass-stab-cycle-on-a-muse',
   'aegean-organ-on-a-muse',
+  'uber-sub-with-pad',
 ] as const
 export type RiffName = (typeof RIFF_NAMES)[number]
 
@@ -173,6 +175,16 @@ const FIXTURES: Record<RiffName, () => Fixture> = {
   'aegean-organ-on-a-muse': () => ({
     riff: aegeanOrganPhrygianFigure,
     devices: rig('moog-muse'),
+  }),
+  /*
+   * §5A.9. **The one riff with a companion**, on the three boxes the operator owns. The bytes pin
+   * both parts: the pad's heading, lead, technique and chord-labelled rows after the host's grid,
+   * then `Where the sub plays` and `Where the pad plays` from one joint resolution, each with its
+   * own settings. It is the only fixture whose bytes a companion moves, which is the point.
+   */
+  'uber-sub-with-pad': () => ({
+    riff: uberSubDisplacedFifthRiff,
+    devices: rig('moog-muse', 'moog-subsequent-37', 'polyend-tracker-mini'),
   }),
 }
 

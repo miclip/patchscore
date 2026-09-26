@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { Assignable, Device, FactoryPatch, Recipe, TriggerNote } from './device'
 import { hasArpeggiator, realisationOf } from './device'
-import { comparePoolMembers, quantiseDistance } from './search'
+import { comparePoolMembers, quantiseDistance, recipesFitTogether } from './search'
 import {
   chordNotesText,
   parseKey,
@@ -14,6 +14,7 @@ import {
 import type { RiffId } from './ids'
 import type { ResolvedParam } from './params'
 import {
+  assignableKey,
   bindArticulation,
   canCarryNotes,
   canStackNotes,
@@ -45,16 +46,22 @@ import {
   type Pattern,
   type RoleRequest,
 } from './template'
-import { bestVoiceCandidate, crowdOf, type VoiceCandidate } from './voicing'
+import {
+  bestVoiceCandidate,
+  compareVoiceCandidates,
+  crowdOf,
+  type VoiceCandidate,
+} from './voicing'
 import { NEUTRAL_MOOD, bearsPattern, type Character } from './vocabulary'
 
 /**
  * §5A. **Riffs: one figure, taught at the machine.**
  *
  * The third authored kind, and the third thing this product renders. A `Template` is a song, an
- * `Inspiration` is a patch on somebody else's song, and a `Riff` is neither: it is a single part —
- * its notes, the rhythm they are struck on, and the words for what makes it that part — resolved
- * against whatever rig the reader owns.
+ * `Inspiration` is a patch on somebody else's song, and a `Riff` is neither: it is a single figure —
+ * its part's notes, the rhythm they are struck on, and the words for what makes it that part —
+ * resolved against whatever rig the reader owns. Where the technique is two parts played together
+ * the second is `companion` (§5A.9), and the figure is still one: one key, one tempo, one length.
  *
  * ---------------------------------------------------------------------------
  * Why it is not a `Template`
@@ -62,7 +69,7 @@ import { NEUTRAL_MOOD, bearsPattern, type Character } from './vocabulary'
  *
  * A template is a *song*: sections with bars and an energy, a harmonic cycle, several requests
  * competing for a rig under §7.1's lexicographic objective, four density bands per part, and a
- * mood it opens at. A riff has one part and no song around it. Built as a `Template` every one of
+ * mood it opens at. A riff has one figure and no song around it. Built as a `Template` every one of
  * those fields would have to be authored as a fiction: a `structure` of one invented section
  * name, a `harmony` whose progression nobody plays, an `energy` number selecting among bands
  * there is only one of, and a search with nothing to allocate. Worse, each fiction would be
@@ -309,7 +316,7 @@ export type Riff = {
    */
   key: string
   /**
-   * **The one part.** `continuous`, priority 1, no sections — a riff has no structure for a
+   * **The part.** `continuous`, priority 1, no sections — a riff has no structure for a
    * transient request to name. A `RiffRequest` rather than a `RoleRequest` for one field: see
    * `reArticulatesHook` there.
    */
@@ -317,7 +324,7 @@ export type Riff = {
   /** The notes. Original, always — never a transcription of the recording or patch an entry references. */
   /**
    * §5A/§4.1. **The chords the figure is played over**, where the figure only makes sense against
-   * them. Optional, and absent on every riff that is one part in one key.
+   * them. Optional, and absent on every riff whose key is the whole of its harmony.
    *
    * A riff is a technique rather than an arrangement, so most entries need nothing here: `key` and
    * the notes are the whole of the harmony a reader has to know. It earns its place when the
@@ -393,7 +400,27 @@ export type Riff = {
    * `Riff` that parsed has a grid if and only if `request.reArticulatesHook === true`.
    */
   pattern?: Pattern
+  /**
+   * §5A.9. **A second part played with the first**, where the technique is the two together.
+   * Optional, and absent on every riff that is one part.
+   *
+   * It owns what makes it a part — its request, its words, its notes and how they are struck —
+   * and inherits everything that makes it *this* riff: the key its degrees resolve against, the
+   * harmony and where the figure starts in it, the tempo, and the bar count, which its hook must
+   * equal. `RiffCompanionSchema` is strict, so a companion carrying its own key, harmony, tempo
+   * or a device cannot parse, and every rule a part is held to is `refinePart`'s, run on both.
+   */
+  companion?: RiffCompanion
 }
+
+/**
+ * §5A.2. **What a riff's part is**, and all a companion owns besides its words: the request, the
+ * hook, and the grid or the arpeggiated hold that says how the hook is struck.
+ */
+export type RiffPart = Pick<Riff, 'request' | 'hook' | 'pattern' | 'arpeggiatedHold'>
+
+/** §5A.9. See `Riff.companion`. `technique` says what this part adds, in the host's voice. */
+export type RiffCompanion = RiffPart & { technique: string[] }
 
 /**
  * §5A.5. `'Show Me Love'` → `'show-me-love'`. The form a riff's `id` has to open with.
@@ -639,6 +666,256 @@ export function widestHold(hook: Pick<Hook, 'bars' | 'notes'>): number {
   return widest
 }
 
+/**
+ * §5A.2/§5A.9. **Every rule a part is held to, whether it is the riff's own or its companion's.**
+ *
+ * One function and two calls, so the host and the companion cannot drift: a rule added here is a
+ * rule on both, and the three shapes (with the arpeggiated hold as the fourth) are decided for
+ * each part by its own role and its own flag. `at` prefixes every issue path, so a refusal on the
+ * companion names `companion.request.role` rather than a field the host also has.
+ *
+ * What is *not* here is everything a part inherits rather than owns: the key, the harmony and
+ * where the figure starts in it, the tempo, the reference, and the rules in `constraints`. Those
+ * are the riff's, checked once in `RiffSchema`.
+ */
+function refinePart(part: RiffPart, ctx: z.RefinementCtx, at: readonly PropertyKey[]): void {
+  const { request, hook, pattern } = part
+  // A riff has no structure, so `transient` has no section to name. `RoleRequestSchema` already
+  // refuses a continuous request that lists sections; this is the other half.
+  if (request.sustain !== 'continuous') {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'a riff has no sections for a transient request to occupy (§4.2)',
+      path: [...at, 'request', 'sustain'],
+    })
+  }
+  // Not a decision — the only honest value when there is nothing to rank against. A part is not
+  // ranked against anything: a companion's place behind the host is structural (§5A.9), not a
+  // priority, so a part that wrote 3 here would be implying a ranking nothing reads.
+  if (request.priority !== 1) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'a riff’s part is not ranked against another part: its priority is 1 (§4.4, §5A.9)',
+      path: [...at, 'request', 'priority'],
+    })
+  }
+  // §4.4. `optional` tells the search not to spend a voice on this and `inessential` tells the
+  // reader not to go looking for a box. Both are sentences about a *song* that survives the
+  // absence; a part the rig cannot play is not a part the figure does without, it is the gap
+  // `resolveRiff` reports for that part.
+  if (request.optional !== undefined || request.inessential !== undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'a riff’s part is the figure: it cannot also be one the figure does without (§4.4)',
+      path: [...at, 'request'],
+    })
+  }
+  // §12.6. `distinct` asks the search to keep two same-role requests off one box, as a matter of
+  // arrangement. A riff's two parts are never on one voice by construction (§5A.3), and which
+  // box each lands on is the rig's answer, so there is nothing for the flag to decide.
+  if (request.distinct !== undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        'a riff’s parts never share a voice and are not ranked by box, so there is nothing for ' +
+        '`distinct` to decide (§12.6, §5A.3)',
+      path: [...at, 'request', 'distinct'],
+    })
+  }
+  // §4.1/#100 and #334, both arriving at the same place: the hook already names every note.
+  // `pitch` would name one more and `followsKey` would displace the ones there are. Checkable
+  // here, where `TemplateSchema` cannot check the first of them, because a riff holds its
+  // request and its hook in one object.
+  if (request.pitch !== undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'the hook names this riff’s notes: the request cannot name another (§4.1)',
+      path: [...at, 'request', 'pitch'],
+    })
+  }
+  if (request.followsKey !== undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'the hook is already in the key: following it would transpose it twice (§4.1)',
+      path: [...at, 'request', 'followsKey'],
+    })
+  }
+  if (hook.forRole !== request.role) {
+    ctx.addIssue({
+      code: 'custom',
+      message: `the hook is for \`${hook.forRole}\`, and the part is \`${request.role}\``,
+      path: [...at, 'hook', 'forRole'],
+    })
+  }
+  /*
+   * §5A.2/§12.4/#645. **An arpeggiated hold is the fourth shape, and it is held on every
+   * role.** See `Riff.arpeggiatedHold`: the arpeggiator is the rhythm, so there is no grid and
+   * no flag in either spelling; the box sounds one note at a time, so the request asks for
+   * one voice and the hold's width lives in the hook alone; and the hook holds more than one
+   * note somewhere, or there is nothing to arpeggiate.
+   */
+  const arpeggiated = part.arpeggiatedHold === true
+  if (arpeggiated) {
+    if (pattern !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'an arpeggiated hold has no grid: the arpeggiator is the rhythm, and a grid beside ' +
+          'it would be two authorities over one rhythm (#100, §5A.2)',
+        path: [...at, 'pattern'],
+      })
+    }
+    if (request.reArticulatesHook !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'an arpeggiated hold has no grid to re-articulate the hook: the arpeggiator strikes ' +
+          'the notes (§5A.2)',
+        path: [...at, 'request', 'reArticulatesHook'],
+      })
+    }
+    if ((request.polyphony ?? 1) !== 1) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          `an arpeggiated hold sounds one note at a time and asks for one voice, not ` +
+          `${String(request.polyphony)}: the width of the hold is the hook's (§12.4)`,
+        path: [...at, 'request', 'polyphony'],
+      })
+    }
+    if (widestHold(hook) < 2) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'an arpeggiated hold holds more than one note at some step; with one there is ' +
+          'nothing for the arpeggiator to run through (§5A.2)',
+        path: [...at, 'hook', 'notes'],
+      })
+    }
+  }
+  /*
+   * §4.2/§5A.2/#608/#623. **The role and the flag decide whether there is a grid.** A held
+   * role (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on
+   * one is its hook and nothing else: no `pattern`, and no `reArticulatesHook` in either
+   * spelling, since there is no grid question for the flag to answer. A struck role has to
+   * answer it, and the flag is required rather than offered — see the header. `true` means a
+   * grid says where the hook is struck again, and the grid is required beside it. `false`
+   * means the figure is through-composed, the hook is the whole rhythm, and a grid beside it
+   * would be the two authorities #100 forbids. Each shape refuses the others', so an entry
+   * cannot half-change role and cannot carry a grid it has disowned.
+   */
+  if (arpeggiated) {
+    // Held on every role, and checked above; the struck-role question is never asked.
+  } else if (!bearsPattern(request.role)) {
+    if (pattern !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `\`${request.role}\` is held rather than struck: it has no grid to riff on (§4.2)`,
+        path: [...at, 'pattern'],
+      })
+    }
+    if (request.reArticulatesHook !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          `\`${request.role}\` is held rather than struck: there is no grid to re-articulate ` +
+          'the hook (§4.2)',
+        path: [...at, 'request', 'reArticulatesHook'],
+      })
+    }
+  } else if (request.reArticulatesHook === undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        `\`${request.role}\` is struck, so the riff says whether a grid re-articulates the hook: ` +
+        '`true` beside a grid, or `false` with none where the figure is through-composed (§5A.2)',
+      path: [...at, 'request', 'reArticulatesHook'],
+    })
+  } else if (request.reArticulatesHook) {
+    if (pattern === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `\`${request.role}\` is struck: a riff on it says where, in a grid (§4.3)`,
+        path: [...at, 'pattern'],
+      })
+    }
+  } else if (pattern !== undefined) {
+    ctx.addIssue({
+      code: 'custom',
+      message:
+        'the request says the figure is through-composed and the grid says where it is struck: ' +
+        'two authorities over one rhythm (#100). Drop the grid, or say `reArticulatesHook: true`',
+      path: [...at, 'pattern'],
+    })
+  }
+  if (pattern !== undefined) {
+    if (pattern.forRole !== request.role) {
+      ctx.addIssue({
+        code: 'custom',
+        message: `the grid is for \`${pattern.forRole}\`, and the part is \`${request.role}\``,
+        path: [...at, 'pattern', 'forRole'],
+      })
+    }
+    // §4.3. Bands exist so density can select among variants (§6.3). A riff has one variant
+    // and no density knob, so every band but the base one would be a choice nothing can make.
+    if (pattern.band !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'a riff has one variant and no density to select with: its band is 0 (§6.3)',
+        path: [...at, 'pattern', 'band'],
+      })
+    }
+    if (pattern.sections !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'a riff has no sections for a variant to be eligible in (§4.2)',
+        path: [...at, 'pattern', 'sections'],
+      })
+    }
+    if (pattern.hits.length === 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'a riff whose grid strikes nothing is a held note, not a riff (§4.3)',
+        path: [...at, 'pattern', 'hits'],
+      })
+    }
+    // §5A.2/#603. The grid is capped at 64 steps and the hook is not; a longer hook is played
+    // with the grid repeating beneath it, so the hook has to be a whole number of passes. A
+    // twelve-bar line over a four-bar grid is three passes; a ten-bar line over the same grid
+    // would have the grid cut off mid-pass at the end of the figure, and nothing on the page
+    // could say where.
+    if ((hook.bars * STEPS_PER_BAR) % pattern.length !== 0) {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          `a ${String(hook.bars)}-bar hook is ${String(hook.bars * STEPS_PER_BAR)} steps, which ` +
+          `is not a whole number of passes of a ${String(pattern.length)}-step grid (§5A.2)`,
+        path: [...at, 'hook', 'bars'],
+      })
+    }
+  }
+  if (hook.notes.length === 0) {
+    ctx.addIssue({
+      code: 'custom',
+      message: 'a riff with no notes is a drum pattern, not a riff (§4.1)',
+      path: [...at, 'hook', 'notes'],
+    })
+  }
+}
+
+/**
+ * §5A.9. Strict, so the list of fields *is* the contract: a companion that names a key, a
+ * harmony, a tempo, a reference or anything else the host owns is refused as an unknown key
+ * rather than quietly ignored.
+ */
+export const RiffCompanionSchema = z.strictObject({
+  request: RiffRequestSchema,
+  technique: z.array(z.string().min(1)).min(1, 'a companion is part of the technique: say what it adds'),
+  arpeggiatedHold: z.literal(true).optional(),
+  hook: HookSchema,
+  pattern: PatternSchema.optional(),
+})
+
 export const RiffSchema = z
   .strictObject({
     id: z.string().min(1),
@@ -655,9 +932,9 @@ export const RiffSchema = z
     arpeggiatedHold: z.literal(true).optional(),
     hook: HookSchema,
     pattern: PatternSchema.optional(),
+    companion: RiffCompanionSchema.optional(),
   })
   .superRefine((riff, ctx) => {
-    const { request, hook, pattern } = riff
     // §5A.5. The reference has to be findable in both the things a reader sees — the title on the
     // page and the slug in the address bar — so both are checked against the one field that says
     // what it is. `toLowerCase` and a character class, never `toLocaleLowerCase`: a Turkish
@@ -696,61 +973,6 @@ export const RiffSchema = z
         code: 'custom',
         message: `'${riff.key}' is not a key this engine reads (§4.1)`,
         path: ['key'],
-      })
-    }
-    // A riff has no structure, so `transient` has no section to name. `RoleRequestSchema` already
-    // refuses a continuous request that lists sections; this is the other half.
-    if (request.sustain !== 'continuous') {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff has no sections for a transient request to occupy (§4.2)',
-        path: ['request', 'sustain'],
-      })
-    }
-    // Not a decision — the only honest value when there is nothing to rank against. A riff that
-    // wrote 3 here would be implying two parts it does not have.
-    if (request.priority !== 1) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff is one part: its priority is 1 (§4.4)',
-        path: ['request', 'priority'],
-      })
-    }
-    // §4.4. `optional` tells the search not to spend a voice on this and `inessential` tells the
-    // reader not to go looking for a box. Both are sentences about a *song* that survives the
-    // absence; a riff that the rig cannot play is not a riff with a part missing, it is the gap
-    // `resolveRiff` reports.
-    if (request.optional !== undefined || request.inessential !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff is the part: it cannot also be one the piece does without (§4.4)',
-        path: ['request'],
-      })
-    }
-    // §12.6. `distinct` is a claim about a *second* request sharing this role. There is none.
-    if (request.distinct !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff has one request, so there is nothing for it to be distinct from (§12.6)',
-        path: ['request', 'distinct'],
-      })
-    }
-    // §4.1/#100 and #334, both arriving at the same place: the hook already names every note.
-    // `pitch` would name one more and `followsKey` would displace the ones there are. Checkable
-    // here, where `TemplateSchema` cannot check the first of them, because a riff holds its
-    // request and its hook in one object.
-    if (request.pitch !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'the hook names this riff’s notes: the request cannot name another (§4.1)',
-        path: ['request', 'pitch'],
-      })
-    }
-    if (request.followsKey !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'the hook is already in the key: following it would transpose it twice (§4.1)',
-        path: ['request', 'followsKey'],
       })
     }
     /*
@@ -798,166 +1020,40 @@ export const RiffSchema = z
     for (const violation of riffConstraintViolations(riff as Riff)) {
       ctx.addIssue({ code: 'custom', message: violation, path: ['constraints'] })
     }
-    if (hook.forRole !== request.role) {
-      ctx.addIssue({
-        code: 'custom',
-        message: `the hook is for \`${hook.forRole}\`, and the part is \`${request.role}\``,
-        path: ['hook', 'forRole'],
-      })
-    }
+    refinePart(riff, ctx, [])
     /*
-     * §5A.2/§12.4/#645. **An arpeggiated hold is the fourth shape, and it is held on every
-     * role.** See `Riff.arpeggiatedHold`: the arpeggiator is the rhythm, so there is no grid and
-     * no flag in either spelling; the box sounds one note at a time, so the request asks for
-     * one voice and the hold's width lives in the hook alone; and the hook holds more than one
-     * note somewhere, or there is nothing to arpeggiate.
+     * §5A.9. **The companion is a part in its own right, and one bar-for-bar with the host.** It
+     * is held to every rule the host is, by the same function, so the two cannot drift. Its hook
+     * is as long as the host's, since the two are played together and one running out first is
+     * a figure nothing on the page could line up. Its request and hook ids are its own, because a
+     * voicing, a gap or a storage key keyed by id must not be able to take one part for the other.
      */
-    const arpeggiated = riff.arpeggiatedHold === true
-    if (arpeggiated) {
-      if (pattern !== undefined) {
+    const { companion } = riff
+    if (companion !== undefined) {
+      refinePart(companion, ctx, ['companion'])
+      if (companion.hook.bars !== riff.hook.bars) {
         ctx.addIssue({
           code: 'custom',
           message:
-            'an arpeggiated hold has no grid: the arpeggiator is the rhythm, and a grid beside ' +
-            'it would be two authorities over one rhythm (#100, §5A.2)',
-          path: ['pattern'],
+            `the companion's hook is ${String(companion.hook.bars)} bars and the riff's is ` +
+            `${String(riff.hook.bars)}: the two are played together, bar for bar (§5A.9)`,
+          path: ['companion', 'hook', 'bars'],
         })
       }
-      if (request.reArticulatesHook !== undefined) {
+      if (companion.request.id === riff.request.id) {
         ctx.addIssue({
           code: 'custom',
-          message:
-            'an arpeggiated hold has no grid to re-articulate the hook: the arpeggiator strikes ' +
-            'the notes (§5A.2)',
-          path: ['request', 'reArticulatesHook'],
+          message: `the companion's request id must differ from the riff's, '${riff.request.id}' (§5A.9)`,
+          path: ['companion', 'request', 'id'],
         })
       }
-      if ((request.polyphony ?? 1) !== 1) {
+      if (companion.hook.id === riff.hook.id) {
         ctx.addIssue({
           code: 'custom',
-          message:
-            `an arpeggiated hold sounds one note at a time and asks for one voice, not ` +
-            `${String(request.polyphony)}: the width of the hold is the hook's (§12.4)`,
-          path: ['request', 'polyphony'],
+          message: `the companion's hook id must differ from the riff's, '${riff.hook.id}' (§5A.9)`,
+          path: ['companion', 'hook', 'id'],
         })
       }
-      if (widestHold(hook) < 2) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            'an arpeggiated hold holds more than one note at some step; with one there is ' +
-            'nothing for the arpeggiator to run through (§5A.2)',
-          path: ['hook', 'notes'],
-        })
-      }
-    }
-    /*
-     * §4.2/§5A.2/#608/#623. **The role and the flag decide whether there is a grid.** A held
-     * role (`NON_PATTERN_BEARING_ROLES`) is a note held rather than a rhythm struck, so a riff on
-     * one is its hook and nothing else: no `pattern`, and no `reArticulatesHook` in either
-     * spelling, since there is no grid question for the flag to answer. A struck role has to
-     * answer it, and the flag is required rather than offered — see the header. `true` means a
-     * grid says where the hook is struck again, and the grid is required beside it. `false`
-     * means the figure is through-composed, the hook is the whole rhythm, and a grid beside it
-     * would be the two authorities #100 forbids. Each shape refuses the others', so an entry
-     * cannot half-change role and cannot carry a grid it has disowned.
-     */
-    if (arpeggiated) {
-      // Held on every role, and checked above; the struck-role question is never asked.
-    } else if (!bearsPattern(request.role)) {
-      if (pattern !== undefined) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `\`${request.role}\` is held rather than struck: it has no grid to riff on (§4.2)`,
-          path: ['pattern'],
-        })
-      }
-      if (request.reArticulatesHook !== undefined) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            `\`${request.role}\` is held rather than struck: there is no grid to re-articulate ` +
-            'the hook (§4.2)',
-          path: ['request', 'reArticulatesHook'],
-        })
-      }
-    } else if (request.reArticulatesHook === undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message:
-          `\`${request.role}\` is struck, so the riff says whether a grid re-articulates the hook: ` +
-          '`true` beside a grid, or `false` with none where the figure is through-composed (§5A.2)',
-        path: ['request', 'reArticulatesHook'],
-      })
-    } else if (request.reArticulatesHook) {
-      if (pattern === undefined) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `\`${request.role}\` is struck: a riff on it says where, in a grid (§4.3)`,
-          path: ['pattern'],
-        })
-      }
-    } else if (pattern !== undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        message:
-          'the request says the figure is through-composed and the grid says where it is struck: ' +
-          'two authorities over one rhythm (#100). Drop the grid, or say `reArticulatesHook: true`',
-        path: ['pattern'],
-      })
-    }
-    if (pattern !== undefined) {
-      if (pattern.forRole !== request.role) {
-        ctx.addIssue({
-          code: 'custom',
-          message: `the grid is for \`${pattern.forRole}\`, and the part is \`${request.role}\``,
-          path: ['pattern', 'forRole'],
-        })
-      }
-      // §4.3. Bands exist so density can select among variants (§6.3). A riff has one variant
-      // and no density knob, so every band but the base one would be a choice nothing can make.
-      if (pattern.band !== 0) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'a riff has one variant and no density to select with: its band is 0 (§6.3)',
-          path: ['pattern', 'band'],
-        })
-      }
-      if (pattern.sections !== undefined) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'a riff has no sections for a variant to be eligible in (§4.2)',
-          path: ['pattern', 'sections'],
-        })
-      }
-      if (pattern.hits.length === 0) {
-        ctx.addIssue({
-          code: 'custom',
-          message: 'a riff whose grid strikes nothing is a held note, not a riff (§4.3)',
-          path: ['pattern', 'hits'],
-        })
-      }
-      // §5A.2/#603. The grid is capped at 64 steps and the hook is not; a longer hook is played
-      // with the grid repeating beneath it, so the hook has to be a whole number of passes. A
-      // twelve-bar line over a four-bar grid is three passes; a ten-bar line over the same grid
-      // would have the grid cut off mid-pass at the end of the figure, and nothing on the page
-      // could say where.
-      if ((hook.bars * STEPS_PER_BAR) % pattern.length !== 0) {
-        ctx.addIssue({
-          code: 'custom',
-          message:
-            `a ${String(hook.bars)}-bar hook is ${String(hook.bars * STEPS_PER_BAR)} steps, which ` +
-            `is not a whole number of passes of a ${String(pattern.length)}-step grid (§5A.2)`,
-          path: ['hook', 'bars'],
-        })
-      }
-    }
-    if (hook.notes.length === 0) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'a riff with no notes is a drum pattern, not a riff (§4.1)',
-        path: ['hook', 'notes'],
-      })
     }
   })
 
@@ -966,14 +1062,15 @@ export const RiffSchema = z
 // ---------------------------------------------------------------------------
 
 /**
- * §7.3. **Why a rig cannot play this riff**, in `Gap`'s own two reachable shapes.
+ * §7.3. **Why a rig cannot play a riff's part**, in `Gap`'s own two shapes that a part reached
+ * alone can produce.
  *
  * Deliberately not `search.ts`'s `Gap`. That type carries a `requestId`, a `priority`, an
  * `optional` flag and a `no-room` arm, and every one of them is about a part *competing with
- * other parts for a rig* — the thing a riff has none of. `no-room` in particular is unreachable
- * here by construction: with one request and no occupancy, nothing can take the voice first.
- * Borrowing the type would have meant filling four fields with values that mean nothing and
- * leaving a third arm that can never be produced.
+ * other parts for a rig* across a song. The host never competes: it is placed first (§5A.3), so
+ * nothing can take its voice and `no-room` is unreachable for it by construction. A companion can
+ * be crowded out by its host, and that third shape is `CompanionGap`'s, not this type's, so every
+ * consumer of the host's gap keeps exactly the two arms it always had.
  *
  * The two arms that *are* reachable keep §7.3's names and its distinction, because it is the same
  * distinction and the reader acts differently on each: `no-capable-voice` is fixed by buying a
@@ -1058,11 +1155,42 @@ export type RiffVoicing = {
 }
 
 /**
+ * §5A.9. **Why a rig cannot play a riff's companion.** `RiffGap`'s two shapes, which a companion
+ * reaches exactly as a host does, and one more that only a second part can reach.
+ *
+ * `no-room` is §7.3's name and §7.3's meaning: the rig has voices that could carry the part and a
+ * recipe for it, and every one of them is taken by the host or cannot load its recipe beside the
+ * host's (§2.3). It is reported only after every placement of the host has been tried
+ * (`resolveRiff`), so it never means "the host's first choice happened to be in the way".
+ */
+export type CompanionGap =
+  | RiffGap
+  | {
+      reason: 'no-room'
+      /** Every voice that could carry the companion on a rig with no host on it. Never empty. */
+      capable: readonly Assignable[]
+    }
+
+/**
+ * §5A.9. **One of a riff's parts against one rig**: the companion's notes and outcome, in the same
+ * two arms `RiffResolution` has for the host. `notes` is present on both, for the same reason.
+ */
+export type RiffPartResolution = {
+  /** The companion's hook against the riff's key, which is the only key a companion has. */
+  notes: HookResolution
+} & ({ outcome: 'played'; voice: RiffVoicing } | { outcome: 'gap'; gap: CompanionGap })
+
+/**
  * §5A. A riff against one rig. Exactly one of the two outcomes, because "played on nothing" and
  * "played here" are not two readings of one state.
  *
  * `notes` is present on both arms on purpose: a rig that cannot play the figure has not stopped
  * the figure from having notes, and a reader deciding what to buy is better served seeing them.
+ *
+ * The top-level outcome is the host's, so every consumer written before §5A.9 reads the part it
+ * always read. The companion's is beside it in `companion`, present exactly where the riff has
+ * one and absent from the object otherwise, so a riff without one resolves to the same bytes it
+ * always did.
  */
 export type RiffResolution = {
   riff: Riff
@@ -1074,47 +1202,52 @@ export type RiffResolution = {
   devices: readonly Device[]
   /** The hook against the riff's own key. `unresolved` is a content bug, never a rig gap. */
   notes: HookResolution
+  /** §5A.9. The companion's notes and outcome. Present exactly where `riff.companion` is. */
+  companion?: RiffPartResolution
 } & ({ outcome: 'played'; voice: RiffVoicing } | { outcome: 'gap'; gap: RiffGap })
 
 /**
- * §5A/§7.1. **One part, one rig, and no search.**
- *
- * §7.1's search exists to allocate *several* parts to a rig without two of them taking the same
- * voice. A riff has one part, so there is nothing to allocate and nothing to back-track over:
- * the answer is the best candidate, and the candidates are the voices that claim the role and
- * can carry the notes. `measure:search` is untouched by this file, and must stay untouched — a
- * riff never enters the tree it bounds.
- *
- * **The ranking is §7.1's own**, because a riff that ranked its candidates differently would hand
- * a reader a worse voice for the same figure with nothing on the page saying so. It is `Score`'s
- * order rather than `Cost`'s alone, and it lives in `voicing.ts` — `VoiceCandidate` and
- * `bestVoiceCandidate` — because `resolveSample` now asks the identical question of a rig (#520)
- * and a comparator whose key order is an argument settled in §7.1 must not be settled twice.
- *
- * **The first cut used `compareCost` alone and was wrong** on the one shape where the two keys
- * disagree: it took a three-voice stack on a box comfortable with one voice, where the search
- * takes the one-voice chord sample beside it. `test/riff-session.test.ts` pins that case against
- * a one-request `assign`.
- *
- * **Stacks are materialised here too** (§12.4/#40, #503). A pool of mono members with a
- * `polyphonic-voice` recipe plays a chord one note per voice, and that route has to be built or
- * the rig gets told `no-recipe` for a figure it can play.
- *
- * **No seed, and there is nothing for one to do** (§7.2). A seed permutes only among *exactly
- * equal* costs, and the ordering is total: `compareCost`, then the first voice's key, then the
- * recipe's id, both by code unit. Same rig, same bytes, on any platform (invariant 6).
- *
- * **No mood, so no character resolution and no offsets.** §6.2's character move and §6.1's
- * arithmetic are both mood operations, and a riff has no knobs — `NEUTRAL_MOOD` is the state
- * where §6.1's offset is zero, which is what "the reader has not turned anything" means. The
- * character the riff asked for is therefore the character the recipe is scored against.
+ * §5A.3. Everything one part asks of a rig: which voices play its role at all, which of those can
+ * carry its notes, and the ranked candidates among them that are free. The first three are facts
+ * about the rig and the part and ignore occupancy, because they are what a gap reports; only
+ * `candidates` excludes the voices already `occupied`.
  */
-export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolution {
-  const { request } = riff
+type PartCandidates = {
+  want: Character
+  wantedNotes: number
+  roleVoices: Assignable[]
+  capable: Assignable[]
+  withoutArpeggiator: number
+  candidates: VoiceCandidate[]
+}
+
+/**
+ * §5A.3/§7.1. **The candidates for one part**, beside whatever voices are `occupied` already.
+ *
+ * For a host, and for any riff without a companion, `occupied` is empty and this is exactly the
+ * candidate list `resolveRiff` always built. For a companion it is the voices one placement of the
+ * host takes: those are never a candidate (§4.2, one voice one part), a stack takes its members
+ * from the pool's free voices, and `crowd` is what *this* part adds to a box the host may already
+ * be on, so a companion joining a box that is comfortable with one voice is priced as the second
+ * voice on it rather than as the first.
+ */
+function partCandidates(
+  part: RiffPart,
+  devices: readonly Device[],
+  occupied: readonly Assignable[],
+): PartCandidates {
+  const { request } = part
   const role = request.role
   const want = request.character
   const wantedNotes = request.polyphony ?? 1
-  const notes = resolveHook(riff.hook, riff.key)
+  const taken = new Set(occupied.map(assignableKey))
+  const busyOn = new Map<string, number>()
+  for (const a of occupied) busyOn.set(a.deviceId, (busyOn.get(a.deviceId) ?? 0) + 1)
+  /** What `n` more voices on this box cost against what it is comfortable with, over the host's. */
+  const addedCrowd = (device: Device, n: number): number => {
+    const busy = busyOn.get(device.id) ?? 0
+    return crowdOf(device, busy + n) - crowdOf(device, busy)
+  }
 
   const roleVoices: Assignable[] = []
   const capable: Assignable[] = []
@@ -1135,7 +1268,7 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
    * counted as playing the role, so the gap can say the part is playable here and the
    * arpeggiator is what is missing.
    */
-  const arpeggiated = riff.arpeggiatedHold === true
+  const arpeggiated = part.arpeggiatedHold === true
   let withoutArpeggiator = 0
 
   for (const device of devices) {
@@ -1165,6 +1298,9 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
       // whole chord on a mono track answers `unvoiced`, which is what sent #503's first cut into
       // a `no-recipe` gap on a rig that plays the figure perfectly well.
       if (!carries) continue
+      // §4.2/§5A.3. The host's voice is the host's. Still counted as capable above, because a
+      // companion refused a voice the host holds is `no-room`, not a rig that cannot play it.
+      if (taken.has(assignableKey(assignable))) continue
       const resolution = resolveRecipe(device, assignable, role, want, wantedNotes)
       // §3.5. `unvoiced` is not a candidate: it neither plays the part nor occupies the voice,
       // and it comes back below as the `no-recipe` gap.
@@ -1174,7 +1310,7 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
         assignables: [assignable],
         recipe: resolution.recipe,
         character: resolution.character,
-        crowd: crowdOf(device, 1),
+        crowd: addedCrowd(device, 1),
         sampledChord:
           wantedNotes > 1 && realisationOf(resolution.recipe) === 'sampled-chord' ? 1 : 0,
         stacked: 0,
@@ -1190,28 +1326,29 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
      * §12.4/#40. One plan per pool that could spread this part, asked of a representative member
      * because every one of the answers is a per-pool fact (§2.2) — `buildCtx` does the same.
      *
-     * **The members are simply the first `wantedNotes` of them**, where the search calls
-     * `chooseStackMembers` against live occupancy. With one part there is no occupancy: every
-     * member is free, so "already-busy last, then lowest ordinal" collapses to "lowest ordinal",
-     * which is what `comparePoolMembers` order already is. That is the one place this deliberately
-     * does less than the search, and it does less because there is less to do.
+     * **The members are the first `wantedNotes` free ones**, where the search calls
+     * `chooseStackMembers` against live occupancy. Here the only occupancy is a host's, and pool
+     * members are interchangeable by construction (§2.2), so "already-busy last, then lowest
+     * ordinal" collapses to "lowest free ordinal", which is `comparePoolMembers` order with the
+     * host's voices removed. With no host it is the first `wantedNotes`, as it always was.
      */
     const representative = members[0]
     if (representative === undefined) continue
     if (!representative.roles.includes(role)) continue
     if (!canStackNotes(device, representative, role, wantedNotes)) continue
-    if (members.length < wantedNotes) continue
+    const free = members.filter((m) => !taken.has(assignableKey(m)))
+    if (free.length < wantedNotes) continue
     const best = stackRecipes(device, representative, role, want)[0]
     // No usable recipe at this character is a `no-recipe` gap, exactly as for a single.
     if (best === undefined) continue
     candidates.push({
       device,
-      assignables: members.slice(0, wantedNotes),
+      assignables: free.slice(0, wantedNotes),
       recipe: best.recipe,
       character: best.recipe.character,
       // The voices a stack spends, priced against what the box is comfortable with. This is the
       // key that lets a one-voice chord sample beat a three-voice stack on a crowded box.
-      crowd: crowdOf(device, wantedNotes),
+      crowd: addedCrowd(device, wantedNotes),
       // A stack is voices, never a sample: `stackRecipes` has already excluded the other route.
       sampledChord: 0,
       stacked: 1,
@@ -1220,67 +1357,212 @@ export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolut
     })
   }
 
+  return { want, wantedNotes, roleVoices, capable, withoutArpeggiator, candidates }
+}
+
+/**
+ * §7.3. **The gap for a part with no candidate**, named in the order a reader acts on them:
+ * nothing plays the part; something does but nothing here has the arpeggiator the hold needs;
+ * something does but not this wide; something could carry it and nothing has a recipe.
+ */
+function partGap(part: PartCandidates): RiffGap {
+  const { roleVoices, capable, withoutArpeggiator, wantedNotes } = part
   if (capable.length === 0) {
-    // Named in the order a reader acts on them: nothing plays the part; something does but
-    // nothing here has the arpeggiator the hold needs; something does but not this wide.
     const because =
       roleVoices.length === 0
         ? 'no-such-role'
         : withoutArpeggiator === roleVoices.length
           ? 'no-arpeggiator'
           : 'polyphony'
-    return {
-      riff,
-      devices,
-      notes,
-      outcome: 'gap',
-      gap: { reason: 'no-capable-voice', because, notes: wantedNotes, roleVoices },
-    }
+    return { reason: 'no-capable-voice', because, notes: wantedNotes, roleVoices }
   }
+  return { reason: 'no-recipe', capable }
+}
 
-  const winner = bestVoiceCandidate(candidates)
-
-  if (winner === undefined) {
-    return {
-      riff,
-      devices,
-      notes,
-      outcome: 'gap',
-      gap: { reason: 'no-recipe', capable },
-    }
-  }
-
+/**
+ * §7 steps 8-9. **The voicing a reader builds**, for one part on the candidate it won.
+ *
+ * `partsOnDevice` is how many of the riff's parts landed on this box — 2 where host and companion
+ * share it — and divides the box's voices exactly as the guide divides them (`pipeline.ts`,
+ * #424), so a `valueFrom: 'device-part-share'` parameter reads the same number on both parts.
+ *
+ * `affine` is whether the riff's `patchAffinities` speak for this part. They are the host's: the
+ * figure's sound is the host's sound, so a companion is never told to load a patch on their word.
+ */
+function voicingOf(
+  riff: Riff,
+  part: RiffPart,
+  winner: VoiceCandidate,
+  want: Character,
+  partsOnDevice: number,
+  affine: boolean,
+): RiffVoicing {
   const stackWidth = winner.assignables.length
+  return {
+    device: winner.device,
+    assignables: winner.assignables,
+    stackWidth,
+    recipe: winner.recipe,
+    character: winner.character,
+    substituted: winner.character !== want,
+    // §7 step 9. One part on one box, so the share is the whole pool; two parts on it, half each,
+    // floored as the guide floors it. Passed rather than omitted because `resolveParam` throws on
+    // a `valueFrom` it cannot answer, and a riff must not fall over on a device that authors one.
+    params: resolveParams(winner.recipe, NEUTRAL_MOOD, {
+      stackWidth,
+      devicePartShare: Math.floor(devicePoolCapacity(winner.device) / partsOnDevice),
+    }),
+    patch: resolvePatch(winner.recipe),
+    sourceAudio: resolveSourceAudio(winner.recipe),
+    soundSetup: resolveSoundSetup(winner.recipe),
+    factoryPatch: affine ? affinePatch(riff, winner.recipe.factoryPatch) : undefined,
+    // §5A.2/#608. Articulation addresses the grid's slots, and a held part has no grid: nothing
+    // to bind to, so nothing is bound, rather than a slot list read off a pattern that is not
+    // there.
+    articulation: part.pattern === undefined ? [] : bindArticulation(winner.recipe, part.pattern),
+    // §2.2/#86. Read off the first voice, which every member of a pool shares — a stack is one
+    // pool on one device, so there is one answer rather than one per voice.
+    triggerNote: triggerNoteFor(winner.recipe, winner.assignables[0]),
+  }
+}
+
+/** A part placed alone on a rig: its best candidate, or its gap. */
+function soloOutcome(
+  riff: Riff,
+  part: RiffPart,
+  found: PartCandidates,
+  affine: boolean,
+): { outcome: 'played'; voice: RiffVoicing } | { outcome: 'gap'; gap: RiffGap } {
+  const winner = found.capable.length === 0 ? undefined : bestVoiceCandidate(found.candidates)
+  if (winner === undefined) return { outcome: 'gap', gap: partGap(found) }
+  return { outcome: 'played', voice: voicingOf(riff, part, winner, found.want, 1, affine) }
+}
+
+/**
+ * §5A.3/§5A.9. **One figure, one rig, and — with a companion — a two-part allocation.**
+ *
+ * §7.1's search exists to allocate *several* parts across a song without two of them taking the
+ * same voice. A riff without a companion has one part, so there is nothing to allocate and nothing
+ * to back-track over: the answer is the best candidate, and the candidates are the voices that
+ * claim the role and can carry the notes. `measure:search` is untouched by this file, and must
+ * stay untouched — a riff never enters the tree it bounds.
+ *
+ * **The ranking is §7.1's own**, because a riff that ranked its candidates differently would hand
+ * a reader a worse voice for the same figure with nothing on the page saying so. It is `Score`'s
+ * order rather than `Cost`'s alone, and it lives in `voicing.ts` — `VoiceCandidate` and
+ * `bestVoiceCandidate` — because `resolveSample` now asks the identical question of a rig (#520)
+ * and a comparator whose key order is an argument settled in §7.1 must not be settled twice.
+ *
+ * **The first cut used `compareCost` alone and was wrong** on the one shape where the two keys
+ * disagree: it took a three-voice stack on a box comfortable with one voice, where the search
+ * takes the one-voice chord sample beside it. `test/riff-session.test.ts` pins that case against
+ * a one-request `assign`.
+ *
+ * **Stacks are materialised here too** (§12.4/#40, #503). A pool of mono members with a
+ * `polyphonic-voice` recipe plays a chord one note per voice, and that route has to be built or
+ * the rig gets told `no-recipe` for a figure it can play.
+ *
+ * **A companion is placed with the host, not after it** (§5A.9). The objective is lexicographic
+ * and has four keys: the host is played; then the companion is played; then the host's candidate,
+ * in `compareVoiceCandidates` order; then the companion's, in the same order priced beside that
+ * host. So the host always plays if it can, and takes its one-part answer unless that answer
+ * leaves the companion nowhere — a greedy host-first placement would report a companion gap on a
+ * rig that plays both. The host's candidates are walked in order and the first with a feasible
+ * companion wins, which is that objective exactly. A pair is feasible when the two share no voice
+ * (§4.2) and, on one box, both recipes load together (`recipesFitTogether`, §2.3) — the search's
+ * own two rules for a part joining another on a box.
+ *
+ * **No seed, and there is nothing for one to do** (§7.2). A seed permutes only among *exactly
+ * equal* costs, and the ordering is total: `compareCost`, then the first voice's key, then the
+ * recipe's id, both by code unit, and a pair is ordered by its host and then its companion. Same
+ * rig, same bytes, on any platform (invariant 6).
+ *
+ * **No mood, so no character resolution and no offsets.** §6.2's character move and §6.1's
+ * arithmetic are both mood operations, and a riff has no knobs — `NEUTRAL_MOOD` is the state
+ * where §6.1's offset is zero, which is what "the reader has not turned anything" means. The
+ * character the riff asked for is therefore the character the recipe is scored against.
+ */
+export function resolveRiff(riff: Riff, devices: readonly Device[]): RiffResolution {
+  const notes = resolveHook(riff.hook, riff.key)
+  const host = partCandidates(riff, devices, [])
+  const { companion } = riff
+  if (companion === undefined) {
+    return { riff, devices, notes, ...soloOutcome(riff, riff, host, true) }
+  }
+
+  const companionNotes = resolveHook(companion.hook, riff.key)
+  if (host.capable.length > 0) {
+    for (const placed of [...host.candidates].sort(compareVoiceCandidates)) {
+      const beside = partCandidates(companion, devices, placed.assignables)
+      const loadable = beside.candidates.filter(
+        (c) =>
+          c.device.id !== placed.device.id ||
+          recipesFitTogether(placed.device, [placed.recipe, c.recipe]),
+      )
+      const partner = bestVoiceCandidate(loadable)
+      if (partner === undefined) continue
+      const partsOnDevice = partner.device.id === placed.device.id ? 2 : 1
+      return {
+        riff,
+        devices,
+        notes,
+        outcome: 'played',
+        voice: voicingOf(riff, riff, placed, host.want, partsOnDevice, true),
+        companion: {
+          notes: companionNotes,
+          outcome: 'played',
+          voice: voicingOf(riff, companion, partner, beside.want, partsOnDevice, false),
+        },
+      }
+    }
+  }
+
+  // No pair plays both. The host plays alone if it can, and the companion's gap says why it
+  // cannot join it: `no-room` where the rig alone would have played it, its own gap where not.
+  const hostOutcome = soloOutcome(riff, riff, host, true)
+  const alone = partCandidates(companion, devices, [])
+  const companionOutcome = soloOutcome(riff, companion, alone, false)
   return {
     riff,
     devices,
     notes,
-    outcome: 'played',
-    voice: {
-      device: winner.device,
-      assignables: winner.assignables,
-      stackWidth,
-      recipe: winner.recipe,
-      character: winner.character,
-      substituted: winner.character !== want,
-      // §7 step 9. One part on one box, so the share is the whole pool. Passed rather than
-      // omitted because `resolveParam` throws on a `valueFrom` it cannot answer, and a riff must
-      // not fall over on a device that authors one.
-      params: resolveParams(winner.recipe, NEUTRAL_MOOD, {
-        stackWidth,
-        devicePartShare: devicePoolCapacity(winner.device),
-      }),
-      patch: resolvePatch(winner.recipe),
-      sourceAudio: resolveSourceAudio(winner.recipe),
-      soundSetup: resolveSoundSetup(winner.recipe),
-      factoryPatch: affinePatch(riff, winner.recipe.factoryPatch),
-      // §5A.2/#608. Articulation addresses the grid's slots, and a held riff has no grid: nothing
-      // to bind to, so nothing is bound, rather than a slot list read off a pattern that is not
-      // there.
-      articulation: riff.pattern === undefined ? [] : bindArticulation(winner.recipe, riff.pattern),
-      // §2.2/#86. Read off the first voice, which every member of a pool shares — a stack is one
-      // pool on one device, so there is one answer rather than one per voice.
-      triggerNote: triggerNoteFor(winner.recipe, winner.assignables[0]),
+    ...hostOutcome,
+    companion: {
+      notes: companionNotes,
+      ...(hostOutcome.outcome === 'played' && companionOutcome.outcome === 'played'
+        ? { outcome: 'gap' as const, gap: { reason: 'no-room' as const, capable: alone.capable } }
+        : companionOutcome),
     },
+  }
+}
+
+/**
+ * §5A.9. **The riff without its companion** — the host alone, for a surface whose box plays the
+ * host and nothing else. A preset page is one (`presetSession`): the box that ships the patch is
+ * the page, and it plays the figure named for the patch.
+ */
+export function withoutCompanion(riff: Riff): Riff {
+  const { companion: _companion, ...host } = riff
+  return host
+}
+
+/**
+ * §5A.9. **The companion alone against a rig**, with no host on it — `undefined` for a riff that
+ * has none.
+ *
+ * For a surface where the host is already playing somewhere this rig is not: on a preset page the
+ * host is on the box the page is for, so the caller passes the reader's rig *without that box*
+ * (`presetCompanion`), and nothing here is occupied. No `no-room`: with no host on the rig there
+ * is nothing to be crowded out by.
+ */
+export function resolveCompanionAlone(
+  riff: Riff,
+  devices: readonly Device[],
+): RiffPartResolution | undefined {
+  const { companion } = riff
+  if (companion === undefined) return undefined
+  return {
+    notes: resolveHook(companion.hook, riff.key),
+    ...soloOutcome(riff, companion, partCandidates(companion, devices, []), false),
   }
 }

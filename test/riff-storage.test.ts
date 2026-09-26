@@ -7,6 +7,7 @@ import type { StorageLike, StoredRigV1, StudioLoad } from '../lib/core'
 import { STUDIO_STORAGE_KEY, loadStudio, studioDoc } from '../lib/core'
 import { CATALOGUE, DEFAULT_INPUTS } from '../lib/studio/session'
 import { rigFromIds, rigFromStudio, rigIdsFromStudio, storedRigName } from '../lib/studio/riff-page'
+import { rigIdsWithout, toggledRig } from '../lib/studio/borrowed-rig'
 import { DEVICES } from '../lib/devices/registry.generated'
 
 /**
@@ -164,6 +165,11 @@ describe('and never writes it', () => {
       'lib/studio/riff-page.ts',
       'lib/studio/riff-text.ts',
       'lib/studio/riff-markdown.ts',
+      // §5A.9. The preset figure page's companion picker borrows a rig the same way.
+      'lib/studio/borrowed-rig.ts',
+      'components/catalogue/preset-companion.tsx',
+      'components/catalogue/preset-figure.tsx',
+      'lib/studio/preset-text.ts',
     ]
     for (const file of files) {
       const source = readFileSync(resolvePath(REPO_ROOT, file), 'utf8')
@@ -177,13 +183,36 @@ describe('and never writes it', () => {
     }
   })
 
-  it('the one storage call on the page is a read', () => {
-    const source = readFileSync(resolvePath(REPO_ROOT, 'components/riff/riff-rig.tsx'), 'utf8')
+  // §5A.9. Both islands that borrow a rig: the riff page's, and the preset page's companion.
+  const ISLANDS = ['components/riff/riff-rig.tsx', 'components/catalogue/preset-companion.tsx']
+
+  it.each(ISLANDS)('the one storage call in %s is a read, in an effect', (file) => {
+    const source = readFileSync(resolvePath(REPO_ROOT, file), 'utf8')
     const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
     expect((code.match(/loadStudio\(/g) ?? []).length).toBe(1)
     // In an effect, never in render (#12): nothing may reach `window` while React is rendering.
     const at = code.indexOf('loadStudio(')
     expect(code.slice(0, at)).toContain('useEffect(')
+  })
+
+  it('the preset companion carries no Studio control and no keyboard check', () => {
+    const source = readFileSync(resolvePath(REPO_ROOT, 'components/catalogue/preset-companion.tsx'), 'utf8')
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '')
+    for (const banned of [
+      'MoodPanel',
+      'GenrePicker',
+      'InspirationPicker',
+      'SongPanel',
+      'SeedField',
+      'PlacementControl',
+      'DensityDetents',
+      'DevicePicker',
+      'onRestoreRig',
+      'keyboardReach',
+      'keyboardPlacement',
+    ]) {
+      expect(code, banned).not.toContain(banned)
+    }
   })
 
   it('carries no Studio control, not even as an import', () => {
@@ -207,5 +236,28 @@ describe('and never writes it', () => {
     // the door to writing a rig back.
     expect(code).not.toContain('DevicePicker')
     expect(code).not.toContain('onRestoreRig')
+  })
+})
+
+/**
+ * §5A.9. **The preset page's companion borrows the same rig without the page's box.** The box is
+ * playing the host, so it is dropped from the rig the picker opens on and can never be ticked in.
+ */
+describe('a preset figure page borrows the rig without its own box', () => {
+  it('opens on the stored rig minus the page’s box, reading once and writing nothing', () => {
+    const { load: read, storage } = load(storedStudio([FIRST, SECOND]))
+    expect(rigIdsWithout(read, FIRST)).toEqual([SECOND])
+    expect(storage.reads).toBe(1)
+    expect(rigIdsWithout(load(null).load, FIRST)).toEqual([])
+  })
+
+  it('refuses a tick on the excluded box, and otherwise toggles as the riff page does', () => {
+    expect(toggledRig([], FIRST, true, FIRST)).toEqual([])
+    expect(toggledRig([SECOND], FIRST, true, FIRST)).toEqual([SECOND])
+    expect(toggledRig([], SECOND, true, FIRST)).toEqual([SECOND])
+    expect(toggledRig([SECOND], SECOND, false, FIRST)).toEqual([])
+    expect(toggledRig([SECOND], SECOND, true)).toEqual([SECOND])
+    const ten = DEVICES.slice(2, 12).map((d) => d.id)
+    expect(toggledRig(ten, SECOND, true)).toBe(ten)
   })
 })

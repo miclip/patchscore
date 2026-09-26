@@ -48,16 +48,24 @@ import type { RigFilter } from '@/lib/studio/picker'
 export type RigPickerProps = {
   selected: readonly DeviceId[]
   onToggle: (id: DeviceId, on: boolean) => void
+  /**
+   * §5A.9. The boxes offered, the whole catalogue unless a page says otherwise. A preset page
+   * leaves out its own box, which is already playing the host: a row for it could only be ticked
+   * to no effect, so it is not a row.
+   */
+  devices?: readonly Device[]
+  /** One line under the heading saying why a box is missing, where the page has left one out. */
+  note?: string
 }
 
-export function RigPicker({ selected, onToggle }: RigPickerProps) {
+export function RigPicker({ selected, onToggle, devices = DEVICES, note }: RigPickerProps) {
   const [filter, setFilter] = useState<RigFilter>(NO_RIG_FILTER)
   const ids = useId()
   const searchId = `${ids}-search`
   const kindId = `${ids}-kind`
 
-  const kinds = useMemo(() => kindsPresent(DEVICES), [])
-  const shown = useMemo(() => rigView(DEVICES, selected, filter), [selected, filter])
+  const kinds = useMemo(() => kindsPresent(devices), [devices])
+  const shown = useMemo(() => rigView(devices, selected, filter), [devices, selected, filter])
   const chosen = useMemo(() => shown.rows.filter((row) => row.selected), [shown])
   const rest = useMemo(() => shown.rows.filter((row) => !row.selected), [shown])
 
@@ -87,6 +95,8 @@ export function RigPicker({ selected, onToggle }: RigPickerProps) {
             : `${selected.length} of ${shown.total} selected`}
         </p>
       </header>
+
+      {note === undefined ? null : <p className="note rig-picker-excluded">{note}</p>}
 
       {/*
         One row, and it stays one row at 390px: the search box flexes with `min-width: 0` and the

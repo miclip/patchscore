@@ -1,8 +1,15 @@
+import type { ReactNode } from 'react'
 import type { Riff, RiffResolution } from '@/lib/core'
 import { STEPS_PER_BAR } from '@/lib/core'
 import { SlotList } from '@/components/pattern/slot-list'
 import { StepGrid } from '@/components/pattern/step-grid'
-import { RIFF_GRID_LEAD, gridRepeatSentence, ruleLines } from '@/lib/studio/riff-text'
+import {
+  RIFF_GRID_LEAD,
+  companionHeading,
+  companionLead,
+  gridRepeatSentence,
+  ruleLines,
+} from '@/lib/studio/riff-text'
 import { RiffInKey } from './riff-in-key'
 
 /**
@@ -93,13 +100,90 @@ function Grid({ riff }: { riff: Riff }) {
  * Two panels rather than one, because they answer different questions and a reader standing at a
  * machine wants to look at one of them at a time.
  */
-export function RiffFigure({ riff, resolution }: { riff: Riff; resolution: RiffResolution }) {
+export function RiffFigure({
+  riff,
+  resolution,
+  companionTechnique,
+}: {
+  riff: Riff
+  resolution: RiffResolution
+  companionTechnique?: ReactNode
+}) {
   return (
     <RiffInKey
       riff={riff}
       resolution={resolution}
       rules={<Rules riff={riff} />}
       grid={<Grid riff={riff} />}
+      companionTechnique={companionTechnique}
     />
+  )
+}
+
+/**
+ * §5A. **A technique panel**: the heading, a lead where the part needs one, and the prose. The
+ * host's has no lead, because the masthead above it already says `role · character`; a
+ * companion's carries its own, since that line is about the host.
+ */
+function Technique({
+  heading,
+  lead,
+  paragraphs,
+}: {
+  heading: string
+  lead?: readonly [string, string]
+  paragraphs: readonly string[]
+}) {
+  return (
+    <section className="panel riff-panel riff-technique">
+      <header>
+        <h2>{heading}</h2>
+      </header>
+      {lead === undefined ? null : (
+        <p className="mono riff-part-lead">
+          {lead[0]} · {lead[1]}
+        </p>
+      )}
+      {paragraphs.map((paragraph) => (
+        <p key={paragraph.slice(0, 32)}>{paragraph}</p>
+      ))}
+    </section>
+  )
+}
+
+/**
+ * §5A/§5A.9. **The two-track body both figure pages draw**: the technique and the figure's
+ * material, and for a riff with a companion the companion's technique and its notes after them.
+ *
+ * One component for the riff page and the preset figure page, because the order of `.riff-body`'s
+ * children is what the stylesheet's 1180px grid pairs (see `globals.css`), and two pages writing
+ * that order out by hand is two orders to keep equal. The host's technique is rendered here, on
+ * the server; the other three children are the island's output (`RiffFigureView`), so one key
+ * control can respell both hooks.
+ *
+ * **The host technique stays a sibling of `RiffFigure`, at the index it always had.** React's
+ * `useId` is derived from a component's position among its siblings, and the key control's
+ * `<select id>` comes from it: moving the technique inside the island changed that id on every
+ * page, a markup change on riffs that have no companion.
+ */
+export function RiffBody({ riff, resolution }: { riff: Riff; resolution: RiffResolution }) {
+  const { companion } = riff
+  return (
+    <div className="riff-body">
+      <Technique heading="The technique" paragraphs={riff.technique} />
+      <RiffFigure
+        riff={riff}
+        resolution={resolution}
+        companionTechnique={
+          companion === undefined ? undefined : (
+            <Technique
+              heading={companionHeading(companion)}
+              lead={companionLead(companion)}
+              paragraphs={companion.technique}
+            />
+          )
+        }
+      />
+    </div>
   )
 }
