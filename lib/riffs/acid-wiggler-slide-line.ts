@@ -2,8 +2,9 @@ import { at, on, variant } from '../core/authoring'
 import type { Riff } from '../core/riff'
 
 /**
- * §5A. **The Acid Wiggler slide line**: sixteen sixteenths on the low root, and four of them
- * are somewhere else, reached by sliding rather than by striking.
+ * §5A. **The Acid Wiggler slide line**: sixteen sixteenths, ten of them on the low root. Of the
+ * six that are somewhere else, four are reached by sliding rather than by striking and two are
+ * struck.
  *
  * **Named after a factory patch, with a figure authored here** (§5A.5, #624, #643). The patch
  * is the acid bass; the notes are this library's own, and the entry names no device
@@ -12,14 +13,14 @@ import type { Riff } from '../core/riff'
  *
  * ## Deliberately five pitches
  *
- * `A1`, `C2`, `E2`, `G1`, `A2`, and twelve of the sixteen steps are the first of those. Every
+ * `A1`, `C2`, `E2`, `G1`, `A2`, and ten of the sixteen steps are the first of those. Every
  * other entry #643 replaced had too few pitches because the figure had too little to say. This
  * one has few pitches because that is what an acid line is: one or two notes and a great deal
  * of articulation, and the interest is which notes are slid into and which are struck. Four
- * steps are reached by glide, `C2`, `G1`, `A2` and `E2`, and one note away from the root,
- * the `C2` at the end of beat three, is struck. That is the whole figure, and the count is the
- * subject rather than a symptom. #624's entry was a wiggle widening a bar at a time over four
- * bars; this replaces it.
+ * steps are reached by glide, `C2`, `G1`, `A2` and `E2`, and two notes away from the root are
+ * struck: the `E2` that opens beat two and the `C2` at the end of beat three. That is the
+ * whole figure, and the count is the subject rather than a symptom. #624's entry was a wiggle
+ * widening a bar at a time over four bars; this replaces it.
  *
  * ## The slide is the note
  *

@@ -2,8 +2,8 @@ import type { Riff } from '../core/riff'
 
 /**
  * §5A. **The SYNTH GONG decay-spaced strikes**: seven strikes in eight bars, each one placed
- * where the last has gone rather than on a beat, and the gaps closing from a bar and a half to
- * half a bar before the final strike holds for two.
+ * where the last has gone rather than where the count falls, and the gaps closing from a bar and
+ * a half to half a bar before the final strike holds for two.
  *
  * **Named after a factory patch, with a figure authored here** (§5A.5, #664). The patch is the
  * struck sound; the notes are this library's own, and the entry names no device (invariant 3).
@@ -18,8 +18,10 @@ import type { Riff } from '../core/riff'
  * with a long tail; struck late enough to be alone, it is the only thing in the bar.
  *
  * The gaps shorten on purpose. Twenty-four steps, twenty, eighteen, fourteen, twelve, eight: the
- * figure crowds itself, and the last strike arrives on a bar head, which is the one place nothing
- * else has landed. That is the arrival, and it is the only strike a listener can predict.
+ * figure crowds itself, and the last strike arrives on a bar head. Only the first strike shared
+ * one; the five between drift across the bar, and two of them happen to land on a beat (steps 25
+ * and 45, beats three and four) because the gap put them there, not the count. The return to a
+ * bar head is the arrival, and it is the only strike a listener can predict.
  *
  * #643 reduced this box's one `texture` entry to a use line and said so plainly: *no `texture` in
  * the library until somebody writes one worth playing*. This is that entry.
@@ -132,7 +134,7 @@ export const synthGongDecaySpacedStrikes: Riff = {
       // `VI`, Bb major. `A2` is its major seventh, held; `F2` is its fifth.
       { step: 77, degree: 5, octave: 0, len: 11 },
       { step: 89, degree: 3, octave: 0, len: 7 },
-      // `i` again. The root, on the only bar head in the figure, for the last two bars.
+      // `i` again. The root, on the first bar head since step 1, for the last two bars.
       { step: 97, degree: 1, octave: 0, len: 32 },
     ],
   },
