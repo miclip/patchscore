@@ -35,16 +35,26 @@ describe('laneBetween picks the channel from the layout', () => {
   // Narrowest first, as `measureLayout` sorts them.
   const bands = [left, right, full]
 
-  it('crosses columns through the gutter between them', () => {
-    expect(laneBetween({ x: 76, y: 0 }, { x: 655, y: 0 }, bands)).toBe(574)
-    expect(laneBetween({ x: 655, y: 0 }, { x: 76, y: 0 }, bands)).toBe(574)
+  it('crosses columns through the gutter between them, beside the left column', () => {
+    expect(laneBetween({ x: 76, y: 0 }, { x: 655, y: 0 }, bands)).toBe(570)
+    expect(laneBetween({ x: 655, y: 0 }, { x: 76, y: 0 }, bands)).toBe(570)
   })
 
   it('stays in one column just outside its left edge', () => {
-    // The right column's channel is the same gutter, by construction.
-    expect(laneBetween({ x: 655, y: 0 }, { x: 700, y: 0 }, bands)).toBe(574)
+    // The right column's channel is the same gutter, on its own track beside the right column.
+    expect(laneBetween({ x: 655, y: 0 }, { x: 700, y: 0 }, bands)).toBe(578)
     // The left column's is the page margin, clamped so it never leaves the overlay.
     expect(laneBetween({ x: 76, y: 0 }, { x: 73, y: 0 }, bands)).toBe(4)
+  })
+
+  it('never puts two runs on one track in a shared gutter', () => {
+    // `out` -> Direction and Direction -> Inspiration both use the gutter at 1400px. Their
+    // centres must be further apart than a casing is wide, or they read as one cable.
+    const across = laneBetween({ x: 76, y: 0 }, { x: 655, y: 0 }, bands)
+    const down = laneBetween({ x: 655, y: 0 }, { x: 655, y: 900 }, bands)
+    expect(down - across).toBeGreaterThanOrEqual(8)
+    expect(across).toBeGreaterThan(left.right)
+    expect(down).toBeLessThan(right.left)
   })
 
   it('reduces to the page margin in a single column', () => {
@@ -80,24 +90,36 @@ describe('crossingBelow measures the row gap under the source panel', () => {
   })
 })
 
-describe('chainPath keeps the same-column cubic byte for byte', () => {
-  it('draws the single-column bulge exactly as before', () => {
-    // The 800px path the issue reports as correct.
-    const d = chainPath({ x: 76, y: 443.59 }, { x: 73, y: 668.7 }, 4, 0)
-    expect(d).toBe('M 76 443.59 C 4 443.59, 4 668.7, 73 668.7')
+describe('chainPath loops a same-column run out to its channel and back', () => {
+  // Both in the right column at 1400px, so the lane is the gutter and lies left of the source.
+  const a = { x: 655, y: 236.41 }
+  const b = { x: 655, y: 900 }
+  const lane = 574
+  const d = chainPath(a, b, lane, 579)
+  const pts = coords(d)
+
+  it('is straight legs with quadratic bends, not one cubic', () => {
+    expect(d).not.toContain('C')
+    expect(d.match(/Q/g)).toHaveLength(2)
   })
 
-  it('draws direction → inspiration down the right column the same way', () => {
-    // Both in the right column at 1400px, so the lane is the gutter and lies left of the source.
-    const a = { x: 655, y: 236.41 }
-    const b = { x: 655, y: 900 }
-    expect(chainPath(a, b, 574, 579)).toBe('M 655 236.41 C 574 236.41, 574 900, 655 900')
+  it('reaches the lane, rather than being pulled most of the way toward it', () => {
+    // The cubic this replaces peaked at 594.25, inside the column, and cut the heading between.
+    expect(Math.min(...pts.map((p) => p.x))).toBe(lane)
   })
 
-  it('never reaches the crossing on that branch, whatever it is given', () => {
-    const a = { x: 76, y: 443.59 }
-    const b = { x: 73, y: 668.7 }
-    expect(chainPath(a, b, 4, 12345)).toBe(chainPath(a, b, 4, 0))
+  it('leaves and enters level with each socket, and travels only down the lane between', () => {
+    expect(d).toBe(
+      'M 655 236.41 L 586 236.41 Q 574 236.41 574 248.41 L 574 888 Q 574 900 586 900 L 655 900',
+    )
+  })
+
+  it('takes the page margin in a single column, and ignores the crossing', () => {
+    const one = chainPath({ x: 76, y: 443.59 }, { x: 73, y: 668.7 }, 4, 0)
+    expect(one).toBe(
+      'M 76 443.59 L 16 443.59 Q 4 443.59 4 455.59 L 4 656.7 Q 4 668.7 16 668.7 L 73 668.7',
+    )
+    expect(chainPath({ x: 76, y: 443.59 }, { x: 73, y: 668.7 }, 4, 12345)).toBe(one)
   })
 })
 

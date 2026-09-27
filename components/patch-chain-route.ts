@@ -3,8 +3,8 @@
  *
  * `PatchChain` measures the layout and writes path data onto elements inside a frame callback;
  * everything about *where a run goes* once the sockets and panels are known lives here, so the
- * claims that matter ("a cross-column run travels the gutter rather than being pulled toward it",
- * "the single-column bulge is byte-identical to what it was") are testable without a browser.
+ * claims that matter ("a run travels its channel rather than being pulled toward it") are
+ * testable without a browser.
  */
 
 export type Point = { x: number; y: number }
@@ -15,8 +15,20 @@ export type Band = { left: number; right: number }
 /** A panel's box, in the overlay's coordinates. */
 export type Rect = Band & { top: number; bottom: number }
 
-/** How far left of a column's edge the run sits when both ends are in that column. */
+/** Half a gutter: how far under the last row a run crosses when there is no row below it. */
 export const LANE_INSET = 8
+
+/**
+ * How far a run's track sits from the panel edge it follows.
+ *
+ * Two runs can share one gutter: `out` → Direction crosses into it from the left column, and
+ * Direction → Inspiration drops down it inside the right column. Both used to take its middle, so
+ * between the crossing and the Direction they lay on top of each other and read as one cable
+ * with a junction, which says `out` feeds the Inspiration. Each now keeps to the edge of the
+ * column it belongs to, the cross-column run to the left column's and the same-column run to its
+ * own, which in a 16px gutter puts their centres 8px apart and leaves 3px between the casings.
+ */
+export const TRACK = 4
 
 /**
  * The radius of a rounded bend, before it is clamped to the segments either side of it.
@@ -40,9 +52,10 @@ export const BEND = 12
  * The rule is the same one a person stringing a rack would use — go down the nearest empty
  * channel:
  *
- *  - **Ends in different columns** — the gutter *between* them, which is empty by construction.
+ *  - **Ends in different columns** — the gutter *between* them, which is empty by construction,
+ *    on the track beside the left column (`TRACK`).
  *  - **Ends in the same column** — just outside that column's left edge, which is the page
- *    margin for the left column and the same gutter for the right.
+ *    margin for the left column and the same gutter for the right, on the track beside it.
  *
  * In a single column both ends share the one band and it reduces to the page margin, which is
  * what the fixed constant used to do. Measured from the panels themselves, so a change to the
@@ -52,11 +65,11 @@ export function laneBetween(a: Point, b: Point, bands: readonly Band[]): number 
   const bandA = bands.find((n) => a.x >= n.left && a.x <= n.right)
   const bandB = bands.find((n) => b.x >= n.left && b.x <= n.right)
   if (bandA !== undefined && bandB !== undefined && bandA !== bandB) {
-    const [first, second] = bandA.left < bandB.left ? [bandA, bandB] : [bandB, bandA]
-    return (first.right + second.left) / 2
+    const first = bandA.left < bandB.left ? bandA : bandB
+    return first.right + TRACK
   }
   const band = bandA ?? bandB
-  return Math.max(4, (band?.left ?? LANE_INSET) - LANE_INSET)
+  return Math.max(TRACK, (band?.left ?? LANE_INSET) - TRACK)
 }
 
 /**
@@ -93,22 +106,27 @@ export function crossingBelow(a: Point, panels: readonly Rect[]): number {
  * the channel and enters the next one horizontally. Offsetting them along the span instead
  * pulled the curve diagonally and its shoulder clipped the panel headings.
  *
- * **Except when the channel is on the far side of the socket.** `out` carries its own label
- * immediately to its right and the legend directly above, so both a horizontal exit and an
- * upward one crossed text; and across two columns the channel is the gutter, which one cubic
- * cannot *reach and then travel* — it can only be pulled toward it, and at 1400px that pull was a
- * long diagonal through a device row, the clock sentence and the `out` label (#640). So that
- * route is a loom's, in straight legs with rounded bends: down out of the socket to the row gap
- * under its panel, along the gap to the gutter, along the gutter to the far socket's height, and
- * in. Every leg is in a strip the layout keeps empty, which is the property the cubic could not
- * offer.
+ * Every run is a loom's, in straight legs with rounded bends, because one cubic cannot *reach and
+ * then travel* a channel: it can only be pulled toward it, and with both controls on the lane the
+ * curve gets three quarters of the way there. Across two columns that pull was a long diagonal
+ * through a device row, the clock sentence and the `out` label (#640). Down one column it was the
+ * same fault more quietly: from the Direction to an Inspiration in the right column the run
+ * bowed only 54px toward a gutter 80px away, stayed inside the Direction panel, and cut the
+ * INSPIRATIONS heading. It read as a stiff line dropped through the panel rather than a cable
+ * looping out and back.
  *
- * The same-column cubic is untouched: it was right, and the single-column page is the one this is
- * read on at the machine (#21).
+ * So there are two shapes, both in strips the layout keeps empty:
+ *
+ *  - **Channel on the near side** (both ends in one column, the lane left of the source): out of
+ *    the socket to the lane, down the lane to the far socket's height, and back in.
+ *  - **Channel on the far side** (`out` carries its own label immediately to its right and the
+ *    legend directly above, so neither a horizontal nor an upward exit is clear): down out of the
+ *    socket to the row gap under its panel, along the gap to the gutter, along the gutter to the
+ *    far socket's height, and in.
  */
 export function chainPath(a: Point, b: Point, lane: number, crossing: number): string {
   if (lane <= a.x) {
-    return `M ${r(a.x)} ${r(a.y)} C ${r(lane)} ${r(a.y)}, ${r(lane)} ${r(b.y)}, ${r(b.x)} ${r(b.y)}`
+    return rounded([a, { x: lane, y: a.y }, { x: lane, y: b.y }, b])
   }
   return rounded([a, { x: a.x, y: crossing }, { x: lane, y: crossing }, { x: lane, y: b.y }, b])
 }
