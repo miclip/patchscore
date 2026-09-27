@@ -29,17 +29,18 @@ export const roadzBellSixthsBalladFigure: Riff = {
   bpm: { min: 66, max: 84, default: 74 },
   key: 'D major',
   technique: [
-    'Four bars, four chords: D, B minor, G, A. Three strikes a bar, on one, three and four, ' +
-      'and every strike is two notes a sixth apart.',
+    'Four bars, four chords: I, vi, IV, V. Three strikes a bar, on one, three and four, and ' +
+      'every strike is two notes a sixth apart.',
     'The first strike of the bar holds for two beats. The two after it are short, and the ' +
       'space before the next bar head is where a bell is heard ringing down.',
-    'Choose the dyad from the chord. Over the D it is F sharp and D, then A and F sharp, then ' +
-      'E and C sharp. The lower note is a chord tone and the upper one is a sixth above it.',
+    'Choose the dyad from the chord. Over the I it is the key’s third under its root, then the ' +
+      'fifth under the third, then the second under the seventh. On the first two strikes of ' +
+      'every bar the lower note is a chord tone and the upper one is a sixth above it.',
     'Keep the lower note under the upper by a sixth and never by a third. A third on a bell ' +
       'rings as one thick note; a sixth rings as two.',
-    'Never play G while the D is sounding. It sits a semitone over the F sharp, and a bell ' +
-      'holds it there. Over the A at the end it is the seventh, and the last strike plays it ' +
-      'on purpose to lean home.',
+    'Never play the key’s fourth while the I is sounding. It sits a semitone over the third, and ' +
+      'a bell holds it there. Over the V at the end it is the seventh, and the last strike plays ' +
+      'it on purpose to lean home.',
     'The bar head is the loud strike. The two after it are lighter, and the last one of the ' +
       'four bars is the lightest of all.',
   ],

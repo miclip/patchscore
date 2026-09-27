@@ -53,9 +53,10 @@ export const funkOrganEarlySixteenthStabs: Riff = {
     'Four stabs a bar, and every one is on the sixteenth before a beat: before two, before ' +
       'three, before four, and before the next bar head. Never on a beat. That is the whole ' +
       'rhythm, and it does not change for four bars.',
-    'Two notes at once, and the same two for the whole bar. E minor: B and the E above. A ' +
-      'minor: C and E. D: D and F sharp. G: D and G. The top note steps up through the four ' +
-      'bars and the bottom note follows it.',
+    'Two notes at once, and the same two for the whole bar. Over the i: its fifth and the root ' +
+      'above. Over the iv: its third and fifth. Over the VII: its root and third. Over the III: ' +
+      'its fifth and root. Across the four bars the top note holds, then climbs a tone and a ' +
+      'semitone, and the bottom note climbs a semitone and a tone, then holds.',
     'Short. A sixteenth and off. The gap between stabs is longer than the stab, and that gap ' +
       'is where the beat sits, unplayed. Ring past the push and the stab lands on the beat ' +
       'after all.',

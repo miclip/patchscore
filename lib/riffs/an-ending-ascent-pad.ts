@@ -89,14 +89,15 @@ export const anEndingAscentPad: Riff = {
     'Every note enters on the bar head with its chord and holds until the chord moves. No late ' +
       'entries, no notes pushed ahead: the line moves exactly when the harmony does, and the ' +
       'slowness is the whole of the feel.',
-    'Two notes are a fourth above the chord and stay there: the Ab over the Eb minor and the ' +
-      'Gb over the last Db. Neither resolves. Leave them hanging; the second is the last thing ' +
-      'the figure says.',
-    'Voice the chords so that Bb and Db stay put. They are in four of the five chords, and ' +
+    'Two notes are a fourth above the chord and stay there: the key\u2019s seventh over the ' +
+      'first iv and its sixth over the last III. Neither resolves. Leave them hanging; the ' +
+      'second is the last thing the figure says.',
+    'Voice the chords so that the key\u2019s root and third stay put. Between them they are in ' +
+      'four of the five chords, and ' +
       'going from the first to the second, the second to the third, and the sixth to the ' +
       'seventh, one note moves by a step while the chord changes name.',
-    'The seven steps before the peak should be uneventful. If the leap to the Gb does not feel ' +
-      'like an arrival, something before it was too busy.',
+    'The seven steps before the peak should be uneventful. If the leap to the top note does ' +
+      'not feel like an arrival, something before it was too busy.',
     'Slow attack, slow release, and let each note still be swelling when the next chord ' +
       'arrives under it. A little vibrato reads as breath; none at all reads as an organ.',
   ],

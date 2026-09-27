@@ -30,13 +30,14 @@ export const lushM7ParallelRootLine: Riff = {
   bpm: { min: 72, max: 92, default: 82 },
   key: 'D minor',
   technique: [
-    'One key at a time, and each key is a whole minor seventh chord. Play D for two bars, G ' +
-      'for one, A for one, and the sound turns the line into D minor seventh, G minor seventh, ' +
-      'A minor seventh.',
+    'One key at a time, and each key is a whole minor seventh chord. Play the key’s root for two ' +
+      'bars, its fourth for one, its fifth for one, and the sound turns the line into i7, iv7 ' +
+      'and v7.',
     'Two strikes a bar: the head, held for two beats, and a push on the "and" of three, held ' +
       'to the bar line. The push is what makes four chords feel like a groove and not a hymn.',
-    'Only D, G and A. Every key sounds the same shape, so a key outside those three sounds a ' +
-      'chord outside the key. E in particular carries a B natural that D minor does not have.',
+    'Only those three. Every key sounds the same shape, so a key outside those three sounds a ' +
+      'chord outside the key. The second in particular carries the raised sixth, which the key ' +
+      'does not have.',
     'Keep it in one octave. Every chord is the same shape moved along the keyboard, and the ' +
       'shape reads best when the roots stay close.',
     'The head of the first bar is the loud one and the pushes are lighter. Four bars, then ' +

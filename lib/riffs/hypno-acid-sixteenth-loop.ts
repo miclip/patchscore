@@ -27,17 +27,17 @@ export const hypnoAcidSixteenthLoop: Riff = {
   bpm: { min: 126, max: 140, default: 132 },
   key: 'A minor',
   technique: [
-    'One bar, repeated, with a different turn in the second bar. The root on every beat, the ' +
-      'octave on the last sixteenth before beat two, and the seventh below it on the "and" of ' +
-      'two. That is the hypnosis: the same three moves, over and over.',
+    'One bar, repeated, with a different turn in the second bar. The root on beats one and ' +
+      'three, the octave on the last sixteenth before beat two, and the seventh below the root ' +
+      'on the "and" of two. That is the hypnosis: the same three moves, over and over.',
     'One key at a time. The sound stacks the voices for you, so a second key is a second stack ' +
       'and the line turns to mud.',
     'Sixteenths, never eighths. The gaps are as short as the notes, and a line with room in it ' +
       'is a bass line, not an acid line.',
     'The second bar swaps the third for a fourth and the fifth for the seventh below. Two ' +
       'notes changed and nothing else, so the ear hears the loop and then hears it move.',
-    'Never play F sharp. It is the raised sixth of A minor, and one F sharp turns the loop ' +
-      'from acid into something that wants a chord under it.',
+    'Never raise the key’s sixth. One raised sixth turns the loop from acid into something that ' +
+      'wants a chord under it.',
     'The bar head is the loud one and the octave jump is the other. Everything between is ' +
       'quieter, and the two accents are what the loop hangs on.',
   ],

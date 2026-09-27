@@ -41,13 +41,13 @@ export const polyphonicPowerBrassStabCycle: Riff = {
     'In the first three bars, nothing lands on a beat. The first stab of each bar is the "and" ' +
       'of one, half a beat in, and the rest follow on the "and"s. Bar three leaves the last ' +
       '"and" empty, so there is a breath before the fourth bar hits.',
-    'Two notes per stab, and never the root. Over the F minor it is Ab and C; over the Bb7 it ' +
-      'is D and Ab, the tritone; over the Eb major seventh it is D and G. The bass has the ' +
-      'root and the stab has the colour.',
-    'The fourth bar is one note, Eb, on the bar head, held for the whole bar. Play it louder ' +
-      'than any stab before it.',
-    'Never play A natural while the Bb7 is sounding. It is the major seventh against the ' +
-      'dominant seventh that drives the move to Eb.',
+    'Two notes per stab, and never the root. Over the i it is the chord’s third and fifth; over ' +
+      'the IV7 it is the major third and the seventh, the tritone; over the VII major seventh it ' +
+      'is the major seventh and the third. The bass has the root and the stab has the colour.',
+    'The fourth bar is one note, the key’s seventh, on the bar head, held for the whole bar. ' +
+      'Play it louder than any stab before it.',
+    'Never play the chord’s major seventh while the IV7 is sounding. It cancels the dominant ' +
+      'seventh that drives the move to the VII.',
     'Keep the stabs short and the release fast. The brass should stop before the next beat, ' +
       'and the held note in bar four is the only thing on this page with a tail.',
   ],

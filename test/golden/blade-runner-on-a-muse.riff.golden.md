@@ -12,7 +12,7 @@ The two entries over the borrowed chords are the major third of the chord beneat
 
 Never play the key’s own third or sixth while these two chords are sounding. A natural third against the raised one is the move collapsing, and it is the one mistake this figure can make.
 
-Hold each entry until the next chord is already sounding, then release. The overlap is where the two chords blur into each other. The one exception is going into the F# major: the D over the third chord stops at the bar line, so the raised third arrives on air.
+Hold each entry until the next chord is already sounding, then release. The overlap is where the two chords blur into each other. The one exception is going into the major I: the note over the third chord stops at the bar line, so the raised third arrives on air.
 
 Over the four minor chords the note is a chord tone, held: the fifth of the first chord, the third of the second and of the third, the fifth of the last. The shape is what repeats; only the two over the turn are raised.
 

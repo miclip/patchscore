@@ -27,16 +27,18 @@ export const mirroredbassInvertedAnswerLine: Riff = {
   bpm: { min: 118, max: 134, default: 126 },
   key: 'E minor',
   technique: [
-    'Two bars up, two bars down. The call climbs E, G, A, B and settles back on E; the answer ' +
-      'takes the same steps in the other direction, E, C, B, A, and climbs back to E.',
+    'Two bars up, two bars down. The call climbs the root, third, fourth and fifth and settles ' +
+      'back on the root; the answer takes the same steps in the other direction, the root, then ' +
+      'the sixth, fifth and fourth below it, and climbs back to the root.',
     'One note at a time. Every note is released before the next is struck, and the octave the ' +
       'sound stacks on each key is what makes a single line read as wide.',
     'The bar head is the loud one and it is always the root. The rest of the bar is quieter ' +
       'and moves; the head is where the line comes home.',
     'The last two beats of each phrase hold. A bass line that never rests is a bass line ' +
       'nobody can hear the shape of.',
-    'Do not mirror in semitones. E up to G mirrored in semitones is E down to C sharp, which ' +
-      'is out of the key, and the answer should sound like the same line and not a modulation.',
+    'Do not mirror in semitones. The root up to the third, mirrored in semitones, is the root ' +
+      'down to the raised sixth, which is out of the key, and the answer should sound like the ' +
+      'same line and not a modulation.',
   ],
   request: {
     id: 'mirroredbass-inverted-answer-line',

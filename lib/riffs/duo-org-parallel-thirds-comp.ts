@@ -58,9 +58,8 @@ export const duoOrgParallelThirdsComp: Riff = {
     'Three stabs a bar: the one, the "and" of two, the "and" of three. The one is three ' +
       'sixteenths long, the second is two, the third is four and holds into beat four. Then ' +
       'silence to the bar line.',
-    'The pair is the third and fifth of the chord, never the root. Over the Eb: G and Bb. ' +
-      'Over the C minor: Eb and G. Over the Ab: C and Eb. Over the Bb: D and F. Somebody else ' +
-      'plays the root, or nobody does.',
+    'The pair is the third and fifth of the chord, never the root, over each of the four chords. ' +
+      'Somebody else plays the root, or nobody does.',
     'Move both notes together on the bar head and change nothing until the next one. Down a ' +
       'third, down a third, up a step, and back up to the top on the next pass. The interval ' +
       'never changes; only where it sits.',

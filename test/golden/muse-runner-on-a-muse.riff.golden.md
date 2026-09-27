@@ -6,23 +6,23 @@
 
 Six chords, twelve bars, and the line goes round them four times. Three minor chords, then the pair the key does not own, then the minor fifth to take it back. The first pass is the line. The second takes it up into the higher register and turns the shape over. The third comes back down to just above the chords and thins to one note each. The fourth is the highest and the thinnest, and it is the ending.
 
-One late entry per chord, until the last pass leaves its first chord empty. Let the pad move first, then arrive: an entry lands two beats after the chord has changed under it, and the wait is what makes the note sound placed rather than programmed. Two entries come later still, a bar and a half in: the A# over the F# major in the third pass and the A that opens the fourth pass alone. Wait for those until it feels too late, then play them.
+One late entry per chord, until the last pass leaves its first chord empty. Let the pad move first, then arrive: an entry lands two beats after the chord has changed under it, and the wait is what makes the note sound placed rather than programmed. Two entries come later still, a bar and a half in: the raised third over the major I in the third pass, and the note that opens the fourth pass alone, over the VI. Wait for those until it feels too late, then play them.
 
-First pass, the full line. C# held over the F# minor, dropping to A late in the second bar. F# an octave up over the D, stepping down through E to D. D over the B minor, its neighbour C# and back. A# late over the F# major, hanging. D# over the B, lifting to F#. G# over the C# minor, resolving down to E.
+First pass, the full line. The key’s fifth held over the i, dropping a major third to the third late in the second bar. The root an octave up over the VI, stepping down through the seventh to the sixth. The sixth over the iv, its neighbour a semitone below and back. The raised third late over the major I, hanging. The raised sixth over the IV, lifting a minor third to the root. The second over the v, resolving down a major third to the seventh.
 
-Second pass, up in the higher register with the contour turned over. A falling to F# over the F# minor and left to sit. A with its upper neighbour B and back over the D. B stepping down through A to F# over the B minor. C# rising late to A# over the F# major. F# down to D# and back over the B. E stepping down through D# to C# over the C# minor. That D# over the C# minor is right: it is the raised sixth of F# minor and the second of C# minor at once, so play it and do not soften it to D.
+Second pass, up in the higher register with the contour turned over. The third falling to the root over the i and left to sit. The third with its upper neighbour a tone above and back over the VI. The fourth stepping down through the third to the root over the iv. The fifth rising late to the raised third over the major I. The root down to the raised sixth and back over the IV. The seventh stepping down through the raised sixth to the fifth over the v. That raised sixth over the v is right: it is the second of the v as well, so play it and do not soften it to the key’s own sixth.
 
-Third pass, one note a chord, sitting just above the pad. Each arrives two beats in and holds until the next chord is already under it. F#, A, F#, then A# arriving very late over the F# major and hanging into the B, then F#, then G# over the C# minor with no resolution. Let each one sit and move nothing.
+Third pass, one note a chord, sitting just above the pad. Each arrives two beats in and holds until the next chord is already under it. The root, the third, the root, then the raised third arriving very late over the major I and hanging into the IV, then the root, then the second over the v with no resolution. Let each one sit and move nothing.
 
-Fourth pass, the ending. Nothing over the F# minor. A alone over the D, very late. F# held over the B minor. A# held over the F# major, and keep the vibrato off it until the chord is nearly over. F# held over the B. Then the leap up to C# over the C# minor, and let it ring past the end.
+Fourth pass, the ending. Nothing over the i. The third alone over the VI, very late. The root held over the iv. The raised third held over the major I, and keep the vibrato off it until the chord is nearly over. The root held over the IV. Then the leap up a fifth to the key’s fifth over the v, and let it ring past the end.
 
 The moves inside a chord are slurred, not struck. Each is played off the held note without a new attack, so a chord gets one arrival and the line keeps moving; the entries are the only attacks in the whole figure.
 
-The fourth and fifth chords are where the key turns major, and the line goes with it in every pass: A# over the F# major and D# over the B, each a semitone above what the key gives you. Play the natural note and the turn disappears.
+The fourth and fifth chords are where the key turns major, and the line goes with it in every pass: the raised third over the I and the raised sixth over the IV, each a semitone above what the key gives you. Play the natural note and the turn disappears.
 
-Hold each chord’s last note until the next chord is already sounding, then release, except into the F# major. There the note closing the B minor clears on the bar line, in every pass, so the raised third arrives on air.
+Hold each chord’s last note until the next chord is already sounding, then release, except into the major I. There the note closing the iv clears on the bar line, in every pass, so the raised third arrives on air.
 
-The last note is C#, high, held past the point where the pad would come round again, and nothing follows it. If you would rather the line cycle than close, end on G# instead and it hands back to the first pass; leaving the line on the G# unresolved is how the first pass ends when it is not the last time through.
+The last note is the key’s fifth, high, held past the point where the pad would come round again, and nothing follows it. If you would rather the line cycle than close, end on the second instead and it hands back to the first pass; leaving the line on the second unresolved is how the third pass ends.
 
 Wide vibrato, arriving after the note has settled. The note should be still for a moment before it starts to move.
 

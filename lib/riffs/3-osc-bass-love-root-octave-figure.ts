@@ -39,12 +39,13 @@ export const threeOscBassLoveRootOctaveFigure: Riff = {
       'fifth.',
     'Pump every eighth. The hook says which note is in force; the grid strikes it eight times a ' +
       'bar, and the first strike of every bar is the loudest.',
-    'The fourth bar walks: G on the bar head, up to A on beat three, up to B on beat four, and ' +
-      'the next pass lands on A. Three bars of not moving are what make those two steps land.',
-    'Nothing above C3. Three detuned oscillators stop reading as a bass above it and start ' +
-      'reading as a chord.',
-    'Never play E while the F is sounding. It is the major seventh of the chord, and two ' +
-      'octaves below middle C a major seventh is mud.',
+    'The fourth bar walks: the VII’s root on the bar head, up a tone to the key’s root on beat ' +
+      'three, up a tone to the second on beat four, and the next pass lands back on the root. ' +
+      'Three bars of not moving are what make those two steps land.',
+    'Nothing reaches the octave below middle C. Three detuned oscillators stop reading as a bass ' +
+      'up there and start reading as a chord.',
+    'Never play the key’s fifth while the VI is sounding. It is the major seventh of that chord, ' +
+      'and this low a major seventh is mud.',
     'No two notes ever overlap. Release each before the next is struck, or the octave jump ' +
       'turns into a smear.',
   ],

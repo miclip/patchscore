@@ -27,17 +27,17 @@ export const metalfnkleadSyncopatedFunkLine: Riff = {
   bpm: { min: 100, max: 116, default: 108 },
   key: 'D dorian',
   technique: [
-    'Two bars. Two short roots on the head, a leap to the third on the "and" of one, the ' +
-      'fourth and fifth pushing through beat two, then the seventh on the "and" of three and a ' +
-      'run back down to the root.',
-    'The second bar is the first with one change: the sixth, B, on the "and" of three where the ' +
-      'seventh was. It is the only B in the phrase and the phrase exists to get to it.',
+    'Two bars. Two short roots on the head, a leap to the third on the last sixteenth of beat ' +
+      'one, the fourth and fifth pushing through beat two, then the seventh on the "and" of ' +
+      'three and a run back down to the root.',
+    'The second bar is the first with one change: the sixth on the "and" of three where the ' +
+      'seventh was. It is the only sixth in the phrase and the phrase exists to get to it.',
     'One key at a time. The sound stacks the voices on each key, and a second key is a second ' +
       'stack.',
     'Short notes on the beat and longer ones off it. The pushes are the ones that hold, and ' +
       'that is what makes the line lean forward.',
-    'Never play B flat. It is the flat sixth, and one B flat turns dorian into a minor key and ' +
-      'the funk into a ballad.',
+    'Never flatten the sixth. One flat sixth turns dorian into a minor key and the funk into a ' +
+      'ballad.',
     'The bar head is the loud one. The rest of the bar plays under it, and the run down at the ' +
       'end of each bar is the quietest thing in the phrase.',
   ],

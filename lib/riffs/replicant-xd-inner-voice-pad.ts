@@ -51,21 +51,21 @@ export const replicantXdInnerVoicePad: Riff = {
   bpm: { min: 60, max: 76, default: 68 },
   key: 'C# minor',
   technique: [
-    'Eight bars, four chords, two bars each. C sharp minor, A major, F sharp minor, G sharp ' +
-      'major. Slow enough that each chord is heard settling before it goes.',
-    'Three notes, and hold the outside. C sharp at the bottom and E on top stay exactly where ' +
-      'they are for six bars; the note between them is the only thing that moves, and the ear ' +
-      'follows the one line that is moving.',
-    'The inner voice goes G sharp, A, F sharp: up a semitone into the A major, then down a ' +
-      'minor third into the F sharp minor. Nothing else changes and the chord changes its ' +
-      'name each time, because the two held notes mean something different over each one: ' +
-      'the C sharp is the root, then the third, then the fifth.',
-    'On the last chord everything moves at once and a fourth voice arrives. The bottom drops ' +
-      'a fourth to G sharp, the inner voice rises a tone to G sharp above it, the top falls a ' +
-      'semitone to D sharp, and B sharp enters between them. Six bars of nearly nothing is ' +
-      'what makes that bar land.',
-    'Never play B natural while the G sharp major is sounding. The chord has a B sharp in it, ' +
-      'and the two a semitone apart is a clash a slow pad cannot hide.',
+    'Eight bars, four chords, two bars each: i, VI, iv and a major V. Slow enough that each ' +
+      'chord is heard settling before it goes.',
+    'Three notes, and hold the outside. The key’s root at the bottom and its third on top stay ' +
+      'exactly where they are for six bars; the note between them is the only thing that moves, ' +
+      'and the ear follows the one line that is moving.',
+    'The inner voice goes fifth, sixth, fourth: up a semitone into the VI, then down a minor ' +
+      'third into the iv. Nothing else changes and the chord changes its name each time, because ' +
+      'the two held notes mean something different over each one: the bottom note is the root, ' +
+      'then the third, then the fifth.',
+    'On the last chord everything moves at once and a fourth voice arrives. The bottom drops a ' +
+      'fourth to the key’s fifth, the inner voice rises a tone to the same note an octave above ' +
+      'it, the top falls a semitone to the second, and the raised seventh enters between them. ' +
+      'Six bars of nearly nothing is what makes that bar land.',
+    'Never play the key’s own seventh while the V is sounding. The chord has the raised seventh ' +
+      'in it, and the two a semitone apart is a clash a slow pad cannot hide.',
     'Keep the attack slow and change chords a fraction early. A slow pad reaches full ' +
       'volume after the bar head, so the change has to start before it.',
   ],

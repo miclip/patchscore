@@ -49,15 +49,16 @@ export const harpCChordArpeggiatedHold: Riff = {
       'cannot play four held keys as a chord; with the arpeggiator running it plays them one ' +
       'after another, and the chord is heard. On such a box this is the only way to hold four ' +
       'notes at all.',
-    'C major first: C, E, G and the C above. Then A minor: the A below, C, E, A. Then F: F, A, ' +
-      'C, F. Then G: G, B, D, G. Root, third, fifth and the root again on top, the same shape ' +
-      'moved to each chord, two bars each.',
-    'Set the pattern to play upward. Each voicing comes out from the bottom, C E G C, then ' +
-      'A C E A, and so on round. The line ascends, and the melody is the chord.',
+    'The I first, then the vi, the IV and the V: root, third, fifth and the root again on top, ' +
+      'the same shape moved to each chord, two bars each. The vi and the IV sit below the I, and ' +
+      'the V comes back up a tone from the IV.',
+    'Set the pattern to play upward. Each voicing comes out from the bottom, root, third, fifth, ' +
+      'octave, and so on round. The line ascends, and the melody is the chord.',
     'Now set the pattern to play the notes in the order you pressed them, ORDR where a panel ' +
       'abbreviates it. Press the same four keys with a different finger first and you get a ' +
-      'different line: G, then C, E and the top C gives G C E C. Same chord, different tune, ' +
-      'and the order of your fingers decides it.',
+      'different line: the fifth first, then the root, the third and the top root, and the I ' +
+      'comes out fifth, root, third, octave. Same chord, different tune, and the order of your ' +
+      'fingers decides it.',
     'Under that pattern, every change of chord is also the choice of a melody. Land the first ' +
       'finger on the note you want the two bars to open on and press the other three after it.',
   ],

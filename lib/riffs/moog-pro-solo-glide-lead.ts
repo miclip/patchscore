@@ -38,20 +38,22 @@ export const moogProSoloGlideLead: Riff = {
     'A single line, and no two notes ever sound at once. The patch glides between anything ' +
       'held together, so every note is released before the next is struck. The glide happens ' +
       'between notes, never under them.',
-    'Over the first chord, climb E, G, A from the bar head, each let go as the next is ' +
-      'struck. The glide carries the pitch up the minor third and then the tone, so the climb ' +
-      'is heard as one line bending upwards and not as three notes.',
-    'The B flat into B over the C chord is what the glide is for. Strike the B flat on beat ' +
-      'two and the B an eighth after it; the patch carries the semitone, and what you hear is ' +
-      'a scoop into the B, not two notes. Keep the B flat to one eighth. The scoop is the ' +
-      'sound, and a B flat that sits is a wrong note against the chord.',
-    'Over the third chord, hold D from beat two and let it fall to C on beat four: a tone ' +
-      'down, heard as a bend, and the empty beat before the D is where the ear resets. Over ' +
-      'the last chord, one B, entered late and held to the bar line, so that it has settled ' +
-      'before the widest glide on the page, the fifth back down to E on the repeat.',
+    'Over the first chord, climb the root, the third and the fourth from the bar head, each let ' +
+      'go as the next is struck. The glide carries the pitch up the minor third and then the ' +
+      'tone, so the climb is heard as one line bending upwards and not as three notes.',
+    'The flattened fifth of the key into the fifth, over the VI, is what the glide is for. ' +
+      'Strike the flattened fifth on beat two and the fifth an eighth after it; the patch ' +
+      'carries the semitone, and what you hear is a scoop into the fifth, not two notes. Keep ' +
+      'the flattened fifth to one eighth. The scoop is the sound, and a flattened fifth that ' +
+      'sits is a wrong note against the chord.',
+    'Over the third chord, hold its root from beat two and let it fall to the key’s sixth on ' +
+      'beat four: a tone down, heard as a bend, and the empty beat before it is where the ear ' +
+      'resets. Over the last chord, one note, the key’s fifth, entered late and held to the bar ' +
+      'line, so that it has settled before the widest glide on the page, the fifth back down to ' +
+      'the root on the repeat.',
     'Set the glide so a step of a tone takes about a sixteenth to arrive. Longer and the line ' +
       'smears; shorter and the patch might as well not have it. The wider the interval, the ' +
-      'longer the glide, which is why the fall to E at the top of the loop is the one to ' +
+      'longer the glide, which is why the fall to the root at the top of the loop is the one to ' +
       'listen for.',
   ],
   request: {

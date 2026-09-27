@@ -40,8 +40,9 @@ export const squareDroneOneNoteFourChords: Riff = {
   bpm: { min: 72, max: 96, default: 84 },
   key: 'C minor',
   technique: [
-    'One note for the whole figure: G. Strike it at each chord change and hold it until the next. ' +
-      'You are not playing a line, you are keeping a note while the harmony moves.',
+    'One note for the whole figure: the key’s fifth. Strike it at each chord change and hold it ' +
+      'until the next. You are not playing a line, you are keeping a note while the harmony ' +
+      'moves.',
     'Over the first chord it is the fifth. Over the second it is the major seventh, which is where ' +
       'it stops sounding plain. Over the third it is the third. Nothing in your hand did any of ' +
       'that.',
@@ -50,8 +51,8 @@ export const squareDroneOneNoteFourChords: Riff = {
       'whole two bars.',
     'Strike it again at each change rather than holding straight through. Held, it is one long ' +
       'note under four chords; restruck, it is the same note walking into four different rooms.',
-    'Never play C while the last chord is sounding. It is the root of the key and a semitone off ' +
-      'that chord, and reaching for it to steady the clash makes a worse one.',
+    'Never play the key’s root while the last chord is sounding. It is a semitone off that ' +
+      'chord, and reaching for it to steady the clash makes a worse one.',
     'Same velocity every time. The note is not building to anything and an accent would say it ' +
       'was.',
   ],

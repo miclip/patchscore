@@ -46,8 +46,8 @@ export const detroitFunkAeolianMachineLoop: Riff = {
     'The stab is the top of the chord. The root is the bass’s note, and the voicings here ' +
       'leave it out on purpose. Keep the three notes inside one octave and let the bass say ' +
       'which chord it is.',
-    'Never play A natural while the first chord is sounding. It is the raised sixth of C ' +
-      'minor, and one A turns the loop from Detroit into house.',
+    'Never raise the key’s sixth while the first chord is sounding. One raised sixth turns the ' +
+      'loop from Detroit into house.',
     'Keep the stabs short. The hand comes off before the next beat, and the space between hits ' +
       'is where the drums are heard.',
   ],

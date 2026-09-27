@@ -53,21 +53,23 @@ export const fifthInLineFifthsBeforeTheRoot: Riff = {
   key: 'C minor',
   technique: [
     'Three strikes a bar for three bars, and the first of each is the fifth of the chord, never ' +
-      'its root. G over the C minor, Eb over the Ab, Bb over the Eb.',
-    'The fourth bar is one note, G, held for the whole bar. It is the root of the G minor under ' +
-      'it, and it is the first root in the figure.',
-    'That last G is the same pitch the figure opened on. In bar one it was the fifth of C minor ' +
+      'its root: the key’s fifth over the i, its third over the VI, its seventh over the III.',
+    'The fourth bar is one note, the key’s fifth, held for the whole bar. It is the root of the ' +
+      'v under it, and it is the first root in the figure.',
+    'That last note is the same pitch the figure opened on. In bar one it was the fifth of the i ' +
       'and it sounded unfinished; in bar four the chord underneath makes it the root, and the ' +
       'line arrives without moving.',
     'After the head of each bar, two more notes, on beat three and on beat four, and each pair ' +
-      'is a step. Bar one falls from Bb to Ab. Bar two falls from G to F. Bar three climbs from ' +
-      'C to D, and the D is the fifth of the chord bar four is about to land on.',
-    'Never play the root of the chord in the first three bars. C over the C minor, Ab over the ' +
-      'Ab, Eb over the Eb. Each one resolves the bar early, and there is nothing left for bar ' +
-      'four to do.',
+      'is a step. Bar one falls a tone from the seventh to the sixth. Bar two falls a tone from ' +
+      'the fifth to the fourth. Bar three climbs a tone from the root to the second, and that ' +
+      'second is the fifth of the chord bar four is about to land on.',
+    'Never play the root of the chord in the first three bars: the key’s root over the i, its ' +
+      'sixth over the VI, its third over the III. Each one resolves the bar early, and there is ' +
+      'nothing left for bar four to do.',
     'Hold every note to the next strike. The line is legato until the last bar, which is one ' +
       'unbroken note.',
-    'Keep it between Eb2 and D3. The whole figure fits inside a tenth and it is meant to.',
+    'Keep it where it is written, from the third at the bottom to the second at the top. The ' +
+      'whole figure fits inside a major seventh and it is meant to.',
   ],
   request: {
     id: '5th-in-line-fifths-before-the-root',

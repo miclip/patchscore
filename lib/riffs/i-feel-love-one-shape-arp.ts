@@ -53,7 +53,7 @@ export const iFeelLoveOneShapeArp: Riff = {
   technique: [
     'Four sixteenths a beat, and the same four every beat: the root, the octave above it, the ' +
       'fifth, and the octave again. Root, octave, fifth, octave, and nothing else, ever.',
-    'Move the shape and never the pattern. Two bars on D, one bar on B flat, one bar on C, ' +
+    'Move the shape and never the pattern. Two bars on i, one bar on VI, one bar on VII, ' +
       'and each bar is the same four notes built on that bar’s root.',
     'Play every note the same length, a full sixteenth, each one struck fresh and none tied ' +
       'to the next. The pattern is a pulse, and it is the even strikes that make it one; how ' +
@@ -62,8 +62,8 @@ export const iFeelLoveOneShapeArp: Riff = {
       'figure is that it does not change. Any movement belongs to the filter and the sound, ' +
       'and none of it belongs to the notes.',
     'Keep it inside an octave and a half: the root at the bottom, the octave a full octave up, ' +
-      'the fifth between them. On the B flat bar the whole shape drops a third and on the C bar ' +
-      'it rises a step, and that is all the melody there is.',
+      'the fifth between them. On the VI bar the whole shape drops a major third and on the VII ' +
+      'bar it rises a whole step, and that is all the melody there is.',
     'Let a sequencer play it if you can. Evenness is the sound, and a hand will not keep ' +
       'sixteenths this level at this tempo for four bars at a time.',
     'Lean on the root of each beat and play the octaves a touch lighter than the fifth. The ' +

@@ -34,15 +34,17 @@ export const seventiesElectroPnoRhodesTurnaround: Riff = {
     'A top line over four extended chords, entering on beat two every bar. The chords ' +
       'underneath are a major ninth, two minor sevenths and a dominant with a flat ninth, and ' +
       'the line picks one colour tone off each.',
-    'Over the first chord, hold the ninth. Over the second, walk down from G through F to Eb, ' +
-      'one note a beat. Over the third, hold the fifth.',
-    'The Eb over the last chord is the flat ninth and the whole point of the turnaround. Land ' +
-      'on it late, on beat three, and let it resolve down to D on beat four. Never approach it ' +
-      'from below: from D it is the root stepping up and back, an ornament, and the ear hears ' +
-      'D with a wobble. Come down onto it from the E over the chord before, E, Eb, D, and it ' +
-      'is a line falling through the dominant with the flat ninth as the arrival.',
-    'Never play Bb while the first chord is sounding. It is the fourth against the major third, ' +
-      'and a comping figure that touches it loses the chord it is voicing.',
+    'Over the first chord, hold the ninth. Over the second, walk down a tone at a time from its ' +
+      'root to the key’s flattened seventh, one note a beat. Over the third, hold the fifth.',
+    'The key’s flattened seventh over the last chord is that chord’s flat ninth and the whole ' +
+      'point of the turnaround. Land on it late, on beat three, and let it resolve down a ' +
+      'semitone to the root on beat four. Never approach it from below: from the root it is the ' +
+      'root stepping up and back, an ornament, and the ear hears the root with a wobble. Come ' +
+      'down onto it from the fifth held over the chord before, a semitone above, and three notes ' +
+      'a semitone apart are a line falling through the dominant with the flat ninth as the ' +
+      'arrival.',
+    'Never play the key’s fourth while the first chord is sounding. It is the fourth against the ' +
+      'major third, and a comping figure that touches it loses the chord it is voicing.',
     'Keep every entry a beat or more into its chord. The bass and the chord land on the bar ' +
       'head; this line answers them.',
   ],

@@ -4,15 +4,15 @@
 
 ## The technique
 
-Four chords, eight bars, two bars each: D minor, E flat major, D minor, C minor. The right hand enters on the beat with every chord. An organ has no attack shape, so each note speaks the instant the key goes down, and the phrasing is all in length and release.
+Four chords, eight bars, two bars each: i, II, i, vii. A minor chord, the major chord a semitone above it, the minor chord again, and the minor chord a tone below it. The right hand enters on the beat with every chord. An organ has no attack shape, so each note speaks the instant the key goes down, and the phrasing is all in length and release.
 
-Left hand, root and fifth only, no thirds: D and A, then Eb and Bb, then D and A, then C and G. Open fifths are what make an organ sound modal instead of churchy.
+Left hand, each chord’s root and fifth only, no thirds. Open fifths are what make an organ sound modal instead of churchy.
 
-Over the first D minor: F, then fall to Eb in the second bar. Cut the F short before the drop and the fall has weight; hold it too long and the two notes blur into one sound.
+Over the first i: the key’s third, then fall a tone to the flat second in the second bar. Cut the third short before the drop and the fall has weight; hold it too long and the two notes blur into one sound.
 
-Over the Eb major: G, held for both bars. Over the return to D minor: D, up to Eb, back to D. Over the C minor: Eb, falling to D at the end.
+Over the II: its third, held for both bars. Over the return to the i: the root, up a semitone to the flat second, back to the root. Over the vii: the flat second, falling to the root at the end.
 
-One rule, and it is the whole piece: never play E natural. The Eb is the flat second, what makes this Phrygian instead of ordinary D minor, and it is in three of the four chords. Play an E natural once and the modal sound is gone.
+One rule, and it is the whole piece: never raise the second. The flat second is what makes this Phrygian instead of ordinary minor, and it sounds over all four chords, in the harmony or in the line. Play the raised second once and the modal sound is gone.
 
 Since nothing swells, practise releasing. A move inside a chord is played off the held note; the hand strikes on the entry into each chord, and the release is what shapes everything else.
 

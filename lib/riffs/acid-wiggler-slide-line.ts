@@ -2,8 +2,9 @@ import { at, on, variant } from '../core/authoring'
 import type { Riff } from '../core/riff'
 
 /**
- * §5A. **The Acid Wiggler slide line**: sixteen sixteenths on the low root, and four of them
- * are somewhere else, reached by sliding rather than by striking.
+ * §5A. **The Acid Wiggler slide line**: sixteen sixteenths, ten of them on the low root. Of the
+ * six that are somewhere else, four are reached by sliding rather than by striking and two are
+ * struck.
  *
  * **Named after a factory patch, with a figure authored here** (§5A.5, #624, #643). The patch
  * is the acid bass; the notes are this library's own, and the entry names no device
@@ -12,14 +13,14 @@ import type { Riff } from '../core/riff'
  *
  * ## Deliberately five pitches
  *
- * `A1`, `C2`, `E2`, `G1`, `A2`, and twelve of the sixteen steps are the first of those. Every
+ * `A1`, `C2`, `E2`, `G1`, `A2`, and ten of the sixteen steps are the first of those. Every
  * other entry #643 replaced had too few pitches because the figure had too little to say. This
  * one has few pitches because that is what an acid line is: one or two notes and a great deal
  * of articulation, and the interest is which notes are slid into and which are struck. Four
- * steps are reached by glide, `C2`, `G1`, `A2` and `E2`, and one note away from the root,
- * the `C2` at the end of beat three, is struck. That is the whole figure, and the count is the
- * subject rather than a symptom. #624's entry was a wiggle widening a bar at a time over four
- * bars; this replaces it.
+ * steps are reached by glide, `C2`, `G1`, `A2` and `E2`, and two notes away from the root are
+ * struck: the `E2` that opens beat two and the `C2` at the end of beat three. That is the
+ * whole figure, and the count is the subject rather than a symptom. #624's entry was a wiggle
+ * widening a bar at a time over four bars; this replaces it.
  *
  * ## The slide is the note
  *
@@ -53,23 +54,25 @@ export const acidWigglerSlideLine: Riff = {
   bpm: { min: 124, max: 140, default: 132 },
   key: 'A minor',
   technique: [
-    'One bar of sixteenths, and twelve of them are the low A. The other four are the figure: ' +
-      'a C above, a G below, the A an octave up, and an E above, and each of those is slid ' +
-      'into from the A before it. Nothing is struck on those four steps.',
-    'Beat one: A, A, slide to C, A. Beat two: E, A, A, slide to G below. Beat three: A, slide ' +
-      'to the A above, A, C. Beat four: A, A, slide to E, A. The C at the end of beat three ' +
-      'is struck; it is the one note away from the root that is.',
+    'One bar of sixteenths, and ten of them are the low root. Four are the figure: the third ' +
+      'above, the seventh below, the octave, and the fifth above, each slid into from the root ' +
+      'before it, and nothing is struck on those four steps. The last two are struck: the fifth ' +
+      'that opens beat two and the third that ends beat three.',
+    'Beat one: root, root, slide to the third, root. Beat two: the fifth, root, root, slide to ' +
+      'the seventh below. Beat three: root, slide to the octave, root, the third. Beat four: ' +
+      'root, root, slide to the fifth, root. The third at the end of beat three is struck, and ' +
+      'so is the fifth that opens beat two; they are the only notes away from the root that are.',
     'Two buttons have to be lit, not one: GLIDE and LEGATO. With GLIDE on and LEGATO off, ' +
       'every note slides and the figure is unplayable as written; with LEGATO on, a slide ' +
       'happens only where you press the next key while still holding the last. That is what ' +
       'puts the four slides in your fingers instead of on a wheel. Check both before you start, ' +
       'because a preset need not arrive with them set.',
-    'Then keep the glide short, so a slide of a third arrives inside the sixteenth. Hold the A ' +
-      'and press the next key without releasing, and the slide is what happens. Release both ' +
-      'and strike the A that follows.',
-    'The bar head is the loud one and the struck C is next. Play the plain A steps under them, ' +
-      'and play a slid step at the same weight as the A it came from, because it was never ' +
-      'struck at all.',
+    'Then keep the glide short, so a slide of a third arrives inside the sixteenth. Hold the ' +
+      'root and press the next key without releasing, and the slide is what happens. Release ' +
+      'both and strike the root that follows.',
+    'The bar head is the loud one and the struck third is next. Play the plain root steps under ' +
+      'them, and play a slid step at the same weight as the root it came from, because it was ' +
+      'never struck at all.',
     'Five pitches, and that is the right number. An acid line is one note, its articulation, ' +
       'and the filter. Add pitches and it turns into a bass line; move the slides and it turns ' +
       'into a different acid line.',

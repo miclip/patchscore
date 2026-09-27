@@ -247,6 +247,40 @@ it. Beyond those:
 - **Do not claim what the notes do not do.** See §6.
 - **No process talk**: no issue numbers, no backlog, nothing about the build, in rendered copy.
 
+### Technique has to hold in any key (#694)
+
+The figure page has a key control. It re-resolves the notes and the chord table in any of twelve
+keys and leaves the technique exactly as written, so a paragraph that names a pitch contradicts
+the rows under it the moment the reader changes key. `test/technique-in-any-key.test.ts` holds
+every host and companion paragraph in the library to this.
+
+- **Degrees, numerals and intervals by default.** *The key's seventh*, *the raised third*, *over
+  the VI*, *the bII*, *down a major third*, *the chord's ninth*. Say whether a degree is the key's
+  or the chord's when both are in play; that is usually the lesson. Name chords by numeral, never
+  by letter (*the major I*, not *F# major*).
+- **Register is relative.** The key control keeps `baseOctave`, so a figure moves by up to eleven
+  semitones across the twelve keys, and *around C3 to C4* is wrong in most of them. Say the span
+  the figure covers (*the root and nothing more than a fourth above it*, *inside the octave and a
+  fourth it is written in*), or where it sits against the other parts. An absolute landmark
+  survives only where it is true in all twelve keys: resolve the hook in each of
+  `transposableKeys(riff.key)` and check.
+- **A fact about a recording is framed as one.** A record-named figure may say where the original
+  sits (*the record is in D minor*), because that stays true in any key the reader picks. Write
+  it as a fact about the record, with the reason it matters, and never as an instruction about
+  the notes on the page.
+- **Read it back from the resolver, with intervals.** Every degree, interval and register claim
+  in a rewritten paragraph comes from §6's loop, extended with the chord in force and each note's
+  interval above that chord's root. Rewording to degrees is where wrong prose surfaces: #694 found
+  more than twenty paragraphs that already said something the notes did not do.
+- **An exception is reasoned and checked.** The test allows an absolute anchor only by figure,
+  part and paragraph, and only for the one anchor named. Each entry carries a reason and a `holds`
+  predicate that is asked of the resolved notes in all twelve keys, and an entry whose paragraph
+  no longer carries its anchor fails as unused. Three are in force, all `middle C`, each true in
+  every key: 3 Osc Bass Love's ceiling, and the floors under Broken Toy and Tears in Rain.
+- **The detector is a regex, and it is not the check.** It catches spelled pitches and leaves the
+  article *A* alone at a sentence start. It cannot tell whether *the key's fifth* is right. Only
+  the resolver can.
+
 ---
 
 ## 9. Explore: the patch list and the use line

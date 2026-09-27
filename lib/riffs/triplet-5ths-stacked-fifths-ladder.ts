@@ -72,23 +72,25 @@ export const triplet5thsStackedFifthsLadder: Riff = {
   bpm: { min: 100, max: 128, default: 116 },
   key: 'G major',
   technique: [
-    'The name says fifths, so every note in a group is a fifth from the one before it, three ' +
-      'at a time. Up from G: G, D, A. Then up from the D: D, A, E. Then up from the A: A, E, B. ' +
-      'That is the ladder, and every rung is a fifth.',
+    'The name says fifths, so every note in a group is a fifth from the one before it, three at ' +
+      'a time. Up from the root: root, fifth, second. Then up from the fifth: fifth, second, ' +
+      'sixth. Then up from the second: second, sixth, third. That is the ladder, and every rung ' +
+      'is a fifth.',
     'The name says triplet, so the notes come in threes: three sixteenths, the first of each ' +
       'three the loud one. Four groups in a row is an accent every three sixteenths against a ' +
       'beat every four, and that cross-rhythm is the figure. Do not straighten it out.',
-    'The fourth group comes down the same rungs: B, E, A, a fifth below each time, landing on ' +
-      'the A. Then a beat of nothing. Twelve sixteenths climbing and turning, four of silence, ' +
-      'and the next bar starts the ladder again from its own root.',
-    'Bar two is the same ladder from the C below, over the C chord: C, G, D, then G, D, A, then ' +
-      'D, A, E, then E, A, D and the silence. Same shape, same accents, a fourth lower.',
+    'The fourth group comes down the same rungs: the third, the sixth, the second, a fifth below ' +
+      'each time, landing on the second. Then a beat of nothing. Twelve sixteenths climbing and ' +
+      'turning, four of silence, and the next bar starts the ladder again from its own root.',
+    'Bar two is the same ladder from the IV’s root, over the IV: the same twelve notes and the ' +
+      'silence, every one a fifth lower. Same shape, same accents.',
     'One note at a time, every note the same length. Let each sixteenth go before the next is ' +
       'struck. Held, three fifths are a chord, and this is not a chord; it is a ladder.',
     'The bar head is the loudest note and the start of each group the next loudest. The third ' +
       'note of every group is the quiet one, so the ear counts in threes and not in fours.',
-    'Never play C sharp. It is the next fifth up from F sharp, one rung past the key, and one ' +
-      'C sharp turns a ladder in G into a modulation. The ladder stops at B and turns.',
+    'Never raise the key’s fourth. It is the next fifth up from the seventh, one rung past the ' +
+      'key, and one of them turns the ladder into a modulation. The ladder stops at the third ' +
+      'and turns.',
   ],
   request: {
     id: 'triplet-5ths-stacked-fifths-ladder',

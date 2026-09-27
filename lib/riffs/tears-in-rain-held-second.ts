@@ -60,9 +60,10 @@ export const tearsInRainHeldSecond: Riff = {
   bpm: { min: 56, max: 76, default: 64 },
   key: 'B minor',
   technique: [
-    'Two notes for the whole figure: D and the C sharp a semitone below it, both well above middle ' +
-      'C. Nothing else is played and nothing moves.',
-    'Bring the D in first and hold it alone for two bars. Then bring the C sharp in underneath and ' +
+    'Two notes for the whole figure: the key\u2019s third and its second, a semitone below it, ' +
+      'both above middle C. Nothing else is played and nothing moves.',
+    'Bring the upper note in first and hold it alone for two bars. Then bring the lower one in ' +
+      'underneath and ' +
       'leave both down. Pressing them together is the same two pitches and a different piece: a ' +
       'cluster struck is a chord, a cluster arrived at is a texture.',
     'Play both as quietly as the patch lets you and give it the slowest attack it has. A ' +
@@ -72,9 +73,10 @@ export const tearsInRainHeldSecond: Riff = {
     'The chord changes under you at the halfway point and you do nothing. Over the first chord ' +
       'the pair is the ninth and the third; over the second it is the seventh and the sixth. The ' +
       'harmony resolves the tension and the hand never does.',
-    'Two bars from the end, let the D go and leave the C sharp alone. It is the sixth of the chord ' +
+    'Two bars from the end, let the upper note go and leave the lower one alone. It is the sixth ' +
+      'of the chord ' +
       'underneath by then, and the note that was the dissonance is the one left standing.',
-    'Never play A sharp. It is the raised seventh, and one of them turns eight bars of held ' +
+    'Never raise the key\u2019s seventh. One raised seventh turns eight bars of held ' +
       'colour into something that wants to end.',
   ],
   request: {

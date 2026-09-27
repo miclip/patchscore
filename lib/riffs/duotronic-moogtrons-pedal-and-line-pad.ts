@@ -63,23 +63,24 @@ export const duotronicMoogtronsPedalAndLinePad: Riff = {
   bpm: { min: 64, max: 88, default: 76 },
   key: 'F minor',
   technique: [
-    'Hold the low F and do not let go of it for eight bars. That is one hand’s whole job. ' +
-      'The name says duo, and this is what the second note is for: everything the other hand ' +
-      'plays is heard against a note that never moves.',
-    'The line is one note a bar, entered on the bar head and held to the next bar head. Over ' +
-      'the two bars of F minor: C, then Ab. Over the Db: F, then Ab above it. Over the Bb ' +
-      'minor: Bb, then Db below it. Over the Eb: Bb, then G.',
+    'Hold the low root and do not let go of it for eight bars. That is one hand’s whole job. The ' +
+      'name says duo, and this is what the second note is for: everything the other hand plays ' +
+      'is heard against a note that never moves.',
+    'The line is one note a bar, entered on the bar head and held to the next bar head. Over the ' +
+      'two bars of the i: the key’s fifth, then its third. Over the VI: the root an octave up, ' +
+      'then the third above it. Over the iv: the fourth, then the sixth below it. Over the VII: ' +
+      'the fourth, then the second.',
     'What the ear follows is the distance between the two notes. A fifth, in to a third, then ' +
       'out to an octave, a tenth, an eleventh, then in again to a sixth, a fourth, and a tone ' +
       'at the end. The pass then opens it back to a fifth. Play the line for the interval and ' +
       'not for the tune.',
     'The line never goes below the held note. The pedal is always the bottom and the line is ' +
-      'always the top, so whichever voice has the low F keeps it for the whole figure.',
-    'The last bar is the point: G a tone above the F, over the Eb chord, where the F is the ' +
-      'ninth of the chord as well. Two tensions on one bar. Hold it the full bar and let the ' +
-      'next pass resolve both at once.',
-    'Never play E natural. It is the leading tone, and over a held tonic one of them turns ' +
-      'the pedal into a landing. The pedal is a floor to move over, not one to arrive on.',
+      'always the top, so whichever voice has the low root keeps it for the whole figure.',
+    'The last bar is the point: the key’s second, a tone above the pedal, over the VII, where ' +
+      'the pedal is the ninth of the chord as well. Two tensions on one bar. Hold it the full ' +
+      'bar and let the next pass resolve both at once.',
+    'Never raise the seventh. The leading tone over a held tonic turns the pedal into a landing. ' +
+      'The pedal is a floor to move over, not one to arrive on.',
   ],
   request: {
     id: 'duotronic-moogtrons-pedal-and-line-pad',
