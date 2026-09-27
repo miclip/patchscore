@@ -27,18 +27,20 @@ export const swollenPadStaggeredStack: Riff = {
   bpm: { min: 70, max: 90, default: 80 },
   key: 'G major',
   technique: [
-    'Four chords, two bars each: G, D, E minor, C. Each one is entered a note at a time, one ' +
-      'on every beat of its first bar, from the bottom up, and every note holds until the ' +
-      'chord changes.',
+    'Four chords, two bars each: I, V, vi, IV. Each one is entered a note at a time, one on ' +
+      'every beat of its first bar, from the bottom up, and every note holds until the chord ' +
+      'changes.',
     'Bottom first, always. The bass note lands on the head, the next two chord tones on two ' +
       'and three, and the colour note on four, so the chord is heard growing rather than ' +
       'appearing.',
     'Let the notes go together. Everything lifts at the bar line before the next chord and ' +
       'the new bottom note lands alone on the head. The gap is part of the figure.',
-    'The top note of each voicing is a ninth or a seventh: A over the G, E over the D, D over ' +
-      'the E minor, B over the C. It is the last note to enter and the one the swell arrives at.',
-    'Never add C while the G is sounding. It sits a semitone over the B, and a slow attack ' +
-      'stays on that clash for a whole beat before the ear can decide it was a mistake.',
+    'The top note of each voicing is a ninth or a seventh: the ninth over the I and over the V, ' +
+      'the seventh over the vi, the major seventh over the IV. It is the last note to enter and ' +
+      'the one the swell arrives at.',
+    'Never add the key’s fourth while the I is sounding. It sits a semitone over the third, and ' +
+      'a slow attack stays on that clash for a whole beat before the ear can decide it was a ' +
+      'mistake.',
     'Set the attack long enough that the first note is still rising when the second enters. ' +
       'If each note has finished swelling before the next, the stack sounds struck.',
   ],

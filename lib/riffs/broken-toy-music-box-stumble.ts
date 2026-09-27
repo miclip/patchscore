@@ -35,19 +35,22 @@ export const brokenToyMusicBoxStumble: Riff = {
   bpm: { min: 96, max: 116, default: 104 },
   key: 'A major',
   technique: [
-    'A tune a child could sing, two octaves above middle C: up the triad, A, C sharp, E, and ' +
-      'back down to A, then a low E to lead round again. Four bars, and it goes wrong twice.',
-    'The first stumble is an extra note. In bar two the top E is struck twice as sixteenths ' +
+    'A tune a child could sing, above middle C: up the triad, root, third, fifth, and back down ' +
+      'to the root, then the fifth below it to lead round again. Four bars, and it goes wrong ' +
+      'twice.',
+    'The first stumble is an extra note. In bar two the top note is struck twice as sixteenths ' +
       'where bar one had one eighth, and the tune is a sixteenth late for the rest of the bar. ' +
-      'Late, it has no room for the rest and the low E that ended bar one, so it walks down ' +
-      'instead, B then G sharp, and steps onto the A at the head of bar three. That is how a ' +
-      'music box catches up: it fills the gap it fell into rather than skipping ahead.',
+      'Late, it has no room for the rest and the low fifth that ended bar one, so it walks down ' +
+      'instead, the second then the seventh, and steps up a semitone onto the root at the head ' +
+      'of bar three. That is how a music box catches up: it fills the gap it fell into rather ' +
+      'than skipping ahead.',
     'The second stumble is a missing one. In bar three the second half of beat four is silent, ' +
       'and the pickup arrives late, on the last sixteenth.',
-    'Bar four is the ending: F sharp three times, D, B, G sharp, and A held. It is the only ' +
-      'bar with notes the tune has not used, and it lands on the head of the loop.',
-    'Never play D while the A is sounding. The tune stumbles in time and never in pitch; a ' +
-      'wrong note is a different broken thing.',
+    'Bar four is the ending: the sixth three times, then the fourth, the second, the seventh, ' +
+      'and the root held. It is the only bar with notes the tune has not used, and it lands on ' +
+      'the head of the loop.',
+    'Never play the key’s fourth while the I is sounding. The tune stumbles in time and never in ' +
+      'pitch; a wrong note is a different broken thing.',
     'Every note the same weight, like a comb plucked by a pin. The only accent is the bar ' +
       'head, and it is a small one.',
   ],

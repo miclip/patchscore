@@ -61,10 +61,11 @@ export const cluster5thParallelFifthsStack: Riff = {
   bpm: { min: 100, max: 124, default: 112 },
   key: 'G minor',
   technique: [
-    'Three notes, and the gap between each pair is a fifth: the root, the fifth above it, and the ' +
-      'fifth above that. Bar one is G, D, A. There is no third in the chord and that is the point.',
-    'Move the whole shape to each root and change nothing else. F, C, G. Then E flat, B flat, F. ' +
-      'Then C, G, D. Same hand, four positions.',
+    'Three notes, and the gap between each pair is a fifth: the root, the fifth above it, and ' +
+      'the fifth above that. Bar one is the key’s root, fifth and second. There is no third in ' +
+      'the chord and that is the point.',
+    'Move the whole shape to each root and change nothing else. Down a tone to the VII, down a ' +
+      'tone again to the VI, then up a major sixth to the iv. Same hand, four positions.',
     'Hold all three and let the arpeggiator sound them. Change to the next shape on the bar line ' +
       'and hold again. Your hand plays four chords in four bars and nothing else.',
     'Arpeggiated, the missing third is something you can follow: the pattern walks root, fifth, ' +
@@ -72,8 +73,8 @@ export const cluster5thParallelFifthsStack: Riff = {
     'Play the same four bars as ordinary triads once, to hear what you are avoiding: in parallel ' +
       'they fight, because each one brings a major or a minor with it. The stacked fifths bring ' +
       'neither, so they can all be the same shape.',
-    'Never play F sharp. It is the raised seventh, and it is the one note that would hand the ' +
-      'stack a quality it is built to do without.',
+    'Never raise the key’s seventh. It is the one note that would hand the stack a quality it is ' +
+      'built to do without.',
     'Keep them in one register and close together. Spread wide these read as three separate ' +
       'parts rather than as one chord with a hole in the middle.',
   ],

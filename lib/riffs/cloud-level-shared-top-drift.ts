@@ -40,17 +40,17 @@ export const cloudLevelSharedTopDrift: Riff = {
    */
   arpeggiatedHold: true,
   technique: [
-    'Hold four notes and change three of them every two bars. The top E never moves; the ' +
-      'three under it walk the chords, and the arpeggiator keeps coming back to the one note ' +
-      'that stayed.',
-    'F sharp minor seventh first, then D major with the E as its ninth, then A major with the ' +
-      'E on top, then E major with the E as its root. Four chords, one note in common.',
+    'Hold four notes and change three of them every two bars. The top note, the key’s seventh, ' +
+      'never moves; the three under it walk the chords, and the arpeggiator keeps coming back to ' +
+      'the one note that stayed.',
+    'The i as a minor seventh first, then the VI with that top note as its ninth, then the III ' +
+      'with it as its fifth, then the VII with it as its root. Four chords, one note in common.',
     'Change on the bar head. The arpeggiator is mid-pass whenever you move, and a change on ' +
       'the head is the only one it can absorb without a stumble.',
-    'Keep every voicing close, inside an octave and a bit, with the E on top each time. The ' +
-      'drift depends on the top note staying the top note.',
-    'Never hold D sharp. It is the raised sixth, and it turns the E major at the end into a ' +
-      'chord that wants to go home. This loop does not go home.',
+    'Keep every voicing close, inside an octave and a bit, with the same note on top each time. ' +
+      'The drift depends on the top note staying the top note.',
+    'Never hold the raised sixth. It turns the VII at the end into a chord that wants to go ' +
+      'home. This loop does not go home.',
     'Play it long. Eight bars is one pass, and the drift is heard on the third or fourth.',
   ],
   request: {

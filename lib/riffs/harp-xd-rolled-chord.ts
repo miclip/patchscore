@@ -55,9 +55,9 @@ export const harpXdRolledChord: Riff = {
   technique: [
     'Four notes a chord, rolled bottom to top, two sixteenths apart, and every one stays down. ' +
       'The chord is not struck and it is not arpeggiated: it arrives.',
-    'Start the roll before the bar line so the top note lands on the beat. Three sixteenths ' +
-      'early for a four-note roll at this spacing. What the ear hears on the downbeat is the top ' +
-      'of a chord that is already complete.',
+    'Start the roll before the bar line so the top note lands on the beat. Six sixteenths early, ' +
+      'a beat and a half, for a four-note roll at this spacing. What the ear hears on the ' +
+      'downbeat is the top of a chord that is already complete.',
     'The first chord is the exception and you can hear why: there is nothing before bar one to ' +
       'roll from, so it is rolled from the bar head instead. Play the figure twice round and the ' +
       'first chord is the one that sounds late.',
@@ -66,8 +66,8 @@ export const harpXdRolledChord: Riff = {
     'The chords are a major seventh, a minor seventh, another major seventh and a dominant. Roll ' +
       'all of them at the same speed; changing the speed makes the roll the subject, and it is ' +
       'the placement that is the subject.',
-    'Never play B flat while the last chord is sounding. It is the key’s own root and a ' +
-      'suspension over that chord, and this figure has nothing after it to resolve one.',
+    'Never play the key’s root while the last chord is sounding. It is a suspension over that ' +
+      'chord, and this figure has nothing after it to resolve one.',
   ],
   request: {
     id: 'harp-xd-rolled-chord',

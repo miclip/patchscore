@@ -26,17 +26,18 @@ export const pressureRepeatedNoteBuild: Riff = {
   bpm: { min: 120, max: 136, default: 128 },
   key: 'F minor',
   technique: [
-    'Four bars. The fifth, C, in eighths for two bars and nothing else, then the line starts ' +
-      'to lean: a D flat at the end of bar two, E flats and D flats through bar three, and the ' +
-      'root on the head of bar four, held.',
+    'Four bars. The fifth in eighths for two bars and nothing else, then the line starts to ' +
+      'lean: the sixth, a semitone above, at the end of bar two, the seventh and the sixth ' +
+      'through bar three, and the root on the head of bar four, held.',
     'Every eighth the same length and the same weight until the lean begins. The build is in ' +
       'the repetition, and a repeated note that changes shape is not repeating.',
     'The first strike of every bar is the loud one. The eighths after it sit under it, so the ' +
       'bar has a pulse even though the note does not move.',
-    'Bar four is the arrival. F held for two beats, then E flat, then C, and the loop returns ' +
-      'to the hammering. The held F is the only long note in the figure.',
-    'Never play E natural. It is the raised seventh, and one E turns the arrival into a ' +
-      'cadence. This line arrives by weight.',
+    'Bar four is the arrival. The root held for two beats, then the seventh a tone below it, ' +
+      'then the fifth, and the loop returns to the hammering. The held root is the only long ' +
+      'note in the figure.',
+    'Never raise the seventh. One raised seventh turns the arrival into a cadence. This line ' +
+      'arrives by weight.',
   ],
   request: {
     id: 'pressure-repeated-note-build',

@@ -43,8 +43,8 @@ export const trillSynthOrnamentBeforeTheBeat: Riff = {
   bpm: { min: 84, max: 108, default: 96 },
   key: 'B minor',
   technique: [
-    'Four notes hold this figure up: B, then D, then E, then G. Everything else is decoration on ' +
-      'the way into them.',
+    'Four notes hold this figure up: the key’s root, then its third, then its fourth, then its ' +
+      'sixth. Everything else is decoration on the way into them.',
     'The decoration is a trill in the last four sixteenths of the bar, alternating the note you ' +
       'are about to land on with the one a step above it. It finishes as the bar ends and the ' +
       'arrival lands on the downbeat.',
@@ -56,8 +56,8 @@ export const trillSynthOrnamentBeforeTheBeat: Riff = {
       'decorated.',
     'Play the trill lighter than the note it arrives at. Four even sixteenths and a quiet ' +
       'downbeat is a run; a light trill and a weighted arrival is an ornament.',
-    'Never play A sharp. It is the raised seventh, and inside a trill it turns a decoration into ' +
-      'a cadence that this figure is not making.',
+    'Never raise the key’s seventh. Inside a trill it turns a decoration into a cadence that ' +
+      'this figure is not making.',
   ],
   request: {
     id: 'trill-synth-ornament-before-the-beat',

@@ -61,23 +61,24 @@ export const brewTimeMajorSeventhHold: Riff = {
    */
   arpeggiatedHold: true,
   technique: [
-    'Set the arpeggiator to sixteenths, rising, and hold. Four chords, two bars each: C major ' +
-      'seventh, A minor, F major, G seventh. The first and last are four notes; the two in the ' +
-      'middle are three, and the count is the whole figure.',
+    'Set the arpeggiator to sixteenths, rising, and hold. Four chords, two bars each: a major ' +
+      'seventh on I, then vi, then IV, then a seventh on V. The first and last are four notes; ' +
+      'the two in the middle are three, and the count is the whole figure.',
     'Four notes at sixteenths is one pass a beat. The bottom note lands on every beat, and the ' +
       'pattern sits on the grid where you can stop hearing it.',
     'Three notes is a pass every three sixteenths, and three does not go into sixteen. ' +
       'Whatever note the bar head catches, the next bar head catches the note after it, and ' +
       'the one after that the note after that. The same held chord arrives somewhere ' +
       'different in every bar, and you played nothing to move it.',
-    'Hold C, E, G and B for two bars, on the grid. Then lift the G and the B and put A under ' +
-      'the C and E: three notes, and listen to the pass slide off the beat over the next four ' +
-      'bars. For the F, raise only the E to F and keep the other two.',
-    'On the G seventh go back to four: G, B, D, F. Whichever note the downbeat catches now ' +
-      'comes round on every beat after it, and the pattern is back on the grid. That is what ' +
-      'the fourth note is for.',
-    'Never hold F while the first chord is sounding. It sits a semitone over the E, and the ' +
-      'arpeggiator will play that clash on every pass.',
+    'Hold the root, third, fifth and seventh of the I for two bars, on the grid. Then lift the ' +
+      'top two and put the key’s sixth under the other two: three notes, and listen to the pass ' +
+      'slide off the beat over the next four bars. For the IV, raise only the top note, a ' +
+      'semitone, and keep the other two.',
+    'On the V go back to four: its root, third, fifth and seventh. Whichever note the downbeat ' +
+      'catches now comes round on every beat after it, and the pattern is back on the grid. That ' +
+      'is what the fourth note is for.',
+    'Never hold the key’s fourth while the first chord is sounding. It sits a semitone over the ' +
+      'third, and the arpeggiator will play that clash on every pass.',
   ],
   request: {
     id: 'brew-time-major-seventh-hold',

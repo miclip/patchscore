@@ -33,19 +33,19 @@ export const petrichorOffbeatCompingFigure: Riff = {
   bpm: { min: 78, max: 96, default: 86 },
   key: 'F major',
   technique: [
-    'Four bars: G minor for one, C for one, F for two. Two strikes a bar, on the "and" of one ' +
-      'and the "and" of three, and never on a beat.',
-    'Three notes a strike, no root. Over the G minor it is B flat, D, F; over the C it is E, ' +
-      'B flat, D; over the F it is A, C, E. The bass says which chord it is, and the hand plays ' +
-      'the colour.',
+    'Four bars: ii for one, V for one, I for two. Two strikes a bar, on the "and" of one and the ' +
+      '"and" of three, and never on a beat.',
+    'Three notes a strike, no root. Over the ii it is the chord’s third, fifth and seventh; over ' +
+      'the V, its third, seventh and ninth; over the I, its third, fifth and major seventh. The ' +
+      'bass says which chord it is, and the hand plays the colour.',
     'The first strike of the bar holds for a beat and a half; the second is short. Long then ' +
       'short is the comp, and the reverse is a march.',
-    'Keep the three notes close and let them move as little as they can. B flat and D are in ' +
-      'the first two voicings; only one note changes between them.',
-    'Never play B flat while the F is sounding. It sits a semitone over the A, and the two ' +
-      'bars of F are where the figure rests.',
-    'The strike on the "and" of one is the loud one, and it is loudest on the first bar of ' +
-      'the F. Everything else sits under it.',
+    'Keep the three notes close and let them move as little as they can. The key’s fourth and ' +
+      'sixth are in the first two voicings; only one note changes between them.',
+    'Never play the key’s fourth while the I is sounding. It sits a semitone over the third, and ' +
+      'the two bars of the I are where the figure rests.',
+    'The strike on the "and" of one is the loud one, and it is loudest on the first bar of the ' +
+      'I. Everything else sits under it.',
   ],
   request: {
     id: 'petrichor-offbeat-comping-figure',
