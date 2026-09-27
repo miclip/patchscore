@@ -62,17 +62,17 @@ export const stringsOfLifeWalkingEntryStab: Riff = {
     'One note, four bars, and it lands a sixteenth later in every bar. Bar one on the "e" of ' +
       'one, bar two on the "and", bar three on the "a", bar four on the "e" of two. It never ' +
       'lands on a beat, and the walk is the figure.',
-    'The note is C, and it does not move. The chords under it move, F to D minor to B flat ' +
-      'to C, and the same C becomes the fifth, then the seventh, then the ninth, then the root. ' +
+    'The note is the key\u2019s fifth, and it does not move. The chords under it move, I to vi ' +
+      'to IV to V, and the same note becomes the fifth, then the seventh, then the ninth, then ' +
+      'the root. ' +
       'Four meanings of one pitch, and the fourth is the one that resolves the idea.',
-    'Do not add a note in bar four to push the figure back round. The C over the C chord is ' +
-      'the root, and the next bar makes it a colour again. A line that refuses to move while ' +
+    'Do not add a note in bar four to push the figure back round. Over the V it is the ' +
+      'root, and the next bar makes it a colour again. A line that refuses to move while ' +
       'the harmony changes under it four times is the point.',
     'Play it short. Lift the hand within an eighth, so the space after each note is longer ' +
       'than the note itself. The gap is as much of the figure as the hit.',
-    'Leave the chords to whatever holds them. The stab plays the C and nothing under it, and ' +
-      'the bass and the pad supply the F, the D, the B flat and the C that give it its four ' +
-      'names.',
+    'Leave the chords to whatever holds them. The stab plays its one note and nothing under ' +
+      'it, and the bass and the pad supply the four roots that give it its four names.',
     'Accent the first note and play the other three evenly. One accent a phrase is enough to ' +
       'say where the four bars start.',
   ],

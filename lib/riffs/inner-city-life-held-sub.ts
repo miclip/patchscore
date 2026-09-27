@@ -54,19 +54,19 @@ export const innerCityLifeHeldSub: Riff = {
   bpm: { min: 160, max: 176, default: 170 },
   key: 'E minor',
   technique: [
-    'Hold the low E for two whole bars and do not touch it. Everything above the bass is ' +
+    'Hold the key\u2019s root, low, for two whole bars and do not touch it. Everything above the bass is ' +
       'moving at this tempo, and the bass is the one thing that is not.',
-    'Move to the C on the head of bar three and hold it for the bar. One step down, one note, ' +
-      'and nothing pushing into it.',
-    'Bar four is the B, held for three beats. The chord over it is B major, with the D sharp ' +
-      'in it, and the bass plays the root and leaves that third to the chord. Do not flatten ' +
-      'the chord to fit the bass.',
-    'Let the B go at the end of beat three and leave the next two sixteenths empty. Then, in ' +
-      'the last two sixteenths of the bar, D and C, straight down into the E on the head of the ' +
-      'next pass. The gap is what makes the pickup land, and those two notes are the only ' +
+    'Move to the key\u2019s sixth on the head of bar three, a minor sixth up, and hold it for ' +
+      'the bar. One move, one note, and nothing pushing into it.',
+    'Bar four is the key\u2019s fifth, a semitone down, held for three beats. The chord over it ' +
+      'is the major V, with the raised seventh of the key in it as its third, and the bass plays ' +
+      'the root and leaves that third to the chord. Do not flatten the chord to fit the bass.',
+    'Let the fifth go at the end of beat three and leave the next two sixteenths empty. Then, ' +
+      'in the last two sixteenths of the bar, the key\u2019s seventh and sixth, straight down into ' +
+      'the root on the head of the next pass. The gap is what makes the pickup land, and those two notes are the only ' +
       'movement in four bars.',
-    'Roots only until the pickup. The E under the E minor, the C under the C, the B under ' +
-      'the B, and nothing else for fifteen beats. The tension is all in the chords and the ' +
+    'Roots only until the pickup. The root of the i, of the VI and of the V, each under its ' +
+      'own chord, and nothing else for fifteen beats. The tension is all in the chords and the ' +
       'drums, and the bass is the floor they stand on.',
     'Keep every note clean and let it ring to its full length. Three bars of nothing and one ' +
       'bar of everything is the whole figure; a sub that moves more than this is a bass line.',

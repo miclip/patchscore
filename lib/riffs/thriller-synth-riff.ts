@@ -31,8 +31,8 @@ export const thrillerSynthRiff: Riff = {
     'Accent the first note and play everything after it under that. One fixed point is what ' +
       'lets the ear hear the rest as pushed.',
     'Keep the notes short and even. The gaps belong to the drums.',
-    'Sit it in the middle of the register, around C3 to C4. Down there it interlocks with the ' +
-      'bass and the kit.',
+    'Sit it in the middle of the register and keep it tight: the root at the bottom and ' +
+      'nothing more than a fourth above it. Down there it interlocks with the bass and the kit.',
   ],
   request: {
     id: 'thriller-synth-riff',
