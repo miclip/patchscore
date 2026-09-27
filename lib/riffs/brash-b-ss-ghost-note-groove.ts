@@ -49,19 +49,22 @@ export const brashBassGhostNoteGroove: Riff = {
   technique: [
     'Eight strikes a bar and only two of them are played hard: the bar head, and the sixteenth ' +
       'before beat four. The other six are ghosts, struck at about a third of the weight.',
-    'Most of those eight are the same note. Bars one and two are G, bars three and four are C, ' +
-      'and the only pitches that move are the two sixteenths at the end of bar two and bar four.',
-    'Bar two ends on Bb then A, walking into the C. Bar four ends on A then F, walking back to ' +
-      'the G. Those four notes are the whole melodic content of the figure.',
+    'Most of those eight are the same note. Bars one and two are the key’s root, bars three and ' +
+      'four are its fourth, and the only pitches that move are the two sixteenths at the end of ' +
+      'bar two and bar four.',
+    'Bar two ends on the third then the second, walking up into the fourth. Bar four ends on the ' +
+      'second then the seventh below the root, walking back up a tone to the root. Those four ' +
+      'notes are the whole melodic content of the figure.',
     'Play the ghosts with the same finger and the same motion as the accents, just lighter. A ' +
       'ghost played as a shorter note is a different articulation; what is wanted is the same ' +
       'note quieter.',
     'Keep every strike short. The gap between a ghost and the next strike is what makes the ' +
       'accent land, and a bass held through the gaps sounds like one long note with bumps in it.',
-    'Never play E natural. It belongs to the major key, and one of them in a groove this ' +
-      'repetitive is the only thing anyone will hear.',
-    'Keep the line between F2 and C3. The figure is a groove at the bottom of the track and ' +
-      'nothing in it needs to climb.',
+    'Never raise the sixth. The raised sixth belongs to the major key, and one of them in a ' +
+      'groove this repetitive is the only thing anyone will hear.',
+    'Keep the line inside the fifth it is written in, from the seventh below the root up to the ' +
+      'fourth. The figure is a groove at the bottom of the track and nothing in it needs to ' +
+      'climb.',
   ],
   request: {
     id: 'brash-b-ss-ghost-note-groove',

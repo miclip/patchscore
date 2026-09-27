@@ -58,23 +58,24 @@ export const synthGongDecaySpacedStrikes: Riff = {
   bpm: { min: 60, max: 84, default: 72 },
   key: 'D minor',
   technique: [
-    'Seven strikes in eight bars, and none of the first six lands on a beat you would count. ' +
-      'Strike, then wait until the sound has gone, then strike again. What you are playing is ' +
-      'the space.',
-    'The waits get shorter as it goes: a bar and a half, then a bar and a quarter, then a bar, ' +
-      'then less. Nothing about the pitches makes that happen. The crowding is the whole shape.',
-    'The last strike is the only one on a bar head, at bar seven, and it holds for two bars. ' +
-      'Everything before it has been early or late by design, so the one predictable arrival is ' +
-      'the end.',
-    'The pitches are D, A, the D above, Bb, A, F, and D again. Low root, its fifth, its octave, ' +
-      'then the flat sixth, and back down. Each is struck once and never repeated inside its own ' +
-      'decay.',
+    'Seven strikes in eight bars. Strike, then wait until the sound has gone, then strike again. ' +
+      'What you are playing is the space.',
+    'The waits get shorter as it goes: a bar and a half, then a bar and a quarter, then a little ' +
+      'over a bar, then less. Nothing about the pitches makes that happen. The crowding is the ' +
+      'whole shape.',
+    'The last strike lands on the head of bar seven and holds for two bars. Only the first ' +
+      'strike shared a bar head with it; every one between drifted across the bar, so the return ' +
+      'to one is the end.',
+    'The pitches are the low root, its fifth, its octave, then the flat sixth, the fifth, the ' +
+      'third, and the root again. Each is struck once and never repeated inside its own decay.',
     'Let every strike ring all the way out. If the next one arrives while the last is still ' +
       'sounding, the two become a chord and the figure stops being a gong.',
-    'Never play E while the D minor is sounding. Against a D still ringing from two bars back it ' +
-      'beats rather than colours, and it is the note a hand reaches for to fill a gap.',
-    'Keep the whole figure between D2 and D3. A gong that climbs stops reading as one struck ' +
-      'thing and starts reading as a melody.',
+    'Never play the key’s second while the i is sounding. Against a root still ringing from two ' +
+      'bars back it beats rather than colours, and it is the note a hand reaches for to fill a ' +
+      'gap.',
+    'Keep the whole figure inside the octave it is written in, from the low root to the one ' +
+      'above. A gong that climbs stops reading as one struck thing and starts reading as a ' +
+      'melody.',
   ],
   request: {
     id: 'synth-gong-decay-spaced-strikes',

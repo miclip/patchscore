@@ -48,20 +48,22 @@ export const octaviaOctaveAnswerLead: Riff = {
   key: 'A minor',
   technique: [
     'A five-note phrase in bars one and two, then the same phrase an octave lower in bars three ' +
-      'and four. Same notes, same order, same rhythm. Only the octave changes.',
-    'The phrase is A, C, B, G, E, with the C short and everything after it longer. Start on the ' +
+      'and four. Same notes, same order, same rhythm, and until the last note only the octave ' +
+      'changes.',
+    'The phrase is the root, the third, the second, the seventh a tone below the root, and the ' +
+      'key’s fifth under that, with the third short and everything after it longer. Start on the ' +
       'bar head and let the last note hold through bar two.',
-    'Change one note in the answer and only one: the last. The statement ends on E, which leaves ' +
-      'it hanging; the answer ends on A and stays there. Play both endings the same and the two ' +
-      'bars sound like a repeat rather than a reply.',
+    'Change one note in the answer and only one: the last. The statement ends on the fifth, ' +
+      'which leaves it hanging; the answer ends on the root and stays there. Play both endings ' +
+      'the same and the two bars sound like a repeat rather than a reply.',
     'Do not play the answer quieter. The octave is what makes it an answer, and adding a ' +
       'dynamic on top gives the ear two reasons and hides which one is working.',
     'Let bars two and four breathe. The phrase is five notes in two bars and the rest is silence, ' +
       'which is how the answer arrives as a separate thing rather than as a continuation.',
-    'Never play G sharp. It is the raised seventh, and one of them turns a figure that stays ' +
-      'still into one that is on its way somewhere.',
-    'Keep it between G3 and C5. Both statements sit inside that, and the low one should still ' +
-      'read as a lead rather than as a bass line.',
+    'Never raise the seventh. One raised seventh turns a figure that stays still into one that ' +
+      'is on its way somewhere.',
+    'Keep it inside the octave and a fourth it is written in. Both statements sit inside that, ' +
+      'and the low one should still read as a lead rather than as a bass line.',
   ],
   request: {
     id: 'octavia-octave-answer-lead',

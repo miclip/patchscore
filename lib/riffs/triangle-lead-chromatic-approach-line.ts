@@ -52,22 +52,26 @@ export const triangleLeadChromaticApproachLine: Riff = {
   key: 'G minor',
   technique: [
     'Four strikes a bar, on the one, the "and" of two, three and the "and" of four. The first ' +
-      'three are tones of the chord. The fourth is the semitone below the next bar’s first ' +
-      'note, and the next bar’s first note is where it is going.',
-    'Bar one, G minor: G, Bb, D, D. Bar two, Eb: Eb, D, Bb, B. Bar three, C minor: C, Eb, G, ' +
-      'C sharp. Bar four, D: D, F sharp, A, F sharp. Then G again, and the F sharp was ' +
-      'pointing at it.',
-    'The B, the C sharp and the F sharp at the ends of the bars are not in G minor. Play them ' +
-      'anyway, and play them short and quiet, an eighth each, leaning into the bar head they ' +
-      'lead to. A note outside the key that lands on one inside it is an arrival.',
+      'three are the chord’s own notes, all but one major seventh in bar two. The fourth is the ' +
+      'semitone below the next bar’s first note, and the next bar’s first note is where it is ' +
+      'going.',
+    'Bar one, the i: root, third, fifth, and the fifth again. Bar two, the VI: its root, its ' +
+      'major seventh, its fifth, then the raised third of the key. Bar three, the iv: its root, ' +
+      'third and fifth, then the raised fourth of the key. Bar four, the V: its root, its third, ' +
+      'its fifth, then its third again an octave lower. Then the i again, and that last note, ' +
+      'the raised seventh, was pointing at it.',
+    'The raised third, the raised fourth and the raised seventh at the ends of the bars are not ' +
+      'in the key. Play them anyway, and play them short and quiet, an eighth each, leaning into ' +
+      'the bar head they lead to. A note outside the key that lands on one inside it is an ' +
+      'arrival.',
     'The bar head is the loud one. The approach note before it is the quiet one, and the ' +
       'distance between those two weights is what makes the semitone sound like a step up ' +
       'onto something.',
     'Hold each note to the next strike. The approach notes in particular run straight into ' +
       'the bar head; a gap there and the semitone is a wrong note, no gap and it is a lead-in.',
-    'The D chord is major, and its third is F sharp. Never play F natural while it is ' +
-      'sounding. The two F sharps in that bar are the chord’s own note and the approach to G, ' +
-      'and F natural against either is the arrival undone.',
+    'The V is major, and its third is the raised seventh. Never play the key’s own seventh while ' +
+      'it is sounding. The two raised sevenths in that bar are the chord’s own note and the ' +
+      'approach to the root, and the natural seventh against either is the arrival undone.',
   ],
   request: {
     id: 'triangle-lead-chromatic-approach-line',

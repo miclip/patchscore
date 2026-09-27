@@ -52,25 +52,28 @@ export const terrorBassFlatTwoCadenceLine: Riff = {
   bpm: { min: 120, max: 140, default: 130 },
   key: 'E phrygian',
   technique: [
-    'Three bars of E minor, one bar of F major, and the F is a semitone above the E. The ' +
-      'figure is the fall from the F back to the E, and everything before it is there so the ' +
-      'fall has something to fall from.',
-    'Bar one: E, B, G, A. Bar two: E, G, B, C. Bar three: E, A, G, B. Each bar strikes the ' +
-      'one, the "and" of two, beat three and the "and" of four, and nothing climbs above the ' +
-      'C. Staying down there for three bars is what makes the fourth bar sound like it lifts.',
-    'Bar four is the F: F, the C above it, the F above that, and then E on beat four. The E ' +
-      'is on the beat, not the "and", and it is the only note in the figure that lands on ' +
-      'beat four. Hold it to the bar line and let the next pass restrike the low E under it.',
-    'The octave is spent once, here and nowhere else. Bars one to three never rise past the ' +
-      'C, so the F above and the E after it are the only notes in the figure that leave the ' +
-      'low register. That is what makes them read as the ending rather than as more line.',
-    'The bar head is the loudest note in bars one to three. In bar four the loudest is the E ' +
-      'on beat four. Play the F above it as the note that gives way, and the E as the note ' +
-      'that takes over.',
-    'Hold each note to the next strike. The line is legato; the one place it should feel ' +
-      'like a step and not a slide is the F to the E, and that comes from the accent, not a ' +
-      'gap.',
-    'Never play F sharp. Raise the second and this is E minor, and the fourth bar has ' +
+    'Three bars of the i, one bar of the bII, and its root is a semitone above the key’s root. ' +
+      'The figure is the fall from the flat second back to the root, and everything before it is ' +
+      'there so the fall has something to fall from.',
+    'Bar one: root, fifth, third, fourth. Bar two: root, third, fifth, flat sixth. Bar three: ' +
+      'root, fourth, third, fifth. Each bar strikes the one, the "and" of two, beat three and ' +
+      'the "and" of four, and nothing climbs above the flat sixth. Staying down there for three ' +
+      'bars is what makes the fourth bar sound like it lifts.',
+    'Bar four is the bII: its root, its fifth above, its octave above that, and then the key’s ' +
+      'root, a semitone down, on beat four. That root is on the beat, not the "and", and it is ' +
+      'the only note in the figure that lands on beat four. Hold it to the bar line and let the ' +
+      'next pass restrike the low root an octave under it.',
+    'The octave is spent once, here and nowhere else. Bars one to three never rise past the flat ' +
+      'sixth, so the high flat second and the root after it are the only notes in the figure ' +
+      'that leave the low register. That is what makes them read as the ending rather than as ' +
+      'more line.',
+    'The bar head is the loudest note in bars one to three. In bar four the loudest is the root ' +
+      'on beat four. Play the flat second above it as the note that gives way, and the root as ' +
+      'the note that takes over.',
+    'Hold each note to the next strike. The line is legato; the one place it should feel like a ' +
+      'step and not a slide is the flat second to the root, and that comes from the accent, not ' +
+      'a gap.',
+    'Never raise the second. Raised, it makes this an ordinary minor key, and the fourth bar has ' +
       'nowhere to fall from.',
   ],
   request: {

@@ -51,20 +51,21 @@ export const celestialConvergingVoicesPad: Riff = {
   bpm: { min: 60, max: 84, default: 72 },
   key: 'A major',
   technique: [
-    'Two notes, and the figure is the distance between them closing. Start an octave apart, A ' +
-      'and the A above, and hold both for two bars.',
-    'The lower note moves and the upper one waits. Over the F sharp minor, lift the lower A ' +
-      'to C sharp: a sixth. Over the D, lift it to D: a fifth. The upper A does not move for ' +
-      'six bars.',
-    'Over the E, both move: the lower D up to E, and the upper A down to G sharp for the first ' +
-      'time in the figure. A third. That is the arrival, and it is the only time the top ' +
-      'voice moves.',
+    'Two notes, and the figure is the distance between them closing. Start an octave apart, the ' +
+      'root and the root above, and hold both for two bars.',
+    'The lower note moves and the upper one waits. Over the vi, lift the lower note to the key’s ' +
+      'third: a sixth. Over the IV, lift it a semitone to the fourth: a fifth. The upper note ' +
+      'does not move for six bars.',
+    'Over the V, both move: the lower note up a tone to the fifth, and the upper one down a ' +
+      'semitone to the seventh for the first time in the figure. A third. That is the arrival, ' +
+      'and it is the only time the top voice moves.',
     'Enter each note on the head of its chord and hold it to the next change. No gaps and no ' +
       'restrikes. Where a voice does not move, keep the key down across the change.',
     'Keep the lower voice the lower. The distance closes from an octave to a sixth, a fifth ' +
       'and a third, and the two never cross; the ear follows the closing.',
-    'After the third, the next pass opens back out to the octave. Let the G sharp resolve up ' +
-      'to A and the E fall back to the low A at the same moment, and the figure has breathed.',
+    'After the third, the next pass opens back out to the octave. Let the seventh resolve up to ' +
+      'the root and the fifth fall back to the low root at the same moment, and the figure has ' +
+      'breathed.',
   ],
   request: {
     id: 'celestial-converging-voices-pad',

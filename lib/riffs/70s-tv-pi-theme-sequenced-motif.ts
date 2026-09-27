@@ -49,18 +49,18 @@ export const seventiesTvPiThemeSequencedMotif: Riff = {
   key: 'D minor',
   technique: [
     'One shape, four notes, played three times: up a third, up a third, back down a third. Bar ' +
-      'one is D F A F, bar two is C E G E, bar three is Bb D F D. Same fingering every time, ' +
-      'one step lower.',
+      'one starts on the root, bar two on the seventh below it, bar three on the sixth below ' +
+      'that, each a triad on its own chord. Same fingering every time, one step lower.',
     'The four notes sit on the bar head, the last sixteenth of beat one, the "and" of two and ' +
       'the last sixteenth of beat three. That placement is the shape as much as the pitches are; ' +
       'play it straight and the theme disappears.',
-    'Bar four does not continue. The shape turns over and falls, A down to F down to C sharp, ' +
-      'and then steps up a semitone onto D and holds. Three statements and a break is a theme; ' +
-      'four statements is an exercise.',
-    'The C sharp is the one note the key does not own, and it is the whole cadence. Land on it ' +
-      'late in the bar and let it lean up into the D rather than sliding.',
-    'Never play C natural while the last chord is sounding. It is the note the C sharp replaces, ' +
-      'and one of them takes the ending out of the figure.',
+    'Bar four does not continue. The shape turns over and falls, the fifth down to the third ' +
+      'down to the raised seventh, and then steps up a semitone onto the root and holds. Three ' +
+      'statements and a break is a theme; four statements is an exercise.',
+    'The raised seventh is the one note the key does not own, and it is the whole cadence. Land ' +
+      'on it late in the bar and let it lean up into the root rather than sliding.',
+    'Never play the key’s own seventh while the last chord is sounding. It is the note the ' +
+      'raised seventh replaces, and one of them takes the ending out of the figure.',
     'Play the first note of each bar the loudest and let the other three fall away. The theme is ' +
       'heard as three descending arrivals, not twelve even notes.',
   ],

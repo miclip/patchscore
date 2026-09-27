@@ -70,16 +70,16 @@ export const sawteethDuoDancerCrossingStabs: Riff = {
     'The name says sawteeth, and each voice is one: a straight ramp across the bar, then the ' +
       'snap back at the bar line. The top voice ramps down and snaps up; the bottom ramps up ' +
       'and snaps down. Never smooth the snap. It is the tooth.',
-    'Over the B minor the first pair is D and F sharp; over the G, E and G; over the E minor, ' +
-      'G and B; over the A, C sharp and E. Every stab after the first is a step on the way ' +
-      'across, and none of them needs to be a chord tone.',
+    'Over the i the first pair is the chord’s third on top and its fifth a sixth below, and the ' +
+      'same over the iv and the VII; over the VI it is the chord’s sixth on top and its root ' +
+      'below. Every stab after the first is a step on the way across, and none of them needs to ' +
+      'be a chord tone.',
     'Every stab is two sixteenths and stops. Strike both notes at the same instant, even at ' +
       'the crossing where the hands are on top of each other. Two notes a hair apart are two ' +
       'lines, and the dance is one pair.',
     'The one is the loud stab, beat three the next. The other four are lighter and equal, so ' +
       'the three-three-two is felt and not counted.',
-    'Never play A sharp. It is the leading tone of B minor, and one of them pulls the dance ' +
-      'home. It never goes home.',
+    'Never raise the seventh. The leading tone pulls the dance home, and it never goes home.',
   ],
   request: {
     id: 'sawteeth-duo-dancer-crossing-stabs',

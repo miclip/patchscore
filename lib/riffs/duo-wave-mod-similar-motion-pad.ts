@@ -56,12 +56,13 @@ export const duoWaveModSimilarMotionPad: Riff = {
     'The gap between them opens as they climb: a third over the first chord, a fourth over the ' +
       'second, a sixth over the third, an octave over the last. The bottom note rises a little ' +
       'each time and the top note rises more.',
-    'The pairs are E and G, then G and C, then B and G, then D and the D above it. Press both ' +
-      'together, hold them until the chord changes, then move both at once.',
+    'The pairs are the key’s root and third, then its third and sixth, then its fifth and the ' +
+      'third above it, then the seventh and the seventh above it. Press both together, hold them ' +
+      'until the chord changes, then move both at once.',
     'Move the bottom note first if you cannot move them together. A top note that arrives early ' +
       'sounds like a mistake; a bottom note that arrives early sounds like the chord changing.',
-    'Never play D sharp. It is the raised seventh, and under a held pair it leans the whole thing ' +
-      'toward a cadence this figure never makes.',
+    'Never raise the seventh. Under a held pair it leans the whole thing toward a cadence this ' +
+      'figure never makes.',
     'Slow attack and long release. Each pair should still be swelling when you move to the next, ' +
       'so the widening is heard as one sound opening rather than four chords.',
   ],

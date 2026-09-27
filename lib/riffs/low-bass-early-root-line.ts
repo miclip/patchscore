@@ -51,18 +51,20 @@ export const lowBassEarlyRootLine: Riff = {
     'Four strikes a bar: the root on the one, the octave on the "and" of two, the fifth on ' +
       'three, and on the "and" of four the root of the chord that comes next. That last note ' +
       'is the figure. The bass arrives an eighth before the chord does.',
-    'Bar one is C minor: C, the C above it, G, then Ab. Bar two is Ab: Ab, the octave, Eb, ' +
-      'then the low Eb. Bar three is Eb: Eb, the octave, Bb, then G. Bar four is G: G, the ' +
-      'octave, D, then C, which is where the pass starts again.',
+    'Bar one, the i: the root, the octave above it, the fifth, then up a semitone to the VI’s ' +
+      'root. Bar two, the VI: its root, the octave, the fifth, then that fifth an octave down, ' +
+      'which is the III’s root. Bar three, the III: its root, the octave, the fifth, then down a ' +
+      'minor third to the V’s root. Bar four, the V: its root, the octave, the fifth, then down ' +
+      'a ninth to the key’s root, which is where the pass starts again.',
     'The bar head is the loud one. Lean on the "and" of four as well, a little under the bar ' +
       'head, so the early root is heard as an arrival and the bar head that follows it as ' +
       'confirmation.',
     'Hold every note to the next strike. The line is legato at the bottom, and the early root ' +
       'runs straight into the bar head, which restrikes the same pitch.',
-    'The G chord is major. Its third is B natural, so never play Bb while it is sounding; the ' +
-      'Bb belongs to the Eb bar and nowhere else.',
-    'Keep the whole line between C2 and Ab3. Nothing here needs to be higher, and a sub that ' +
-      'climbs stops being one.',
+    'The V is major. Its third is the raised seventh of the key, so never play the key’s own ' +
+      'seventh while it is sounding; that note belongs to the III bar and nowhere else.',
+    'Keep the whole line where it is written, from the low root up to the VI’s octave at the ' +
+      'top. Nothing here needs to be higher, and a sub that climbs stops being one.',
   ],
   request: {
     id: 'low-bass-early-root-line',

@@ -48,17 +48,20 @@ export const sawLeadQuestionAndAnswerLine: Riff = {
   key: 'D minor',
   technique: [
     'Two bars of question, two of answer, and the answer is the question upside down. Bar one ' +
-      'climbs D, F, A, D, on the one, the "and" of two, three and the "and" of four. Bar two ' +
-      'is one note, the F above, held for the whole bar.',
-    'Bar three falls from that F: F, D, A, F, on the same four strikes. Bar four is one note, ' +
-      'E, held for the whole bar. Same rhythm as the first half, the other direction.',
-    'The two held notes are the figure. Lean into the high F as the top of the question and ' +
-      'lean harder into the E as the bottom of the answer, and then let the next pass start ' +
-      'on the D a step below it.',
-    'Hold each note to the next strike so the climb and the fall are lines and not steps. ' +
-      'Hold the E to the bar line, and let the D that opens the next pass take over from it.',
-    'The last chord is A major, and its third is C sharp. Never play C natural while it is ' +
-      'sounding; the E is its fifth, and the C sharp is what pulls the next pass back to D.',
+      'climbs the root, third, fifth and octave, on the one, the "and" of two, three and the ' +
+      '"and" of four. Bar two is one note, the key’s third above that octave, held for the whole ' +
+      'bar.',
+    'Bar three falls from that note: third, root, fifth, third, on the same four strikes. Bar ' +
+      'four is one note, the second, a semitone below, held for the whole bar. Same rhythm as ' +
+      'the first half, the other direction.',
+    'The two held notes are the figure. Lean into the high third as the top of the question and ' +
+      'lean harder into the second as the bottom of the answer, and then let the next pass start ' +
+      'on the root a step below it.',
+    'Hold each note to the next strike so the climb and the fall are lines and not steps. Hold ' +
+      'the second to the bar line, and let the root that opens the next pass take over from it.',
+    'The V is major, and its third is the raised seventh of the key. Never play the key’s own ' +
+      'seventh while it is sounding; the held second is the V’s fifth, and the raised seventh is ' +
+      'what pulls the next pass back to the root.',
     'If the sound moves on its own while a note is held, the two held bars are where it ' +
       'shows. Keep them the full bar, and keep the climbing and falling bars plain.',
   ],
