@@ -46,18 +46,20 @@ export const bellbounceSparseBellPattern: Riff = {
   bpm: { min: 88, max: 108, default: 96 },
   key: 'A major',
   technique: [
-    'Four chords, eight bars, one bell strike a chord, on beat three. The delay does the rest.',
+    'Four chords, eight bars, one bell strike a chord and two over the third, always on beat ' +
+      'three. The delay does the rest.',
     'Two notes a bar at most. The delay supplies everything else, and anything denser turns ' +
       'the repeats into a wash instead of a pattern.',
     'Enter two beats in. The chord has changed, the delay from the last bar has thinned, and ' +
       'then the bell strikes. The repeats fill the front of the next bar.',
-    'Over the first chord the note is B, the ninth. Over the second it is C#, the fifth. The ' +
-      'delay holds each one against the chord, so choose notes that can be held.',
-    'Never play D while the first chord is sounding. It is the avoid note against the third, ' +
-      'and the delay repeats will hold it there for the rest of the chord.',
-    'Over the second half of the cycle, C# falls to B over the D major seventh, the B a bar ' +
-      'after the C#, then A over the suspended E. The pattern is the rhythm; the notes follow ' +
-      'the chord.',
+    'Over the first chord the note is the key’s second, the chord’s ninth. Over the second it is ' +
+      'the key’s third, the chord’s fifth. The delay holds each one against the chord, so choose ' +
+      'notes that can be held.',
+    'Never play the key’s fourth while the first chord is sounding. It is the avoid note against ' +
+      'the third, and the delay repeats will hold it there for the rest of the chord.',
+    'Over the second half of the cycle, the key’s third falls a tone to the second over the IV ' +
+      'major seventh, the second a bar after the third, then the root over the suspended V. The ' +
+      'pattern is the rhythm; the notes follow the chord.',
     'Set the delay to a dotted eighth and let the repeats decay over a bar. The pattern is ' +
       'written for that spacing and sounds cluttered at anything shorter.',
   ],

@@ -66,22 +66,25 @@ export const mirrorInteriorTwoHandSplit: Riff = {
       'play; right of it the sound is arpeggiated, and holding a chord there sets the ' +
       'arpeggiator running through it. You are playing two instruments at once, and only one ' +
       'of them is arpeggiating.',
-    'Left hand, one shape a bar: root, root, third, root. On beat one, the and of two, beat ' +
-      'three and the and of four, and hold each note until the next. E minor for two bars is ' +
-      'E, E, G, E, low on the keyboard.',
-    'Right hand, one voicing a chord, held for the two bars. E, G and B above it for the E ' +
-      'minor. Press it on the bar head and leave it alone; the box does the moving on that ' +
+    'Left hand, one shape a bar: a low note, the same again, the note a third above it, and ' +
+      'back. On beat one, the and of two, beat three and the and of four, and hold each note ' +
+      'until the next. For the two bars of the i it is root, root, third, root, low on the ' +
+      'keyboard.',
+    'Right hand, one voicing a chord, held for the two bars. The root, third and fifth of the i, ' +
+      'above it. Press it on the bar head and leave it alone; the box does the moving on that ' +
       'side, and your hand does none.',
-    'Then C: the bass drops to C, C, E, C, and the right hand lifts the top note only, so the ' +
-      'chord is E, G and the C above. Then G: the bass drops again to B, B, D, B, and the ' +
-      'voicing becomes G, B and D. Then D: the bass drops to A, A, C sharp, A, and the voicing ' +
-      'is A, D and F sharp on top.',
-    'Listen to the two outside notes. The bass falls a step or two at every chord, E, C, B, A, ' +
-      'and the top of the arpeggio rises at every chord, B, C, D, F sharp. The hands move in ' +
-      'opposite directions, and that is the mirror.',
-    'The C sharp under the D is the one note outside E minor. Reach for it; the third of D is ' +
-      'F sharp, and this bass goes to the seventh instead, which is what makes the last two ' +
-      'bars lean back towards the E minor on the repeat.',
+    'Then the VI: the bass drops a major third to that chord’s root, with its third above, and ' +
+      'the right hand lifts the top note only, a semitone, so the voicing is the key’s root, ' +
+      'third and sixth. Then the III: the bass drops a semitone to the key’s fifth, with the ' +
+      'seventh above it, and the voicing becomes the III’s own root, third and fifth. Then the ' +
+      'VII: the bass drops a tone to the key’s fourth, with the raised sixth above it, and the ' +
+      'voicing is the VII’s fifth, root and third, with the third on top.',
+    'Listen to the two outside notes. The bass falls at every chord, a major third, a semitone, ' +
+      'a tone, and the top of the arpeggio rises at every chord, a semitone, a tone, a major ' +
+      'third. The hands move in opposite directions, and that is the mirror.',
+    'The raised sixth under the VII is the one note outside the key. Reach for it: the bass ' +
+      'climbs to the chord’s major seventh instead of its third, which is what makes the last ' +
+      'two bars lean back towards the i on the repeat.',
     'All the movement you play is in the left hand. All the movement you hear on the right is ' +
       'the arpeggiator. If the right hand ever feels busy, it is doing too much: one press a ' +
       'chord is the whole of its part.',

@@ -1435,8 +1435,8 @@ describe('the Muse Runner floating-arrival lead (§5A.5/#566/#603/#623)', () => 
     const last = riff.hook.notes.at(-1)
     expect(last).toEqual({ step: 745, degree: 5, octave: 1, len: 32 })
     expect(notes.at(-1)?.note).toBe('C#6')
-    expect(riff.technique.some((p) => p.includes('end on G# instead and it hands back'))).toBe(true)
-    expect(riff.technique.some((p) => p.includes('on the G# unresolved'))).toBe(true)
+    expect(riff.technique.some((p) => p.includes('end on the second instead and it hands back'))).toBe(true)
+    expect(riff.technique.some((p) => p.includes('on the second unresolved'))).toBe(true)
   })
 
   it('lets the last note ring eight steps past the end of the hook, and nothing follows it', () => {
@@ -2564,7 +2564,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
       const last = riff.hook.notes.at(-1)
       if (last === undefined) throw new Error('no notes')
       expect(last.step + last.len - 1).toBe(8 * STEPS_PER_BAR)
-      expect(riff.technique.some((p) => p.includes('Cut the F short'))).toBe(true)
+      expect(riff.technique.some((p) => p.includes('Cut the third short'))).toBe(true)
     })
 
     it('strikes the four entries across two passes of the grid, and slurs every other move', () => {
@@ -2582,7 +2582,7 @@ describe('the eleven keep what the schema cannot state (#569)', () => {
     it('says the left hand in prose, since harmony carries chord identity and not a voicing', () => {
       expect(riff.technique.some((p) => p.includes('root and fifth only'))).toBe(true)
       expect(riff.technique.some((p) => p.includes('on the beat'))).toBe(true)
-      expect(riff.technique.some((p) => p.includes('never play E natural'))).toBe(true)
+      expect(riff.technique.some((p) => p.includes('never raise the second'))).toBe(true)
       expect(riff.technique.join(' ')).not.toMatch(/Bars 5 to 8|Enter late/)
     })
   })

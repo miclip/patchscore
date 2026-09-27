@@ -49,8 +49,8 @@ export const moog55StringsSuspensionWriting: Riff = {
     'Four chords, eight bars, and the line covers all of them. The first two are suspended: ' +
       'each holds its suspension for a bar and resolves in the second, and the line does the ' +
       'same. The last two are held notes.',
-    'Inside each chord, every move is a step, and it is slurred, not struck. The D over the ' +
-      'first chord steps up to E; the G over the second steps up to A. Each resolution is ' +
+    'Inside each chord, every move is a step, and it is slurred, not struck. Over each of the ' +
+      'first two chords, the chord’s second steps up a tone to its third. Each resolution is ' +
       'played off the held note without a new attack, so a chord gets one entry and the line ' +
       'moves inside it.',
     'The suspension resolves inside the second bar of each chord, never the first. That is what ' +
@@ -58,12 +58,11 @@ export const moog55StringsSuspensionWriting: Riff = {
       'then given.',
     'Enter two beats late. The pad has already moved when the line comes in, and the wait is ' +
       'what makes a held string note sound placed.',
-    'Never play E while the first chord is still suspended, and never A while the second is. ' +
-      'Each is the third the suspension is withholding, and playing it early gives the ' +
-      'resolution away.',
-    'Over the last two chords, hold one note each, two beats late and a step apart: B over the ' +
-      'A minor seventh, then C over the suspended G. The line barely moves and the harmony ' +
-      'does the work.',
+    'Never play a chord’s third while that chord is still suspended. It is the note the ' +
+      'suspension is withholding, and playing it early gives the resolution away.',
+    'Over the last two chords, hold one note each, two beats late and a step apart: the key’s ' +
+      'seventh over the vi seventh, then the root over the suspended V. The line barely moves ' +
+      'and the harmony does the work.',
     'Slow attack, slow release. Every note should still be swelling when the next chord ' +
       'arrives under it.',
   ],

@@ -42,19 +42,19 @@ export const softOrchestraSlowChanges: Riff = {
   bpm: { min: 56, max: 74, default: 64 },
   key: 'G minor',
   technique: [
-    'The top note stays on D while the harmony moves underneath it. That common tone is the ' +
-      'whole device: the pad does the work and the right hand barely moves. What changes is ' +
-      'what the D is. Over the G minor it is the fifth, plain. Over the E flat it is the major ' +
-      'seventh, and the same note has gone soft. Over the C minor it is the ninth, and it is ' +
+    'The top note stays on the key’s fifth while the harmony moves underneath it. That common ' +
+      'tone is the whole device: the pad does the work and the right hand barely moves. What ' +
+      'changes is what the note is. Over the i it is the fifth, plain. Over the VI it is the ' +
+      'major seventh, and the same note has gone soft. Over the iv it is the ninth, and it is ' +
       'floating. One note, three colours, and you moved nothing.',
-    'The D is one note, not three. It enters with the first chord and is tied through the ' +
-      'second and into the third: no new attack anywhere, however much the chords move under it.',
-    'Over the C minor chord, hold the D and step down to C late, on beat three of the second ' +
-      'bar. Let the C ring into the next chord, where it is the seventh.',
-    'Over the suspended D, enter on G two beats in and resolve it down to F# on beat three of ' +
-      'the last bar.',
-    'Never play F natural while the suspended D is sounding. It is a minor third against the ' +
-      'F# the suspension resolves to.',
+    'It is one note, not three. It enters with the first chord and is tied through the second ' +
+      'and into the third: no new attack anywhere, however much the chords move under it.',
+    'Over the iv, hold it and step down a tone to the chord’s root late, on beat three of the ' +
+      'second bar. Let that note ring into the next chord, where it is the seventh.',
+    'Over the suspended V, enter on the key’s root two beats in and resolve it down a semitone ' +
+      'to the raised seventh on beat three of the last bar.',
+    'Never play the key’s own seventh while the suspended V is sounding. It is the chord’s minor ' +
+      'third, against the major third the suspension resolves to.',
   ],
   request: {
     id: 'soft-orchestra-slow-changes',

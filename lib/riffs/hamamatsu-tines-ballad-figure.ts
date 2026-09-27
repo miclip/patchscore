@@ -63,22 +63,23 @@ export const hamamatsuTinesBalladFigure: Riff = {
       'player’s, and on a tine a root in the right hand only doubles it. The fifth is in ' +
       'every chord here and tells you nothing about which one is sounding. Those two notes ' +
       'are the chord’s quality, and they are enough.',
-    'Four chords, a bar each: E flat major seventh, C minor seventh, F minor seventh, B flat ' +
-      'seventh. G and D, then B flat and E flat, then A flat and E flat, then A flat and D.',
-    'Turn the pair over as you go. The third is on the bottom for the first chord, the ' +
-      'seventh for the second, the third for the third, the seventh for the last. Do that and ' +
-      'each hand-move is a step or a hold: the top goes D, E flat, E flat, D, and the bottom ' +
-      'G, B flat, A flat, A flat. Keep the third on the bottom every time and the hand jumps ' +
-      'a fourth at every change.',
-    'The last pair is a tritone, A flat under D. It is the one interval that says dominant ' +
-      'by itself, and on the repeat the A flat falls a semitone to G and the chord is home. ' +
-      'That is the whole cadence in one voice.',
+    'Four chords, a bar each: a major seventh on I, minor sevenths on vi and ii, and a dominant ' +
+      'seventh on V. In the key’s degrees the pairs are the third and the seventh, then the ' +
+      'fifth and the root, then the fourth and the root, then the fourth and the seventh.',
+    'Turn the pair over as you go. The third is on the bottom for the first chord, the seventh ' +
+      'for the second, the third for the third, the seventh for the last. Do that and the hand ' +
+      'barely moves: the top rises a semitone, holds, and falls back, and the bottom rises a ' +
+      'minor third, falls a tone and holds. Keep the third on the bottom every time and the hand ' +
+      'moves as far as the roots do at every change.',
+    'The last pair is a tritone, the key’s fourth under its seventh. It is the one interval that ' +
+      'says dominant by itself, and on the repeat the fourth falls a semitone to the third and ' +
+      'the chord is home. That is the whole cadence in one voice.',
     'Two strikes a bar, on one and on three, and hold each until the next. The pair lands ' +
       'with the bass, not after it: the root and the shell together are the chord, and apart ' +
       'they are two fragments.',
-    'Never play A flat while the first chord is sounding. It sits a semitone above the G the ' +
-      'shell is built on, and on a held tine it rubs for the whole bar. Over the next two ' +
-      'chords the same A flat is the shell.',
+    'Never play the key’s fourth while the first chord is sounding. It sits a semitone above the ' +
+      'third the shell is built on, and on a held tine it rubs for the whole bar. Over the last ' +
+      'two chords the same note is in the shell.',
     'Let every pair ring into the next. The sound has a long tail and the figure is written ' +
       'for it; a short release turns a ballad into a study.',
   ],

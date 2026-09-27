@@ -57,19 +57,23 @@ export const voxHumanaFourPartVoiceLeading: Riff = {
   technique: [
     'Four voices, four chords, two bars each, everything held. Each voice has its own line, ' +
       'and the line is what you are playing. The chords are what the four lines add up to.',
-    'From the A minor to the F, move one voice: the E steps up a semitone to F. The other three ' +
-      'stay exactly where they are. The chord changes its name and almost nothing happened.',
-    'From the F to the C, three voices come down a step and the C holds. The A in the bass ' +
-      'falls to G, the F falls to E, and the top A falls to G. Keep the C still and let the ' +
-      'others settle around it.',
-    'From the C to the E, three voices move a semitone and the E holds through. The G in the ' +
-      'bass rises to G sharp, the C falls to B, and the top G rises to G sharp. This is the ' +
-      'smallest change in the loop and the one that turns it.',
-    'On the repeat, both G sharps rise to A and the B rises to C, with the E still holding. ' +
-      'Every voice returns home by a semitone. No voice anywhere in the loop moves more than a ' +
-      'whole step.',
-    'Never play G natural while the E chord is sounding. The G sharp is the third of that ' +
-      'chord and the one note A minor does not own; a natural G against it collapses the lift.',
+    'From the i to the VI, move one voice: the key’s fifth steps up a semitone to the sixth. The ' +
+      'other three stay exactly where they are. The chord changes its name and almost nothing ' +
+      'happened.',
+    'From the VI to the III, three voices come down a step and the key’s third holds. The root ' +
+      'in the bass falls a tone to the seventh, the sixth falls a semitone to the fifth, and the ' +
+      'root on top falls a tone to the seventh. Keep the third still and let the others settle ' +
+      'around it.',
+    'From the III to the V, three voices move a semitone and the key’s fifth holds through. The ' +
+      'seventh in the bass rises to the raised seventh, the third falls to the second, and the ' +
+      'seventh on top rises to the raised seventh. This is the smallest change in the loop and ' +
+      'the one that turns it.',
+    'On the repeat, both raised sevenths rise to the root and the second rises to the third, ' +
+      'with the fifth still holding. Every voice returns home by a semitone. No voice anywhere ' +
+      'in the loop moves more than a whole step.',
+    'Never play the key’s own seventh while the V is sounding. The raised seventh is the third ' +
+      'of that chord and the one note the key does not own; the natural seventh against it ' +
+      'collapses the lift.',
     'Every voice enters on the bar head with its chord and holds until the chord moves. Slow ' +
       'attack, slow release, and let each chord still be swelling when the next arrives.',
   ],
