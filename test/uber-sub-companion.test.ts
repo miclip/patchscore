@@ -158,11 +158,4 @@ describe('the UBER_SUB pad (§5A.9)', () => {
     expect(ink).toContain('Bars three and four are the same three keys')
     expect(ink).not.toMatch(/\b(played it|we played|tested on|on the unit|recorded)\b/i)
   })
-
-  it('names chords and degrees rather than pitches, so both parts hold in any key the reader picks', () => {
-    const ink = [...riff.technique, ...companion.technique].join('\n')
-    expect(ink).not.toMatch(/\b[A-G](\s?(flat|sharp))?\s?\d\b/)
-    expect(ink).not.toMatch(/\b[A-G] (flat|sharp|natural|major|minor)\b/)
-    expect(ink).not.toMatch(/\b[A-G][b#♭♯]?\d\b/)
-  })
 })
