@@ -1,8 +1,8 @@
 import type { Riff } from '../core/riff'
 
 /**
- * §5A. **The Harp xd rolled chord**: four notes a sixteenth apart, bottom to top, all left down.
- * The roll starts before the bar line so the top note lands on the beat.
+ * §5A. **The Harp xd rolled chord**: four notes two sixteenths apart, bottom to top, all left
+ * down. The roll starts before the bar line so the top note lands on the beat.
  *
  * **Named after a factory patch, with a figure authored here** (§5A.5). The notes are this
  * library's own and the entry names no device (invariant 3).
