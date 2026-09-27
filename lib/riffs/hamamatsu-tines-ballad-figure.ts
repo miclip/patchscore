@@ -69,8 +69,10 @@ export const hamamatsuTinesBalladFigure: Riff = {
     'Turn the pair over as you go. The third is on the bottom for the first chord, the seventh ' +
       'for the second, the third for the third, the seventh for the last. Do that and the hand ' +
       'barely moves: the top rises a semitone, holds, and falls back, and the bottom rises a ' +
-      'minor third, falls a tone and holds. Keep the third on the bottom every time and the hand ' +
-      'moves as far as the roots do at every change.',
+      'minor third, falls a tone and holds. It works because each chord’s seventh is a step from ' +
+      'a note of the next pair, and turning the pair over lets the hand take that step. Keep the ' +
+      'third on the bottom every time and both notes leap at every change, even placed as close ' +
+      'as they go: down a major third, up a fourth, then up a tritone and a fourth.',
     'The last pair is a tritone, the key’s fourth under its seventh. It is the one interval that ' +
       'says dominant by itself, and on the repeat the fourth falls a semitone to the third and ' +
       'the chord is home. That is the whole cadence in one voice.',
