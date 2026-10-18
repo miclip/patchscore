@@ -8,6 +8,7 @@ import { anEndingAscentPad } from './an-ending-ascent-pad'
 import { bellbounceSparseBellPattern } from './bellbounce-sparse-bell-pattern'
 import { bladeRunnerBluesLead } from './blade-runner-blues-lead'
 import { blueMondayBass } from './blue-monday-bass'
+import { chameleonPlacedRestBass } from './chameleon-placed-rest-bass'
 import { detroitFunkAeolianMachineLoop } from './detroit-funk-aeolian-machine-loop'
 import { hamamatsuTinesBalladFigure } from './hamamatsu-tines-ballad-figure'
 import { moog55StringsSuspensionWriting } from './moog-55-strings-suspension-writing'
@@ -23,6 +24,7 @@ import { brokenToyMusicBoxStumble } from './broken-toy-music-box-stumble'
 import { cloudLevelSharedTopDrift } from './cloud-level-shared-top-drift'
 import { cluster5thParallelFifthsStack } from './cluster-5th-parallel-fifths-stack'
 import { harpXdRolledChord } from './harp-xd-rolled-chord'
+import { strangerThingsThemeHangingSeventhArp } from './stranger-things-theme-hanging-seventh-arp'
 import { squareDroneOneNoteFourChords } from './square-drone-one-note-four-chords'
 import { trillSynthOrnamentBeforeTheBeat } from './trill-synth-ornament-before-the-beat'
 import { hypnoAcidSixteenthLoop } from './hypno-acid-sixteenth-loop'
@@ -42,6 +44,7 @@ import { duotronicMoogtronsPedalAndLinePad } from './duotronic-moogtrons-pedal-a
 import { funkOrganEarlySixteenthStabs } from './funk-organ-early-sixteenth-stabs'
 import { harpCChordArpeggiatedHold } from './harp-c-chord-arpeggiated-hold'
 import { lowBassEarlyRootLine } from './low-bass-early-root-line'
+import { loveOnARealTrainOneStepSequence } from './love-on-a-real-train-one-step-sequence'
 import { sawLeadQuestionAndAnswerLine } from './saw-lead-question-and-answer-line'
 import { sawteethDuoDancerCrossingStabs } from './sawteeth-duo-dancer-crossing-stabs'
 import { terrorBassFlatTwoCadenceLine } from './terror-bass-flat-two-cadence-line'
@@ -74,15 +77,15 @@ import { uberSubDisplacedFifthRiff } from './uber-sub-displaced-fifth-riff'
  * §5A.5, and it is the rule that shapes this whole folder. A technique is found by the recording
  * it is famous from or the factory patch it is heard on, so the reference is in the title *and*
  * in the slug — `Riff.reference` is the one field both are checked against, and an entry that
- * named one reference and filed itself under another cannot parse. Nine entries are `record`
- * references and thirty-seven are `patch` references, and the kind decides where an entry
- * surfaces (#598): the nine are `/riffs`, and each of the thirty-seven is a page under the box
- * that ships its patch. See `RECORD_RIFFS`.
+ * named one reference and filed itself under another cannot parse. Thirteen entries are
+ * `record` references and forty-eight are `patch` references, and the kind decides where an
+ * entry surfaces (#598): the thirteen are `/riffs`, and each of the forty-eight is a page under
+ * the box that ships its patch. See `RECORD_RIFFS`.
  *
  * **The figures are ours.** Every hook below was written for this library to teach the technique
  * the reference stands for. A reader who wants the record should go and listen to the record.
  *
- * ## The nine records, which is not nine of the same thing
+ * ## The thirteen records, which is not thirteen of the same thing
  *
  * `blue-monday-bass` and `acid-tracks-line` are both monophonic sixteenth lines and are the pair
  * that proves the difference between two such parts is *which sixteenths are silent* rather than
@@ -111,6 +114,24 @@ import { uberSubDisplacedFifthRiff } from './uber-sub-displaced-fifth-riff'
  * record-named `arp`, one interval shape in sixteenths that never varies. All three were
  * written as tables at a desk; none is transcribed from its record, which is the whole of
  * what §5A.5 asks and all that is claimed.
+ *
+ * `chameleon-placed-rest-bass` (#703) is the third record-named bass, and the one built on
+ * where the line stops: thirty short notes in four bars, a rest in every beat of the first
+ * three, and two empty beats before a single pickup brings the figure round again. The other
+ * two fill their bars; this one is written around its silences.
+ *
+ * `love-on-a-real-train-one-step-sequence` (#703) is the second record-named `arp`, and the
+ * reverse of the first: one chord for eight bars, and a sixteenth-note pattern that changes by
+ * exactly one step every pass, out through four changes and back through four more, so the
+ * cycle closes with the downbeat returning to the root.
+ *
+ * `stranger-things-theme-hanging-seventh-arp` (#703) is the third, and the one with a top note
+ * that never resolves: a major-seventh arpeggio over the minor key's two major-seventh chords,
+ * the seventh always highest and the root's octave a semitone above it never played. Direction
+ * and voicing change across its eight bars; the hanging seventh does not.
+ *
+ * `tears-in-rain-held-second` is the first record-named `texture`: two notes a semitone apart,
+ * held at the top of the register for eight bars, and the lower one leaves first.
  *
  * ## The twelve patches (§5A.5, #566, #569)
  *
@@ -210,6 +231,7 @@ export const RIFFS: readonly Riff[] = [
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
   celestialConvergingVoicesPad,
+  chameleonPlacedRestBass,
   cloudLevelSharedTopDrift,
   cluster5thParallelFifthsStack,
   detroitFunkAeolianMachineLoop,
@@ -223,6 +245,7 @@ export const RIFFS: readonly Riff[] = [
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
+  loveOnARealTrainOneStepSequence,
   lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
@@ -242,6 +265,7 @@ export const RIFFS: readonly Riff[] = [
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
   squareDroneOneNoteFourChords,
+  strangerThingsThemeHangingSeventhArp,
   stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
   synthGongDecaySpacedStrikes,
@@ -266,6 +290,7 @@ export {
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
   celestialConvergingVoicesPad,
+  chameleonPlacedRestBass,
   cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
   duoOrgParallelThirdsComp,
@@ -276,6 +301,7 @@ export {
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
+  loveOnARealTrainOneStepSequence,
   lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
@@ -294,6 +320,7 @@ export {
   seventiesElectroPnoRhodesTurnaround,
   showMeLoveOrganStab,
   softOrchestraSlowChanges,
+  strangerThingsThemeHangingSeventhArp,
   stringsOfLifeWalkingEntryStab,
   swollenPadStaggeredStack,
   terrorBassFlatTwoCadenceLine,
@@ -305,11 +332,11 @@ export {
 }
 
 /**
- * §5A.7/#598. **The entries `/riffs` lists: the nine named for a record.** A figure named for a
+ * §5A.7/#598. **The entries `/riffs` lists: the thirteen named for a record.** A figure named for a
  * factory patch surfaces on the box that ships the patch, at `/explore/<id>/<patch>`,
  * and nowhere else — `/riffs/<its id>` is a 404. One filter on `reference.kind`, here, so the
  * catalogue, its static routes, the search and the sitemap cannot disagree about which
- * thirty-seven left. Not a second content type: the thirty-seven stay in this folder, under the
+ * forty-eight left. Not a second content type: the forty-eight stay in this folder, under the
  * same schema and the same tests, and `presetSession` finds each by the patch its `reference`
  * names.
  */
