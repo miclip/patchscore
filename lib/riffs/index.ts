@@ -43,6 +43,7 @@ import { duotronicMoogtronsPedalAndLinePad } from './duotronic-moogtrons-pedal-a
 import { funkOrganEarlySixteenthStabs } from './funk-organ-early-sixteenth-stabs'
 import { harpCChordArpeggiatedHold } from './harp-c-chord-arpeggiated-hold'
 import { lowBassEarlyRootLine } from './low-bass-early-root-line'
+import { loveOnARealTrainOneStepSequence } from './love-on-a-real-train-one-step-sequence'
 import { sawLeadQuestionAndAnswerLine } from './saw-lead-question-and-answer-line'
 import { sawteethDuoDancerCrossingStabs } from './sawteeth-duo-dancer-crossing-stabs'
 import { terrorBassFlatTwoCadenceLine } from './terror-bass-flat-two-cadence-line'
@@ -117,6 +118,11 @@ import { uberSubDisplacedFifthRiff } from './uber-sub-displaced-fifth-riff'
  * where the line stops: thirty short notes in four bars, a rest in every beat of the first
  * three, and two empty beats before a single pickup brings the figure round again. The other
  * two fill their bars; this one is written around its silences.
+ *
+ * `love-on-a-real-train-one-step-sequence` (#703) is the second record-named `arp`, and the
+ * reverse of the first: one chord for eight bars, and a sixteenth-note pattern that changes by
+ * exactly one step every pass, out through four changes and back through four more, so the
+ * cycle closes with the downbeat returning to the root.
  *
  * ## The twelve patches (§5A.5, #566, #569)
  *
@@ -230,6 +236,7 @@ export const RIFFS: readonly Riff[] = [
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
+  loveOnARealTrainOneStepSequence,
   lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
@@ -284,6 +291,7 @@ export {
   hypnoAcidSixteenthLoop,
   iFeelLoveOneShapeArp,
   innerCityLifeHeldSub,
+  loveOnARealTrainOneStepSequence,
   lowBassEarlyRootLine,
   lushM7ParallelRootLine,
   metalfnkleadSyncopatedFunkLine,
