@@ -38,9 +38,11 @@ export const acidTracksLine: Riff = {
     reArticulatesHook: true,
   },
   /**
-   * Four notes over two bars, each in force until the next takes over — with a deliberate hole
-   * at the end of bar one, where nothing is in force and the grid strikes nothing either.
-   * `baseOctave: 2`, so the climb goes up out of the bass rather than down into it.
+   * Four notes over two bars, each in force until the next takes over, with no gap between them:
+   * the root for three beats, its octave from beat four, then the fourth on bar two's downbeat and
+   * the fifth from the second half of its second beat. The grid strikes the held note again
+   * rather than resting. `baseOctave: 2`, so the climb goes up out of the bass rather than down
+   * into it.
    */
   hook: {
     id: 'acid-tracks-line-hook',
