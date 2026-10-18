@@ -599,7 +599,7 @@ describe('link integrity across the moved surfaces (#598)', () => {
         expect(known.has(href) || NOT_IN_SITEMAP.has(href), `${name} links to ${href}`).toBe(true)
         // And in particular never into the twelve's old addresses.
         expect(href, `${name} links to ${href}`).not.toMatch(
-          /^\/riffs\/(?!acid-tracks-line$|an-ending-ascent-pad$|blade-runner-blues-lead$|blue-monday-bass$|chameleon-placed-rest-bass$|i-feel-love-one-shape-arp$|inner-city-life-held-sub$|love-on-a-real-train-one-step-sequence$|show-me-love-organ-stab$|strings-of-life-walking-entry-stab$|tears-in-rain-held-second$|thriller-synth-riff$)/,
+          /^\/riffs\/(?!acid-tracks-line$|an-ending-ascent-pad$|blade-runner-blues-lead$|blue-monday-bass$|chameleon-placed-rest-bass$|i-feel-love-one-shape-arp$|inner-city-life-held-sub$|love-on-a-real-train-one-step-sequence$|show-me-love-organ-stab$|stranger-things-theme-hanging-seventh-arp$|strings-of-life-walking-entry-stab$|tears-in-rain-held-second$|thriller-synth-riff$)/,
         )
       }
     }
