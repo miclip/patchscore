@@ -703,11 +703,12 @@ describe('the riff library (§5A)', () => {
    * that shelf: `/riffs` covered seven roles and the eight remaining riffable ones were all
    * percussion, which cannot carry a figure at all. Four more went to the minilogue xd, which
    * declares two hundred programs and described twelve: a drone, a stacked-fifths hold, a rolled
-   * chord and an ornament.
+   * chord and an ornament. The eleventh record is #703's Chameleon bass, a line of short notes
+   * whose longest rest is the two beats before the repeat.
    */
-  it('has exactly fifty-eight entries: ten records and forty-eight factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664)', () => {
-    expect(RIFFS.length).toBe(58)
-    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(10)
+  it('has exactly fifty-nine entries: eleven records and forty-eight factory patches (#566, #569, #618, #624, #627, #638, #643, #645, #654, #664, #703)', () => {
+    expect(RIFFS.length).toBe(59)
+    expect(RIFFS.filter((r) => r.reference.kind === 'record')).toHaveLength(11)
     expect(RIFFS.filter((r) => r.reference.kind === 'patch')).toHaveLength(48)
   })
 
@@ -803,7 +804,7 @@ describe('the riff library (§5A)', () => {
     }
   })
 
-  it('is eight roles over fifty-eight entries, thirteen of them pads and three of them textures', () => {
+  it('is eight roles over fifty-nine entries, thirteen of them pads and three of them textures', () => {
     // The two pad definitions landed as leads while `RiffSchema` refused a held role, which put
     // eight of seventeen on `lead`. Moving them back is two fewer leads and one more distinct
     // role, pinned so the spread above is known and not merely satisfied. #618 added twelve on
@@ -828,20 +829,21 @@ describe('the riff library (§5A)', () => {
     // `texture`: seven strikes in eight bars, spaced by decay, through-composed so no grid. The
     // last three are #664's second pass: an eleventh `pad` in similar motion, which is the fourth
     // species of two-voice motion and the one this box had not taught, and two more `lead`, an
-    // octave answer and a sequenced motif.
+    // octave answer and a sequenced motif. #703's Chameleon bass is the eighth `bass-mid`, and the
+    // third record-named one: short notes and a placed rest before the repeat.
     const counts = new Map<string, number>()
     for (const r of RIFFS) counts.set(r.request.role, (counts.get(r.request.role) ?? 0) + 1)
     expect(Object.fromEntries([...counts].sort())).toEqual({
       acid: 2,
       arp: 5,
-      'bass-mid': 7,
+      'bass-mid': 8,
       lead: 13,
       pad: 13,
       stab: 12,
       sub: 3,
       texture: 3,
     })
-    expect(RIFFS).toHaveLength(58)
+    expect(RIFFS).toHaveLength(59)
     // And the eleven pads are the eleven held riffs: no grid, no flag, on all of them.
     const pads = RIFFS.filter((r) => r.request.role === 'pad').map((r) => r.id)
     expect(pads.sort()).toEqual([
@@ -1991,7 +1993,7 @@ describe('riff constraints are checked, not described (#554)', () => {
     it('finds every shipped entry clean, which is the diatonic ones staying legal', () => {
       // The check that would have caught #605 must not fail the entries that were fine: a
       // global check of an unaltered rule would flag every `i` under Blade Runner's third.
-      expect(RIFFS).toHaveLength(58)
+      expect(RIFFS).toHaveLength(59)
       for (const entry of RIFFS) {
         expect(riffConstraintViolations(entry), entry.id).toEqual([])
       }
@@ -3429,8 +3431,9 @@ describe('the three record-named figures of #638', () => {
     expect(trio.map((r) => r.request.role)).toEqual(['stab', 'sub', 'arp'])
     const others = RIFFS.filter((r) => r.reference.kind === 'record' && !trio.includes(r))
     // Seven since the Tears in Rain texture, which is B minor at 64 and so keeps both claims
-    // below: a key the trio did not bring, and a tempo under 128.
-    expect(others).toHaveLength(7)
+    // below: a key the trio did not bring, and a tempo under 128. Eight since the Chameleon
+    // bass, G minor at 96, which keeps both too.
+    expect(others).toHaveLength(8)
     for (const key of trio.map((r) => r.key)) {
       expect(others.map((r) => r.key), key).not.toContain(key)
     }

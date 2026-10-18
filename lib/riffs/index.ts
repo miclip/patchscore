@@ -8,6 +8,7 @@ import { anEndingAscentPad } from './an-ending-ascent-pad'
 import { bellbounceSparseBellPattern } from './bellbounce-sparse-bell-pattern'
 import { bladeRunnerBluesLead } from './blade-runner-blues-lead'
 import { blueMondayBass } from './blue-monday-bass'
+import { chameleonPlacedRestBass } from './chameleon-placed-rest-bass'
 import { detroitFunkAeolianMachineLoop } from './detroit-funk-aeolian-machine-loop'
 import { hamamatsuTinesBalladFigure } from './hamamatsu-tines-ballad-figure'
 import { moog55StringsSuspensionWriting } from './moog-55-strings-suspension-writing'
@@ -112,6 +113,11 @@ import { uberSubDisplacedFifthRiff } from './uber-sub-displaced-fifth-riff'
  * written as tables at a desk; none is transcribed from its record, which is the whole of
  * what §5A.5 asks and all that is claimed.
  *
+ * `chameleon-placed-rest-bass` (#703) is the third record-named bass, and the one built on
+ * where the line stops: thirty short notes in four bars, a rest in every beat of the first
+ * three, and two empty beats before a single pickup brings the figure round again. The other
+ * two fill their bars; this one is written around its silences.
+ *
  * ## The twelve patches (§5A.5, #566, #569)
  *
  * `muse-runner-floating-arrival-lead` was the first named after a factory patch, and the other
@@ -210,6 +216,7 @@ export const RIFFS: readonly Riff[] = [
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
   celestialConvergingVoicesPad,
+  chameleonPlacedRestBass,
   cloudLevelSharedTopDrift,
   cluster5thParallelFifthsStack,
   detroitFunkAeolianMachineLoop,
@@ -266,6 +273,7 @@ export {
   brewTimeMajorSeventhHold,
   brokenToyMusicBoxStumble,
   celestialConvergingVoicesPad,
+  chameleonPlacedRestBass,
   cloudLevelSharedTopDrift,
   detroitFunkAeolianMachineLoop,
   duoOrgParallelThirdsComp,
